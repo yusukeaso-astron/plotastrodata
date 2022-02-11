@@ -43,7 +43,7 @@ def image_array(fig=None, ax=None, sameaxes=True,
 
     if fig is None:
         if d.ncol == 0 or np.all(bunit is None): figsize = (9, 9)
-        else: figsize = (12, 9)
+        else: figsize = (13, 9)
         fig = plt.figure(figsize=figsize)
         exfig = False
     else:
@@ -73,7 +73,7 @@ def image_array(fig=None, ax=None, sameaxes=True,
 def image_fits(fig=None, ax=None, sameaxes=True,
                xlabel='R.A. (arcsec)', ylabel='Dec. (arcsec)',
                colorfits=[], cmap='cubehelix', Tbcolor=False, logcolor=False,
-               bunit='c', cbticks=[], cbticklabels=[], cbformat='%.2f',
+               bunit=None, cbticks=[], cbticklabels=[], cbformat='%.1e',
                nancolor='white', cmin=None, cmax=None, alpha=1, cfactor=1,
                contourfits=[], colors='gray', linewidths=1.8, rms='neg',
                levels=[-24, -12, -6, -3, 3, 6, 12, 24, 48, 96, 198, 384],

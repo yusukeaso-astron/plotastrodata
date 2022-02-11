@@ -1,14 +1,21 @@
 from plotastrodata.channels import chan_fits
+from plotastrodata.images import image_fits
 from plotastrodata.momentmaps import mom_fits
 from plotastrodata.pvdiagrams import pv_fits
 from plotastrodata.lineprofiles import lineprofile
 
 
 chan_fits(colorfits='test_input.fits',
-          contourfits='test_input.fits',
+          contourfits='test_input2.fits',
           rmax=0.8, nrows=3, ncols=5, nskipv=4, vmin=-4.7, vmax=4.7, 
           scalebar={'length':50 / 140, 'label':'50 au'},
           savefig='test_chan.png', show=True)
+
+image_fits(colorfits='test_input2.fits',
+           contourfits='test_input2.fits',
+           rmax=0.8,
+           scalebar={'length':50 / 140, 'label':'50 au'},
+           savefig='test_image.png', show=True)
 
 mom_fits(vlim=(-5, 5), cubefits='test_input.fits',
          rmax=0.8, scalebar={'length':50 / 140, 'label':'50 au'},
