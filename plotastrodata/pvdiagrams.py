@@ -1,8 +1,9 @@
+import numpy as np
 from scipy.interpolate import RectBivariateSpline as RBS
 
 from fits_utils import fits2data, read_bunit
-from plotradiodata.images import image_array
-
+from plotastrodata.images import image_array
+from plotastrodata.settings import *
 
 
 def pv_array(fig=None, ax=None, x=None, y=None, v=None,
@@ -96,7 +97,7 @@ def pv_fits(fig=None, ax=None,
             xlabel='Offset (arcsec)', ylabel=r'Velocity (km s$^{-1}$)',
             length=1, width=0, pa=0, flipaxes=False,
             colorfits='', cmap='cubehelix', Tbcolor=False, logcolor=False,
-            bunit='c', cbticks=[], cbticklabels=[], cbformat='%f',
+            bunit=None, cbticks=[], cbticklabels=[], cbformat='%.1e',
             nancolor='white', cmin=None, cmax=None, alpha=1,
             contourfits=[], colors='gray', linewidths=1.0, rms='edge',
             levels=[-24, -12, -6, -3, 3, 6, 12, 24, 48, 96, 198, 384],
@@ -115,7 +116,6 @@ def pv_fits(fig=None, ax=None,
     contourarray, xcon, bcon = fits2data(contourfits, Tbcontour, center)
     colorarray,   xcol, bcol = fits2data(colorfits,   Tbcolor,   center)
     x, y, v = [a for a in [xcol, xcon, xvec] if len(a) > 0][0][0]
-    bmaj, bmin, bpa = np.array(bcol + bcon + bvec).T
     bunit = read_bunit(colorfits, bunit)
 
     pv_array(vectype=vectype, center=[xoff, yoff, 0], flipaxes=flipaxes,

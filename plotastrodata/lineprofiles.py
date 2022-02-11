@@ -1,7 +1,11 @@
+import matplotlib.pyplot as plt
 from astropy.io import fits
+from astropy import constants
 from scipy.optimize import curve_fit
 
 from other_utils import coord2xy
+from fits_utils import Jy2K
+from plotastrodata.settings import *
 
 
 
@@ -12,7 +16,7 @@ def lineprofile(fitsimage='', coords=[], radius='point', unit='K',
                 xlabel=r'Velocity (km s$^{-1}$)', ylabel=[], text=[],
                 cunit3='', savefig='', show=True, gfit=False, width=1):
 
-    set_rcParams(20, 'w')
+    set_rcparams(20, 'w')
     
     if fits != '':
         f = fits.open(fitsimage)[0]
@@ -29,17 +33,18 @@ def lineprofile(fitsimage='', coords=[], radius='point', unit='K',
     v = crval[2] + (np.arange(naxis[2]) - crpix[2] + 1) * cdelt[2]
     x, y = np.meshgrid(x, y)
     if cunit3 != '': h['CUNIT3'] = cunit3
-    if h['CUNIT3'] == 'Hz': v = (1 - v / h['RESTFRQ']) * cc / 1e3
+    if h['CUNIT3'] == 'Hz':
+        v = (1 - v/h['RESTFRQ']) * constants.c.to('m/s').value / 1e3
     if h['CUNIT3'] == 'M/S' or h['CUNIT3'] == 'm/s': v = v / 1e3
 
-    if radius == 'point': radius = (y[1, 0] - y[0, 0]) / arcsec
+    if radius == 'point': radius = (y[1, 0] - y[0, 0]) * 3600.
     if vmin is None: vmin = np.min(v)
     if vmax is None: vmax = np.max(v)    
 
     p = []
-    for xc, yc in zip(coord2xy(coords)):
+    for xc, yc in zip(*coord2xy(coords)):
         r = np.hypot(x - xc, y - yc)
-        cnd = (r < radius * arcsec)
+        cnd = (r < radius / 3600.)
         pp = np.array([np.mean(dd[cnd]) for dd in d])
         p.append(pp)
     p = np.array(p)

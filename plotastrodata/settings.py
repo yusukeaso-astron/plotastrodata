@@ -1,4 +1,5 @@
-
+import numpy as np
+import matplotlib.pyplot as plt
 import matplotlib as mpl
 from astropy.io import fits
 from matplotlib.patches import Ellipse
@@ -6,6 +7,9 @@ from PIL import Image
 
 from other_utils import listing, rel2abs, coord2xy
 
+
+
+deg = np.radians(1)  # radian
 
 
 def vec_uv(vec0array, vec1array, vectype, vecrot):
@@ -287,7 +291,7 @@ def set_axes(ax, d, xticks, yticks, xticksminor, yticksminor,
     if len(yticks) > 0: ax.set_yticks(yticks)
     if len(xticksminor) > 0: ax.set_xticks(xticksminor, minor=True)
     if len(yticksminor) > 0: ax.set_yticks(yticksminor, minor=True)
-    if len(xticklabels) > 0: ax.set_xticklabels(xticklabels, rotation=rotation)
+    if len(xticklabels) > 0: ax.set_xticklabels(xticklabels)
     if len(yticklabels) > 0: ax.set_yticklabels(yticklabels)
     if xlabel != '': ax.set_xlabel(xlabel)
     if ylabel != '': ax.set_ylabel(ylabel)

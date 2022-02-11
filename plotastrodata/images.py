@@ -1,4 +1,5 @@
 from fits_utils import fits2data, read_bunit
+from plotastrodata.settings import *
 
 
 

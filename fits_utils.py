@@ -132,12 +132,12 @@ def fits2data(fitsimage: str, Tb: bool = False, center: str = '') -> list:
     return [d, x, b]
 
 
-def read_bunit(fitsimage: str = '', bunit: str = ''):
+def read_bunit(fitsimage: str = '', bunit: str = 'bunit'):
     fitsimage, bunit = listing(fitsimage, bunit)
     a = []
     for f, b in zip(fitsimage, bunit):
         h = fits.open(f)[0].header
-        if 'BUNIT' in h.keys() and b == '': b = h['BUNIT']
+        if 'BUNIT' in h.keys() and b is None: b = h['BUNIT']
         a.append(b)         
     return a
 

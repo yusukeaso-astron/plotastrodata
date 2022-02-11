@@ -1,6 +1,7 @@
+import numpy as np
 from fits_utils import fits2data, read_bunit
-from plotradiodata.images import image_array
-
+from plotastrodata.images import image_array
+from plotastrodata.settings import *
 
 
 def mom_array(fig=None, ax=None, x=None, y=None, v=None,

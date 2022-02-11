@@ -1,4 +1,9 @@
+import subprocess
+import shlex
+import numpy as np
+import matplotlib.pyplot as plt
 from fits_utils import fits2data, read_bunit
+from plotastrodata.settings import *
 
 
 
@@ -101,7 +106,7 @@ def chan_array(x=None, y=None, v=None, xlabel='x', ylabel='y',
 
 def chan_fits(xlabel='R.A. (arcsec)', ylabel='Dec. (arcsec)',
               colorfits='', cmap='cubehelix', Tbcolor=False, logcolor=False,
-              bunit='c', cbticks=[], cbticklabels=[], cbformat='%f',
+              bunit=None, cbticks=[], cbticklabels=[], cbformat='%.1e',
               nancolor='white', cmin=None, cmax=None, alpha=1, cfactor=1,
               contourfits=[], colors='gray', linewidths=1.0, rms='edge',
               levels=[-24, -12, -6, -3, 3, 6, 12, 24, 48, 96, 198, 384],

@@ -14,7 +14,7 @@ def listing(*args) -> list:
               With a single list input, the output is the input itself.
     """
     one = (len(args) == 1)
-    b = [None] * len(args)
+    b = []
     for a in args:
         if not (type(a) in [list, np.ndarray]):
             a = [] if a == '' else [a]
@@ -23,7 +23,7 @@ def listing(*args) -> list:
     return b
 
 
-def coord2xy(coords: str, frame: str = 'icrs') -> ndarray:
+def coord2xy(coords: str, frame: str = 'icrs') -> list:
     """Transform R.A.-Dec. to (degree, degree).
 
     Args:
@@ -85,7 +85,7 @@ def xy2coord(xy: list) -> str:
     return coords
 
 
-def rel2abs(xrel: float, yrel: float, x: list, y: list) -> ndarray:
+def rel2abs(xrel: float, yrel: float, x: list, y: list) -> list:
     """Transform relative coordinates to absolute ones.
 
     Args:
@@ -104,7 +104,7 @@ def rel2abs(xrel: float, yrel: float, x: list, y: list) -> ndarray:
     return np.array([a, b])
 
 
-def shiftphase(F: list, u: list, v: list, dx: float, dy: float) -> ndarray:
+def shiftphase(F: list, u: list, v: list, dx: float, dy: float) -> list:
     """Shift the phase of 2D FFT by (dx, dy).
 
     Args:
