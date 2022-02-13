@@ -70,7 +70,7 @@ class FitsData:
         if not hasattr(self, 'header'): self.gen_header()
         h = self.header
         self.x, self.y, self.v = [], [], []
-        self.dx, self.dy, self.dv = [], [], []
+        self.dx, self.dy, self.dv = None, None, None
         g = []
         for i in [0, 1]:
             if i in axes:
@@ -169,7 +169,9 @@ def data2fits(d: list = None, h: dict = {}, crpix: int = None,
         w.wcs.ctype = ctype0[:naxis] if ctype is None else ctype
         header = w.to_header()
         hdu = fits.PrimaryHDU(d, header=header)
-        for k in h.keys(): hdu.header[k]=h[k]
+        for k in h.keys():
+            if not ('COMMENT' in k or 'HISTORY' in k):
+                hdu.header[k]=h[k]
     hdu = fits.HDUList([hdu])
     hdu.writeto(fitsname.replace('.fits', '') + '.fits', overwrite=True)
 
