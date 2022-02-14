@@ -1,0 +1,21 @@
+import matplotlib.pyplot as plt
+from plotastrodata.plot_utils import plotastro2D, plotastro3D
+'''
+pa = plotastro2D(rmax=0.8, center='04h04m43.07s 26d18m56.20s')
+pa.add_color(fitsimage='test2D.fits', Tb=True, clabel='Tb (K)')
+pa.add_contour(fitsimage='test2D_2.fits', colors='r')
+pa.add_contour(fitsimage='test2D.fits', skip=2)
+pa.add_vector(ampfits='test2Damp.fits', angfits='test2Dang.fits', skip=3)
+pa.add_scalebar(length=50 / 140, label='50 au', color='k')
+pa.add_label([[0.3, 0.3]], slist=['text'])
+pa.add_marker([[0.7, 0.7]])
+pa.add_line([[0.5, 0.5], [0.6, 0.6]], anglelist=[60, 60], rlist=[0.5, 0.5])
+pa.add_arrow([[0.4, 0.4]], anglelist=[150], rlist=[0.5])
+pa.add_ellipse([[0.2, 0.8]], majlist=[0.4], minlist=[0.2], palist=[45])
+pa.set_axis(xticks=[-0.8,-0.4,0,0.4,0.8], yticks=[-0.8,-0.4,0,0.4,0.8])
+plt.show()
+'''
+pa = plotastro3D(rmax=0.8, center='04h04m43.07s 26d18m56.20s',
+                 fitsimage='test3D.fits', vmin=-5, vmax=5, vskip=3)
+pa.add_contour(fitsimage='test3D.fits')
+plt.show()

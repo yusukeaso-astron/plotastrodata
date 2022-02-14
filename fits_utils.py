@@ -66,7 +66,8 @@ class FitsData:
 
     def gen_grid(self, axes: tuple = (0, 1, 2),
                  ang: str = 'deg', vel: str = 'km/s',
-                 restfrq: float = 0, center: str = '') -> None:
+                 restfrq: float = 0, center: str = '',
+                 vsys: float = 0) -> None:
         if not hasattr(self, 'header'): self.gen_header()
         h = self.header
         self.x, self.y, self.v = [], [], []
@@ -114,7 +115,7 @@ class FitsData:
                     if vel in ['m/s', 'M/S']: g.append(s)
                     s = s / 1e3
                     if vel in ['km/s', 'KM/S']: g.append(s)
-                self.v = g[2]
+                self.v = g[2] - vsys
                 self.dv = g[2][1] - g[2][0]
 
 
