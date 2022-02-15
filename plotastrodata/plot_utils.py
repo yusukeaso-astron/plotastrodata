@@ -3,23 +3,23 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
 
-from other_utils import coord2xy, rel2abs, estimate_rms
+from other_utils import coord2xy, rel2abs, estimate_rms, trim
 from fits_utils import FitsData, fits2data
 
 
 
-def pos2xy(center: str, xedge: list, yedge: list,
+def pos2xy(center: str, xlim: list, ylim: list,
            pos: list = []) -> list:
     x, y = [None] * len(pos), [None] * len(pos)
     for i, p in enumerate(pos):
         if type(p) == str:
             x[i], y[i] = (coord2xy(p) - coord2xy(center)) * 3600.
         else:
-            x[i], y[i] = rel2abs(*p, xedge, yedge)
+            x[i], y[i] = rel2abs(*p, xlim, ylim)
     return [x, y]
 
 
-def set_rcparams(fontsize: int =18, nancolor: str ='w') -> None:
+def set_rcparams(fontsize: int = 18, nancolor: str ='w') -> None:
     #plt.rcParams['font.family'] = 'arial'
     plt.rcParams['axes.facecolor'] = nancolor
     plt.rcParams['font.size'] = fontsize
@@ -63,16 +63,16 @@ class plotastro2D():
                         'dist':dist, 'xoff':xoff, 'yoff':yoff}
         xdir, ydir = -1 if xflip else 1, -1 if yflip else 1
         self.xdir = xdir
-        self.xedge = [xoff - xdir*rmax, xoff + xdir*rmax]
-        self.yedge = [yoff - ydir*rmax, yoff + ydir*rmax]
+        self.xlim = [xoff - xdir*rmax, xoff + xdir*rmax]
+        self.ylim = [yoff - ydir*rmax, yoff + ydir*rmax]
 
     def __pos2xy(self, pos: list = []) -> list:
-        return pos2xy(self.gridpar['center'], self.xedge, self.yedge, pos)
+        return pos2xy(self.gridpar['center'], self.xlim, self.ylim, pos)
     
     def __readfits(self, fitsimage: str, Tb: bool = False,
-                   method: str = 'out') -> list:
+                   method: str = 'out', restfrq: float = None) -> list:
         f = fits2data(fitsimage=fitsimage, Tb=Tb, log=False,
-                      method=method, **self.gridpar)
+                      method=method, restfrq=restfrq, **self.gridpar)
         return f
 
     
@@ -96,7 +96,7 @@ class plotastro2D():
 
     def add_color(self, fitsimage: str = None,
                    x: list = None, y: list = None, skip: int = 1,
-                   c: list = None,
+                   c: list = None, restfrq: float = None,
                    cmin: float = None, cmax: float = None,
                    Tb: bool = False, log: bool = False,
                    show_cbar: bool = True,
@@ -107,10 +107,11 @@ class plotastro2D():
                    bpa: float = 0., **kwargs) -> None:
         kwargs0 = {'cmap':'cubehelix', 'alpha':1, 'zorder':1}
         if not fitsimage is None:
-            c, (x, y), (bmaj, bmin, bpa), bunit, rms \
-                = self.__readfits(fitsimage, Tb)
-        c = np.array(c)
-        rms = estimate_rms(c, 'out')
+            c, (x, y, _), (bmaj, bmin, bpa), bunit, rms \
+                = self.__readfits(fitsimage, Tb, 'out', restfrq)
+        else:
+            rms = estimate_rms(c, 'out')
+            x, y, _, c = trim(x, y, self.xlim, self.ylim, data=c)
         x, y, c = x[::skip], y[::skip], c[::skip, ::skip]
         if log: c = np.log10(c.clip(c[c > 0].min(), None))
         if not (cmin is None):
@@ -143,7 +144,8 @@ class plotastro2D():
             
     def add_contour(self, fitsimage: str = None,
                      x: list = None, y: list = None, skip: int = 1,
-                     c: list = None, sigma: str or float = 'out',
+                     c: list = None, restfrq: float = None,
+                     sigma: str or float = 'out',
                      levels: list = [-12,-6,-3,3,6,12,24,48,96,192,384],
                      Tb: bool = False,
                      show_beam: bool = True, beamcolor: str = 'gray',
@@ -151,10 +153,11 @@ class plotastro2D():
                      **kwargs) -> None:
         kwargs0 = {'colors':'gray', 'linewidths':1.0, 'zorder':2}
         if not fitsimage is None:
-            c, (x, y), (bmaj, bmin, bpa), _, rms \
-                = self.__readfits(fitsimage, Tb, sigma)
-        c = np.array(c)
-        rms = estimate_rms(c, sigma)
+            c, (x, y, _), (bmaj, bmin, bpa), _, rms \
+                = self.__readfits(fitsimage, Tb, sigma, restfrq)
+        else:
+            rms = estimate_rms(c, sigma)
+            x, y, _, c = trim(x, y, self.xlim, self.ylim, None, None, c)
         x, y, c = x[::skip], y[::skip], c[::skip, ::skip]
         self.ax.contour(x, y, c, np.array(levels) * rms,
                         **dict(kwargs0, **kwargs))
@@ -172,9 +175,15 @@ class plotastro2D():
                    'pivot':'mid', 'headwidth':0, 'headlength':0,
                    'headaxislength':0, 'width':0.007, 'zorder':3}
         if not ampfits is None:
-            amp, (x, y), (bmaj, bmin, bpa), _, _ = self.__readfits(ampfits)
+            amp, (x, y, _), (bmaj, bmin, bpa), _, _ \
+                = self.__readfits(ampfits)
+        else:
+            x, y, _, amp = trim(x, y, self.xlim, self.ylim, data=amp)
         if not angfits is None:
-            ang, (x, y), (bmaj, bmin, bpa), _, _ = self.__readfits(angfits)
+            ang, (x, y, _), (bmaj, bmin, bpa), _, _ \
+                = self.__readfits(angfits)
+        else:
+            x, y, _, ang = trim(x, y, self.xlim, self.ylim, data=ang)
         if amp is None and not ang is None:
             amp = np.ones_like(ang)
         x, y = x[::skip], y[::skip]
@@ -191,10 +200,10 @@ class plotastro2D():
                      fontsize: float = 20, linewidth: float = 3):
         if length > 0 and label != '':
             a, b = barpos
-            x0, y0 = rel2abs(a, b * 0.9, self.xedge, self.yedge)
+            x0, y0 = rel2abs(a, b * 0.9, self.xlim, self.ylim)
             self.ax.text(x0, y0, label, color=color, size=fontsize,
                          ha='center', va='top', zorder=10)
-            x0, y0 = rel2abs(a, b, self.xedge, self.yedge)
+            x0, y0 = rel2abs(a, b, self.xlim, self.ylim)
             self.ax.plot([x0 - length/2., x0 + length/2.], [y0, y0],
                          '-', linewidth=linewidth, color=color)
             
@@ -229,7 +238,6 @@ class plotastro2D():
                            angles='xy', scale_units='xy', scale=1,
                            **dict(kwargs0, **kwargs))
 
-        
     def set_axis(self, xticks: list = None, yticks: list = None,
                  xticksminor: list = None, yticksminor: list = None,
                  xticklabels: list = None, yticklabels: list= None,
@@ -248,19 +256,23 @@ class plotastro2D():
             self.ax.set_yticks(yticksminor, minor=True)
         if not xticklabels is None: self.ax.set_xticklabels(xticklabels)
         if not yticklabels is None: self.ax.set_yticklabels(yticklabels)
-        self.ax.set_xlim(*self.xedge)
-        self.ax.set_ylim(*self.yedge)
+        self.ax.set_xlim(*self.lim)
+        self.ax.set_ylim(*self.lim)
         if not xlabel is None: self.ax.set_xlabel(xlabel)
         if not ylabel is None: self.ax.set_ylabel(ylabel)
         self.fig.tight_layout()
        
     def savefig(self, filename: str = 'plotastro2D.png',
                 transparent: bool =True) -> None:
+        self.ax.set_xlim(*self.lim)
+        self.ax.set_ylim(*self.lim)
         self.fig.patch.set_alpha(0)
         self.fig.savefig(filename, bbox_inches='tight',
                          transparent=transparent)
         
     def show(self):
+        self.ax.set_xlim(*self.lim)
+        self.ax.set_ylim(*self.lim)
         plt.show()
             
         
@@ -311,25 +323,26 @@ class plotastro3D():
                              backgroundcolor='white', zorder=20)
           
         self.ax = ax
-        self.npages, self.nrows, self.ncols = npages, nrows, ncols
         self.vskip = vskip
+        self.npages, self.nrows, self.ncols = npages, nrows, ncols
         self.gridpar = {'center':center, 'rmax':rmax, 'dist':dist,
                         'xoff':xoff, 'yoff':yoff,
                         'vsys':vsys, 'vmin':vmin, 'vmax':vmax}
         xdir, ydir = -1 if xflip else 1, -1 if yflip else 1
         self.xdir = xdir
-        self.xedge = [xoff - xdir*rmax, xoff + xdir*rmax]
-        self.yedge = [yoff - ydir*rmax, yoff + ydir*rmax]
+        self.xlim = [xoff - xdir*rmax, xoff + xdir*rmax]
+        self.ylim = [yoff - ydir*rmax, yoff + ydir*rmax]
+        self.vlim = [vmin, vmax]
         self.allchan = np.arange(self.nchan)
         self.bottomleft = nij2ch(np.arange(npages), nrows-1, 0)
         
     def __pos2xy(self, pos: list = []) -> list:
-        return pos2xy(self.gridpar['center'], self.xedge, self.yedge, pos)
+        return pos2xy(self.gridpar['center'], self.xlim, self.ylim, pos)
 
     def __readfits(self, fitsimage: str, Tb: bool = False,
-                   method: str = 'out') -> list:
+                   method: str = 'out', restfrq: float = None) -> list:
         f = fits2data(fitsimage=fitsimage, Tb=Tb, log=False,
-                      method=method, **self.gridpar)
+                      method=method, restfrq=restfrq, **self.gridpar)
         return f
             
     def __reform(self, c: list) -> list:
@@ -369,7 +382,8 @@ class plotastro3D():
 
     def add_color(self, fitsimage: str = None,
                    x: list = None, y: list = None, skip: int = 1,
-                   c: list = None,
+                   v: list = None, c: list = None,
+                   restfrq: float = None,
                    cmin: float = None, cmax: float = None,
                    Tb: bool = False, log: bool = False,
                    show_cbar: bool = True,
@@ -380,10 +394,11 @@ class plotastro3D():
                    bpa: float = 0., **kwargs) -> None:
         kwargs0 = {'cmap':'cubehelix', 'alpha':1, 'zorder':1}
         if not fitsimage is None:
-            c, (x, y), (bmaj, bmin, bpa), bunit, rms \
-                = self.__readfits(fitsimage, Tb)
-        c = np.array(c)
-        rms = estimate_rms(c, 'out')
+            c, (x, y, _), (bmaj, bmin, bpa), bunit, rms \
+                = self.__readfits(fitsimage, Tb, 'out', restfrq)
+        else:
+            bunit, rms = '', estimate_rms(c, 'out')
+            x, y, _, c = trim(x, y, self.xlim, self.ylim, v, self.vlim, c)
         if log: c = np.log10(c.clip(c[c > 0].min(), None))
         if not (cmin is None):
             c = c.clip(np.log10(cmin), None) if log else c.clip(cmin, None)
@@ -393,7 +408,7 @@ class plotastro3D():
             c = c.clip(None, np.log10(cmax)) if log else c.clip(None, cmax)
         else:
             cmax = np.nanmax(c)
-        x, y, c = x[::skip], y[::skip], c[::skip, ::skip]
+        x, y, c = x[::skip], y[::skip], c[::self.vskip, ::skip, ::skip]
         c = self.__reform(c)
         for i, (axnow, cnow) in enumerate(zip(np.ravel(self.ax), c)):
             p = axnow.pcolormesh(x, y, cnow, shading='nearest',
@@ -421,6 +436,7 @@ class plotastro3D():
     def add_contour(self, fitsimage: str = None,
                     x: list = None, y: list = None, skip: int = 1,
                     v: list = None, c: list = None,
+                    restfrq: float = None,
                     sigma: str or float = 'edge',
                     levels: list = [-12,-6,-3,3,6,12,24,48,96,192,384],
                     Tb: bool = False,
@@ -429,12 +445,13 @@ class plotastro3D():
                     **kwargs) -> None:
         kwargs0 = {'colors':'gray', 'linewidths':1.0, 'zorder':2}
         if not fitsimage is None:
-            c, (x, y), (bmaj, bmin, bpa), _, rms \
-                = self.__readfits(fitsimage, Tb, sigma)
-        c = np.array(c)
-        if np.ndim(c) == 2 and sigma == 'edge': sigma = 'out'
-        rms = estimate_rms(c, sigma)
-        x, y, c = x[::skip], y[::skip], c[::skip, ::skip]
+            c, (x, y, _), (bmaj, bmin, bpa), _, rms \
+                = self.__readfits(fitsimage, Tb, sigma, restfrq)
+        else:
+            if np.ndim(c) == 2 and sigma == 'edge': sigma = 'out'
+            rms = estimate_rms(c, sigma)
+            x, y, _, c = trim(x, y, self.xlim, self.ylim, v, self.vlim, c)
+        x, y, c = x[::skip], y[::skip], c[::self.vskip, ::skip, ::skip]
         c = self.__reform(c)
         for axnow, cnow in zip(np.ravel(self.ax), c):
             axnow.contour(x, y, cnow, np.array(levels) * rms,
@@ -444,7 +461,7 @@ class plotastro3D():
             
     def add_vector(self, ampfits: str = None, angfits: str = None,
                      x: list = None, y: list = None, skip: int = 1,
-                     amp: list = None, ang: list = None,
+                     v: list = None, amp: list = None, ang: list = None,
                      ampfactor: float = 1.,
                      show_beam: bool = True, beamcolor: str = 'gray',
                      bmaj: float = 0., bmin: float = 0., bpa: float = 0.,
@@ -453,13 +470,22 @@ class plotastro3D():
                    'pivot':'mid', 'headwidth':0, 'headlength':0,
                    'headaxislength':0, 'width':0.007, 'zorder':3}
         if not ampfits is None:
-            amp, (x, y), bmaj, bmin, bpa, _, _ = self.__readfits(ampfits)
+            amp, (x, y, _), bmaj, bmin, bpa, _, _ \
+                = self.__readfits(ampfits)
+        else:
+            x, y, _, amp = trim(x, y, self.xlim, self.ylim,
+                                v, self.vlim, amp)
         if not angfits is None:
-            ang, (x, y), bmaj, bmin, bpa, _, _ = self.__readfits(angfits)
+            ang, (x, y, _), bmaj, bmin, bpa, _, _ \
+                = self.__readfits(angfits)
+        else:
+            x, y, _, ang = trim(x, y, self.xlim, self.ylim,
+                                v, self.vlim, ang)
         if amp is None and not ang is None:
             amp = np.ones_like(ang)
         x, y = x[::skip], y[::skip]
-        amp, ang = amp[::skip, ::skip], ang[::skip, ::skip]
+        amp = amp[::self.vskip, ::skip, ::skip]
+        ang = ang[::self.vskip, ::skip, ::skip]
         amp, ang = self.__reform(amp), self.__reform(ang)
         u = ampfactor * amp * np.sin(np.radians(ang))
         v = ampfactor * amp * np.cos(np.radians(ang))
@@ -469,7 +495,6 @@ class plotastro3D():
         if show_beam:
             self.add_beam(bmaj, bmin, bpa, beamcolor)
 
-            
     def add_scalebar(self, length: float = 0, label: str = '',
                      color: str = 'gray', barpos: tuple = (0.75, 0.17),
                      fontsize: float = 15, linewidth: float = 3):
@@ -479,10 +504,10 @@ class plotastro3D():
         for n in range(self.npages):
             axnow = self.ax[n, self.nrows - 1, 0]
             a, b = barpos
-            x0, y0 = rel2abs(a, b * 0.9, self.xedge, self.yedge)
+            x0, y0 = rel2abs(a, b * 0.9, self.xlim, self.ylim)
             axnow.text(x0, y0, label, color=color, size=fontsize,
                        ha='center', va='top', zorder=10)
-            x0, y0 = rel2abs(a, b, self.xedge, self.yedge)
+            x0, y0 = rel2abs(a, b, self.xlim, self.ylim)
             axnow.plot([x0 - length/2., x0 + length/2.], [y0, y0],
                        '-', linewidth=linewidth, color=color)
             
@@ -563,8 +588,8 @@ class plotastro3D():
             if not yticklabels is None: axnow.set_yticklabels(yticklabels)
             if not (i in self.bottomleft):
                 axnow.set_yticklabels([''] * len(axnow.get_yticks()))
-            axnow.set_xlim(*self.xedge)
-            axnow.set_ylim(*self.yedge)
+            axnow.set_xlim(*self.xlim)
+            axnow.set_ylim(*self.ylim)
             if not xlabel is None: axnow.set_xlabel(xlabel)
             if not (i in self.bottomleft):
                 axnow.set_xlabel('')
@@ -574,11 +599,18 @@ class plotastro3D():
 
     def savefig(self, filename: str = 'plotastro3D.png',
                 transparent: bool =True) -> None:
+        for axnow in np.ravel(self.ax):
+            axnow.set_xlim(*self.xlim)
+            axnow.set_ylim(*self.ylim)
         ext = filename.split('.')[-1]
         for i in range(self.npages):
             fig = plt.figure(i)
             fig.patch.set_alpha(0)
             fig.savefig(filename.replace('.' + ext, f'_{i:d}.' + ext),
                         bbox_inches='tight', transparent=transparent)
+            
     def show(self):
+        for axnow in np.ravel(self.ax):
+            axnow.set_xlim(*self.xlim)
+            axnow.set_ylim(*self.ylim)
         plt.show()

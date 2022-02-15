@@ -2,12 +2,12 @@ import numpy as np
 from astropy.io import fits
 from astropy import constants, units, wcs
 
-from other_utils import coord2xy, estimate_rms
+from other_utils import coord2xy, estimate_rms, trim
 
 
 
 def Jy2K(header = None, bmaj: float = None, bmin: float = None,
-         freq: float = None) -> float:
+         restfrq: float = None) -> float:
     """Calculate a conversion factor in the unit of K/Jy.
 
     Args:
@@ -20,10 +20,15 @@ def Jy2K(header = None, bmaj: float = None, bmin: float = None,
     Returns:
         float: the conversion factor in the unit of K/Jy.
     """
+    freq = None
     if not header is None:
         bmaj, bmin = header['BMAJ'], header['BMIN']
         if 'RESTFREQ' in header.keys(): freq = header['RESTFREQ']
         if 'RESTFRQ' in header.keys(): freq = header['RESTFRQ']
+    if not (restfrq is None): freq = restfrq
+    if restfrq is None:
+        print('Please input restfrq.')
+        return -1
     omega = bmaj * bmin * np.radians(1)**2 * np.pi / 4. * np.log(2.)
     lam = constants.c.to('m/s').value / freq
     a = units.Jy.to('J*s**(-1)*m**(-2)*Hz**(-1)') \
@@ -69,20 +74,20 @@ class FitsData:
         return [self.bmaj, self.bmin, self.bpa]
 
     def gen_data(self, Tb: bool = False, log: bool = False,
-                 drop: bool = True) -> None:
+                 drop: bool = True, restfrq: float = None) -> None:
         self.data = None
         if not hasattr(self, 'hdu'):
             self.gen_hdu()
         h, d = self.hdu.header, self.hdu.data
         if drop == True: d = np.squeeze(d)
-        if Tb == True: d *= Jy2K(header=h)
+        if Tb == True: d *= Jy2K(header=h, restfrq=restfrq)
         if log == True: d = np.log10(d.clip(np.min(d[d > 0]), None))
         self.data = d
         
     def get_data(self, Tb: bool = False, log: bool = False,
-                 drop: bool = True) -> list:
+                 drop: bool = True, restfrq: float = None) -> list:
         if not hasattr(self, 'data'):
-            self.gen_data(Tb=Tb, log=log, drop=drop)
+            self.gen_data(Tb, log, drop, restfrq)
         return self.data
 
     def gen_grid(self, center: str = None, rmax: float = 1e10,
@@ -103,49 +108,33 @@ class FitsData:
                 s = np.arange(h['NAXIS1'])
                 s = (s-h['CRPIX1']+1) * h['CDELT1'] + h['CRVAL1'] - cx
                 s *= 3600. * dist
-                i0 = np.argmin(np.abs(s - (xoff - rmax)))
-                i1 = np.argmin(np.abs(s - (xoff + rmax)))
-                i0, i1 = sorted([i0, i1])
-                s = s[i0:i1 + 1]
                 self.x, self.dx = s, s[1] - s[0]
-                if hasattr(self, 'data'):
-                    if np.ndim(self.data) == 2:
-                        self.data = self.data[:, i0:i1 + 1]
-                    else:
-                        self.data = self.data[:, :, i0:i1 + 1]
         if h['NAXIS'] > 1:
             if h['NAXIS2'] > 1:
                 s = np.arange(h['NAXIS2'])
                 s = (s-h['CRPIX2']+1) * h['CDELT2'] + h['CRVAL2'] - cy
                 s *= 3600. * dist
-                i0 = np.argmin(np.abs(s - (yoff - rmax)))
-                i1 = np.argmin(np.abs(s - (yoff + rmax)))
-                i0, i1 = sorted([i0, i1])
-                s = s[i0:i1 + 1]
                 self.y, self.dy = s, s[1] - s[0]
-                if hasattr(self, 'data'):
-                    if np.ndim(self.data) == 2:
-                        self.data = self.data[i0:i1 + 1, :]
-                    else:
-                        self.data = self.data[:, i0:i1 + 1, :]
         if h['NAXIS'] > 2:
             if h['NAXIS3'] > 1:
                 s = np.arange(h['NAXIS3'])
                 s = (s-h['CRPIX3']+1) * h['CDELT3'] + h['CRVAL3']
-                freq = 0
+                freq = None
                 if 'RESTFREQ' in h.keys(): freq = h['RESTFREQ']
                 if 'RESTFRQ' in h.keys(): freq = h['RESTFRQ']
                 if not restfrq is None: freq = restfrq
-                if freq > 0:
+                if not (freq is None):
                     s = (freq-s) / freq
                     s = s * constants.c.to('km*s**(-1)').value - vsys
-                    i0 = np.argmin(np.abs(s - vmin))
-                    i1 = np.argmin(np.abs(s - vmax))
-                    i0, i1 = sorted([i0, i1])
-                    s = s[i0:i1 + 1]
                     self.v, self.dv = s, s[1] - s[0]
-                if hasattr(self, 'data'):
-                    self.data = self.data[i0:i1 + 1, :, :]
+                else:
+                    print('Please input restfrq.')
+        if not hasattr(self, 'data'): self.data = None
+        self.x, self.y, self.v, self.data \
+            = trim(self.x, self.y,
+                   [xoff - rmax, xoff + rmax],
+                   [yoff - rmax, yoff + rmax],
+                   self.v, [vmin, vmax], self.data)
                     
     def get_grid(self, center: str = None, rmax: float = 1e10,
                  xoff: float = 0., yoff: float = 0., dist: float = 1.,
@@ -159,16 +148,18 @@ class FitsData:
         else:
             return [self.x, self.y, None]
 
+
 def fits2data(fitsimage: str, Tb: bool = False, log: bool = False,
               dist: float = 1., method: str = 'out',
-              **kwargs) -> list:
+              restfrq: float = None, **kwargs) -> list:
     fd = FitsData(fitsimage)
-    fd.gen_data(Tb=Tb, log=log)
+    fd.gen_data(Tb=Tb, log=log, drop=True, restfrq=restfrq)
     rms = estimate_rms(fd.data, method)
-    x, y, _ = fd.get_grid(**kwargs)
+    grid = fd.get_grid(**kwargs)
     beam = fd.get_beam(dist=dist)
     bunit = fd.get_header('BUNIT')
-    return [fd.data, (x, y), beam, bunit, rms]
+    return [fd.data, grid, beam, bunit, rms]
+
     
 def data2fits(d: list = None, h: dict = {}, crpix: int = None,
               crval: int = None, cdelt: float = None, ctype: str = None,

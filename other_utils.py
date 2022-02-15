@@ -117,6 +117,30 @@ def estimate_rms(data: list, sigma: float or str) -> float:
     return noise
 
 
+def trim(x: list, y: list, xlim: list, ylim: list,
+         v: list = None, vlim: list = None, data: list = None) -> list:
+    d = np.squeeze(data)
+    i0 = np.argmin(np.abs(x - xlim[0]))
+    i1 = np.argmin(np.abs(x - xlim[1]))
+    i0, i1 = sorted([i0, i1])
+    xout = x[i0:i1+1]
+    j0 = np.argmin(np.abs(y - ylim[0]))
+    j1 = np.argmin(np.abs(y - ylim[1]))
+    j0, j1 = sorted([j0, j1])
+    yout = x[j0:j1+1]
+    if not (vlim is None):
+        k0 = np.argmin(np.abs(v - vlim[0]))
+        k1 = np.argmin(np.abs(v - vlim[1]))
+        k0, k1 = sorted([k0, k1])
+        vout = v if v is None else v[k0:k1+1]
+    if not (data is None):
+        if np.ndim(d := np.squeeze(data)) == 2:
+            dataout = d[j0:j1+1, i0:i1+1]
+        else:
+            dataout = d[k0:k1+1, j0:j1+1, i0:i1+1]
+    return [xout, yout, vout, dataout]        
+
+
 def shiftphase(F: list, u: list, v: list, dx: float, dy: float) -> list:
     """Shift the phase of 2D FFT by (dx, dy).
 
