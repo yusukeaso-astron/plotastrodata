@@ -127,7 +127,7 @@ def trim(x: list, y: list, xlim: list, ylim: list,
     j0 = np.argmin(np.abs(y - ylim[0]))
     j1 = np.argmin(np.abs(y - ylim[1]))
     j0, j1 = sorted([j0, j1])
-    yout = x[j0:j1+1]
+    yout = y[j0:j1+1]
     if not (v is None or vlim is None or vlim == [None, None]):
         k0 = np.argmin(np.abs(v - vlim[0]))
         k1 = np.argmin(np.abs(v - vlim[1]))

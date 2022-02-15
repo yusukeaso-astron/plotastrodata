@@ -3,7 +3,7 @@ from plotastrodata.plot_utils import plotastro2D, plotastro3D
 
 
 pa = plotastro2D(rmax=0.8, center='04h04m43.07s 26d18m56.20s')
-pa.add_color(fitsimage='test2D.fits', Tb=True, cblabel='Tb (K)')
+pa.add_color(fitsimage='test2D.fits', Tb=True, cblabel='Tb (K)', cmin=0)
 pa.add_contour(fitsimage='test2D_2.fits', colors='r', sigma=5e-3)
 pa.add_contour(fitsimage='test2D.fits', skip=2, sigma=5e-3)
 pa.add_vector(ampfits='test2Damp.fits', angfits='test2Dang.fits', skip=3)
