@@ -109,8 +109,9 @@ class plotastro2D():
         if not fitsimage is None:
             c, (x, y), (bmaj, bmin, bpa), bunit, rms \
                 = self.__readfits(fitsimage, Tb)
-        x, y, c = x[::skip], y[::skip], c[::skip, ::skip]
         c = np.array(c)
+        rms = estimate_rms(c, 'out')
+        x, y, c = x[::skip], y[::skip], c[::skip, ::skip]
         if log: c = np.log10(c.clip(c[c > 0].min(), None))
         if not (cmin is None):
             c = c.clip(np.log10(cmin), None) if log else c.clip(cmin, None)
@@ -152,6 +153,8 @@ class plotastro2D():
         if not fitsimage is None:
             c, (x, y), (bmaj, bmin, bpa), _, rms \
                 = self.__readfits(fitsimage, Tb, sigma)
+        c = np.array(c)
+        rms = estimate_rms(c, sigma)
         x, y, c = x[::skip], y[::skip], c[::skip, ::skip]
         self.ax.contour(x, y, c, np.array(levels) * rms,
                         **dict(kwargs0, **kwargs))
@@ -329,12 +332,11 @@ class plotastro3D():
                       method=method, **self.gridpar)
         return f
             
-    def __reform(self, c: list, skip: int = 1) -> list:
+    def __reform(self, c: list) -> list:
         if np.ndim(c) == 3:
-            d = c[::self.vskip, ::skip, ::skip]
+            d = c[::self.vskip]
         else:
-            d = c[::skip, ::skip]
-            d = np.full((self.nv, *np.shape(d)), d)
+            d = np.full((self.nv, *np.shape(c)), c)
         lennan = self.nchan - len(d)
         cnan = np.full((lennan, *np.shape(d[0])), d[0] * np.nan)
         d = np.concatenate((d, cnan), axis=0)
@@ -381,6 +383,7 @@ class plotastro3D():
             c, (x, y), (bmaj, bmin, bpa), bunit, rms \
                 = self.__readfits(fitsimage, Tb)
         c = np.array(c)
+        rms = estimate_rms(c, 'out')
         if log: c = np.log10(c.clip(c[c > 0].min(), None))
         if not (cmin is None):
             c = c.clip(np.log10(cmin), None) if log else c.clip(cmin, None)
@@ -390,8 +393,8 @@ class plotastro3D():
             c = c.clip(None, np.log10(cmax)) if log else c.clip(None, cmax)
         else:
             cmax = np.nanmax(c)
-        x, y = x[::skip], y[::skip]
-        c = self.__reform(c, skip)
+        x, y, c = x[::skip], y[::skip], c[::skip, ::skip]
+        c = self.__reform(c)
         for i, (axnow, cnow) in enumerate(zip(np.ravel(self.ax), c)):
             p = axnow.pcolormesh(x, y, cnow, shading='nearest',
                                  vmin=cmin, vmax=cmax,
@@ -431,8 +434,8 @@ class plotastro3D():
         c = np.array(c)
         if np.ndim(c) == 2 and sigma == 'edge': sigma = 'out'
         rms = estimate_rms(c, sigma)
-        x, y = x[::skip], y[::skip]
-        c = self.__reform(c, skip)
+        x, y, c = x[::skip], y[::skip], c[::skip, ::skip]
+        c = self.__reform(c)
         for axnow, cnow in zip(np.ravel(self.ax), c):
             axnow.contour(x, y, cnow, np.array(levels) * rms,
                           **dict(kwargs0, **kwargs))
@@ -456,7 +459,8 @@ class plotastro3D():
         if amp is None and not ang is None:
             amp = np.ones_like(ang)
         x, y = x[::skip], y[::skip]
-        amp, ang = self.__reform(amp, skip), self.__reform(ang, skip)
+        amp, ang = amp[::skip, ::skip], ang[::skip, ::skip]
+        amp, ang = self.__reform(amp), self.__reform(ang)
         u = ampfactor * amp * np.sin(np.radians(ang))
         v = ampfactor * amp * np.cos(np.radians(ang))
         kwargs0['scale'] = 1. / np.abs(x[1] - x[0])
