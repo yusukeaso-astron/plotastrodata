@@ -493,6 +493,18 @@ class plotastro3D():
                 x[i], y[i] = rel2abs(*p, self.xedge, self.yedge)
         return [x, y]
 
+    def __reform(self, c: list, skip: int = 1) -> list:
+        if np.ndim(c) == 3:
+            d = c[::self.vskip, ::skip, ::skip]
+        else:
+            d = c[::skip, ::skip]
+            d = np.full((self.nv, *np.shape(d)), d)
+        lennan = self.nchan - len(d)
+        cnan = np.full((lennan, *np.shape(d[0])), d[0] * np.nan)
+        d = np.concatenate((d, cnan), axis=0)
+        return d
+
+
     def add_ellipse(self, include_chan: list = None, poslist: list = [],
                     majlist: list = [], minlist: list = [],
                     palist: list = [], **kwargs) -> None:
@@ -536,7 +548,6 @@ class plotastro3D():
             bmaj, bmin, bpa = fd.get_beam(dist=self.gridpar['dist'])
             bunit = fd.get_header('BUNIT')
         c = np.array(c)
-        x, y = x[::skip], y[::skip]
         if not (cmin is None):
             c = c.clip(np.log10(cmin), None) if log else c.clip(cmin, None)
         else:
@@ -545,14 +556,8 @@ class plotastro3D():
             c = c.clip(None, np.log10(cmax)) if log else c.clip(None, cmax)
         else:
             cmax = np.nanmax(c)
-        if np.ndim(c) == 3:
-            c = c[::self.vskip, ::skip, ::skip]
-        else:
-            c = c[::skip, ::skip]
-            c = np.full((self.nv, *np.shape(c)), c)
-        lennan = self.nchan - len(c)
-        cnan = np.full((lennan, *np.shape(c[0])), c[0] * np.nan)
-        c = np.concatenate((c, cnan), axis=0)
+        x, y = x[::skip], y[::skip]
+        c = self.__reform(c, skip)
         for axnow, cnow in zip(np.ravel(self.ax), c):
             p = axnow.pcolormesh(x, y, cnow, shading='nearest',
                                  vmin=cmin, vmax=cmax,
@@ -580,22 +585,50 @@ class plotastro3D():
             c = fd.data
             bmaj, bmin, bpa = fd.get_beam(dist=self.gridpar['dist'])
         c = np.array(c)
+        if np.ndim(c) == 2 and sigma == 'edge': sigma = 'neg'
+        rms = find_rms(c, sigma)
         x, y = x[::skip], y[::skip]
-        if np.ndim(c) == 3:
-            rms = find_rms(c, sigma)
-            c = c[::self.vskip, ::skip, ::skip]
-        else:
-            rms = find_rms(c, 'neg' if sigma == 'edge' else sigma)
-            c = c[::skip, ::skip]
-            c = np.full((self.nv, *np.shape(c)), c)
-        lennan = self.nchan - len(c)
-        cnan = np.full((lennan, *np.shape(c[0])), c[0] * np.nan)
-        c = np.concatenate((c, cnan), axis=0)        
+        c = self.__reform(c, skip)
         for axnow, cnow in zip(np.ravel(self.ax), c):
             axnow.contour(x, y, cnow, np.array(levels) * rms,
                           **dict(kwargs0, **kwargs))
         if show_beam:
             self.add_beam(bmaj, bmin, bpa, beamcolor)
+            
+    def add_vector(self, ampfits: str = None, angfits: str = None,
+                     x: list = None, y: list = None, skip: int = 1,
+                     amp: list = None, ang: list = None,
+                     ampfactor: float = 1.,
+                     show_beam: bool = True, beamcolor: str = 'gray',
+                     bmaj: float = 0., bmin: float = 0., bpa: float = 0.,
+                     **kwargs) -> None:
+        kwargs0 = {'angles':'xy', 'scale_units':'xy', 'color':'gray',
+                   'pivot':'mid', 'headwidth':0, 'headlength':0,
+                   'headaxislength':0, 'width':0.007, 'zorder':3}
+        if not ampfits is None:
+            fd = FitsData(ampfits)
+            fd.gen_data(Tb=False, log=False)
+            x, y, _ = fd.get_grid(**self.gridpar)
+            amp = fd.data
+            bmaj, bmin, bpa = fd.get_beam(dist=self.gridpar['dist'])
+        if not angfits is None:
+            fd = FitsData(angfits)
+            fd.gen_data(Tb=False, log=False)
+            x, y, _ = fd.get_grid(**self.gridpar)
+            ang = fd.data
+            bmaj, bmin, bpa = fd.get_beam(dist=self.gridpar['dist'])
+        if amp is None and not ang is None:
+            amp = np.ones_like(ang)
+        x, y = x[::skip], y[::skip]
+        amp, ang = self.__reform(amp, skip), self.__reform(ang, skip)
+        u = ampfactor * amp * np.sin(np.radians(ang))
+        v = ampfactor * amp * np.cos(np.radians(ang))
+        kwargs0['scale'] = 1. / np.abs(x[1] - x[0])
+        for axnow, unow, vnow in zip(np.ravel(self.ax), u, v):
+            axnow.quiver(x, y, unow, vnow, **dict(kwargs0, **kwargs))
+        if show_beam:
+            self.add_beam(bmaj, bmin, bpa, beamcolor)
+
             
     def add_scalebar(self, length: float = 0, label: str = '',
                      color: str = 'gray', barpos: tuple = (0.75, 0.17),

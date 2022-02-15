@@ -22,6 +22,7 @@ pa = plotastro3D(rmax=0.8, center='04h04m43.07s 26d18m56.20s',
 pa.add_color(fitsimage='test3D.fits')
 pa.add_contour(fitsimage='test3D.fits', colors='r')
 pa.add_contour(fitsimage='test2D_2.fits', colors='b')
+pa.add_vector(ampfits='test2Damp.fits', angfits='test2Dang.fits', skip=3)
 pa.add_scalebar(length=50 / 140, label='50 au', color='k')
 pa.add_label([0,1,2], [[0.3, 0.3]], slist=['text'])
 pa.add_marker([3,4,5], [[0.7, 0.7]])
