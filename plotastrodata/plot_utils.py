@@ -142,7 +142,7 @@ class plotastro2D():
             
     def add_contour(self, fitsimage: str = None,
                      x: list = None, y: list = None, skip: int = 1,
-                     c: list = None, sigma: str or float = 'neg',
+                     c: list = None, sigma: str or float = 'out',
                      levels: list = [-12,-6,-3,3,6,12,24,48,96,192,384],
                      Tb: bool = False,
                      show_beam: bool = True, beamcolor: str = 'gray',
@@ -429,7 +429,7 @@ class plotastro3D():
             c, (x, y), (bmaj, bmin, bpa), _, rms \
                 = self.__readfits(fitsimage, Tb, sigma)
         c = np.array(c)
-        if np.ndim(c) == 2 and sigma == 'edge': sigma = 'neg'
+        if np.ndim(c) == 2 and sigma == 'edge': sigma = 'out'
         rms = estimate_rms(c, sigma)
         x, y = x[::skip], y[::skip]
         c = self.__reform(c, skip)
