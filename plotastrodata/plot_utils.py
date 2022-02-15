@@ -107,12 +107,13 @@ class plotastro2D():
                    bpa: float = 0., **kwargs) -> None:
         kwargs0 = {'cmap':'cubehelix', 'alpha':1, 'zorder':1}
         if not fitsimage is None:
-            c, (x, y, _), (bmaj, bmin, bpa), bunit, rms \
+            c, grid, (bmaj, bmin, bpa), bunit, rms \
                 = self.__readfits(fitsimage, Tb, 'out', restfrq)
         else:
-            rms = estimate_rms(c, 'out')
-            x, y, _, c = trim(x, y, self.xlim, self.ylim, data=c)
-        x, y, c = x[::skip], y[::skip], c[::skip, ::skip]
+            bunit, rms = '', estimate_rms(c, 'out')
+            grid, c = trim(x, y, self.xlim, self.ylim, data=c)
+        x, y = [g[::skip] for g in grid[:2]]
+        c = c[::skip, ::skip]
         if log: c = np.log10(c.clip(c[c > 0].min(), None))
         if not (cmin is None):
             c = c.clip(np.log10(cmin), None) if log else c.clip(cmin, None)
@@ -138,7 +139,6 @@ class plotastro2D():
             elif log:
                 cb.set_ticks(t := cb.get_ticks())
                 cb.set_ticklabels([f'{d:.1e}' for d in 10**t])
-
         if show_beam:
             self.add_beam(bmaj, bmin, bpa, beamcolor)
             
@@ -153,12 +153,13 @@ class plotastro2D():
                      **kwargs) -> None:
         kwargs0 = {'colors':'gray', 'linewidths':1.0, 'zorder':2}
         if not fitsimage is None:
-            c, (x, y, _), (bmaj, bmin, bpa), _, rms \
+            c, grid, (bmaj, bmin, bpa), _, rms \
                 = self.__readfits(fitsimage, Tb, sigma, restfrq)
         else:
             rms = estimate_rms(c, sigma)
-            x, y, _, c = trim(x, y, self.xlim, self.ylim, None, None, c)
-        x, y, c = x[::skip], y[::skip], c[::skip, ::skip]
+            grid, c = trim(x, y, self.xlim, self.ylim, None, None, c)
+        x, y = [g[::skip] for g in grid[:2]]
+        c = c[::skip, ::skip]
         self.ax.contour(x, y, c, np.array(levels) * rms,
                         **dict(kwargs0, **kwargs))
         if show_beam:
@@ -175,18 +176,18 @@ class plotastro2D():
                    'pivot':'mid', 'headwidth':0, 'headlength':0,
                    'headaxislength':0, 'width':0.007, 'zorder':3}
         if not ampfits is None:
-            amp, (x, y, _), (bmaj, bmin, bpa), _, _ \
+            amp, grid, (bmaj, bmin, bpa), _, _ \
                 = self.__readfits(ampfits)
         else:
-            x, y, _, amp = trim(x, y, self.xlim, self.ylim, data=amp)
+            grid, amp = trim(x, y, self.xlim, self.ylim, data=amp)
         if not angfits is None:
-            ang, (x, y, _), (bmaj, bmin, bpa), _, _ \
+            ang, grid, (bmaj, bmin, bpa), _, _ \
                 = self.__readfits(angfits)
         else:
-            x, y, _, ang = trim(x, y, self.xlim, self.ylim, data=ang)
+            grid, ang = trim(x, y, self.xlim, self.ylim, data=ang)
         if amp is None and not ang is None:
             amp = np.ones_like(ang)
-        x, y = x[::skip], y[::skip]
+        x, y = [g[::skip] for g in grid[:2]]
         amp, ang = amp[::skip, ::skip], ang[::skip, ::skip]
         u = ampfactor * amp * np.sin(np.radians(ang))
         v = ampfactor * amp * np.cos(np.radians(ang))
@@ -395,11 +396,11 @@ class plotastro3D():
                    bpa: float = 0., **kwargs) -> None:
         kwargs0 = {'cmap':'cubehelix', 'alpha':1, 'zorder':1}
         if not fitsimage is None:
-            c, (x, y, _), (bmaj, bmin, bpa), bunit, rms \
+            c, grid, (bmaj, bmin, bpa), bunit, rms \
                 = self.__readfits(fitsimage, Tb, 'out', restfrq)
         else:
             bunit, rms = '', estimate_rms(c, 'out')
-            x, y, _, c = trim(x, y, self.xlim, self.ylim, v, self.vlim, c)
+            grid, c = trim(x, y, self.xlim, self.ylim, v, self.vlim, c)
         if log: c = np.log10(c.clip(c[c > 0].min(), None))
         if not (cmin is None):
             c = c.clip(np.log10(cmin), None) if log else c.clip(cmin, None)
@@ -409,7 +410,7 @@ class plotastro3D():
             c = c.clip(None, np.log10(cmax)) if log else c.clip(None, cmax)
         else:
             cmax = np.nanmax(c)
-        x, y = x[::skip], y[::skip]
+        x, y = [g[::skip] for g in grid[:2]]
         c = self.__reform(c, skip)
         for i, (axnow, cnow) in enumerate(zip(np.ravel(self.ax), c)):
             p = axnow.pcolormesh(x, y, cnow, shading='nearest',
@@ -446,13 +447,13 @@ class plotastro3D():
                     **kwargs) -> None:
         kwargs0 = {'colors':'gray', 'linewidths':1.0, 'zorder':2}
         if not fitsimage is None:
-            c, (x, y, _), (bmaj, bmin, bpa), _, rms \
+            c, grid, (bmaj, bmin, bpa), _, rms \
                 = self.__readfits(fitsimage, Tb, sigma, restfrq)
         else:
             if np.ndim(c) == 2 and sigma == 'edge': sigma = 'out'
             rms = estimate_rms(c, sigma)
-            x, y, _, c = trim(x, y, self.xlim, self.ylim, v, self.vlim, c)
-        x, y = x[::skip], y[::skip]
+            grid, c = trim(x, y, self.xlim, self.ylim, v, self.vlim, c)
+        x, y = [g[::skip] for g in grid[:2]]
         c = self.__reform(c, skip)
         for axnow, cnow in zip(np.ravel(self.ax), c):
             axnow.contour(x, y, cnow, np.array(levels) * rms,
@@ -471,20 +472,20 @@ class plotastro3D():
                    'pivot':'mid', 'headwidth':0, 'headlength':0,
                    'headaxislength':0, 'width':0.007, 'zorder':3}
         if not ampfits is None:
-            amp, (x, y, _), (bmaj, bmin, bpa), _, _ \
+            amp, grid, (bmaj, bmin, bpa), _, _ \
                 = self.__readfits(ampfits)
         else:
-            x, y, _, amp = trim(x, y, self.xlim, self.ylim,
+            grid, amp = trim(x, y, self.xlim, self.ylim,
                                 v, self.vlim, amp)
         if not angfits is None:
-            ang, (x, y, _), (bmaj, bmin, bpa), _, _ \
+            ang, grid, (bmaj, bmin, bpa), _, _ \
                 = self.__readfits(angfits)
         else:
-            x, y, _, ang = trim(x, y, self.xlim, self.ylim,
+            grid, ang = trim(x, y, self.xlim, self.ylim,
                                 v, self.vlim, ang)
         if amp is None and not ang is None:
             amp = np.ones_like(ang)
-        x, y = x[::skip], y[::skip]
+        x, y = [g[::skip] for g in grid[:2]]
         amp, ang = self.__reform(amp, skip), self.__reform(ang, skip)
         u = ampfactor * amp * np.sin(np.radians(ang))
         v = ampfactor * amp * np.cos(np.radians(ang))

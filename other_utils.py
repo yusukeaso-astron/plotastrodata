@@ -139,7 +139,7 @@ def trim(x: list, y: list, xlim: list, ylim: list,
             dataout = d[j0:j1+1, i0:i1+1]
         else:
             dataout = d[k0:k1+1, j0:j1+1, i0:i1+1]
-    return [xout, yout, vout, dataout]        
+    return [[xout, yout, vout], dataout]        
 
 
 def shiftphase(F: list, u: list, v: list, dx: float, dy: float) -> list:

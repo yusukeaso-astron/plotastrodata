@@ -130,7 +130,7 @@ class FitsData:
                 else:
                     print('Please input restfrq.')
         if not hasattr(self, 'data'): self.data = None
-        self.x, self.y, self.v, self.data \
+        (self.x, self.y, self.v), self.data \
             = trim(self.x, self.y,
                    [xoff - rmax, xoff + rmax],
                    [yoff - rmax, yoff + rmax],
