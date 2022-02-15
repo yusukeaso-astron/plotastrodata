@@ -150,11 +150,11 @@ class FitsData:
 
 
 def fits2data(fitsimage: str, Tb: bool = False, log: bool = False,
-              dist: float = 1., method: str = 'out',
+              dist: float = 1., method: str = None,
               restfrq: float = None, **kwargs) -> list:
     fd = FitsData(fitsimage)
     fd.gen_data(Tb=Tb, log=log, drop=True, restfrq=restfrq)
-    rms = estimate_rms(fd.data, method)
+    rms = None if method is None else estimate_rms(fd.data, method)
     grid = fd.get_grid(**kwargs)
     beam = fd.get_beam(dist=dist)
     bunit = fd.get_header('BUNIT')

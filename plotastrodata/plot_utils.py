@@ -70,7 +70,7 @@ class plotastro2D():
         return pos2xy(self.gridpar['center'], self.xlim, self.ylim, pos)
     
     def __readfits(self, fitsimage: str, Tb: bool = False,
-                   method: str = 'out', restfrq: float = None) -> list:
+                   method: str = None, restfrq: float = None) -> list:
         f = fits2data(fitsimage=fitsimage, Tb=Tb, log=False,
                       method=method, restfrq=restfrq, **self.gridpar)
         return f
@@ -340,7 +340,7 @@ class plotastro3D():
         return pos2xy(self.gridpar['center'], self.xlim, self.ylim, pos)
 
     def __readfits(self, fitsimage: str, Tb: bool = False,
-                   method: str = 'out', restfrq: float = None) -> list:
+                   method: str = None, restfrq: float = None) -> list:
         f = fits2data(fitsimage=fitsimage, Tb=Tb, log=False,
                       method=method, restfrq=restfrq, **self.gridpar)
         return f

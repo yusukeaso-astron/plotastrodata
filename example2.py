@@ -16,7 +16,7 @@ pa.add_ellipse([[0.2, 0.8]], majlist=[0.4], minlist=[0.2], palist=[45])
 pa.set_axis()
 pa.savefig()
 pa.show()
-'''
+
 pa = plotastro3D(rmax=0.8, center='04h04m43.07s 26d18m56.20s',
                  fitsimage='test3D.fits', vmin=-5, vmax=5, vskip=2)
 pa.add_color(fitsimage='test3D.fits', log=True)
@@ -32,4 +32,3 @@ pa.add_ellipse([12,13,14], [[0.2, 0.8]], majlist=[0.4], minlist=[0.2], palist=[4
 pa.set_axis(xticks=[-0.8,-0.4,0,0.4,0.8], yticks=[-0.8,-0.4,0,0.4,0.8])
 pa.savefig()
 pa.show()
-'''
