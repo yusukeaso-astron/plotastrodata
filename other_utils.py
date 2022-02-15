@@ -79,6 +79,44 @@ def rel2abs(xrel: float, yrel: float, x: list, y: list) -> list:
     return np.array([a, b])
 
 
+def estimate_rms(data: list, sigma: float or str) -> float:
+    """Estimate a noise level of a N-D array.
+
+    Args:
+        data (list): N-D array.
+        sigma (float or str): One of the following methods.
+                              When a float number is given,
+                              this function just outputs it.
+        methods --- 'edge': use data[0] and data[-1].
+                    'neg': use only negative values.
+                    'med': use the median of data^2.
+                    'iter': exclude outliers.
+                    'out': exclude inner 60% about axes=-2 and -1.
+
+    Returns:
+        float: the estimated room mean square of noise.
+    """
+    nums = [float, int, np.float64, np.int64, np.float32, np.int32]
+    if type(sigma) in nums: noise = sigma
+    elif sigma == 'edge': noise = np.nanstd(data[::len(data) - 1])
+    elif sigma == 'neg': noise = np.sqrt(np.nanmean(data[data < 0]**2))
+    elif sigma == 'med': noise = np.sqrt(np.nanmedian(data**2) / 0.454936)
+    elif sigma == 'iter':
+        n = data.copy()
+        for _ in range(20):
+            ave, sig = np.nanmean(n), np.nanstd(n)
+            n = n - ave
+            n = n[np.abs(n) < 3.5 * sig]
+        noise = np.nanstd(n)
+    elif sigma == 'out':
+        n, n0, n1 = data.copy(), len(data), len(data[0])
+        n = np.moveaxis(n, [-2, -1], [0, 1])
+        n[n0//5 : n0*4//5, n1//5 : n1*4//5] = np.nan
+        noise = np.nanstd(n)
+    print(f'sigma = {noise:.2e}')
+    return noise
+
+
 def shiftphase(F: list, u: list, v: list, dx: float, dy: float) -> list:
     """Shift the phase of 2D FFT by (dx, dy).
 

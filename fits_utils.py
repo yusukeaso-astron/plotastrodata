@@ -2,7 +2,7 @@ import numpy as np
 from astropy.io import fits
 from astropy import constants, units, wcs
 
-from other_utils import coord2xy
+from other_utils import coord2xy, estimate_rms
 
 
 
@@ -160,14 +160,15 @@ class FitsData:
             return [self.x, self.y, None]
 
 def fits2data(fitsimage: str, Tb: bool = False, log: bool = False,
-              dist: float = 1., **kwargs) -> list:
+              dist: float = 1., method: str = 'out',
+              **kwargs) -> list:
     fd = FitsData(fitsimage)
     fd.gen_data(Tb=Tb, log=log)
     x, y, _ = fd.get_grid(**kwargs)
-    c = fd.data
-    bmaj, bmin, bpa = fd.get_beam(dist=dist)
+    rms = estimate_rms(fd.data, method)
+    beam = fd.get_beam(dist=dist)
     bunit = fd.get_header('BUNIT')
-    return [c, (x, y), (bmaj, bmin, bpa), bunit]
+    return [fd.data, (x, y), beam, bunit, rms]
     
 def data2fits(d: list = None, h: dict = {}, crpix: int = None,
               crval: int = None, cdelt: float = None, ctype: str = None,

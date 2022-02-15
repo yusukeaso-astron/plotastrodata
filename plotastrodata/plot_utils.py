@@ -3,30 +3,9 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
 
-from other_utils import coord2xy, rel2abs
+from other_utils import coord2xy, rel2abs, estimate_rms
 from fits_utils import FitsData, fits2data
 
-
-
-def estimate_rms(data: list, sigma: float or str) -> float:
-    nums = [float, int, np.float64, np.int64, np.float32, np.int32]
-    if type(sigma) in nums: noise = sigma
-    elif sigma == 'edge': noise = np.nanstd(data[::len(data) - 1])
-    elif sigma == 'neg': noise = np.sqrt(np.nanmean(data[data < 0]**2))
-    elif sigma == 'med': noise = np.sqrt(np.nanmedian(data**2) / 0.454936)
-    elif sigma == 'iter':
-        n = data.copy()
-        for _ in range(20):
-            ave, sig = np.nanmean(n), np.nanstd(n)
-            n = n - ave
-            n = n[np.abs(n) < 3.5 * sig]
-        noise = np.nanstd(n)
-    elif sigma == 'out':
-        n, n0, n1 = data.copy(), len(data), len(data[0])
-        n[n0//5 : n0*4//5, n1//5 : n1*4//5] = np.nan
-        noise = np.nanstd(n)
-    print(f'sigma = {noise:.2e}')
-    return noise
 
 
 def pos2xy(center: str, xedge: list, yedge: list,
@@ -90,8 +69,10 @@ class plotastro2D():
     def __pos2xy(self, pos: list = []) -> list:
         return pos2xy(self.gridpar['center'], self.xedge, self.yedge, pos)
     
-    def __readfits(self, fitsimage: str, Tb: bool = False) -> list:
-        f = fits2data(fitsimage=fitsimage, Tb=Tb, log=False, **self.gridpar)
+    def __readfits(self, fitsimage: str, Tb: bool = False,
+                   method: str = 'out') -> list:
+        f = fits2data(fitsimage=fitsimage, Tb=Tb, log=False,
+                      method=method, **self.gridpar)
         return f
 
     
@@ -107,7 +88,7 @@ class plotastro2D():
                         **dict(kwargs0, **kwargs))
             self.ax.add_patch(e)
 
-    def add_beam(self, bmaj, bmin, bpa, beamcolor) -> None:                
+    def add_beam(self, bmaj, bmin, bpa, beamcolor) -> None:
         bpos = max(0.7 * bmaj / self.gridpar['rmax'], 0.075)
         self.add_ellipse(poslist=[[bpos, bpos]],
                          majlist=[bmaj], minlist=[bmin], palist=[bpa],
@@ -126,10 +107,10 @@ class plotastro2D():
                    bpa: float = 0., **kwargs) -> None:
         kwargs0 = {'cmap':'cubehelix', 'alpha':1, 'zorder':1}
         if not fitsimage is None:
-            c, (x, y), (bmaj, bmin, bpa), bunit = self.__readfits(fitsimage, Tb)
+            c, (x, y), (bmaj, bmin, bpa), bunit, rms \
+                = self.__readfits(fitsimage, Tb)
         x, y, c = x[::skip], y[::skip], c[::skip, ::skip]
         c = np.array(c)
-        rms = estimate_rms(c, 'neg')
         if log: c = np.log10(c.clip(c[c > 0].min(), None))
         if not (cmin is None):
             c = c.clip(np.log10(cmin), None) if log else c.clip(cmin, None)
@@ -169,8 +150,8 @@ class plotastro2D():
                      **kwargs) -> None:
         kwargs0 = {'colors':'gray', 'linewidths':1.0, 'zorder':2}
         if not fitsimage is None:
-            c, (x, y), (bmaj, bmin, bpa), _ = self.__readfits(fitsimage, Tb)
-        rms = estimate_rms(c, sigma),
+            c, (x, y), (bmaj, bmin, bpa), _, rms \
+                = self.__readfits(fitsimage, Tb, sigma)
         x, y, c = x[::skip], y[::skip], c[::skip, ::skip]
         self.ax.contour(x, y, c, np.array(levels) * rms,
                         **dict(kwargs0, **kwargs))
@@ -188,9 +169,9 @@ class plotastro2D():
                    'pivot':'mid', 'headwidth':0, 'headlength':0,
                    'headaxislength':0, 'width':0.007, 'zorder':3}
         if not ampfits is None:
-            amp, (x, y), (bmaj, bmin, bpa), _ = self.__readfits(ampfits)
+            amp, (x, y), (bmaj, bmin, bpa), _, _ = self.__readfits(ampfits)
         if not angfits is None:
-            ang, (x, y), (bmaj, bmin, bpa), _ = self.__readfits(angfits)
+            ang, (x, y), (bmaj, bmin, bpa), _, _ = self.__readfits(angfits)
         if amp is None and not ang is None:
             amp = np.ones_like(ang)
         x, y = x[::skip], y[::skip]
@@ -342,8 +323,10 @@ class plotastro3D():
     def __pos2xy(self, pos: list = []) -> list:
         return pos2xy(self.gridpar['center'], self.xedge, self.yedge, pos)
 
-    def __readfits(self, fitsimage: str, Tb: bool = False) -> list:
-        f = fits2data(fitsimage=fitsimage, Tb=Tb, log=False, **self.gridpar)
+    def __readfits(self, fitsimage: str, Tb: bool = False,
+                   method: str = 'out') -> list:
+        f = fits2data(fitsimage=fitsimage, Tb=Tb, log=False,
+                      method=method, **self.gridpar)
         return f
             
     def __reform(self, c: list, skip: int = 1) -> list:
@@ -375,7 +358,7 @@ class plotastro3D():
                             **dict(kwargs0, **kwargs))
                 axnow.add_patch(e)
 
-    def add_beam(self, bmaj, bmin, bpa, beamcolor) -> None:                
+    def add_beam(self, bmaj, bmin, bpa, beamcolor) -> None:
         bpos = max(0.7 * bmaj / self.gridpar['rmax'], 0.075)
         self.add_ellipse(include_chan=self.bottomleft,
                          poslist=[[bpos, bpos]],
@@ -395,9 +378,9 @@ class plotastro3D():
                    bpa: float = 0., **kwargs) -> None:
         kwargs0 = {'cmap':'cubehelix', 'alpha':1, 'zorder':1}
         if not fitsimage is None:
-            c, (x, y), (bmaj, bmin, bpa), bunit = self.__readfits(fitsimage, Tb)
+            c, (x, y), (bmaj, bmin, bpa), bunit, rms \
+                = self.__readfits(fitsimage, Tb)
         c = np.array(c)
-        rms = estimate_rms(c, 'edge')
         if log: c = np.log10(c.clip(c[c > 0].min(), None))
         if not (cmin is None):
             c = c.clip(np.log10(cmin), None) if log else c.clip(cmin, None)
@@ -443,7 +426,8 @@ class plotastro3D():
                     **kwargs) -> None:
         kwargs0 = {'colors':'gray', 'linewidths':1.0, 'zorder':2}
         if not fitsimage is None:
-            c, (x, y), (bmaj, bmin, bpa), _ = self.__readfits(fitsimage, Tb)
+            c, (x, y), (bmaj, bmin, bpa), _, rms \
+                = self.__readfits(fitsimage, Tb, sigma)
         c = np.array(c)
         if np.ndim(c) == 2 and sigma == 'edge': sigma = 'neg'
         rms = estimate_rms(c, sigma)
@@ -466,9 +450,9 @@ class plotastro3D():
                    'pivot':'mid', 'headwidth':0, 'headlength':0,
                    'headaxislength':0, 'width':0.007, 'zorder':3}
         if not ampfits is None:
-            amp, (x, y), (bmaj, bmin, bpa), _ = self.__readfits(ampfits)
+            amp, (x, y), bmaj, bmin, bpa, _, _ = self.__readfits(ampfits)
         if not angfits is None:
-            ang, (x, y), (bmaj, bmin, bpa), _ = self.__readfits(angfits)
+            ang, (x, y), bmaj, bmin, bpa, _, _ = self.__readfits(angfits)
         if amp is None and not ang is None:
             amp = np.ones_like(ang)
         x, y = x[::skip], y[::skip]
