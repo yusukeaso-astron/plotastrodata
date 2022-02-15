@@ -164,8 +164,8 @@ def fits2data(fitsimage: str, Tb: bool = False, log: bool = False,
               **kwargs) -> list:
     fd = FitsData(fitsimage)
     fd.gen_data(Tb=Tb, log=log)
-    x, y, _ = fd.get_grid(**kwargs)
     rms = estimate_rms(fd.data, method)
+    x, y, _ = fd.get_grid(**kwargs)
     beam = fd.get_beam(dist=dist)
     bunit = fd.get_header('BUNIT')
     return [fd.data, (x, y), beam, bunit, rms]
