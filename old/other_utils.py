@@ -2,9 +2,29 @@ from astropy.coordinates import SkyCoord
 import numpy as np
 
 
+def listing(*args) -> list:
+    """Output a list of the inputs.
+    
+    Returns:
+        list: A list or ndarray is appended as it is.
+              The empy text '' is appended as the empty list [].
+              Any other is appeded as a list of itself, like ['a'].
+              With a single non-list input,
+              the output is a list like ['a'], rather than [['a']].
+              With a single list input, the output is the input itself.
+    """
+    one = (len(args) == 1)
+    b = []
+    for a in args:
+        if not (type(a) in [list, np.ndarray]):
+            a = [] if a == '' else [a]
+        b.append(a)
+    if one: b = b[0]
+    return b
+
 
 def coord2xy(coords: str, frame: str = 'icrs') -> list:
-    """Transform R.A.-Dec. to (arcsec, arcsec).
+    """Transform R.A.-Dec. to (degree, degree).
 
     Args:
         coords (str): something like '01h23m45.6s 01d23m45.6s'
@@ -12,21 +32,23 @@ def coord2xy(coords: str, frame: str = 'icrs') -> list:
         frame (str): coordinate frame. Defaults to 'icrs'.
 
     Returns:
-        ndarray: [(array of) alphas, (array of) deltas] in degree.
+        ndarray: [alphas, deltas] in degree.
                  The shape of alphas and deltas is the input shape.
                  With a single input, the output is [alpha0, delta0].
     """
-    clist = np.ravel(coords)
-    cx = [None] * len(clist)
-    cy = [None] * len(clist)
-    for i, c in enumerate(clist):
-        c = SkyCoord(c, frame=frame)
-        cx[i] = c.ra.degree
-        cy[i] = c.dec.degree
-    one = (type(coords) is str)
-    shape = np.shape(coords)
-    cx = cx[0] if one else np.reshape(cx, shape)
-    cy = cy[0] if one else np.reshape(cy, shape)
+    one = True if type(coords) is str else False
+    sh = np.shape(coords)
+    coords = listing(np.ravel(coords))
+    cx, cy = [], []
+    if len(coords) > 0:
+        for c in coords:
+            c = SkyCoord(c, frame=frame)
+            cx.append(c.ra.degree)
+            cy.append(c.dec.degree)
+    if one:
+        cx, cy = cx[0], cy[0]
+    else:
+        cx, cy = np.reshape(cx, sh), np.reshape(cy, sh)
     return np.array([cx, cy])
 
 
@@ -34,14 +56,19 @@ def xy2coord(xy: list) -> str:
     """Transform (degree, degree) to R.A.-Dec.
 
     Args:
-        xy (list): [(array of) alphas, (array of) deltas] in degree.
+        xy (list): list of [alphas, deltas] in degree.
                    alphas and deltas can have an arbitrary shape.
 
     Returns:
         str: something like '01h23m45.6s 01d23m45.6s'.
              With multiple inputs, the output has the input shape.
     """
-    if one: xy = [xy]
+    one = True if np.shape(xy) == (2,) else False
+    sh = None
+    if one:
+        xy = [xy]
+    else:
+        sh = np.shape(xy[0])
     coords = []
     for c in xy:
         x, y = c[0] / 15., c[1]
@@ -54,9 +81,7 @@ def xy2coord(xy: list) -> str:
         ra  += f'{x:09.6f}s'
         dec += f'{y:09.6f}s'
         coords.append(ra + ' ' + dec)
-    shape = np.shape(xy[0])
-    one = (shape == (2,))
-    coords = coords[0] if one else np.reshape(coords, shape)
+    coords = coords[0] if one else np.reshape(coords, sh)
     return coords
 
 

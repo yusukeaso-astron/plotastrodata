@@ -1,9 +1,8 @@
-import subprocess, shlex
 import numpy as np
 from astropy.io import fits
 from astropy import constants, units, wcs
 
-from other_utils import listing, coord2xy
+from other_utils import coord2xy
 
 
 
@@ -37,112 +36,139 @@ class FitsData:
     def __init__(self, fitsimage: str):
         self.fitsimage = fitsimage
 
+    def gen_hdu(self):
+        self.hdu = fits.open(self.fitsimage)[0]
+        
     def gen_header(self) -> None:
-        self.header = fits.open(self.fitsimage)[0].header
+        if not hasattr(self, 'hdu'):
+            self.gen_hdu()
+        self.header = self.hdu.header
 
-    def gen_beam(self, ang: str = 'deg') -> None:
-        self.bmaj, self.bmin, self.bpa = 0, 0, 0
-        h = fits.open(self.fitsimage)[0].header
-        if np.all(np.isin(['BMAJ', 'BMIN', 'BPA'], list(h.keys()))):
-            if ang == 'arcsec':
-                u = 3600.
-            elif ang in ['rad', 'radian']:
-                u = np.radians(1.)
-            else:
-                u = 1
-            self.bmaj = h['BMAJ'] * u
-            self.bmin = h['BMIN'] * u
-            self.bpa = h['BPA']
+    def get_header(self, key: str = None) -> int or float:
+        if not hasattr(self, 'header'):
+            self.gen_header()
+        if key is None:
+            return self.header
+        if key in self.header:
+            return self.header[key]
+        print(f'{key} is not in the header.')
+        return None
+
+    def gen_beam(self, dist: float = 1.) -> None:
+        bmaj = self.get_header('BMAJ')
+        bmin = self.get_header('BMIN')
+        bpa = self.get_header('BPA')
+        bmaj = 0 if bmaj is None else bmaj * 3600.
+        bmin = 0 if bmin is None else bmin * 3600.
+        bpa = 0 if bpa is None else bpa
+        self.bmaj, self.bmin, self.bpa = bmaj * dist, bmin * dist, bpa
+
+    def get_beam(self, dist: float = 1.) -> list:
+        if not hasattr(self, 'bmaj'):
+            self.gen_beam(dist)
+        return [self.bmaj, self.bmin, self.bpa]
 
     def gen_data(self, Tb: bool = False, log: bool = False,
-                 drop: bool = False) -> None:
-        self.data = []
-        c = fits.open(self.fitsimage)[0]
-        h, d = c.header, c.data
+                 drop: bool = True) -> None:
+        self.data = None
+        if not hasattr(self, 'hdu'):
+            self.gen_hdu()
+        h, d = self.hdu.header, self.hdu.data
         if drop == True: d = np.squeeze(d)
         if Tb == True: d *= Jy2K(header=h)
         if log == True: d = np.log10(d.clip(np.min(d[d > 0]), None))
         self.data = d
+        
+    def get_data(self, Tb: bool = False, log: bool = False,
+                 drop: bool = True) -> list:
+        if not hasattr(self, 'data'):
+            self.gen_data(Tb=Tb, log=log, drop=drop)
+        return self.data
 
-    def gen_grid(self, axes: tuple = (0, 1, 2),
-                 ang: str = 'deg', vel: str = 'km/s',
-                 restfrq: float = 0, center: str = '',
-                 vsys: float = 0) -> None:
-        if not hasattr(self, 'header'): self.gen_header()
+    def gen_grid(self, center: str = None, rmax: float = 1e10,
+                 xoff: float = 0., yoff: float = 0., dist: float = 1.,
+                 restfrq: float = None, vsys: float = 0.,
+                 vmin: float = -1e10, vmax: float = 1e10) -> None:
+        if not hasattr(self, 'header'):
+            self.gen_header()
         h = self.header
-        self.x, self.y, self.v = [], [], []
+        if not center is None:
+            cx, cy = coord2xy(center)
+        else:
+            cx, cy = h['CRVAL1'], h['CRVAL2']
+        self.x, self.y, self.v = None, None, None
         self.dx, self.dy, self.dv = None, None, None
-        g = []
-        for i in [0, 1]:
-            if i in axes:
-                i = str(i + 1)
-                s = np.arange(h['NAXIS' + i])
-                if ang in ['abspix', 'abspixel']: g.append(s)
-                s = (s - h['CRPIX'+i]+1) * h['CDELT'+i] + h['CRVAL'+i]
-                if ang in ['deg','degree','absdeg','absdegree']: g.append(s)
-                if center != '':
-                    cx, cy = coord2xy(center)
-                    cntr = cx if i == '1' else cy
-                else:
-                    cntr = h['CRVAL' + i]
-                s -= cntr
-                if ang in ['reldeg', 'reldegree']: g.append(s)
-                if ang in ['pix', 'pixel', 'relpix', 'relpixel']:
-                    g.append(np.round(s / h['CDELT' + i]).astype(np.int64))
-                if ang in ['arcsec']: g.append(s * 3600.)
-                if i == '1':
-                    self.x = g[0]
-                    self.dx = g[0][1] - g[0][0]
-                else:
-                    self.y = g[1]
-                    self.dy = g[1][1] - g[1][0]
-        if 2 in axes and h['NAXIS'] > 2:
+        if h['NAXIS'] > 0:
+            if h['NAXIS1'] > 1:
+                s = np.arange(h['NAXIS1'])
+                s = (s-h['CRPIX1']+1) * h['CDELT1'] + h['CRVAL1'] - cx
+                s *= 3600. * dist
+                i0 = np.argmin(np.abs(s - (xoff - rmax)))
+                i1 = np.argmin(np.abs(s - (xoff + rmax)))
+                i0, i1 = sorted([i0, i1])
+                s = s[i0:i1 + 1]
+                self.x, self.dx = s, s[1] - s[0]
+                if hasattr(self, 'data'):
+                    if np.ndim(self.data) == 2:
+                        self.data = self.data[:, i0:i1 + 1]
+                    else:
+                        self.data = self.data[:, :, i0:i1 + 1]
+        if h['NAXIS'] > 1:
+            if h['NAXIS2'] > 1:
+                s = np.arange(h['NAXIS2'])
+                s = (s-h['CRPIX2']+1) * h['CDELT2'] + h['CRVAL2'] - cy
+                s *= 3600. * dist
+                i0 = np.argmin(np.abs(s - (yoff - rmax)))
+                i1 = np.argmin(np.abs(s - (yoff + rmax)))
+                i0, i1 = sorted([i0, i1])
+                s = s[i0:i1 + 1]
+                self.y, self.dy = s, s[1] - s[0]
+                if hasattr(self, 'data'):
+                    if np.ndim(self.data) == 2:
+                        self.data = self.data[i0:i1 + 1, :]
+                    else:
+                        self.data = self.data[:, i0:i1 + 1, :]
+        if h['NAXIS'] > 2:
             if h['NAXIS3'] > 1:
                 s = np.arange(h['NAXIS3'])
-                if vel in ['abspix', 'abspixel']: g.append(s)
                 s = (s-h['CRPIX3']+1) * h['CDELT3'] + h['CRVAL3']
-                if vel in ['Hz', 'absHz']: g.append(s)
                 freq = 0
                 if 'RESTFREQ' in h.keys(): freq = h['RESTFREQ']
                 if 'RESTFRQ' in h.keys(): freq = h['RESTFRQ']
-                if restfrq > 0: freq = restfrq
-                s -= freq
-                if vel in ['relHz']: g.append(s)
-                if vel in ['pix', 'pixel', 'relpix', 'relpixel']:
-                    g.append(np.round(s / h['CDELT3']).astype(np.int64))
+                if not restfrq is None: freq = restfrq
                 if freq > 0:
-                    s = -s / freq * constants.c.to('m/s').value
-                    if vel in ['m/s', 'M/S']: g.append(s)
-                    s = s / 1e3
-                    if vel in ['km/s', 'KM/S']: g.append(s)
-                self.v = g[2] - vsys
-                self.dv = g[2][1] - g[2][0]
+                    s = (freq-s) / freq
+                    s = s * constants.c.to('km*s**(-1)').value - vsys
+                    i0 = np.argmin(np.abs(s - vmin))
+                    i1 = np.argmin(np.abs(s - vmax))
+                    i0, i1 = sorted([i0, i1])
+                    s = s[i0:i1 + 1]
+                    self.v, self.dv = s, s[1] - s[0]
+                if hasattr(self, 'data'):
+                    self.data = self.data[i0:i1 + 1, :, :]
+                    
+    def get_grid(self, center: str = None, rmax: float = 1e10,
+                 xoff: float = 0., yoff: float = 0., dist: float = 1.,
+                 restfrq: float = None, vsys: float = 0.,
+                 vmin: float = -1e10, vmax: float = 1e10) -> None:
+        if not hasattr(self, 'x') or not hasattr(self, 'y'):
+            self.gen_grid(center, rmax, xoff, yoff, dist,
+                          restfrq, vsys, vmin, vmax)
+        if hasattr(self, 'v'):
+            return [self.x, self.y, self.v]
+        else:
+            return [self.x, self.y, None]
 
-
-def fits2data(fitsimage: str, Tb: bool = False, center: str = '') -> list:
-    fitsimage = listing(fitsimage)
-    d, x, b = [], [], []
-    for f in fitsimage:
-        a = FitsData(f)
-        a.gen_data(Tb=Tb, drop=True)
-        d.append(a.data)
-        a.gen_grid(ang='arcsec', vel='km/s', center=center)
-        x.append([a.x, a.y, a.v])  # arcsec, arcsec, km/s
-        a.gen_beam(ang='arcsec')
-        b.append([a.bmaj, a.bmin, a.bpa])  # arcsec, arcsec, deg
-    return [d, x, b]
-
-
-def read_bunit(fitsimage: str = '', bunit: str = 'bunit'):
-    fitsimage, bunit = listing(fitsimage, bunit)
-    a = []
-    for f, b in zip(fitsimage, bunit):
-        h = fits.open(f)[0].header
-        if 'BUNIT' in h.keys() and b is None: b = h['BUNIT']
-        a.append(b)         
-    return a
-
-
+def fits2data(fitsimage: str, Tb: bool = False, log: bool = False,
+              dist: float = 1., **kwargs) -> list:
+    fd = FitsData(fitsimage)
+    fd.gen_data(Tb=Tb, log=log)
+    x, y, _ = fd.get_grid(**kwargs)
+    c = fd.data
+    bmaj, bmin, bpa = fd.get_beam(dist=dist)
+    bunit = fd.get_header('BUNIT')
+    return [c, (x, y), (bmaj, bmin, bpa), bunit]
+    
 def data2fits(d: list = None, h: dict = {}, crpix: int = None,
               crval: int = None, cdelt: float = None, ctype: str = None,
               fitsname: str = 'test', foraplpy: bool = False):
@@ -176,14 +202,16 @@ def data2fits(d: list = None, h: dict = {}, crpix: int = None,
     hdu = fits.HDUList([hdu])
     hdu.writeto(fitsname.replace('.fits', '') + '.fits', overwrite=True)
 
+'''
+import subprocess, shlex
 
 def hdu4aplpy(fitslist: list, data: list) -> list:
-    fitslist = listing(fitslist)
-    c = []
-    for n, d in zip(fitslist, data):
+    if type(fitslist) is str: fitslist = [fitslist] 
+    c = [None] * len(fitslist)
+    for i, (n, d) in enumerate(zip(fitslist, data)):
         h = fits.open(n)[0].header
         data2fits(d=d, h=h, foraplpy=True, fitsname='hdu4aplpy')
-        c.append(fits.open('hdu4aplpy.fits')[0])
+        c[i] = fits.open('hdu4aplpy.fits')[0]
         subprocess.run(shlex.split('rm hdu4aplpy.fits'))
     return c
-
+'''

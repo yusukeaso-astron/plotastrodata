@@ -1,168 +1,14 @@
-from re import I
 import numpy as np
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
-from astropy.io import fits
-from astropy import constants, units, wcs
 
 from other_utils import coord2xy, rel2abs
+from fits_utils import FitsData, fits2data
 
 
-def Jy2K(header = None, bmaj: float = None, bmin: float = None,
-         freq: float = None) -> float:
-    """Calculate a conversion factor in the unit of K/Jy.
 
-    Args:
-        header (optional): astropy.io.fits.open('a.fits')[0].header
-                           Defaults to None.
-        bmaj (float, optional): beam major axis in degree. Defaults to None.
-        bmin (float, optional): beam minor axis in degree. Defaults to None.
-        freq (float, optional): rest frequency in Hz. Defaults to None.
-
-    Returns:
-        float: the conversion factor in the unit of K/Jy.
-    """
-    if not header is None:
-        bmaj, bmin = header['BMAJ'], header['BMIN']
-        if 'RESTFREQ' in header.keys(): freq = header['RESTFREQ']
-        if 'RESTFRQ' in header.keys(): freq = header['RESTFRQ']
-    omega = bmaj * bmin * np.radians(1)**2 * np.pi / 4. * np.log(2.)
-    lam = constants.c.to('m/s').value / freq
-    a = units.Jy.to('J*s**(-1)*m**(-2)*Hz**(-1)') \
-        * lam**2 / 2. / constants.k_B.to('J/K').value / omega
-    return a
-
-
-class FitsData:
-    """For practical treatment of data in a FITS file."""
-    def __init__(self, fitsimage: str):
-        self.fitsimage = fitsimage
-
-    def gen_hdu(self):
-        self.hdu = fits.open(self.fitsimage)[0]
-        
-    def gen_header(self) -> None:
-        if not hasattr(self, 'hdu'):
-            self.gen_hdu()
-        self.header = self.hdu.header
-
-    def get_header(self, key: str = None) -> int or float:
-        if not hasattr(self, 'header'):
-            self.gen_header()
-        if key is None:
-            return self.header
-        if key in self.header:
-            return self.header[key]
-        print(f'{key} is not in the header.')
-        return None
-
-    def gen_beam(self, dist: float = 1.) -> None:
-        bmaj = self.get_header('BMAJ')
-        bmin = self.get_header('BMIN')
-        bpa = self.get_header('BPA')
-        bmaj = 0 if bmaj is None else bmaj * 3600.
-        bmin = 0 if bmin is None else bmin * 3600.
-        bpa = 0 if bpa is None else bpa
-        self.bmaj, self.bmin, self.bpa = bmaj * dist, bmin * dist, bpa
-
-    def get_beam(self, dist: float = 1.) -> list:
-        if not hasattr(self, 'bmaj'):
-            self.gen_beam(dist)
-        return [self.bmaj, self.bmin, self.bpa]
-
-    def gen_data(self, Tb: bool = False, log: bool = False,
-                 drop: bool = True) -> None:
-        self.data = None
-        if not hasattr(self, 'hdu'):
-            self.gen_hdu()
-        h, d = self.hdu.header, self.hdu.data
-        if drop == True: d = np.squeeze(d)
-        if Tb == True: d *= Jy2K(header=h)
-        if log == True: d = np.log10(d.clip(np.min(d[d > 0]), None))
-        self.data = d
-        
-    def get_data(self, Tb: bool = False, log: bool = False,
-                 drop: bool = True) -> list:
-        if not hasattr(self, 'data'):
-            self.gen_data(Tb=Tb, log=log, drop=drop)
-        return self.data
-
-    def gen_grid(self, center: str = None, rmax: float = 1e10,
-                 xoff: float = 0., yoff: float = 0., dist: float = 1.,
-                 restfrq: float = None, vsys: float = 0.,
-                 vmin: float = -1e10, vmax: float = 1e10) -> None:
-        if not hasattr(self, 'header'):
-            self.gen_header()
-        h = self.header
-        if not center is None:
-            cx, cy = coord2xy(center)
-        else:
-            cx, cy = h['CRVAL1'], h['CRVAL2']
-        self.x, self.y, self.v = None, None, None
-        self.dx, self.dy, self.dv = None, None, None
-        if h['NAXIS'] > 0:
-            if h['NAXIS1'] > 1:
-                s = np.arange(h['NAXIS1'])
-                s = (s-h['CRPIX1']+1) * h['CDELT1'] + h['CRVAL1'] - cx
-                s *= 3600. * dist
-                i0 = np.argmin(np.abs(s - (xoff - rmax)))
-                i1 = np.argmin(np.abs(s - (xoff + rmax)))
-                i0, i1 = sorted([i0, i1])
-                s = s[i0:i1 + 1]
-                self.x, self.dx = s, s[1] - s[0]
-                if hasattr(self, 'data'):
-                    if np.ndim(self.data) == 2:
-                        self.data = self.data[:, i0:i1 + 1]
-                    else:
-                        self.data = self.data[:, :, i0:i1 + 1]
-        if h['NAXIS'] > 1:
-            if h['NAXIS2'] > 1:
-                s = np.arange(h['NAXIS2'])
-                s = (s-h['CRPIX2']+1) * h['CDELT2'] + h['CRVAL2'] - cy
-                s *= 3600. * dist
-                i0 = np.argmin(np.abs(s - (yoff - rmax)))
-                i1 = np.argmin(np.abs(s - (yoff + rmax)))
-                i0, i1 = sorted([i0, i1])
-                s = s[i0:i1 + 1]
-                self.y, self.dy = s, s[1] - s[0]
-                if hasattr(self, 'data'):
-                    if np.ndim(self.data) == 2:
-                        self.data = self.data[i0:i1 + 1, :]
-                    else:
-                        self.data = self.data[:, i0:i1 + 1, :]
-        if h['NAXIS'] > 2:
-            if h['NAXIS3'] > 1:
-                s = np.arange(h['NAXIS3'])
-                s = (s-h['CRPIX3']+1) * h['CDELT3'] + h['CRVAL3']
-                freq = 0
-                if 'RESTFREQ' in h.keys(): freq = h['RESTFREQ']
-                if 'RESTFRQ' in h.keys(): freq = h['RESTFRQ']
-                if not restfrq is None: freq = restfrq
-                if freq > 0:
-                    s = (freq-s) / freq
-                    s = s * constants.c.to('km*s**(-1)').value - vsys
-                    i0 = np.argmin(np.abs(s - vmin))
-                    i1 = np.argmin(np.abs(s - vmax))
-                    i0, i1 = sorted([i0, i1])
-                    s = s[i0:i1 + 1]
-                    self.v, self.dv = s, s[1] - s[0]
-                if hasattr(self, 'data'):
-                    self.data = self.data[i0:i1 + 1, :, :]
-                    
-    def get_grid(self, center: str = None, rmax: float = 1e10,
-                 xoff: float = 0., yoff: float = 0., dist: float = 1.,
-                 restfrq: float = None, vsys: float = 0.,
-                 vmin: float = -1e10, vmax: float = 1e10) -> None:
-        if not hasattr(self, 'x') or not hasattr(self, 'y'):
-            self.gen_grid(center, rmax, xoff, yoff, dist,
-                          restfrq, vsys, vmin, vmax)
-        if hasattr(self, 'v'):
-            return [self.x, self.y, self.v]
-        else:
-            return [self.x, self.y, None]
-
-
-def find_rms(data, sigma):
+def estimate_rms(data: list, sigma: float or str) -> float:
     nums = [float, int, np.float64, np.int64, np.float32, np.int32]
     if type(sigma) in nums: noise = sigma
     elif sigma == 'edge': noise = np.nanstd(data[::len(data) - 1])
@@ -183,15 +29,25 @@ def find_rms(data, sigma):
     return noise
 
 
-def set_rcparams(fontsize=18, nancolor='w', direction='inout'):
+def pos2xy(center: str, xedge: list, yedge: list,
+           pos: list = []) -> list:
+    x, y = [None] * len(pos), [None] * len(pos)
+    for i, p in enumerate(pos):
+        if type(p) == str:
+            x[i], y[i] = (coord2xy(p) - coord2xy(center)) * 3600.
+        else:
+            x[i], y[i] = rel2abs(*p, xedge, yedge)
+    return [x, y]
+
+
+def set_rcparams(fontsize: int =18, nancolor: str ='w') -> None:
     #plt.rcParams['font.family'] = 'arial'
-    #plt.rcParams['figure.autolayout'] = True
     plt.rcParams['axes.facecolor'] = nancolor
     plt.rcParams['font.size'] = fontsize
     plt.rcParams['legend.fontsize'] = 15
     plt.rcParams['axes.linewidth'] = 1.5
-    plt.rcParams['xtick.direction'] = direction
-    plt.rcParams['ytick.direction'] = direction
+    plt.rcParams['xtick.direction'] = 'inout'
+    plt.rcParams['ytick.direction'] = 'inout'
     plt.rcParams['xtick.top'] = True
     plt.rcParams['ytick.right'] = True
     plt.rcParams['xtick.major.size'] = 8
@@ -215,7 +71,7 @@ class plotastro2D():
     like '01h23m45.6s 01d23m45.6s' or a list of relative x and y
     like [0.2, 0.3] (0 is left or bottom, 1 is right or top).
     Parameters for original methods in matplotlib.axes.Axes can be
-    used as kwargs; see kwargs0 for reference.
+    used as kwargs; see the default kwargs0 for reference.
     """
     def __init__(self, fig=None, ax=None,
                  center: str = None, rmax: float = 100, dist: float = 1.,
@@ -226,20 +82,18 @@ class plotastro2D():
         self.ax = self.fig.add_subplot(1, 1, 1) if ax is None else ax
         self.gridpar = {'center':center, 'rmax':rmax,
                         'dist':dist, 'xoff':xoff, 'yoff':yoff}
-        self.xflip = -1 if xflip else 1
-        self.yflip = -1 if yflip else 1
-        self.xedge = [xoff - self.xflip*rmax, xoff + self.xflip*rmax]
-        self.yedge = [yoff - self.yflip*rmax, yoff + self.yflip*rmax]
+        xdir, ydir = -1 if xflip else 1, -1 if yflip else 1
+        self.xdir = xdir
+        self.xedge = [xoff - xdir*rmax, xoff + xdir*rmax]
+        self.yedge = [yoff - ydir*rmax, yoff + ydir*rmax]
 
     def __pos2xy(self, pos: list = []) -> list:
-        x, y = [None] * len(pos), [None] * len(pos)
-        for i, p in enumerate(pos):
-            if type(p) == str:
-                x[i], y[i] = coord2xy(p) - coord2xy(self.gridpar['center'])
-            else:
-                x[i], y[i] = rel2abs(*p, self.xedge, self.yedge)
-        return [x, y]
-        
+        return pos2xy(self.gridpar['center'], self.xedge, self.yedge, pos)
+    
+    def __readfits(self, fitsimage: str, Tb: bool = False) -> list:
+        f = fits2data(fitsimage=fitsimage, Tb=Tb, log=False, **self.gridpar)
+        return f
+
     
     def add_ellipse(self, poslist: list = [],
                     majlist: list = [], minlist: list = [],
@@ -249,7 +103,7 @@ class plotastro2D():
         for x, y, width, height, angle \
             in zip(*self.__pos2xy(poslist), minlist, majlist, palist):
             e = Ellipse((x, y), width=width, height=height,
-                        angle=angle * self.xflip,
+                        angle=angle * self.xdir,
                         **dict(kwargs0, **kwargs))
             self.ax.add_patch(e)
 
@@ -265,29 +119,43 @@ class plotastro2D():
                    cmin: float = None, cmax: float = None,
                    Tb: bool = False, log: bool = False,
                    show_cbar: bool = True,
-                   clabel: str = None, cformat: float = '%.1e',
+                   cblabel: str = None, cbformat: float = '%.1e',
+                   cbticks: list = None, cbticklabels: list = None,
                    show_beam: bool = True, beamcolor: str = 'gray',
                    bmaj: float = 0., bmin: float = 0.,
                    bpa: float = 0., **kwargs) -> None:
         kwargs0 = {'cmap':'cubehelix', 'alpha':1, 'zorder':1}
         if not fitsimage is None:
-            fd = FitsData(fitsimage)
-            fd.gen_data(Tb=Tb, log=log)
-            x, y, _ = fd.get_grid(**self.gridpar)
-            c = fd.data
-            bmaj, bmin, bpa = fd.get_beam(dist=self.gridpar['dist'])
-            bunit = fd.get_header('BUNIT')
+            c, (x, y), (bmaj, bmin, bpa), bunit = self.__readfits(fitsimage, Tb)
         x, y, c = x[::skip], y[::skip], c[::skip, ::skip]
         c = np.array(c)
+        rms = estimate_rms(c, 'neg')
+        if log: c = np.log10(c.clip(c[c > 0].min(), None))
         if not (cmin is None):
             c = c.clip(np.log10(cmin), None) if log else c.clip(cmin, None)
+        else:
+            cmin = np.log10(rms) if log else np.nanmean(c)
         if not (cmax is None):
             c = c.clip(None, np.log10(cmax)) if log else c.clip(None, cmax)
+        else:
+            cmax = np.nanmax(c)
         p = self.ax.pcolormesh(x, y, c, shading='nearest',
+                               vmin=cmin, vmax=cmax,
                                **dict(kwargs0, **kwargs))
         if show_cbar:
-            clabel = bunit if clabel is None else clabel
-            plt.colorbar(p, ax=self.ax, label=clabel, format=cformat)
+            cblabel = bunit if cblabel is None else cblabel
+            cb = plt.colorbar(p, ax=self.ax, label=cblabel, format=cbformat)
+            cb.ax.tick_params(labelsize=16)
+            font = mpl.font_manager.FontProperties(size=16)
+            cb.ax.yaxis.label.set_font_properties(font)
+            if not (cbticks is None):
+                cb.set_ticks(np.log10(cbticks) if log else cbticks)
+            if not (cbticklabels is None):
+                cb.set_ticklabels(cbticklabels)
+            elif log:
+                cb.set_ticks(t := cb.get_ticks())
+                cb.set_ticklabels([f'{d:.1e}' for d in 10**t])
+
         if show_beam:
             self.add_beam(bmaj, bmin, bpa, beamcolor)
             
@@ -301,12 +169,8 @@ class plotastro2D():
                      **kwargs) -> None:
         kwargs0 = {'colors':'gray', 'linewidths':1.0, 'zorder':2}
         if not fitsimage is None:
-            fd = FitsData(fitsimage)
-            fd.gen_data(Tb=Tb, log=False)
-            x, y, _ = fd.get_grid(**self.gridpar)
-            c = fd.data
-            bmaj, bmin, bpa = fd.get_beam(dist=self.gridpar['dist'])
-        rms = find_rms(c, sigma),
+            c, (x, y), (bmaj, bmin, bpa), _ = self.__readfits(fitsimage, Tb)
+        rms = estimate_rms(c, sigma),
         x, y, c = x[::skip], y[::skip], c[::skip, ::skip]
         self.ax.contour(x, y, c, np.array(levels) * rms,
                         **dict(kwargs0, **kwargs))
@@ -324,17 +188,9 @@ class plotastro2D():
                    'pivot':'mid', 'headwidth':0, 'headlength':0,
                    'headaxislength':0, 'width':0.007, 'zorder':3}
         if not ampfits is None:
-            fd = FitsData(ampfits)
-            fd.gen_data(Tb=False, log=False)
-            x, y, _ = fd.get_grid(**self.gridpar)
-            amp = fd.data
-            bmaj, bmin, bpa = fd.get_beam(dist=self.gridpar['dist'])
+            amp, (x, y), (bmaj, bmin, bpa), _ = self.__readfits(ampfits)
         if not angfits is None:
-            fd = FitsData(angfits)
-            fd.gen_data(Tb=False, log=False)
-            x, y, _ = fd.get_grid(**self.gridpar)
-            ang = fd.data
-            bmaj, bmin, bpa = fd.get_beam(dist=self.gridpar['dist'])
+            ang, (x, y), (bmaj, bmin, bpa), _ = self.__readfits(angfits)
         if amp is None and not ang is None:
             amp = np.ones_like(ang)
         x, y = x[::skip], y[::skip]
@@ -348,7 +204,7 @@ class plotastro2D():
             
     def add_scalebar(self, length: float = 0, label: str = '',
                      color: str = 'gray', barpos: tuple = (0.83, 0.17),
-                     fontsize: float = 24, linewidth: float = 3):
+                     fontsize: float = 20, linewidth: float = 3):
         if length > 0 and label != '':
             a, b = barpos
             x0, y0 = rel2abs(a, b * 0.9, self.xedge, self.yedge)
@@ -427,7 +283,9 @@ class plotastro2D():
 class plotastro3D():
     """Make a figure from 3D FITS files or 3D arrays.
     
-    Basic rules --- Lengths are in the unit of arcsec.
+    Basic rules --- First of all, a 1D velocity array or a FITS file
+    with a velocity axis must be given to set up channels in each page.
+    Lengths are in the unit of arcsec.
     Angles are in the unit of degree.
     For ellipse, line, arrow, label, and marker,
     a single input must be listed like poslist=[[0.2, 0.3]],
@@ -435,7 +293,7 @@ class plotastro3D():
     like '01h23m45.6s 01d23m45.6s' or a list of relative x and y
     like [0.2, 0.3] (0 is left or bottom, 1 is right or top).
     Parameters for original methods in matplotlib.axes.Axes can be
-    used as kwargs; see kwargs0 for reference.
+    used as kwargs; see the default kwargs0 for reference.
     """
     def __init__(self, fitsimage: str = None, v: list = None,
                  nrows: int = 4, ncols: int = 6,
@@ -454,16 +312,16 @@ class plotastro3D():
         self.nchan = npages * nrows * ncols
         lennan = self.nchan - self.nv
         v = np.r_[v, v[-1] + (np.arange(lennan)+1)*(v[1]-v[0])]
-        self.shape = (npages, nrows, ncols)
-        ax = np.empty(self.shape, dtype='object')
-        for n, i, j in np.ndindex(self.shape):
+        nij2ch = lambda n, i, j: n*nrows*ncols + i*ncols + j
+        ax = np.empty((npages, nrows, ncols), dtype='object')
+        for n, i, j in np.ndindex((npages, nrows, ncols)):
             fig = plt.figure(n, figsize=(ncols*2, max(nrows, 1.5)*2))
             sharex = ax[n, i - 1, j] if i > 0 else None
             sharey = ax[n, i, j - 1] if j > 0 else None
             ax[n, i, j] = fig.add_subplot(nrows, ncols, i*ncols + j + 1,
                                           sharex=sharex, sharey=sharey)
             fig.subplots_adjust(hspace=0, wspace=0, right=0.87, top=0.87)
-            ch = n*nrows*ncols + i*ncols + j
+            ch = nij2ch(n, i, j)
             ax[n, i, j].text(0.9 * rmax, 0.7 * rmax,
                              rf'${v[ch]:.{veldigit:d}f}$', color='black',
                              backgroundcolor='white', zorder=20)
@@ -474,25 +332,20 @@ class plotastro3D():
         self.gridpar = {'center':center, 'rmax':rmax, 'dist':dist,
                         'xoff':xoff, 'yoff':yoff,
                         'vsys':vsys, 'vmin':vmin, 'vmax':vmax}
-        self.xflip = -1 if xflip else 1
-        self.yflip = -1 if yflip else 1
-        self.xedge = [xoff - self.xflip*rmax, xoff + self.xflip*rmax]
-        self.yedge = [yoff - self.yflip*rmax, yoff + self.yflip*rmax]
+        xdir, ydir = -1 if xflip else 1, -1 if yflip else 1
+        self.xdir = xdir
+        self.xedge = [xoff - xdir*rmax, xoff + xdir*rmax]
+        self.yedge = [yoff - ydir*rmax, yoff + ydir*rmax]
         self.allchan = np.arange(self.nchan)
-        self.bottomleft = self.__ich(np.arange(npages), nrows-1, 0)
-        
-    def __ich(self, n: int, i: int, j: int) -> int:
-        return n*self.nrows*self.ncols + i*self.ncols + j
+        self.bottomleft = nij2ch(np.arange(npages), nrows-1, 0)
         
     def __pos2xy(self, pos: list = []) -> list:
-        x, y = [None] * len(pos), [None] * len(pos)
-        for i, p in enumerate(pos):
-            if type(p) == str:
-                x[i], y[i] = coord2xy(p) - coord2xy(self.gridpar['center'])
-            else:
-                x[i], y[i] = rel2abs(*p, self.xedge, self.yedge)
-        return [x, y]
+        return pos2xy(self.gridpar['center'], self.xedge, self.yedge, pos)
 
+    def __readfits(self, fitsimage: str, Tb: bool = False) -> list:
+        f = fits2data(fitsimage=fitsimage, Tb=Tb, log=False, **self.gridpar)
+        return f
+            
     def __reform(self, c: list, skip: int = 1) -> list:
         if np.ndim(c) == 3:
             d = c[::self.vskip, ::skip, ::skip]
@@ -516,9 +369,9 @@ class plotastro3D():
             for i, axnow in enumerate(np.ravel(self.ax)):
                 if not (i in include_chan):
                     continue
-                plt.figure(i // (self.nrows * self.ncols))
+                plt.figure(i // (self.nrows*self.ncols))
                 e = Ellipse((x, y), width=width, height=height,
-                            angle=angle * self.xflip,
+                            angle=angle * self.xdir,
                             **dict(kwargs0, **kwargs))
                 axnow.add_patch(e)
 
@@ -535,36 +388,47 @@ class plotastro3D():
                    cmin: float = None, cmax: float = None,
                    Tb: bool = False, log: bool = False,
                    show_cbar: bool = True,
-                   clabel: str = None, cformat: float = '%.1e',
+                   cblabel: str = None, cbformat: float = '%.1e',
+                   cbticks: list = None, cbticklabels: list = None,
                    show_beam: bool = True, beamcolor: str = 'gray',
                    bmaj: float = 0., bmin: float = 0.,
                    bpa: float = 0., **kwargs) -> None:
         kwargs0 = {'cmap':'cubehelix', 'alpha':1, 'zorder':1}
         if not fitsimage is None:
-            fd = FitsData(fitsimage)
-            fd.gen_data(Tb=Tb, log=log)
-            x, y, _ = fd.get_grid(**self.gridpar)
-            c = fd.data
-            bmaj, bmin, bpa = fd.get_beam(dist=self.gridpar['dist'])
-            bunit = fd.get_header('BUNIT')
+            c, (x, y), (bmaj, bmin, bpa), bunit = self.__readfits(fitsimage, Tb)
         c = np.array(c)
+        rms = estimate_rms(c, 'edge')
+        if log: c = np.log10(c.clip(c[c > 0].min(), None))
         if not (cmin is None):
             c = c.clip(np.log10(cmin), None) if log else c.clip(cmin, None)
         else:
-            cmin = np.nanmin(c)
+            cmin = np.log10(rms) if log else np.nanmin(c)
         if not (cmax is None):
             c = c.clip(None, np.log10(cmax)) if log else c.clip(None, cmax)
         else:
             cmax = np.nanmax(c)
         x, y = x[::skip], y[::skip]
         c = self.__reform(c, skip)
-        for axnow, cnow in zip(np.ravel(self.ax), c):
+        for i, (axnow, cnow) in enumerate(zip(np.ravel(self.ax), c)):
             p = axnow.pcolormesh(x, y, cnow, shading='nearest',
                                  vmin=cmin, vmax=cmax,
                                  **dict(kwargs0, **kwargs))
-        #if show_cbar:
-        #    clabel = bunit if clabel is None else clabel
-        #    plt.colorbar(p, ax=self.ax, label=clabel, format=cformat)
+            if not (show_cbar and i % (self.nrows*self.ncols) == 0):
+                continue
+            plt.figure(i // (self.nrows*self.ncols))
+            cblabel = bunit if cblabel is None else cblabel
+            cax = plt.axes([0.88, 0.105, 0.015, 0.77])
+            cb = plt.colorbar(p, cax=cax, label=cblabel, format=cbformat)
+            cb.ax.tick_params(labelsize=14)
+            font = mpl.font_manager.FontProperties(size=16)
+            cb.ax.yaxis.label.set_font_properties(font)
+            if not (cbticks is None):
+                cb.set_ticks(np.log10(cbticks) if log else cbticks)
+            if not (cbticklabels is None):
+                cb.set_ticklabels(cbticklabels)
+            elif log:
+                cb.set_ticks(t := cb.get_ticks())
+                cb.set_ticklabels([f'{d:.1e}' for d in 10**t])
         if show_beam:
             self.add_beam(bmaj, bmin, bpa, beamcolor)
 
@@ -579,14 +443,10 @@ class plotastro3D():
                     **kwargs) -> None:
         kwargs0 = {'colors':'gray', 'linewidths':1.0, 'zorder':2}
         if not fitsimage is None:
-            fd = FitsData(fitsimage)
-            fd.gen_data(Tb=Tb, log=False)
-            x, y, _ = fd.get_grid(**self.gridpar)
-            c = fd.data
-            bmaj, bmin, bpa = fd.get_beam(dist=self.gridpar['dist'])
+            c, (x, y), (bmaj, bmin, bpa), _ = self.__readfits(fitsimage, Tb)
         c = np.array(c)
         if np.ndim(c) == 2 and sigma == 'edge': sigma = 'neg'
-        rms = find_rms(c, sigma)
+        rms = estimate_rms(c, sigma)
         x, y = x[::skip], y[::skip]
         c = self.__reform(c, skip)
         for axnow, cnow in zip(np.ravel(self.ax), c):
@@ -606,17 +466,9 @@ class plotastro3D():
                    'pivot':'mid', 'headwidth':0, 'headlength':0,
                    'headaxislength':0, 'width':0.007, 'zorder':3}
         if not ampfits is None:
-            fd = FitsData(ampfits)
-            fd.gen_data(Tb=False, log=False)
-            x, y, _ = fd.get_grid(**self.gridpar)
-            amp = fd.data
-            bmaj, bmin, bpa = fd.get_beam(dist=self.gridpar['dist'])
+            amp, (x, y), (bmaj, bmin, bpa), _ = self.__readfits(ampfits)
         if not angfits is None:
-            fd = FitsData(angfits)
-            fd.gen_data(Tb=False, log=False)
-            x, y, _ = fd.get_grid(**self.gridpar)
-            ang = fd.data
-            bmaj, bmin, bpa = fd.get_beam(dist=self.gridpar['dist'])
+            ang, (x, y), (bmaj, bmin, bpa), _ = self.__readfits(angfits)
         if amp is None and not ang is None:
             amp = np.ones_like(ang)
         x, y = x[::skip], y[::skip]
@@ -706,9 +558,7 @@ class plotastro3D():
                  xlabel: str = 'R.A. (arcsec)',
                  ylabel: str = 'Dec. (arcsec)',
                  samexy: bool = True) -> None:
-        for n, i, j in np.ndindex(self.shape):
-            axnow = self.ax[n, i, j]
-            ch = self.__ich(n, i, j)
+        for i, axnow in enumerate(np.ravel(self.ax)):
             if samexy:
                 axnow.set_xticks(axnow.get_yticks())
                 axnow.set_yticks(axnow.get_xticks())
@@ -720,18 +570,18 @@ class plotastro3D():
             if not yticksminor is None:
                 axnow.set_yticks(yticksminor, minor=True)
             if not xticklabels is None: axnow.set_xticklabels(xticklabels)
-            if not (ch in self.bottomleft):
+            if not (i in self.bottomleft):
                 axnow.set_xticklabels([''] * len(axnow.get_xticks()))
             if not yticklabels is None: axnow.set_yticklabels(yticklabels)
-            if not (ch in self.bottomleft):
+            if not (i in self.bottomleft):
                 axnow.set_yticklabels([''] * len(axnow.get_yticks()))
             axnow.set_xlim(*self.xedge)
             axnow.set_ylim(*self.yedge)
             if not xlabel is None: axnow.set_xlabel(xlabel)
-            if not (ch in self.bottomleft):
+            if not (i in self.bottomleft):
                 axnow.set_xlabel('')
             if not ylabel is None: axnow.set_ylabel(ylabel)
-            if not (ch in self.bottomleft):
+            if not (i in self.bottomleft):
                 axnow.set_ylabel('')
 
     def savefig(self, filename: str = 'plotastro3D.png',
