@@ -256,23 +256,23 @@ class plotastro2D():
             self.ax.set_yticks(yticksminor, minor=True)
         if not xticklabels is None: self.ax.set_xticklabels(xticklabels)
         if not yticklabels is None: self.ax.set_yticklabels(yticklabels)
-        self.ax.set_xlim(*self.lim)
-        self.ax.set_ylim(*self.lim)
+        self.ax.set_xlim(*self.xlim)
+        self.ax.set_ylim(*self.ylim)
         if not xlabel is None: self.ax.set_xlabel(xlabel)
         if not ylabel is None: self.ax.set_ylabel(ylabel)
         self.fig.tight_layout()
        
     def savefig(self, filename: str = 'plotastro2D.png',
                 transparent: bool =True) -> None:
-        self.ax.set_xlim(*self.lim)
-        self.ax.set_ylim(*self.lim)
+        self.ax.set_xlim(*self.xlim)
+        self.ax.set_ylim(*self.ylim)
         self.fig.patch.set_alpha(0)
         self.fig.savefig(filename, bbox_inches='tight',
                          transparent=transparent)
         
     def show(self):
-        self.ax.set_xlim(*self.lim)
-        self.ax.set_ylim(*self.lim)
+        self.ax.set_xlim(*self.xlim)
+        self.ax.set_ylim(*self.ylim)
         plt.show()
             
         
@@ -345,11 +345,12 @@ class plotastro3D():
                       method=method, restfrq=restfrq, **self.gridpar)
         return f
             
-    def __reform(self, c: list) -> list:
+    def __reform(self, c: list, skip: int = 1) -> list:
         if np.ndim(c) == 3:
-            d = c[::self.vskip]
+            d = c[::self.vskip, ::skip, ::skip]
         else:
-            d = np.full((self.nv, *np.shape(c)), c)
+            d = c[::skip, ::skip]
+            d = np.full((self.nv, *np.shape(d)), d)
         lennan = self.nchan - len(d)
         cnan = np.full((lennan, *np.shape(d[0])), d[0] * np.nan)
         d = np.concatenate((d, cnan), axis=0)
@@ -408,8 +409,8 @@ class plotastro3D():
             c = c.clip(None, np.log10(cmax)) if log else c.clip(None, cmax)
         else:
             cmax = np.nanmax(c)
-        x, y, c = x[::skip], y[::skip], c[::self.vskip, ::skip, ::skip]
-        c = self.__reform(c)
+        x, y = x[::skip], y[::skip]
+        c = self.__reform(c, skip)
         for i, (axnow, cnow) in enumerate(zip(np.ravel(self.ax), c)):
             p = axnow.pcolormesh(x, y, cnow, shading='nearest',
                                  vmin=cmin, vmax=cmax,
@@ -451,8 +452,8 @@ class plotastro3D():
             if np.ndim(c) == 2 and sigma == 'edge': sigma = 'out'
             rms = estimate_rms(c, sigma)
             x, y, _, c = trim(x, y, self.xlim, self.ylim, v, self.vlim, c)
-        x, y, c = x[::skip], y[::skip], c[::self.vskip, ::skip, ::skip]
-        c = self.__reform(c)
+        x, y = x[::skip], y[::skip]
+        c = self.__reform(c, skip)
         for axnow, cnow in zip(np.ravel(self.ax), c):
             axnow.contour(x, y, cnow, np.array(levels) * rms,
                           **dict(kwargs0, **kwargs))
@@ -470,13 +471,13 @@ class plotastro3D():
                    'pivot':'mid', 'headwidth':0, 'headlength':0,
                    'headaxislength':0, 'width':0.007, 'zorder':3}
         if not ampfits is None:
-            amp, (x, y, _), bmaj, bmin, bpa, _, _ \
+            amp, (x, y, _), (bmaj, bmin, bpa), _, _ \
                 = self.__readfits(ampfits)
         else:
             x, y, _, amp = trim(x, y, self.xlim, self.ylim,
                                 v, self.vlim, amp)
         if not angfits is None:
-            ang, (x, y, _), bmaj, bmin, bpa, _, _ \
+            ang, (x, y, _), (bmaj, bmin, bpa), _, _ \
                 = self.__readfits(angfits)
         else:
             x, y, _, ang = trim(x, y, self.xlim, self.ylim,
@@ -484,9 +485,7 @@ class plotastro3D():
         if amp is None and not ang is None:
             amp = np.ones_like(ang)
         x, y = x[::skip], y[::skip]
-        amp = amp[::self.vskip, ::skip, ::skip]
-        ang = ang[::self.vskip, ::skip, ::skip]
-        amp, ang = self.__reform(amp), self.__reform(ang)
+        amp, ang = self.__reform(amp, skip), self.__reform(ang, skip)
         u = ampfactor * amp * np.sin(np.radians(ang))
         v = ampfactor * amp * np.cos(np.radians(ang))
         kwargs0['scale'] = 1. / np.abs(x[1] - x[0])

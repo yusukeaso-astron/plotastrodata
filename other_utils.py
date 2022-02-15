@@ -128,11 +128,12 @@ def trim(x: list, y: list, xlim: list, ylim: list,
     j1 = np.argmin(np.abs(y - ylim[1]))
     j0, j1 = sorted([j0, j1])
     yout = x[j0:j1+1]
-    if not (vlim is None):
+    if not (v is None or vlim is None or vlim == [None, None]):
         k0 = np.argmin(np.abs(v - vlim[0]))
         k1 = np.argmin(np.abs(v - vlim[1]))
         k0, k1 = sorted([k0, k1])
-        vout = v if v is None else v[k0:k1+1]
+    vout = v if v is None else v[k0:k1+1]
+    dataout = None
     if not (data is None):
         if np.ndim(d := np.squeeze(data)) == 2:
             dataout = d[j0:j1+1, i0:i1+1]
