@@ -8,14 +8,13 @@ from fits_utils import FitsData, fits2data
 
 
 
-def pos2xy(center: str, xlim: list, ylim: list,
-           pos: list = []) -> list:
+def pos2xy(c, pos: list = []) -> list:
     x, y = [None] * len(pos), [None] * len(pos)
     for i, p in enumerate(pos):
         if type(p) == str:
-            x[i], y[i] = (coord2xy(p) - coord2xy(center)) * 3600.
+            x[i], y[i] = (coord2xy(p)-coord2xy(c.gridpar['center'])) * 3600.
         else:
-            x[i], y[i] = rel2abs(*p, xlim, ylim)
+            x[i], y[i] = rel2abs(*p, c.xlim, c.ylim)
     return [x, y]
 
 
@@ -66,9 +65,7 @@ class plotastro2D():
         self.xlim = [xoff - xdir*rmax, xoff + xdir*rmax]
         self.ylim = [yoff - ydir*rmax, yoff + ydir*rmax]
 
-    def __pos2xy(self, pos: list = []) -> list:
-        return pos2xy(self.gridpar['center'], self.xlim, self.ylim, pos)
-    
+
     def __readfits(self, fitsimage: str, Tb: bool = False,
                    method: str = None, restfrq: float = None) -> list:
         f = fits2data(fitsimage=fitsimage, Tb=Tb, log=False,
@@ -82,7 +79,7 @@ class plotastro2D():
         kwargs0 = {'facecolor':'none', 'edgecolor':'gray',
                    'linewidth':1.5, 'zorder':10}
         for x, y, width, height, angle \
-            in zip(*self.__pos2xy(poslist), minlist, majlist, palist):
+            in zip(*pos2xy(self, poslist), minlist, majlist, palist):
             e = Ellipse((x, y), width=width, height=height,
                         angle=angle * self.xdir,
                         **dict(kwargs0, **kwargs))
@@ -211,20 +208,20 @@ class plotastro2D():
     def add_marker(self, poslist: list = [], **kwargs):
         kwsmark0 = {'marker':'+', 'ms':30, 'mfc':'gray',
                     'mec':'gray', 'mew':2, 'alpha':1, 'zorder':10}
-        for x, y in zip(*self.__pos2xy(poslist)):
+        for x, y in zip(*pos2xy(self, poslist)):
             self.ax.plot(x, y, **dict(kwsmark0, **kwargs))
             
     def add_label(self, poslist: list = [],
                   slist: list = [], **kwargs) -> None:
         kwargs0 = {'color':'gray', 'fontsize':18, 'zorder':10}
-        for x, y, s in zip(*self.__pos2xy(poslist), slist):
+        for x, y, s in zip(*pos2xy(self, poslist), slist):
             self.ax.text(x=x, y=y, s=s, **dict(kwargs0, **kwargs))
 
     def add_line(self, poslist: list = [], anglelist: list = [],
                  rlist: list = [], **kwargs):
         kwargs0 = {'color':'gray', 'linewidth':1.5, 'zorder':10}
         for x, y, a, r \
-            in zip(*self.__pos2xy(poslist), np.radians(anglelist), rlist):
+            in zip(*pos2xy(self, poslist), np.radians(anglelist), rlist):
             self.ax.plot([x, x + r * np.sin(a)],
                          [y, y + r * np.cos(a)],
                          **dict(kwargs0, **kwargs))
@@ -234,7 +231,7 @@ class plotastro2D():
         kwargs0 = {'color':'gray', 'width':0.012,
                    'headwidth':5, 'headlength':5, 'zorder':10}
         for x, y, a, r \
-            in zip(*self.__pos2xy(poslist), np.radians(anglelist), rlist):
+            in zip(*pos2xy(self, poslist), np.radians(anglelist), rlist):
             self.ax.quiver(x, y, r * np.sin(a), r * np.cos(a),
                            angles='xy', scale_units='xy', scale=1,
                            **dict(kwargs0, **kwargs))
@@ -337,8 +334,6 @@ class plotastro3D():
         self.allchan = np.arange(self.nchan)
         self.bottomleft = nij2ch(np.arange(npages), nrows-1, 0)
         
-    def __pos2xy(self, pos: list = []) -> list:
-        return pos2xy(self.gridpar['center'], self.xlim, self.ylim, pos)
 
     def __readfits(self, fitsimage: str, Tb: bool = False,
                    method: str = None, restfrq: float = None) -> list:
@@ -365,7 +360,7 @@ class plotastro3D():
                    'linewidth':1.5, 'zorder':10}
         if include_chan is None: include_chan = self.allchan
         for x, y, width, height, angle\
-            in zip(*self.__pos2xy(poslist), minlist, majlist, palist):
+            in zip(*pos2xy(self, poslist), minlist, majlist, palist):
             for i, axnow in enumerate(np.ravel(self.ax)):
                 if not (i in include_chan):
                     continue
@@ -516,22 +511,20 @@ class plotastro3D():
         kwsmark0 = {'marker':'+', 'ms':10, 'mfc':'gray',
                     'mec':'gray', 'mew':2, 'alpha':1}
         if include_chan is None: include_chan = self.allchan
-        xlist, ylist = self.__pos2xy(poslist)
         for i, axnow in enumerate(np.ravel(self.ax)):
             if not (i in include_chan):
                 continue
-            for x, y in zip(xlist, ylist):
+            for x, y in zip(*pos2xy(self, poslist)):
                 axnow.plot(x, y, **dict(kwsmark0, **kwargs), zorder=10)
             
     def add_label(self, include_chan: list = None,
                   poslist: list = [], slist: list = [], **kwargs) -> None:
         kwargs0 = {'color':'gray', 'fontsize':15, 'zorder':10}
         if include_chan is None: include_chan = self.allchan
-        xlist, ylist = self.__pos2xy(poslist)
         for i, axnow in enumerate(np.ravel(self.ax)):
             if not (i in include_chan):
                 continue
-            for x, y, s in zip(xlist, ylist, slist):
+            for x, y, s in zip(*pos2xy(self, poslist), slist):
                 axnow.text(x=x, y=y, s=s, **dict(kwargs0, **kwargs))
 
     def add_line(self, include_chan: list = None,
@@ -539,12 +532,11 @@ class plotastro3D():
                  rlist: list = [], **kwargs):
         kwargs0 = {'color':'gray', 'linewidth':1.5, 'zorder':10}
         if include_chan is None: include_chan = self.allchan
-        xlist, ylist = self.__pos2xy(poslist)
         for i, axnow in enumerate(np.ravel(self.ax)):
             if not (i in include_chan):
                 continue
             for x, y, a, r \
-                in zip(xlist, ylist, np.radians(anglelist), rlist):
+                in zip(*pos2xy(self, poslist), np.radians(anglelist), rlist):
                 axnow.plot([x, x + r * np.sin(a)],
                            [y, y + r * np.cos(a)],
                            **dict(kwargs0, **kwargs))
@@ -555,12 +547,11 @@ class plotastro3D():
         kwargs0 = {'color':'gray', 'width':0.012,
                    'headwidth':5, 'headlength':5, 'zorder':10}
         if include_chan is None: include_chan = self.allchan
-        xlist, ylist = self.__pos2xy(poslist)
         for i, axnow in enumerate(np.ravel(self.ax)):
             if not (i in include_chan):
                 continue
             for x, y, a, r \
-                in zip(xlist, ylist, np.radians(anglelist), rlist):
+                in zip(*pos2xy(self, poslist), np.radians(anglelist), rlist):
                 axnow.quiver(x, y, r * np.sin(a), r * np.cos(a),
                              angles='xy', scale_units='xy', scale=1,
                              **dict(kwargs0, **kwargs))
