@@ -117,29 +117,45 @@ def estimate_rms(data: list, sigma: float or str) -> float:
     return noise
 
 
-def trim(x: list, y: list, xlim: list, ylim: list,
-         v: list = None, vlim: list = None, data: list = None) -> list:
-    d = np.squeeze(data)
-    i0 = np.argmin(np.abs(x - xlim[0]))
-    i1 = np.argmin(np.abs(x - xlim[1]))
-    i0, i1 = sorted([i0, i1])
-    xout = x[i0:i1+1]
-    j0 = np.argmin(np.abs(y - ylim[0]))
-    j1 = np.argmin(np.abs(y - ylim[1]))
-    j0, j1 = sorted([j0, j1])
-    yout = y[j0:j1+1]
+def trim(x: list = None, y: list = None, v: list = None,
+         xlim: list = None, ylim: list = None, vlim: list = None,
+         data: list = None) -> list:
+    """Trim 2D or 3D data by given coordinates and their limits.
+
+    Args:
+        x (list, optional): 1D array. Defaults to None.
+        y (list, optional): 1D array. Defaults to None.
+        v (list, optional): 1D array. Defaults to None.
+        xlim (list, optional): [xmin, xmax]. Defaults to None.
+        ylim (list, optional): [ymin, ymax]. Defaults to None.
+        vlim (list, optional): [vmin, vmax]. Defaults to None.
+        data (list, optional): 2D or 3D array. Defaults to None.
+
+    Returns:
+        list: Trimmed [data, [x,y,v]]. 
+    """
+    xout, yout, vout, dataout = x, y, v, data
+    if not (x is None or xlim is None or xlim == [None, None]):
+        i0 = np.argmin(np.abs(x - xlim[0]))
+        i1 = np.argmin(np.abs(x - xlim[1]))
+        i0, i1 = sorted([i0, i1])
+        xout = x[i0:i1+1]
+    if not (y is None or ylim is None or ylim == [None, None]):
+        j0 = np.argmin(np.abs(y - ylim[0]))
+        j1 = np.argmin(np.abs(y - ylim[1]))
+        j0, j1 = sorted([j0, j1])
+        yout = y[j0:j1+1]
     if not (v is None or vlim is None or vlim == [None, None]):
         k0 = np.argmin(np.abs(v - vlim[0]))
         k1 = np.argmin(np.abs(v - vlim[1]))
         k0, k1 = sorted([k0, k1])
-    vout = v if v is None else v[k0:k1+1]
-    dataout = None
+        vout = v[k0:k1+1]
     if not (data is None):
         if np.ndim(d := np.squeeze(data)) == 2:
             dataout = d[j0:j1+1, i0:i1+1]
         else:
             dataout = d[k0:k1+1, j0:j1+1, i0:i1+1]
-    return [[xout, yout, vout], dataout]        
+    return [dataout, [xout, yout, vout]]        
 
 
 def shiftphase(F: list, u: list, v: list, dx: float, dy: float) -> list:

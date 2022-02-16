@@ -8,15 +8,33 @@ from fits_utils import FitsData, fits2data
 
 
 
-def pos2xy(c, pos: list = []) -> list:
+def pos2xy(plotastro, pos: list = []) -> list:
     x, y = [None] * len(pos), [None] * len(pos)
     for i, p in enumerate(pos):
         if type(p) == str:
-            x[i], y[i] = (coord2xy(p)-coord2xy(c.gridpar['center'])) * 3600.
+            center = plotastro.gridpar['center']
+            x[i], y[i] = (coord2xy(p)-coord2xy(center)) * 3600.
         else:
-            x[i], y[i] = rel2abs(*p, c.xlim, c.ylim)
+            x[i], y[i] = rel2abs(*p, plotastro.xlim, plotastro.ylim)
     return [x, y]
 
+
+def readfits(plotastro, fitsimage: str, Tb: bool = False,
+             sigma: str = None, restfrq: float = None) -> list:
+    data, grid, beam, bunit, rms \
+        = fits2data(fitsimage=fitsimage, Tb=Tb, log=False,
+                    sigma=sigma, restfrq=restfrq, **plotastro.gridpar)
+    return [data, (grid[0], grid[1]), beam, bunit, rms]
+
+
+def trimxy(x: list = None, y: list = None, v: list = None,
+           lims: list = None, data: list = None):
+    if np.ndim(data) == 2:
+        lims.append(None)
+    dataout, grid = trim(x=x, y=y, v=v, xlim=lims[0],
+                         ylim=lims[1], vlim=lims[2], data=data)
+    return [dataout, [grid[0], grid[1]]]
+    
 
 def set_rcparams(fontsize: int = 18, nancolor: str ='w') -> None:
     #plt.rcParams['font.family'] = 'arial'
@@ -60,19 +78,12 @@ class plotastro2D():
         self.ax = self.fig.add_subplot(1, 1, 1) if ax is None else ax
         self.gridpar = {'center':center, 'rmax':rmax,
                         'dist':dist, 'xoff':xoff, 'yoff':yoff}
-        xdir, ydir = -1 if xflip else 1, -1 if yflip else 1
-        self.xdir = xdir
+        self.xdir = xdir = -1 if xflip else 1
+        self.ydir = ydir = -1 if yflip else 1
         self.xlim = [xoff - xdir*rmax, xoff + xdir*rmax]
         self.ylim = [yoff - ydir*rmax, yoff + ydir*rmax]
+        self.lims = [self.xlim, self.ylim]
 
-
-    def __readfits(self, fitsimage: str, Tb: bool = False,
-                   method: str = None, restfrq: float = None) -> list:
-        f = fits2data(fitsimage=fitsimage, Tb=Tb, log=False,
-                      method=method, restfrq=restfrq, **self.gridpar)
-        return f
-
-    
     def add_ellipse(self, poslist: list = [],
                     majlist: list = [], minlist: list = [],
                     palist: list = [], **kwargs) -> None:
@@ -94,7 +105,6 @@ class plotastro2D():
     def add_color(self, fitsimage: str = None,
                    x: list = None, y: list = None, skip: int = 1,
                    c: list = None, restfrq: float = None,
-                   cmin: float = None, cmax: float = None,
                    Tb: bool = False, log: bool = False,
                    show_cbar: bool = True,
                    cblabel: str = None, cbformat: float = '%.1e',
@@ -103,25 +113,26 @@ class plotastro2D():
                    bmaj: float = 0., bmin: float = 0.,
                    bpa: float = 0., **kwargs) -> None:
         kwargs0 = {'cmap':'cubehelix', 'alpha':1, 'zorder':1}
-        if not fitsimage is None:
-            c, grid, (bmaj, bmin, bpa), bunit, rms \
-                = self.__readfits(fitsimage, Tb, 'out', restfrq)
-        else:
+        if fitsimage is None:
             bunit, rms = '', estimate_rms(c, 'out')
-            grid, c = trim(x, y, self.xlim, self.ylim, data=c)
-        x, y = [g[::skip] for g in grid[:2]]
+            c, (x, y) = trimxy(x, y, None, self.lims, c)
+        else:
+            c, (x, y), (bmaj, bmin, bpa), bunit, rms \
+                = readfits(self, fitsimage, Tb, 'out', restfrq)
+        x, y = x[::skip], y[::skip]
         c = c[::skip, ::skip]
         if log: c = np.log10(c.clip(c[c > 0].min(), None))
-        if not (cmin is None):
+        if 'vmin' in kwargs:
+            cmin = kwargs['vmin']
             c = c.clip(np.log10(cmin), None) if log else c.clip(cmin, None)
         else:
-            cmin = np.log10(rms) if log else np.nanmean(c)
-        if not (cmax is None):
+            kwargs['vmin'] = np.log10(rms) if log else np.nanmean(c)
+        if 'vmax' in kwargs:
+            cmax = kwargs['vmax']
             c = c.clip(None, np.log10(cmax)) if log else c.clip(None, cmax)
         else:
-            cmax = np.nanmax(c)
+            kwargs['vmax'] = np.nanmax(c)
         p = self.ax.pcolormesh(x, y, c, shading='nearest',
-                               vmin=cmin, vmax=cmax,
                                **dict(kwargs0, **kwargs))
         if show_cbar:
             cblabel = bunit if cblabel is None else cblabel
@@ -140,51 +151,48 @@ class plotastro2D():
             self.add_beam(bmaj, bmin, bpa, beamcolor)
             
     def add_contour(self, fitsimage: str = None,
-                     x: list = None, y: list = None, skip: int = 1,
-                     c: list = None, restfrq: float = None,
-                     sigma: str or float = 'out',
-                     levels: list = [-12,-6,-3,3,6,12,24,48,96,192,384],
-                     Tb: bool = False,
-                     show_beam: bool = True, beamcolor: str = 'gray',
-                     bmaj: float = 0., bmin: float = 0., bpa: float = 0.,
-                     **kwargs) -> None:
+                    x: list = None, y: list = None, skip: int = 1,
+                    c: list = None, restfrq: float = None,
+                    sigma: str or float = 'out',
+                    levels: list = [-12,-6,-3,3,6,12,24,48,96,192,384],
+                    Tb: bool = False,
+                    show_beam: bool = True, beamcolor: str = 'gray',
+                    bmaj: float = 0., bmin: float = 0., bpa: float = 0.,
+                    **kwargs) -> None:
         kwargs0 = {'colors':'gray', 'linewidths':1.0, 'zorder':2}
-        if not fitsimage is None:
-            c, grid, (bmaj, bmin, bpa), _, rms \
-                = self.__readfits(fitsimage, Tb, sigma, restfrq)
-        else:
+        if fitsimage is None:
             rms = estimate_rms(c, sigma)
-            grid, c = trim(x, y, self.xlim, self.ylim, None, None, c)
-        x, y = [g[::skip] for g in grid[:2]]
+            c, (x, y) = trimxy(x, y, None, self.lims, c)
+        else:
+            c, (x, y), (bmaj, bmin, bpa), _, rms \
+                = readfits(self, fitsimage, Tb, sigma, restfrq)
+        x, y = x[::skip], y[::skip]
         c = c[::skip, ::skip]
         self.ax.contour(x, y, c, np.array(levels) * rms,
                         **dict(kwargs0, **kwargs))
         if show_beam:
             self.add_beam(bmaj, bmin, bpa, beamcolor)
     
-    def add_vector(self, ampfits: str = None, angfits: str = None,
-                     x: list = None, y: list = None, skip: int = 1,
-                     amp: list = None, ang: list = None,
-                     ampfactor: float = 1.,
-                     show_beam: bool = True, beamcolor: str = 'gray',
-                     bmaj: float = 0., bmin: float = 0., bpa: float = 0.,
-                     **kwargs) -> None:
+    def add_segment(self, ampfits: str = None, angfits: str = None,
+                    x: list = None, y: list = None, skip: int = 1,
+                    amp: list = None, ang: list = None,
+                    ampfactor: float = 1.,
+                    show_beam: bool = True, beamcolor: str = 'gray',
+                    bmaj: float = 0., bmin: float = 0., bpa: float = 0.,
+                    **kwargs) -> None:
         kwargs0 = {'angles':'xy', 'scale_units':'xy', 'color':'gray',
                    'pivot':'mid', 'headwidth':0, 'headlength':0,
                    'headaxislength':0, 'width':0.007, 'zorder':3}
-        if not ampfits is None:
-            amp, grid, (bmaj, bmin, bpa), _, _ \
-                = self.__readfits(ampfits)
+        if ampfits is None:
+            amp, (x, y) = trimxy(x, y, None, self.lims, amp)
         else:
-            grid, amp = trim(x, y, self.xlim, self.ylim, data=amp)
-        if not angfits is None:
-            ang, grid, (bmaj, bmin, bpa), _, _ \
-                = self.__readfits(angfits)
+            amp, (x, y), (bmaj, bmin, bpa), _, _ = readfits(self, ampfits)
+        if angfits is None:
+            ang, (x, y) = trimxy(x, y, None, self.lims, ang)
         else:
-            grid, ang = trim(x, y, self.xlim, self.ylim, data=ang)
-        if amp is None and not ang is None:
-            amp = np.ones_like(ang)
-        x, y = [g[::skip] for g in grid[:2]]
+            ang, (x, y), (bmaj, bmin, bpa), _, _ = readfits(self, angfits)
+        if amp is None: amp = np.ones_like(ang)
+        x, y = x[::skip], y[::skip]
         amp, ang = amp[::skip, ::skip], ang[::skip, ::skip]
         u = ampfactor * amp * np.sin(np.radians(ang))
         v = ampfactor * amp * np.cos(np.radians(ang))
@@ -196,14 +204,16 @@ class plotastro2D():
     def add_scalebar(self, length: float = 0, label: str = '',
                      color: str = 'gray', barpos: tuple = (0.83, 0.17),
                      fontsize: float = 20, linewidth: float = 3):
-        if length > 0 and label != '':
-            a, b = barpos
-            x0, y0 = rel2abs(a, b * 0.9, self.xlim, self.ylim)
-            self.ax.text(x0, y0, label, color=color, size=fontsize,
-                         ha='center', va='top', zorder=10)
-            x0, y0 = rel2abs(a, b, self.xlim, self.ylim)
-            self.ax.plot([x0 - length/2., x0 + length/2.], [y0, y0],
-                         '-', linewidth=linewidth, color=color)
+        if length == 0 or label == '':
+            print('Please set length and label.')
+            return -1
+        xrel, yrel = barpos
+        x, y = rel2abs(xrel, yrel * 0.9, self.xlim, self.ylim)
+        self.ax.text(x, y, label, color=color, size=fontsize,
+                     ha='center', va='top', zorder=10)
+        x, y = rel2abs(xrel, yrel, self.xlim, self.ylim)
+        self.ax.plot([x - length/2., x + length/2.], [y, y],
+                     '-', linewidth=linewidth, color=color)
             
     def add_marker(self, poslist: list = [], **kwargs):
         kwsmark0 = {'marker':'+', 'ms':30, 'mfc':'gray',
@@ -326,20 +336,13 @@ class plotastro3D():
         self.gridpar = {'center':center, 'rmax':rmax, 'dist':dist,
                         'xoff':xoff, 'yoff':yoff,
                         'vsys':vsys, 'vmin':vmin, 'vmax':vmax}
-        xdir, ydir = -1 if xflip else 1, -1 if yflip else 1
-        self.xdir = xdir
+        self.xdir = xdir = -1 if xflip else 1
+        self.ydir = ydir = -1 if yflip else 1
         self.xlim = [xoff - xdir*rmax, xoff + xdir*rmax]
         self.ylim = [yoff - ydir*rmax, yoff + ydir*rmax]
-        self.vlim = [vmin, vmax]
+        self.lims = [self.xlim, self.ylim, [vmin, vmax]]
         self.allchan = np.arange(self.nchan)
         self.bottomleft = nij2ch(np.arange(npages), nrows-1, 0)
-        
-
-    def __readfits(self, fitsimage: str, Tb: bool = False,
-                   method: str = None, restfrq: float = None) -> list:
-        f = fits2data(fitsimage=fitsimage, Tb=Tb, log=False,
-                      method=method, restfrq=restfrq, **self.gridpar)
-        return f
             
     def __reform(self, c: list, skip: int = 1) -> list:
         if np.ndim(c) == 3:
@@ -381,7 +384,6 @@ class plotastro3D():
                    x: list = None, y: list = None, skip: int = 1,
                    v: list = None, c: list = None,
                    restfrq: float = None,
-                   cmin: float = None, cmax: float = None,
                    Tb: bool = False, log: bool = False,
                    show_cbar: bool = True,
                    cblabel: str = None, cbformat: float = '%.1e',
@@ -390,26 +392,27 @@ class plotastro3D():
                    bmaj: float = 0., bmin: float = 0.,
                    bpa: float = 0., **kwargs) -> None:
         kwargs0 = {'cmap':'cubehelix', 'alpha':1, 'zorder':1}
-        if not fitsimage is None:
-            c, grid, (bmaj, bmin, bpa), bunit, rms \
-                = self.__readfits(fitsimage, Tb, 'out', restfrq)
-        else:
+        if fitsimage is None:
             bunit, rms = '', estimate_rms(c, 'out')
-            grid, c = trim(x, y, self.xlim, self.ylim, v, self.vlim, c)
+            c, (x, y) = trimxy(x, y, v, self.lims, c)    
+        else:
+            c, (x, y), (bmaj, bmin, bpa), bunit, rms \
+                = readfits(self, fitsimage, Tb, 'out', restfrq)
         if log: c = np.log10(c.clip(c[c > 0].min(), None))
-        if not (cmin is None):
+        if 'vmin' in kwargs:
+            cmin = kwargs['vmin']
             c = c.clip(np.log10(cmin), None) if log else c.clip(cmin, None)
         else:
-            cmin = np.log10(rms) if log else np.nanmin(c)
-        if not (cmax is None):
+            kwargs['vmin'] = np.log10(rms) if log else np.nanmin(c)
+        if 'vmax' in kwargs:
+            cmax = kwargs['vmax']
             c = c.clip(None, np.log10(cmax)) if log else c.clip(None, cmax)
         else:
-            cmax = np.nanmax(c)
-        x, y = [g[::skip] for g in grid[:2]]
+            kwargs['vmax'] = np.nanmax(c)
+        x, y = x[::skip], y[::skip]
         c = self.__reform(c, skip)
         for i, (axnow, cnow) in enumerate(zip(np.ravel(self.ax), c)):
             p = axnow.pcolormesh(x, y, cnow, shading='nearest',
-                                 vmin=cmin, vmax=cmax,
                                  **dict(kwargs0, **kwargs))
             if not (show_cbar and i % (self.nrows*self.ncols) == 0):
                 continue
@@ -441,14 +444,14 @@ class plotastro3D():
                     bmaj: float = 0., bmin: float = 0., bpa: float = 0.,
                     **kwargs) -> None:
         kwargs0 = {'colors':'gray', 'linewidths':1.0, 'zorder':2}
-        if not fitsimage is None:
-            c, grid, (bmaj, bmin, bpa), _, rms \
-                = self.__readfits(fitsimage, Tb, sigma, restfrq)
-        else:
+        if fitsimage is None:
             if np.ndim(c) == 2 and sigma == 'edge': sigma = 'out'
             rms = estimate_rms(c, sigma)
-            grid, c = trim(x, y, self.xlim, self.ylim, v, self.vlim, c)
-        x, y = [g[::skip] for g in grid[:2]]
+            c, (x, y) = trimxy(x, y, v, self.lims, c)
+        else:
+            c, (x, y), (bmaj, bmin, bpa), _, rms \
+                = readfits(self, fitsimage, Tb, sigma, restfrq)
+        x, y = x[::skip], y[::skip]
         c = self.__reform(c, skip)
         for axnow, cnow in zip(np.ravel(self.ax), c):
             axnow.contour(x, y, cnow, np.array(levels) * rms,
@@ -456,31 +459,26 @@ class plotastro3D():
         if show_beam:
             self.add_beam(bmaj, bmin, bpa, beamcolor)
             
-    def add_vector(self, ampfits: str = None, angfits: str = None,
-                     x: list = None, y: list = None, skip: int = 1,
-                     v: list = None, amp: list = None, ang: list = None,
-                     ampfactor: float = 1.,
-                     show_beam: bool = True, beamcolor: str = 'gray',
-                     bmaj: float = 0., bmin: float = 0., bpa: float = 0.,
-                     **kwargs) -> None:
+    def add_segment(self, ampfits: str = None, angfits: str = None,
+                    x: list = None, y: list = None, skip: int = 1,
+                    v: list = None, amp: list = None, ang: list = None,
+                    ampfactor: float = 1.,
+                    show_beam: bool = True, beamcolor: str = 'gray',
+                    bmaj: float = 0., bmin: float = 0., bpa: float = 0.,
+                    **kwargs) -> None:
         kwargs0 = {'angles':'xy', 'scale_units':'xy', 'color':'gray',
                    'pivot':'mid', 'headwidth':0, 'headlength':0,
                    'headaxislength':0, 'width':0.007, 'zorder':3}
-        if not ampfits is None:
-            amp, grid, (bmaj, bmin, bpa), _, _ \
-                = self.__readfits(ampfits)
+        if ampfits is None:
+            amp, (x, y) = trimxy(x, y, v, self.lims, amp)
         else:
-            grid, amp = trim(x, y, self.xlim, self.ylim,
-                                v, self.vlim, amp)
-        if not angfits is None:
-            ang, grid, (bmaj, bmin, bpa), _, _ \
-                = self.__readfits(angfits)
+            amp, (x, y), (bmaj, bmin, bpa), _, _ = readfits(self, ampfits)
+        if angfits is None:
+            ang, (x, y) = trimxy(x, y, v, self.lims, ang)
         else:
-            grid, ang = trim(x, y, self.xlim, self.ylim,
-                                v, self.vlim, ang)
-        if amp is None and not ang is None:
-            amp = np.ones_like(ang)
-        x, y = [g[::skip] for g in grid[:2]]
+            ang, (x, y), (bmaj, bmin, bpa), _, _ = readfits(self, angfits)
+        if amp is None: amp = np.ones_like(ang)
+        x, y = x[::skip], y[::skip]
         amp, ang = self.__reform(amp, skip), self.__reform(ang, skip)
         u = ampfactor * amp * np.sin(np.radians(ang))
         v = ampfactor * amp * np.cos(np.radians(ang))
@@ -498,12 +496,12 @@ class plotastro3D():
             return -1
         for n in range(self.npages):
             axnow = self.ax[n, self.nrows - 1, 0]
-            a, b = barpos
-            x0, y0 = rel2abs(a, b * 0.9, self.xlim, self.ylim)
-            axnow.text(x0, y0, label, color=color, size=fontsize,
+            xrel, yrel = barpos
+            x, y = rel2abs(xrel, yrel * 0.9, self.xlim, self.ylim)
+            axnow.text(x, y, label, color=color, size=fontsize,
                        ha='center', va='top', zorder=10)
-            x0, y0 = rel2abs(a, b, self.xlim, self.ylim)
-            axnow.plot([x0 - length/2., x0 + length/2.], [y0, y0],
+            x, y = rel2abs(xrel, yrel, self.xlim, self.ylim)
+            axnow.plot([x - length/2., x + length/2.], [y, y],
                        '-', linewidth=linewidth, color=color)
             
     def add_marker(self, include_chan: list = None,

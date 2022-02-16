@@ -130,11 +130,11 @@ class FitsData:
                 else:
                     print('Please input restfrq.')
         if not hasattr(self, 'data'): self.data = None
-        (self.x, self.y, self.v), self.data \
-            = trim(self.x, self.y,
-                   [xoff - rmax, xoff + rmax],
-                   [yoff - rmax, yoff + rmax],
-                   self.v, [vmin, vmax], self.data)
+        self.data, (self.x, self.y, self.v) \
+            = trim(x=self.x, y=self.y, v=self.v,
+                   xlim=[xoff - rmax, xoff + rmax],
+                   ylim=[yoff - rmax, yoff + rmax],
+                   vlim=[vmin, vmax], data=self.data)
                     
     def get_grid(self, center: str = None, rmax: float = 1e10,
                  xoff: float = 0., yoff: float = 0., dist: float = 1.,
@@ -150,11 +150,11 @@ class FitsData:
 
 
 def fits2data(fitsimage: str, Tb: bool = False, log: bool = False,
-              dist: float = 1., method: str = None,
+              dist: float = 1., sigma: str = None,
               restfrq: float = None, **kwargs) -> list:
     fd = FitsData(fitsimage)
     fd.gen_data(Tb=Tb, log=log, drop=True, restfrq=restfrq)
-    rms = None if method is None else estimate_rms(fd.data, method)
+    rms = None if sigma is None else estimate_rms(fd.data, sigma)
     grid = fd.get_grid(**kwargs)
     beam = fd.get_beam(dist=dist)
     bunit = fd.get_header('BUNIT')
