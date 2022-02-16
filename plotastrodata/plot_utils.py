@@ -56,7 +56,31 @@ def set_rcparams(fontsize: int = 18, nancolor: str ='w') -> None:
     plt.rcParams['ytick.minor.width'] = 1.5
 
 
-class plotastro2D():
+class plotastroND():
+    def __init__(self, fig=None, ax=None,
+                 fitsimage: str = None, v: list = None,
+                 nrows: int = 4, ncols: int = 6,
+                 vmin: float = -1e10, vmax: float = 1e10,
+                 vsys: float = 0., vskip: int = 1,
+                 veldigit: int = 2,
+                 center: str = None, rmax: float = 1e10,
+                 dist: float = 1., xoff: float = 0, yoff: float = 0,
+                 xflip: bool = True, yflip: bool = False) -> None:
+    
+        set_rcparams()
+        self.fig = plt.figure(figsize=(7, 5)) if fig is None else fig
+        self.ax = self.fig.add_subplot(1, 1, 1) if ax is None else ax
+        self.gridpar = {'center':center, 'rmax':rmax, 'dist':dist,
+                        'xoff':xoff, 'yoff':yoff,
+                        'vsys':vsys, 'vmin':vmin, 'vmax':vmax}
+        self.xdir = xdir = -1 if xflip else 1
+        self.ydir = ydir = -1 if yflip else 1
+        self.xlim = [xoff - xdir*rmax, xoff + xdir*rmax]
+        self.ylim = [yoff - ydir*rmax, yoff + ydir*rmax]
+        self.lims = [self.xlim, self.ylim, [None, None]]
+
+    
+class plotastro2D(plotastroND):
     """Make a figure from 2D FITS files or 2D arrays.
     
     Basic rules --- Lengths are in the unit of arcsec.
@@ -69,20 +93,33 @@ class plotastro2D():
     Parameters for original methods in matplotlib.axes.Axes can be
     used as kwargs; see the default kwargs0 for reference.
     """
-    def __init__(self, fig=None, ax=None,
-                 center: str = None, rmax: float = 100, dist: float = 1.,
-                 xoff: float = 0, yoff: float = 0,
-                 xflip: bool = True, yflip: bool = False) -> None:
-        set_rcparams()
-        self.fig = plt.figure(figsize=(7, 5)) if fig is None else fig
-        self.ax = self.fig.add_subplot(1, 1, 1) if ax is None else ax
-        self.gridpar = {'center':center, 'rmax':rmax,
-                        'dist':dist, 'xoff':xoff, 'yoff':yoff}
-        self.xdir = xdir = -1 if xflip else 1
-        self.ydir = ydir = -1 if yflip else 1
-        self.xlim = [xoff - xdir*rmax, xoff + xdir*rmax]
-        self.ylim = [yoff - ydir*rmax, yoff + ydir*rmax]
-        self.lims = [self.xlim, self.ylim]
+    #def __init__(self, fig=None, ax=None,
+    #             center: str = None, rmax: float = 100, dist: float = 1.,
+    #             xoff: float = 0, yoff: float = 0,
+    #             xflip: bool = True, yflip: bool = False) -> None:
+    #def __init__(self, fig=None, ax=None,
+    #             fitsimage: str = None, v: list = None,
+    #             nrows: int = 4, ncols: int = 6,
+    #             vmin: float = -1e10, vmax: float = 1e10,
+    #             vsys: float = 0., vskip: int = 1,
+    #             veldigit: int = 2,
+    #             center: str = None, rmax: float = 1e10,
+    #             dist: float = 1., xoff: float = 0, yoff: float = 0,
+    #             xflip: bool = True, yflip: bool = False) -> None:
+    # 
+    #    set_rcparams()
+    #    self.fig = plt.figure(figsize=(7, 5)) if fig is None else fig
+    #    self.ax = self.fig.add_subplot(1, 1, 1) if ax is None else ax
+    #    #self.gridpar = {'center':center, 'rmax':rmax, 'dist':dist,
+    #    #                'xoff':xoff, 'yoff':yoff}
+    #    self.gridpar = {'center':center, 'rmax':rmax, 'dist':dist,
+    #                    'xoff':xoff, 'yoff':yoff,
+    #                    'vsys':vsys, 'vmin':vmin, 'vmax':vmax}
+    #    self.xdir = xdir = -1 if xflip else 1
+    #    self.ydir = ydir = -1 if yflip else 1
+    #    self.xlim = [xoff - xdir*rmax, xoff + xdir*rmax]
+    #    self.ylim = [yoff - ydir*rmax, yoff + ydir*rmax]
+    #    self.lims = [self.xlim, self.ylim, [None, None]]
 
     def add_ellipse(self, poslist: list = [],
                     majlist: list = [], minlist: list = [],
@@ -283,7 +320,7 @@ class plotastro2D():
         plt.show()
             
         
-class plotastro3D():
+class plotastro3D(plotastroND):
     """Make a figure from 3D FITS files or 3D arrays.
     
     Basic rules --- First of all, a 1D velocity array or a FITS file
@@ -312,17 +349,18 @@ class plotastro3D():
             _, _, v = fd.get_grid(vsys=vsys, vmin=vmin, vmax=vmax)
         self.nv = len(v := v[::vskip])
         npages = int(np.ceil(self.nv / nrows / ncols))
-        self.nchan = npages * nrows * ncols
-        lennan = self.nchan - self.nv
+        nchan = npages * nrows * ncols
+        lennan = nchan - self.nv
         v = np.r_[v, v[-1] + (np.arange(lennan)+1)*(v[1]-v[0])]
-        self.nij2ch = nij2ch = lambda n, i, j: n*nrows*ncols + i*ncols + j
+        nij2ch = lambda n, i, j: n*nrows*ncols + i*ncols + j
         def ch2nij(ch: int) -> list:
             n = ch // (nrows*ncols)
             i = (ch - n*nrows*ncols) // ncols
             j = ch % ncols
             return [n, i, j]
-        ax = np.empty(self.nchan, dtype='object')
-        for ch in range(self.nchan):
+        self.nij2ch, self.ch2nij = nij2ch, ch2nij
+        ax = np.empty(nchan, dtype='object')
+        for ch in range(nchan):
             n, i, j = ch2nij(ch)
             fig = plt.figure(n, figsize=(ncols*2, max(nrows, 1.5)*2))
             sharex = ax[nij2ch(n, i - 1, j)] if i > 0 else None
@@ -336,7 +374,8 @@ class plotastro3D():
           
         self.ax = ax
         self.vskip = vskip
-        self.npages, self.nrows, self.ncols = npages, nrows, ncols
+        self.npages = npages
+        self.nchan = nchan
         self.gridpar = {'center':center, 'rmax':rmax, 'dist':dist,
                         'xoff':xoff, 'yoff':yoff,
                         'vsys':vsys, 'vmin':vmin, 'vmax':vmax}
@@ -345,7 +384,7 @@ class plotastro3D():
         self.xlim = [xoff - xdir*rmax, xoff + xdir*rmax]
         self.ylim = [yoff - ydir*rmax, yoff + ydir*rmax]
         self.lims = [self.xlim, self.ylim, [vmin, vmax]]
-        self.allchan = np.arange(self.nchan)
+        self.allchan = np.arange(nchan)
         self.bottomleft = nij2ch(np.arange(npages), nrows - 1, 0)
             
     def __reform(self, c: list, skip: int = 1) -> list:
@@ -371,7 +410,7 @@ class plotastro3D():
             for ch, axnow in enumerate(self.ax):
                 if not (ch in include_chan):
                     continue
-                plt.figure(ch // (self.nrows*self.ncols))
+                plt.figure(self.ch2nij(ch)[0])
                 e = Ellipse((x, y), width=width, height=height,
                             angle=angle * self.xdir,
                             **dict(kwargs0, **kwargs))
@@ -417,9 +456,9 @@ class plotastro3D():
         for ch, (axnow, cnow) in enumerate(zip(self.ax, c)):
             p = axnow.pcolormesh(x, y, cnow, shading='nearest',
                                  **dict(kwargs0, **kwargs))
-            if not (show_cbar and ch % (self.nrows*self.ncols) == 0):
+            if not (show_cbar and ch % (self.nchan//self.npages) == 0):
                 continue
-            plt.figure(ch // (self.nrows*self.ncols))
+            plt.figure(self.ch2nij(ch)[0])
             cblabel = bunit if cblabel is None else cblabel
             cax = plt.axes([0.88, 0.105, 0.015, 0.77])
             cb = plt.colorbar(p, cax=cax, label=cblabel, format=cbformat)
@@ -497,8 +536,9 @@ class plotastro3D():
         if length == 0 or label == '':
             print('Please set length and label.')
             return -1
-        for n in range(self.npages):
-            axnow = self.ax[self.nij2ch(n, self.nrows - 1, 0)]
+        for ch, axnow in enumerate(self.ax):
+            if ch in self.bottomleft:
+                continue
             xrel, yrel = barpos
             x, y = rel2abs(xrel, yrel * 0.9, self.xlim, self.ylim)
             axnow.text(x, y, label, color=color, size=fontsize,
