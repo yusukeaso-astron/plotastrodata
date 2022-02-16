@@ -315,19 +315,24 @@ class plotastro3D():
         self.nchan = npages * nrows * ncols
         lennan = self.nchan - self.nv
         v = np.r_[v, v[-1] + (np.arange(lennan)+1)*(v[1]-v[0])]
-        nij2ch = lambda n, i, j: n*nrows*ncols + i*ncols + j
-        ax = np.empty((npages, nrows, ncols), dtype='object')
-        for n, i, j in np.ndindex((npages, nrows, ncols)):
+        self.nij2ch = nij2ch = lambda n, i, j: n*nrows*ncols + i*ncols + j
+        def ch2nij(ch: int) -> list:
+            n = ch // (nrows*ncols)
+            i = (ch - n*nrows*ncols) // ncols
+            j = ch % ncols
+            return [n, i, j]
+        ax = np.empty(self.nchan, dtype='object')
+        for ch in range(self.nchan):
+            n, i, j = ch2nij(ch)
             fig = plt.figure(n, figsize=(ncols*2, max(nrows, 1.5)*2))
-            sharex = ax[n, i - 1, j] if i > 0 else None
-            sharey = ax[n, i, j - 1] if j > 0 else None
-            ax[n, i, j] = fig.add_subplot(nrows, ncols, i*ncols + j + 1,
-                                          sharex=sharex, sharey=sharey)
+            sharex = ax[nij2ch(n, i - 1, j)] if i > 0 else None
+            sharey = ax[nij2ch(n, i, j - 1)] if j > 0 else None
+            ax[ch] = fig.add_subplot(nrows, ncols, i*ncols + j + 1,
+                                     sharex=sharex, sharey=sharey)
             fig.subplots_adjust(hspace=0, wspace=0, right=0.87, top=0.87)
-            ch = nij2ch(n, i, j)
-            ax[n, i, j].text(0.9 * rmax, 0.7 * rmax,
-                             rf'${v[ch]:.{veldigit:d}f}$', color='black',
-                             backgroundcolor='white', zorder=20)
+            ax[ch].text(0.9 * rmax, 0.7 * rmax,
+                        rf'${v[ch]:.{veldigit:d}f}$', color='black',
+                        backgroundcolor='white', zorder=20)
           
         self.ax = ax
         self.vskip = vskip
@@ -341,7 +346,7 @@ class plotastro3D():
         self.ylim = [yoff - ydir*rmax, yoff + ydir*rmax]
         self.lims = [self.xlim, self.ylim, [vmin, vmax]]
         self.allchan = np.arange(self.nchan)
-        self.bottomleft = nij2ch(np.arange(npages), nrows-1, 0)
+        self.bottomleft = nij2ch(np.arange(npages), nrows - 1, 0)
             
     def __reform(self, c: list, skip: int = 1) -> list:
         if np.ndim(c) == 3:
@@ -363,10 +368,10 @@ class plotastro3D():
         if include_chan is None: include_chan = self.allchan
         for x, y, width, height, angle\
             in zip(*pos2xy(self, poslist), minlist, majlist, palist):
-            for i, axnow in enumerate(np.ravel(self.ax)):
-                if not (i in include_chan):
+            for ch, axnow in enumerate(self.ax):
+                if not (ch in include_chan):
                     continue
-                plt.figure(i // (self.nrows*self.ncols))
+                plt.figure(ch // (self.nrows*self.ncols))
                 e = Ellipse((x, y), width=width, height=height,
                             angle=angle * self.xdir,
                             **dict(kwargs0, **kwargs))
@@ -409,12 +414,12 @@ class plotastro3D():
         c = c.clip(kwargs['vmin'], kwargs['vmax'])
         x, y = x[::skip], y[::skip]
         c = self.__reform(c, skip)
-        for i, (axnow, cnow) in enumerate(zip(np.ravel(self.ax), c)):
+        for ch, (axnow, cnow) in enumerate(zip(self.ax, c)):
             p = axnow.pcolormesh(x, y, cnow, shading='nearest',
                                  **dict(kwargs0, **kwargs))
-            if not (show_cbar and i % (self.nrows*self.ncols) == 0):
+            if not (show_cbar and ch % (self.nrows*self.ncols) == 0):
                 continue
-            plt.figure(i // (self.nrows*self.ncols))
+            plt.figure(ch // (self.nrows*self.ncols))
             cblabel = bunit if cblabel is None else cblabel
             cax = plt.axes([0.88, 0.105, 0.015, 0.77])
             cb = plt.colorbar(p, cax=cax, label=cblabel, format=cbformat)
@@ -451,7 +456,7 @@ class plotastro3D():
                 = readfits(self, fitsimage, Tb, sigma, restfrq)
         x, y = x[::skip], y[::skip]
         c = self.__reform(c, skip)
-        for axnow, cnow in zip(np.ravel(self.ax), c):
+        for axnow, cnow in zip(self.ax, c):
             axnow.contour(x, y, cnow, np.array(levels) * rms,
                           **dict(kwargs0, **kwargs))
         if show_beam:
@@ -481,7 +486,7 @@ class plotastro3D():
         u = ampfactor * amp * np.sin(np.radians(ang))
         v = ampfactor * amp * np.cos(np.radians(ang))
         kwargs0['scale'] = 1. / np.abs(x[1] - x[0])
-        for axnow, unow, vnow in zip(np.ravel(self.ax), u, v):
+        for axnow, unow, vnow in zip(self.ax, u, v):
             axnow.quiver(x, y, unow, vnow, **dict(kwargs0, **kwargs))
         if show_beam:
             self.add_beam(bmaj, bmin, bpa, beamcolor)
@@ -493,7 +498,7 @@ class plotastro3D():
             print('Please set length and label.')
             return -1
         for n in range(self.npages):
-            axnow = self.ax[n, self.nrows - 1, 0]
+            axnow = self.ax[self.nij2ch(n, self.nrows - 1, 0)]
             xrel, yrel = barpos
             x, y = rel2abs(xrel, yrel * 0.9, self.xlim, self.ylim)
             axnow.text(x, y, label, color=color, size=fontsize,
@@ -507,8 +512,8 @@ class plotastro3D():
         kwsmark0 = {'marker':'+', 'ms':10, 'mfc':'gray',
                     'mec':'gray', 'mew':2, 'alpha':1}
         if include_chan is None: include_chan = self.allchan
-        for i, axnow in enumerate(np.ravel(self.ax)):
-            if not (i in include_chan):
+        for ch, axnow in enumerate(self.ax):
+            if not (ch in include_chan):
                 continue
             for x, y in zip(*pos2xy(self, poslist)):
                 axnow.plot(x, y, **dict(kwsmark0, **kwargs), zorder=10)
@@ -517,8 +522,8 @@ class plotastro3D():
                   poslist: list = [], slist: list = [], **kwargs) -> None:
         kwargs0 = {'color':'gray', 'fontsize':15, 'zorder':10}
         if include_chan is None: include_chan = self.allchan
-        for i, axnow in enumerate(np.ravel(self.ax)):
-            if not (i in include_chan):
+        for ch, axnow in enumerate(self.ax):
+            if not (ch in include_chan):
                 continue
             for x, y, s in zip(*pos2xy(self, poslist), slist):
                 axnow.text(x=x, y=y, s=s, **dict(kwargs0, **kwargs))
@@ -528,8 +533,8 @@ class plotastro3D():
                  rlist: list = [], **kwargs):
         kwargs0 = {'color':'gray', 'linewidth':1.5, 'zorder':10}
         if include_chan is None: include_chan = self.allchan
-        for i, axnow in enumerate(np.ravel(self.ax)):
-            if not (i in include_chan):
+        for ch, axnow in enumerate(self.ax):
+            if not (ch in include_chan):
                 continue
             for x, y, a, r \
                 in zip(*pos2xy(self, poslist), np.radians(anglelist), rlist):
@@ -543,8 +548,8 @@ class plotastro3D():
         kwargs0 = {'color':'gray', 'width':0.012,
                    'headwidth':5, 'headlength':5, 'zorder':10}
         if include_chan is None: include_chan = self.allchan
-        for i, axnow in enumerate(np.ravel(self.ax)):
-            if not (i in include_chan):
+        for ch, axnow in enumerate(self.ax):
+            if not (ch in include_chan):
                 continue
             for x, y, a, r \
                 in zip(*pos2xy(self, poslist), np.radians(anglelist), rlist):
@@ -558,7 +563,7 @@ class plotastro3D():
                  xlabel: str = 'R.A. (arcsec)',
                  ylabel: str = 'Dec. (arcsec)',
                  samexy: bool = True) -> None:
-        for i, axnow in enumerate(np.ravel(self.ax)):
+        for ch, axnow in enumerate(self.ax):
             if samexy:
                 axnow.set_xticks(axnow.get_yticks())
                 axnow.set_yticks(axnow.get_xticks())
@@ -570,23 +575,23 @@ class plotastro3D():
             if not yticksminor is None:
                 axnow.set_yticks(yticksminor, minor=True)
             if not xticklabels is None: axnow.set_xticklabels(xticklabels)
-            if not (i in self.bottomleft):
+            if not (ch in self.bottomleft):
                 axnow.set_xticklabels([''] * len(axnow.get_xticks()))
             if not yticklabels is None: axnow.set_yticklabels(yticklabels)
-            if not (i in self.bottomleft):
+            if not (ch in self.bottomleft):
                 axnow.set_yticklabels([''] * len(axnow.get_yticks()))
             axnow.set_xlim(*self.xlim)
             axnow.set_ylim(*self.ylim)
             if not xlabel is None: axnow.set_xlabel(xlabel)
-            if not (i in self.bottomleft):
+            if not (ch in self.bottomleft):
                 axnow.set_xlabel('')
             if not ylabel is None: axnow.set_ylabel(ylabel)
-            if not (i in self.bottomleft):
+            if not (ch in self.bottomleft):
                 axnow.set_ylabel('')
 
     def savefig(self, filename: str = 'plotastro3D.png',
                 transparent: bool =True) -> None:
-        for axnow in np.ravel(self.ax):
+        for axnow in self.ax:
             axnow.set_xlim(*self.xlim)
             axnow.set_ylim(*self.ylim)
         ext = filename.split('.')[-1]
@@ -597,7 +602,7 @@ class plotastro3D():
                         bbox_inches='tight', transparent=transparent)
             
     def show(self):
-        for axnow in np.ravel(self.ax):
+        for axnow in self.ax:
             axnow.set_xlim(*self.xlim)
             axnow.set_ylim(*self.ylim)
         plt.show()
