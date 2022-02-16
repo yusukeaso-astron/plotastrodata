@@ -123,15 +123,14 @@ class plotastro2D():
         c = c[::skip, ::skip]
         if log: c = np.log10(c.clip(c[c > 0].min(), None))
         if 'vmin' in kwargs:
-            cmin = kwargs['vmin']
-            c = c.clip(np.log10(cmin), None) if log else c.clip(cmin, None)
+            if log: kwargs['vmin'] = np.log10(kwargs['vmin'])
         else:
             kwargs['vmin'] = np.log10(rms) if log else np.nanmean(c)
         if 'vmax' in kwargs:
-            cmax = kwargs['vmax']
-            c = c.clip(None, np.log10(cmax)) if log else c.clip(None, cmax)
+            if log: kwargs['vmax'] = np.log10(kwargs['vmax'])
         else:
             kwargs['vmax'] = np.nanmax(c)
+        c = c.clip(kwargs['vmin'], kwargs['vmax'])
         p = self.ax.pcolormesh(x, y, c, shading='nearest',
                                **dict(kwargs0, **kwargs))
         if show_cbar:
@@ -381,16 +380,16 @@ class plotastro3D():
                          facecolor=beamcolor, edgecolor=None)
 
     def add_color(self, fitsimage: str = None,
-                   x: list = None, y: list = None, skip: int = 1,
-                   v: list = None, c: list = None,
-                   restfrq: float = None,
-                   Tb: bool = False, log: bool = False,
-                   show_cbar: bool = True,
-                   cblabel: str = None, cbformat: float = '%.1e',
-                   cbticks: list = None, cbticklabels: list = None,
-                   show_beam: bool = True, beamcolor: str = 'gray',
-                   bmaj: float = 0., bmin: float = 0.,
-                   bpa: float = 0., **kwargs) -> None:
+                  x: list = None, y: list = None, skip: int = 1,
+                  v: list = None, c: list = None,
+                  restfrq: float = None,
+                  Tb: bool = False, log: bool = False,
+                  show_cbar: bool = True,
+                  cblabel: str = None, cbformat: float = '%.1e',
+                  cbticks: list = None, cbticklabels: list = None,
+                  show_beam: bool = True, beamcolor: str = 'gray',
+                  bmaj: float = 0., bmin: float = 0.,
+                  bpa: float = 0., **kwargs) -> None:
         kwargs0 = {'cmap':'cubehelix', 'alpha':1, 'zorder':1}
         if fitsimage is None:
             bunit, rms = '', estimate_rms(c, 'out')
@@ -400,15 +399,14 @@ class plotastro3D():
                 = readfits(self, fitsimage, Tb, 'out', restfrq)
         if log: c = np.log10(c.clip(c[c > 0].min(), None))
         if 'vmin' in kwargs:
-            cmin = kwargs['vmin']
-            c = c.clip(np.log10(cmin), None) if log else c.clip(cmin, None)
+            if log: kwargs['vmin'] = np.log10(kwargs['vmin'])
         else:
             kwargs['vmin'] = np.log10(rms) if log else np.nanmin(c)
         if 'vmax' in kwargs:
-            cmax = kwargs['vmax']
-            c = c.clip(None, np.log10(cmax)) if log else c.clip(None, cmax)
+            if log: kwargs['vmax'] = np.log10(kwargs['vmax'])
         else:
             kwargs['vmax'] = np.nanmax(c)
+        c = c.clip(kwargs['vmin'], kwargs['vmax'])
         x, y = x[::skip], y[::skip]
         c = self.__reform(c, skip)
         for i, (axnow, cnow) in enumerate(zip(np.ravel(self.ax), c)):
