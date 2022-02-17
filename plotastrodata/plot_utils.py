@@ -45,7 +45,7 @@ class plotastrodata():
     Parameters for original methods in matplotlib.axes.Axes can be
     used as kwargs; see the default kwargs0 for reference.
     
-    Future: Each method (color, contour, segment) will be able to receive
+    Future: Each method (color, contour, segment) should be able to receive
     a different 'center'.
     """
     def __init__(self, fitsimage: str = None,
