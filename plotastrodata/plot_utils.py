@@ -3,8 +3,8 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
 
-from other_utils import coord2xy, rel2abs, estimate_rms, trim
-from fits_utils import FitsData, fits2data
+from plotastrodata.other_utils import coord2xy, rel2abs, estimate_rms, trim
+from plotastrodata.fits_utils import FitsData, fits2data
 
 
 

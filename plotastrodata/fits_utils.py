@@ -2,7 +2,7 @@ import numpy as np
 from astropy.io import fits
 from astropy import constants, units, wcs
 
-from other_utils import coord2xy, estimate_rms, trim
+from plotastrodata.other_utils import coord2xy, estimate_rms, trim
 
 
 

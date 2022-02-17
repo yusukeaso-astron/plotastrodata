@@ -1,12 +1,13 @@
-import matplotlib.pyplot as plt
 from plotastrodata.plot_utils import plotastrodata as pad
 
+pre = 'testFITS/'
 # 2D case
 pa = pad(rmax=0.8, center='04h04m43.07s 26d18m56.20s')
-pa.add_color(fitsimage='test2D.fits', Tb=True, cblabel='Tb (K)')
-pa.add_contour(fitsimage='test2D_2.fits', colors='r', sigma=5e-3)
-pa.add_contour(fitsimage='test2D.fits', skip=2, sigma=5e-3)
-pa.add_segment(ampfits='test2Damp.fits', angfits='test2Dang.fits', skip=3)
+pa.add_color(fitsimage=pre+'test2D.fits', Tb=True, cblabel='Tb (K)')
+pa.add_contour(fitsimage=pre+'test2D_2.fits', colors='r', sigma=5e-3)
+pa.add_contour(fitsimage=pre+'test2D.fits', skip=2, sigma=5e-3)
+pa.add_segment(ampfits=pre+'test2Damp.fits',
+               angfits=pre+'test2Dang.fits', skip=3)
 pa.add_scalebar(length=50 / 140, label='50 au')
 pa.add_label([[0.3, 0.3]], slist=['label'])
 pa.add_marker([[0.7, 0.7]])
@@ -19,11 +20,12 @@ pa.show()
 
 # 3D case
 pa = pad(rmax=0.8, center='04h04m43.07s 26d18m56.20s',
-         fitsimage='test3D.fits', vmin=-5, vmax=5, vskip=2)
-pa.add_color(fitsimage='test3D.fits', log=True)
-pa.add_contour(fitsimage='test3D.fits', colors='r')
-pa.add_contour(fitsimage='test2D_2.fits', colors='b')
-pa.add_segment(ampfits='test2Damp.fits', angfits='test2Dang.fits', skip=3)
+         fitsimage=pre+'test3D.fits', vmin=-5, vmax=5, vskip=2)
+pa.add_color(fitsimage=pre+'test3D.fits', log=True)
+pa.add_contour(fitsimage=pre+'test3D.fits', colors='r')
+pa.add_contour(fitsimage=pre+'test2D_2.fits', colors='b')
+pa.add_segment(ampfits=pre+'test2Damp.fits',
+               angfits=pre+'test2Dang.fits', skip=3)
 pa.add_scalebar(length=50 / 140, label='50 au')
 pa.add_label([[0.3, 0.3]], slist=['label'], include_chan=[0,1,2])
 pa.add_marker(['04h04m43.07s 26d18m56.20s'], [3,4,5])
