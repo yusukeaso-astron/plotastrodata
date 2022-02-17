@@ -1,8 +1,8 @@
 import matplotlib.pyplot as plt
-from plotastrodata.plot_utils import plotastrodata
+from plotastrodata.plot_utils import plotastrodata as pad
 
 # 2D case
-pa = plotastrodata(rmax=0.8, center='04h04m43.07s 26d18m56.20s')
+pa = pad(rmax=0.8, center='04h04m43.07s 26d18m56.20s')
 pa.add_color(fitsimage='test2D.fits', Tb=True, cblabel='Tb (K)')
 pa.add_contour(fitsimage='test2D_2.fits', colors='r', sigma=5e-3)
 pa.add_contour(fitsimage='test2D.fits', skip=2, sigma=5e-3)
@@ -18,8 +18,8 @@ pa.savefig()
 pa.show()
 
 # 3D case
-pa = plotastrodata(rmax=0.8, center='04h04m43.07s 26d18m56.20s',
-                   fitsimage='test3D.fits', vmin=-5, vmax=5, vskip=2)
+pa = pad(rmax=0.8, center='04h04m43.07s 26d18m56.20s',
+         fitsimage='test3D.fits', vmin=-5, vmax=5, vskip=2)
 pa.add_color(fitsimage='test3D.fits', log=True)
 pa.add_contour(fitsimage='test3D.fits', colors='r')
 pa.add_contour(fitsimage='test2D_2.fits', colors='b')
