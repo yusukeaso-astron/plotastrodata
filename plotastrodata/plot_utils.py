@@ -374,8 +374,7 @@ class plotastro3D(plotastroND):
         nv = len(v := v[::vskip])
         npages = int(np.ceil(nv / nrows / ncols))
         nchan = npages * nrows * ncols
-        lennan = nchan - nv
-        v = np.r_[v, v[-1] + (np.arange(lennan)+1)*(v[1]-v[0])]
+        v = np.r_[v, v[-1] + (np.arange(nchan-nv)+1) * (v[1]-v[0])]
         def nij2ch(n: int, i: int, j: int) -> int:
             return n*nrows*ncols + i*ncols + j
         def ch2nij(ch: int) -> list:
