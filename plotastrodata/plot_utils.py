@@ -44,6 +44,9 @@ class plotastrodata():
     like [0.2, 0.3] (0 is left or bottom, 1 is right or top).
     Parameters for original methods in matplotlib.axes.Axes can be
     used as kwargs; see the default kwargs0 for reference.
+    
+    Future: Each method (color, contour, segment) will be able to receive
+    a different 'center'.
     """
     def __init__(self, fitsimage: str = None,
                  v: list = [0], vskip: int = 1,
