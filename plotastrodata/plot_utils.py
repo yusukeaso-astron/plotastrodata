@@ -3,35 +3,9 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
 
-from plotastrodata.other_utils import coord2xy, rel2abs, estimate_rms, trim
+from plotastrodata.other_utils import coord2xy, rel2abs, estimate_rms, trim, listing
 from plotastrodata.fits_utils import FitsData, fits2data
 
-
-
-def pos2xy(pad, pos: list = []) -> list:
-    x, y = [None] * len(pos), [None] * len(pos)
-    for i, p in enumerate(pos):
-        if type(p) == str:
-            center = pad.gridpar['center']
-            x[i], y[i] = (coord2xy(p)-coord2xy(center)) * 3600.
-        else:
-            x[i], y[i] = rel2abs(*p, pad.xlim, pad.ylim)
-    return [x, y]
-
-
-def readfits(plotastro, fitsimage: str, Tb: bool = False,
-             sigma: str = None, restfrq: float = None) -> list:
-    data, grid, beam, bunit, rms \
-        = fits2data(fitsimage=fitsimage, Tb=Tb, log=False,
-                    sigma=sigma, restfrq=restfrq, **plotastro.gridpar)
-    return [data, grid[:2], beam, bunit, rms]
-
-
-def readdata(x: list = None, y: list = None, v: list = None,
-             lims: list = None, data: list = None):
-    dataout, grid = trim(data=data, x=x, y=y, v=v,
-                         xlim=lims[0], ylim=lims[1], vlim=lims[2])
-    return [dataout, grid[:2]]
     
 
 def set_rcparams(fontsize: int = 18, nancolor: str ='w') -> None:
@@ -63,8 +37,9 @@ class plotastrodata():
     Lengths are in the unit of arcsec.
     Angles are in the unit of degree.
     For ellipse, line, arrow, label, and marker,
-    a single input must be listed like poslist=[[0.2, 0.3]],
-    and each element of poslist supposes a text coordinate
+    a single input can be treated without a list, i.e., anglelist=60,
+    as well as anglelist=[60].
+    Each element of poslist supposes a text coordinate
     like '01h23m45.6s 01d23m45.6s' or a list of relative x and y
     like [0.2, 0.3] (0 is left or bottom, 1 is right or top).
     Parameters for original methods in matplotlib.axes.Axes can be
@@ -113,10 +88,10 @@ class plotastrodata():
         self.ax = ax
         self.xdir = xdir = -1 if xflip else 1
         self.ydir = ydir = -1 if yflip else 1
-        self.xlim = [xoff - xdir*rmax, xoff + xdir*rmax]
-        self.ylim = [yoff - ydir*rmax, yoff + ydir*rmax]
-        self.vlim = [vmin, vmax]
-        self.lims = [self.xlim, self.ylim, self.vlim]
+        self.xlim = xlim = [xoff - xdir*rmax, xoff + xdir*rmax]
+        self.ylim = ylim = [yoff - ydir*rmax, yoff + ydir*rmax]
+        self.vlim = vlim = [vmin, vmax]
+        self.lims = [xlim, ylim, vlim]
         self.gridpar = {'center':center, 'rmax':rmax,
                         'dist':dist, 'xoff':xoff, 'yoff':yoff,
                         'vsys':vsys, 'vmin':vmin, 'vmax':vmax}
@@ -124,6 +99,18 @@ class plotastrodata():
         self.npages = npages
         self.allchan = np.arange(nchan)
         self.bottomleft = nij2ch(np.arange(npages), nrows - 1, 0)
+
+        def pos2xy(poslist: list = []) -> list:
+            if np.shape(poslist) in [(), (2,)]:
+                poslist = [poslist]
+            x, y = [None] * len(poslist), [None] * len(poslist)
+            for i, p in enumerate(poslist):
+                if type(p) == str:
+                    x[i], y[i] = (coord2xy(p)-coord2xy(center)) * 3600.
+                else:
+                    x[i], y[i] = rel2abs(*p, xlim, ylim)
+            return [x, y]
+        self.pos2xy = pos2xy
 
         def skipfill(c: list, skip: int = 1) -> list:
             if np.ndim(c) == 3:
@@ -136,6 +123,22 @@ class plotastrodata():
             return np.concatenate((d, dnan), axis=0)
         self.skipfill = skipfill
         
+        def readfits(fitsimage: str, Tb: bool = False,
+                     sigma: str = None, restfrq: float = None) -> list:
+            data, grid, beam, bunit, rms \
+                = fits2data(fitsimage=fitsimage, Tb=Tb, log=False,
+                            sigma=sigma, restfrq=restfrq, **self.gridpar)
+            return [data, grid[:2], beam, bunit, rms]
+        self.readfits = readfits
+        
+        def readdata(data: list = None, x: list = None,
+                     y: list = None, v: list = None) -> list:
+            dataout, grid = trim(data=data, x=x, y=y, v=v,
+                                 xlim=xlim, ylim=ylim, vlim=vlim)
+            return [dataout, grid[:2]]
+        self.readdata = readdata
+
+        
     def add_ellipse(self, poslist: list = [],
                     majlist: list = [], minlist: list = [], palist: list = [],
                     include_chan: list = None, **kwargs) -> None:
@@ -143,7 +146,7 @@ class plotastrodata():
                    'linewidth':1.5, 'zorder':10}
         if include_chan is None: include_chan = self.allchan
         for x, y, width, height, angle\
-            in zip(*pos2xy(self, poslist), minlist, majlist, palist):
+            in zip(*self.pos2xy(poslist), *listing(minlist, majlist, palist)):
             for ch, axnow in enumerate(self.ax):
                 if not (ch in include_chan):
                     continue
@@ -168,7 +171,7 @@ class plotastrodata():
         for ch, axnow in enumerate(self.ax):
             if not (ch in include_chan):
                 continue
-            for x, y in zip(*pos2xy(self, poslist)):
+            for x, y in zip(*self.pos2xy(poslist)):
                 axnow.plot(x, y, **dict(kwsmark0, **kwargs), zorder=10)
             
     def add_label(self, poslist: list = [], slist: list = [],
@@ -178,7 +181,7 @@ class plotastrodata():
         for ch, axnow in enumerate(self.ax):
             if not (ch in include_chan):
                 continue
-            for x, y, s in zip(*pos2xy(self, poslist), slist):
+            for x, y, s in zip(*self.pos2xy(poslist), *listing(slist)):
                 axnow.text(x=x, y=y, s=s, **dict(kwargs0, **kwargs))
 
     def add_line(self, poslist: list = [], anglelist: list = [],
@@ -188,8 +191,9 @@ class plotastrodata():
         for ch, axnow in enumerate(self.ax):
             if not (ch in include_chan):
                 continue
+            alist = np.radians(anglelist)
             for x, y, a, r \
-                in zip(*pos2xy(self, poslist), np.radians(anglelist), rlist):
+                in zip(*self.pos2xy(poslist), *listing(alist, rlist)):
                 axnow.plot([x, x + r * np.sin(a)],
                            [y, y + r * np.cos(a)],
                            **dict(kwargs0, **kwargs))
@@ -202,8 +206,9 @@ class plotastrodata():
         for ch, axnow in enumerate(self.ax):
             if not (ch in include_chan):
                 continue
+            alist = np.radians(anglelist)
             for x, y, a, r \
-                in zip(*pos2xy(self, poslist), np.radians(anglelist), rlist):
+                in zip(*self.pos2xy(poslist), *listing(alist, rlist)):
                 axnow.quiver(x, y, r * np.sin(a), r * np.cos(a),
                              angles='xy', scale_units='xy', scale=1,
                              **dict(kwargs0, **kwargs))
@@ -219,12 +224,11 @@ class plotastrodata():
         for ch, axnow in enumerate(self.ax):
             if not (ch in self.bottomleft):
                 continue
-            xrel, yrel = barpos
-            x, y = rel2abs(xrel, yrel * 0.9, self.xlim, self.ylim)
-            axnow.text(x, y, label, color=color, size=fontsize,
+            x, y = self.pos2xy([barpos[0], barpos[1] * 0.9])
+            axnow.text(x[0], y[0], label, color=color, size=fontsize,
                        ha='center', va='top', zorder=10)
-            x, y = rel2abs(xrel, yrel, self.xlim, self.ylim)
-            axnow.plot([x - length/2., x + length/2.], [y, y],
+            x, y = self.pos2xy(barpos)
+            axnow.plot([x[0] - length/2., x[0] + length/2.], [y[0], y[0]],
                        '-', linewidth=linewidth, color=color)
     
     def add_color(self, fitsimage: str = None,
@@ -241,10 +245,10 @@ class plotastrodata():
         kwargs0 = {'cmap':'cubehelix', 'alpha':1, 'zorder':1}
         if fitsimage is None:
             bunit, rms = '', estimate_rms(c, 'out')
-            c, (x, y) = readdata(x, y, v, self.lims, c)    
+            c, (x, y) = self.readdata(c, x, y, v)    
         else:
             c, (x, y), (bmaj, bmin, bpa), bunit, rms \
-                = readfits(self, fitsimage, Tb, 'out', restfrq)
+                = self.readfits(fitsimage, Tb, 'out', restfrq)
         if log: c = np.log10(c.clip(c[c > 0].min(), None))
         if 'vmin' in kwargs:
             if log: kwargs['vmin'] = np.log10(kwargs['vmin'])
@@ -298,10 +302,10 @@ class plotastrodata():
         if fitsimage is None:
             if np.ndim(c) == 2 and sigma == 'edge': sigma = 'out'
             rms = estimate_rms(c, sigma)
-            c, (x, y) = readdata(x, y, v, self.lims, c)
+            c, (x, y) = self.readdata(c, x, y, v)
         else:
             c, (x, y), (bmaj, bmin, bpa), _, rms \
-                = readfits(self, fitsimage, Tb, sigma, restfrq)
+                = self.readfits(fitsimage, Tb, sigma, restfrq)
         x, y = x[::skip], y[::skip]
         c = self.skipfill(c, skip)
         for axnow, cnow in zip(self.ax, c):
@@ -321,13 +325,13 @@ class plotastrodata():
                    'pivot':'mid', 'headwidth':0, 'headlength':0,
                    'headaxislength':0, 'width':0.007, 'zorder':3}
         if ampfits is None:
-            amp, (x, y) = readdata(x, y, v, self.lims, amp)
+            amp, (x, y) = self.readdata(amp, x, y, v)
         else:
-            amp, (x, y), (bmaj, bmin, bpa), _, _ = readfits(self, ampfits)
+            amp, (x, y), (bmaj, bmin, bpa), _, _ = self.readfits(ampfits)
         if angfits is None:
-            ang, (x, y) = readdata(x, y, v, self.lims, ang)
+            ang, (x, y) = self.readdata(ang, x, y, v)
         else:
-            ang, (x, y), (bmaj, bmin, bpa), _, _ = readfits(self, angfits)
+            ang, (x, y), (bmaj, bmin, bpa), _, _ = self.readfits(angfits)
         if amp is None: amp = np.ones_like(ang)
         x, y = x[::skip], y[::skip]
         amp = self.skipfill(amp, skip)

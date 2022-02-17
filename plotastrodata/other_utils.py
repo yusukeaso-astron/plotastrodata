@@ -3,6 +3,20 @@ import numpy as np
 
 
 
+def listing(*args) -> list:
+    """Output a list of the input when the input is string or number.
+    
+    Returns:
+        list: With a single non-list input,
+              the output is a list like ['a'], rather than [['a']].
+    """
+    nums = [float, int, np.float64, np.int64, np.float32, np.int32]
+    b = [None] * len(args)
+    for i, a in enumerate(args):
+        b[i] = [a] if type(a) in nums + [str] else a
+    if len(args) == 1: b = b[0]
+    return b
+
 def coord2xy(coords: str, frame: str = 'icrs') -> list:
     """Transform R.A.-Dec. to (arcsec, arcsec).
 
