@@ -135,3 +135,6 @@ test_prof.png
 test_pv.png
 .DS_Store
 .DS_Store
+plotastro3D_0.png
+plotastro3D_1.png
+.gitignore
