@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -55,30 +56,40 @@ def set_rcparams(fontsize: int = 18, nancolor: str ='w') -> None:
     plt.rcParams['xtick.minor.width'] = 1.5
     plt.rcParams['ytick.minor.width'] = 1.5
 
-
+@dataclass
 class plotastroND():
-    def __init__(self, fig=None, ax=None,
-                 fitsimage: str = None, v: list = None,
-                 nrows: int = 4, ncols: int = 6,
-                 vmin: float = -1e10, vmax: float = 1e10,
-                 vsys: float = 0., vskip: int = 1,
-                 veldigit: int = 2,
-                 center: str = None, rmax: float = 1e10,
-                 dist: float = 1., xoff: float = 0, yoff: float = 0,
-                 xflip: bool = True, yflip: bool = False) -> None:
+    fig = None
+    ax = None
+    fitsimage: str = None
+    v: list = None
+    nrows: int = 4
+    ncols: int = 6
+    vmin: float = -1e10
+    vmax: float = 1e10
+    vsys: float = 0.
+    vskip: int = 1
+    veldigit: int = 2
+    center: str = None
+    rmax: float = 1e10
+    dist: float = 1.
+    xoff: float = 0
+    yoff: float = 0
+    xflip: bool = True
+    yflip: bool = False
+    xdir = -1 if xflip else 1
+    ydir = -1 if yflip else 1
     
-        set_rcparams()
-        self.fig = plt.figure(figsize=(7, 5)) if fig is None else fig
-        self.ax = self.fig.add_subplot(1, 1, 1) if ax is None else ax
-        self.gridpar = {'center':center, 'rmax':rmax, 'dist':dist,
-                        'xoff':xoff, 'yoff':yoff,
-                        'vsys':vsys, 'vmin':vmin, 'vmax':vmax}
-        self.xdir = xdir = -1 if xflip else 1
-        self.ydir = ydir = -1 if yflip else 1
-        self.xlim = [xoff - xdir*rmax, xoff + xdir*rmax]
-        self.ylim = [yoff - ydir*rmax, yoff + ydir*rmax]
+    def __post_init__(self):
+#        set_rcparams()
+#        self.fig = plt.figure(figsize=(7, 5)) if self.fig is None else self.fig
+#        self.ax = self.fig.add_subplot(1, 1, 1) if self.ax is None else self.ax
+        self.xlim = [self.xoff - self.xdir*self.rmax, self.xoff + self.xdir*self.rmax]
+        self.ylim = [self.yoff - self.ydir*self.rmax, self.yoff + self.ydir*self.rmax]
         self.lims = [self.xlim, self.ylim, [None, None]]
-
+        self.gridpar = {'center':self.center, 'rmax':self.rmax,
+                        'dist':self.dist, 'xoff':self.xoff, 'yoff':self.yoff,
+                        'vsys':self.vsys, 'vmin':self.vmin, 'vmax':self.vmax}
+        
     
 class plotastro2D(plotastroND):
     """Make a figure from 2D FITS files or 2D arrays.
@@ -93,6 +104,13 @@ class plotastro2D(plotastroND):
     Parameters for original methods in matplotlib.axes.Axes can be
     used as kwargs; see the default kwargs0 for reference.
     """
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        super().__post_init__()
+        set_rcparams()
+        self.fig = plt.figure(figsize=(7, 5)) if self.fig is None else self.fig
+        self.ax = self.fig.add_subplot(1, 1, 1) if self.ax is None else self.ax
+
     #def __init__(self, fig=None, ax=None,
     #             center: str = None, rmax: float = 100, dist: float = 1.,
     #             xoff: float = 0, yoff: float = 0,
@@ -335,14 +353,17 @@ class plotastro3D(plotastroND):
     Parameters for original methods in matplotlib.axes.Axes can be
     used as kwargs; see the default kwargs0 for reference.
     """
-    def __init__(self, fitsimage: str = None, v: list = None,
-                 nrows: int = 4, ncols: int = 6,
-                 vmin: float = -1e10, vmax: float = 1e10,
-                 vsys: float = 0., vskip: int = 1,
-                 veldigit: int = 2,
-                 center: str = None, rmax: float = 1e10,
-                 dist: float = 1., xoff: float = 0, yoff: float = 0,
-                 xflip: bool = True, yflip: bool = False) -> None:
+    #def __init__(self, fitsimage: str = None, v: list = None,
+    #             nrows: int = 4, ncols: int = 6,
+    #             vmin: float = -1e10, vmax: float = 1e10,
+    #             vsys: float = 0., vskip: int = 1,
+    #             veldigit: int = 2,
+    #             center: str = None, rmax: float = 1e10,
+    #             dist: float = 1., xoff: float = 0, yoff: float = 0,
+    #             xflip: bool = True, yflip: bool = False) -> None:
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        super().__post_init__()
         set_rcparams(fontsize=12)
         if not fitsimage is None:
             fd = FitsData(fitsimage)
@@ -373,19 +394,19 @@ class plotastro3D(plotastroND):
                         backgroundcolor='white', zorder=20)
           
         self.ax = ax
-        self.vskip = vskip
+        #self.vskip = vskip
         self.npages = npages
         self.nchan = nchan
-        self.gridpar = {'center':center, 'rmax':rmax, 'dist':dist,
-                        'xoff':xoff, 'yoff':yoff,
-                        'vsys':vsys, 'vmin':vmin, 'vmax':vmax}
-        self.xdir = xdir = -1 if xflip else 1
-        self.ydir = ydir = -1 if yflip else 1
-        self.xlim = [xoff - xdir*rmax, xoff + xdir*rmax]
-        self.ylim = [yoff - ydir*rmax, yoff + ydir*rmax]
-        self.lims = [self.xlim, self.ylim, [vmin, vmax]]
-        self.allchan = np.arange(nchan)
-        self.bottomleft = nij2ch(np.arange(npages), nrows - 1, 0)
+        #self.gridpar = {'center':center, 'rmax':rmax, 'dist':dist,
+        #                'xoff':xoff, 'yoff':yoff,
+        #                'vsys':vsys, 'vmin':vmin, 'vmax':vmax}
+        #self.xdir = xdir = -1 if xflip else 1
+        #self.ydir = ydir = -1 if yflip else 1
+        #self.xlim = [xoff - xdir*rmax, xoff + xdir*rmax]
+        #self.ylim = [yoff - ydir*rmax, yoff + ydir*rmax]
+        #self.lims = [self.xlim, self.ylim, [vmin, vmax]]
+        #self.allchan = np.arange(nchan)
+        #self.bottomleft = nij2ch(np.arange(npages), nrows - 1, 0)
             
     def __reform(self, c: list, skip: int = 1) -> list:
         if np.ndim(c) == 3:
