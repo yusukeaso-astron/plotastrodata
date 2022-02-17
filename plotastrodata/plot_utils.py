@@ -90,8 +90,6 @@ class plotastrodata():
         self.ydir = ydir = -1 if yflip else 1
         self.xlim = xlim = [xoff - xdir*rmax, xoff + xdir*rmax]
         self.ylim = ylim = [yoff - ydir*rmax, yoff + ydir*rmax]
-        self.vlim = vlim = [vmin, vmax]
-        self.lims = [xlim, ylim, vlim]
         self.gridpar = {'center':center, 'rmax':rmax,
                         'dist':dist, 'xoff':xoff, 'yoff':yoff,
                         'vsys':vsys, 'vmin':vmin, 'vmax':vmax}
@@ -385,7 +383,7 @@ class plotastrodata():
                 axnow.grid(**({} if grid == True else grid))
             if len(self.ax) == 1: plt.figure(0).tight_layout()
             
-    def savefig(self, filename: str = 'plotastro3D.png',
+    def savefig(self, filename: str = 'plotastrodata.png',
                 transparent: bool =True) -> None:
         for axnow in self.ax:
             axnow.set_xlim(*self.xlim)
