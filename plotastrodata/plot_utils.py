@@ -71,7 +71,6 @@ class plotastroND():
                         'dist':dist, 'xoff':xoff, 'yoff':yoff,
                         'vsys':vsys, 'vmin':vmin, 'vmax':vmax}
         self.allchan, self.bottomleft = [0], [0]
-        self.fig = None
         self.ax = []
         self.npages = 1
         self.ch2nij = lambda _: [0, 0, 0]
@@ -206,7 +205,7 @@ class plotastroND():
             axnow.set_ylim(*self.ylim)
             if not grid is None:
                 axnow.grid(**({} if grid == True else grid))
-            if len(self.ax) == 1: self.fig.tight_layout()
+            if len(self.ax) == 1: plt.figure(0).tight_layout()
             
     def savefig(self, filename: str = 'plotastro3D.png',
                 transparent: bool =True) -> None:
@@ -245,8 +244,8 @@ class plotastro2D(plotastroND):
     def __init__(self, fig=None, ax=None, **kwargs) -> None:
         super().__init__(**kwargs)
         set_rcparams(fontsize=18)
-        self.fig = plt.figure(0, figsize=(7, 5)) if fig is None else fig
-        self.ax = [self.fig.add_subplot(1, 1, 1) if ax is None else ax]
+        fig = plt.figure(0, figsize=(7, 5)) if fig is None else fig
+        self.ax = [fig.add_subplot(1, 1, 1) if ax is None else ax]
     
     def add_color(self, fitsimage: str = None,
                    x: list = None, y: list = None, skip: int = 1,
