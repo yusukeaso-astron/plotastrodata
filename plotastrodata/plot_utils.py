@@ -8,14 +8,14 @@ from fits_utils import FitsData, fits2data
 
 
 
-def pos2xy(plotastro, pos: list = []) -> list:
+def pos2xy(pad, pos: list = []) -> list:
     x, y = [None] * len(pos), [None] * len(pos)
     for i, p in enumerate(pos):
         if type(p) == str:
-            center = plotastro.gridpar['center']
+            center = pad.gridpar['center']
             x[i], y[i] = (coord2xy(p)-coord2xy(center)) * 3600.
         else:
-            x[i], y[i] = rel2abs(*p, plotastro.xlim, plotastro.ylim)
+            x[i], y[i] = rel2abs(*p, pad.xlim, pad.ylim)
     return [x, y]
 
 
@@ -54,13 +54,63 @@ def set_rcparams(fontsize: int = 18, nancolor: str ='w') -> None:
     plt.rcParams['ytick.minor.width'] = 1.5
 
 
-class plotastroND():
-    """Template for plotastro2D and plotastro3D"""
-    def __init__(self, vmin: float = -1e10, vmax: float = 1e10,
-                 vsys: float = 0.,
+class plotastrodata():
+    """Make a figure from 2D/3D FITS files or 2D/3D arrays.
+    
+    Basic rules --- For 3D data, a 1D velocity array or a FITS file
+    with a velocity axis must be given to set up channels in each page.
+    len(v)=1 (default) means to make a 2D figure.
+    Lengths are in the unit of arcsec.
+    Angles are in the unit of degree.
+    For ellipse, line, arrow, label, and marker,
+    a single input must be listed like poslist=[[0.2, 0.3]],
+    and each element of poslist supposes a text coordinate
+    like '01h23m45.6s 01d23m45.6s' or a list of relative x and y
+    like [0.2, 0.3] (0 is left or bottom, 1 is right or top).
+    Parameters for original methods in matplotlib.axes.Axes can be
+    used as kwargs; see the default kwargs0 for reference.
+    """
+    def __init__(self, fitsimage: str = None,
+                 v: list = [0], vskip: int = 1,
+                 vmin: float = -1e10, vmax: float = 1e10,
+                 vsys: float = 0., veldigit: int = 2,
+                 nrows: int = 4, ncols: int = 6,
                  center: str = None, rmax: float = 1e10, dist: float = 1.,
                  xoff: float = 0, yoff: float = 0,
                  xflip: bool = True, yflip: bool = False):
+        if not fitsimage is None:
+            fd = FitsData(fitsimage)
+            _, _, v = fd.get_grid(vsys=vsys, vmin=vmin, vmax=vmax)
+        nv = len(v := v[::vskip])
+        if nv == 1:
+            nrows = ncols = npages = nchan = 1
+        else:
+            npages = int(np.ceil(nv / nrows / ncols))
+            nchan = npages * nrows * ncols
+            v = np.r_[v, v[-1] + (np.arange(nchan-nv)+1) * (v[1] - v[0])]
+        def nij2ch(n: int, i: int, j: int):
+            return n*nrows*ncols + i*ncols + j
+        def ch2nij(ch: int) -> list:
+            n = ch // (nrows*ncols)
+            i = (ch - n*nrows*ncols) // ncols
+            j = ch % ncols
+            return [n, i, j]
+        set_rcparams(fontsize=18 if nv == 1 else 12)
+        ax = np.empty(nchan, dtype='object')
+        for ch in range(nchan):
+            n, i, j = ch2nij(ch)
+            figsize = (7, 5) if nchan == 1 else (ncols*2, max(nrows, 1.5)*2)
+            fig = plt.figure(n, figsize=figsize)
+            sharex = ax[nij2ch(n, i - 1, j)] if i > 0 else None
+            sharey = ax[nij2ch(n, i, j - 1)] if j > 0 else None
+            ax[ch] = fig.add_subplot(nrows, ncols, i*ncols + j + 1,
+                                     sharex=sharex, sharey=sharey)
+            if nchan > 1:
+                fig.subplots_adjust(hspace=0, wspace=0, right=0.87, top=0.87)
+                ax[ch].text(0.9 * rmax, 0.7 * rmax,
+                            rf'${v[ch]:.{veldigit:d}f}$', color='black',
+                            backgroundcolor='white', zorder=20)
+        self.ax = ax
         self.xdir = xdir = -1 if xflip else 1
         self.ydir = ydir = -1 if yflip else 1
         self.xlim = [xoff - xdir*rmax, xoff + xdir*rmax]
@@ -70,24 +120,21 @@ class plotastroND():
         self.gridpar = {'center':center, 'rmax':rmax,
                         'dist':dist, 'xoff':xoff, 'yoff':yoff,
                         'vsys':vsys, 'vmin':vmin, 'vmax':vmax}
-        self.allchan, self.bottomleft = [0], [0]
-        self.ax = []
-        self.npages = 1
-        self.nchan = 1
-        self.nv = 1
-        self.vskip = 1
-        self.ch2nij = lambda _: [0, 0, 0]
+        self.rowcol = nrows * ncols
+        self.npages = npages
+        self.allchan = np.arange(nchan)
+        self.bottomleft = nij2ch(np.arange(npages), nrows - 1, 0)
 
-    def skipfill(self, c: list, skip: int = 1,
-                   vskip: int = 1, nv: int = 1, nchan: int = 1) -> list:
-        if np.ndim(c) == 3:
-            d = c[::vskip, ::skip, ::skip]
-        else:
-            d = c[::skip, ::skip]
-            d = np.full((nv, *np.shape(d)), d)
-        shape = (nchan - len(d), len(d[0]), len(d[0, 0]))
-        dnan = np.full(shape, d[0] * np.nan)
-        return np.concatenate((d, dnan), axis=0)
+        def skipfill(c: list, skip: int = 1) -> list:
+            if np.ndim(c) == 3:
+                d = c[::vskip, ::skip, ::skip]
+            else:
+                d = c[::skip, ::skip]
+                d = np.full((nv, *np.shape(d)), d)
+            shape = (nchan - len(d), len(d[0]), len(d[0, 0]))
+            dnan = np.full(shape, d[0] * np.nan)
+            return np.concatenate((d, dnan), axis=0)
+        self.skipfill = skipfill
         
     def add_ellipse(self, poslist: list = [],
                     majlist: list = [], minlist: list = [], palist: list = [],
@@ -100,7 +147,7 @@ class plotastroND():
             for ch, axnow in enumerate(self.ax):
                 if not (ch in include_chan):
                     continue
-                plt.figure(self.ch2nij(ch)[0])
+                plt.figure(ch // self.rowcol)
                 e = Ellipse((x, y), width=width, height=height,
                             angle=angle * self.xdir,
                             **dict(kwargs0, **kwargs))
@@ -209,7 +256,7 @@ class plotastroND():
             kwargs['vmax'] = np.nanmax(c)
         c = c.clip(kwargs['vmin'], kwargs['vmax'])
         x, y = x[::skip], y[::skip]
-        c = self.skipfill(c, skip, self.vskip, self.nv, self.nchan)
+        c = self.skipfill(c, skip)
         for ch, (axnow, cnow) in enumerate(zip(self.ax, c)):
             p = axnow.pcolormesh(x, y, cnow, shading='nearest',
                                  **dict(kwargs0, **kwargs))
@@ -217,7 +264,7 @@ class plotastroND():
             if not show_cbar:
                 break
             cblabel = bunit if cblabel is None else cblabel
-            plt.figure(self.ch2nij(ch)[0])
+            plt.figure(ch // self.rowcol)
             if len(self.ax) == 1:
                 ax = self.ax[0]
                 cb = plt.colorbar(p, ax=ax, label=cblabel, format=cbformat)
@@ -256,7 +303,7 @@ class plotastroND():
             c, (x, y), (bmaj, bmin, bpa), _, rms \
                 = readfits(self, fitsimage, Tb, sigma, restfrq)
         x, y = x[::skip], y[::skip]
-        c = self.skipfill(c, skip, self.vskip, self.nv, self.nchan)
+        c = self.skipfill(c, skip)
         for axnow, cnow in zip(self.ax, c):
             axnow.contour(x, y, cnow, np.array(levels) * rms,
                           **dict(kwargs0, **kwargs))
@@ -283,8 +330,8 @@ class plotastroND():
             ang, (x, y), (bmaj, bmin, bpa), _, _ = readfits(self, angfits)
         if amp is None: amp = np.ones_like(ang)
         x, y = x[::skip], y[::skip]
-        amp = self.skipfill(amp, skip, self.vskip, self.nv, self.nchan)
-        ang = self.skipfill(ang, skip, self.vskip, self.nv, self.nchan)
+        amp = self.skipfill(amp, skip)
+        ang = self.skipfill(ang, skip)
         u = ampfactor * amp * np.sin(np.radians(ang))
         v = ampfactor * amp * np.cos(np.radians(ang))
         kwargs0['scale'] = 1. / np.abs(x[1] - x[0])
@@ -352,82 +399,3 @@ class plotastroND():
             axnow.set_xlim(*self.xlim)
             axnow.set_ylim(*self.ylim)
         plt.show()
-
-
-
-class plotastro2D(plotastroND):
-    """Make a figure from 2D FITS files or 2D arrays.
-    
-    Basic rules --- Lengths are in the unit of arcsec.
-    Angles are in the unit of degree.
-    For ellipse, line, arrow, label, and marker,
-    a single input must be listed like poslist=[[0.2, 0.3]],
-    and each element of poslist supposes a text coordinate
-    like '01h23m45.6s 01d23m45.6s' or a list of relative x and y
-    like [0.2, 0.3] (0 is left or bottom, 1 is right or top).
-    Parameters for original methods in matplotlib.axes.Axes can be
-    used as kwargs; see the default kwargs0 for reference.
-    """
-    def __init__(self, fig=None, ax=None, **kwargs) -> None:
-        super().__init__(**kwargs)
-        set_rcparams(fontsize=18)
-        fig = plt.figure(0, figsize=(7, 5)) if fig is None else fig
-        self.ax = [fig.add_subplot(1, 1, 1) if ax is None else ax]
- 
-            
-class plotastro3D(plotastroND):
-    """Make a figure from 3D FITS files or 3D arrays.
-    
-    Basic rules --- First of all, a 1D velocity array or a FITS file
-    with a velocity axis must be given to set up channels in each page.
-    Lengths are in the unit of arcsec.
-    Angles are in the unit of degree.
-    For ellipse, line, arrow, label, and marker,
-    a single input must be listed like poslist=[[0.2, 0.3]],
-    and each element of poslist supposes a text coordinate
-    like '01h23m45.6s 01d23m45.6s' or a list of relative x and y
-    like [0.2, 0.3] (0 is left or bottom, 1 is right or top).
-    Parameters for original methods in matplotlib.axes.Axes can be
-    used as kwargs; see the default kwargs0 for reference.
-    """
-    def __init__(self, fitsimage: str = None, v: list = None,
-                 nrows: int = 4, ncols: int = 6,
-                 vmin: float = -1e10, vmax: float = 1e10,
-                 vsys: float = 0., vskip: int = 1,
-                 veldigit: int = 2, **kwargs) -> None:
-        super().__init__(vmin=vmin, vmax=vmax, vsys=vsys, **kwargs)
-        set_rcparams(fontsize=12)
-        if not fitsimage is None:
-            fd = FitsData(fitsimage)
-            _, _, v = fd.get_grid(vsys=vsys, vmin=vmin, vmax=vmax)
-        nv = len(v := v[::vskip])
-        npages = int(np.ceil(nv / nrows / ncols))
-        nchan = npages * nrows * ncols
-        v = np.r_[v, v[-1] + (np.arange(nchan-nv)+1) * (v[1]-v[0])]
-        def nij2ch(n: int, i: int, j: int) -> int:
-            return n*nrows*ncols + i*ncols + j
-        def ch2nij(ch: int) -> list:
-            n = ch // (nrows*ncols)
-            i = (ch - n*nrows*ncols) // ncols
-            j = ch % ncols
-            return [n, i, j]
-        ax = np.empty(nchan, dtype='object')
-        for ch in range(nchan):
-            n, i, j = ch2nij(ch)
-            fig = plt.figure(n, figsize=(ncols*2, max(nrows, 1.5)*2))
-            sharex = ax[nij2ch(n, i - 1, j)] if i > 0 else None
-            sharey = ax[nij2ch(n, i, j - 1)] if j > 0 else None
-            ax[ch] = fig.add_subplot(nrows, ncols, i*ncols + j + 1,
-                                     sharex=sharex, sharey=sharey)
-            fig.subplots_adjust(hspace=0, wspace=0, right=0.87, top=0.87)
-            ax[ch].text(0.9 * self.gridpar['rmax'],
-                        0.7 * self.gridpar['rmax'],
-                        rf'${v[ch]:.{veldigit:d}f}$', color='black',
-                        backgroundcolor='white', zorder=20)
-        
-        self.ch2nij = ch2nij  
-        self.ax = ax
-        self.vskip, self.nv = vskip, nv
-        self.npages, self.nchan = npages, nchan
-        self.allchan = np.arange(nchan)
-        self.bottomleft = nij2ch(np.arange(npages), nrows - 1, 0)
