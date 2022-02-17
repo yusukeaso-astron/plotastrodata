@@ -73,7 +73,21 @@ class plotastroND():
         self.allchan, self.bottomleft = [0], [0]
         self.ax = []
         self.npages = 1
+        self.nchan = 1
+        self.nv = 1
+        self.vskip = 1
         self.ch2nij = lambda _: [0, 0, 0]
+
+    def skipfill(self, c: list, skip: int = 1,
+                   vskip: int = 1, nv: int = 1, nchan: int = 1) -> list:
+        if np.ndim(c) == 3:
+            d = c[::vskip, ::skip, ::skip]
+        else:
+            d = c[::skip, ::skip]
+            d = np.full((nv, *np.shape(d)), d)
+        shape = (nchan - len(d), len(d[0]), len(d[0, 0]))
+        dnan = np.full(shape, d[0] * np.nan)
+        return np.concatenate((d, dnan), axis=0)
         
     def add_ellipse(self, poslist: list = [],
                     majlist: list = [], minlist: list = [], palist: list = [],
@@ -165,7 +179,120 @@ class plotastroND():
             x, y = rel2abs(xrel, yrel, self.xlim, self.ylim)
             axnow.plot([x - length/2., x + length/2.], [y, y],
                        '-', linewidth=linewidth, color=color)
-        
+    
+    def add_color(self, fitsimage: str = None,
+                  x: list = None, y: list = None, skip: int = 1,
+                  v: list = None, c: list = None,
+                  restfrq: float = None,
+                  Tb: bool = False, log: bool = False,
+                  show_cbar: bool = True,
+                  cblabel: str = None, cbformat: float = '%.1e',
+                  cbticks: list = None, cbticklabels: list = None,
+                  show_beam: bool = True, beamcolor: str = 'gray',
+                  bmaj: float = 0., bmin: float = 0.,
+                  bpa: float = 0., **kwargs) -> None:
+        kwargs0 = {'cmap':'cubehelix', 'alpha':1, 'zorder':1}
+        if fitsimage is None:
+            bunit, rms = '', estimate_rms(c, 'out')
+            c, (x, y) = readdata(x, y, v, self.lims, c)    
+        else:
+            c, (x, y), (bmaj, bmin, bpa), bunit, rms \
+                = readfits(self, fitsimage, Tb, 'out', restfrq)
+        if log: c = np.log10(c.clip(c[c > 0].min(), None))
+        if 'vmin' in kwargs:
+            if log: kwargs['vmin'] = np.log10(kwargs['vmin'])
+        else:
+            kwargs['vmin'] = np.log10(rms) if log else np.nanmin(c)
+        if 'vmax' in kwargs:
+            if log: kwargs['vmax'] = np.log10(kwargs['vmax'])
+        else:
+            kwargs['vmax'] = np.nanmax(c)
+        c = c.clip(kwargs['vmin'], kwargs['vmax'])
+        x, y = x[::skip], y[::skip]
+        c = self.skipfill(c, skip, self.vskip, self.nv, self.nchan)
+        for ch, (axnow, cnow) in enumerate(zip(self.ax, c)):
+            p = axnow.pcolormesh(x, y, cnow, shading='nearest',
+                                 **dict(kwargs0, **kwargs))
+        for ch in self.bottomleft:
+            if not show_cbar:
+                break
+            cblabel = bunit if cblabel is None else cblabel
+            plt.figure(self.ch2nij(ch)[0])
+            if len(self.ax) == 1:
+                ax = self.ax[0]
+                cb = plt.colorbar(p, ax=ax, label=cblabel, format=cbformat)
+            else:
+                cax = plt.axes([0.88, 0.105, 0.015, 0.77])
+                cb = plt.colorbar(p, cax=cax, label=cblabel, format=cbformat)
+            cb.ax.tick_params(labelsize=14)
+            font = mpl.font_manager.FontProperties(size=16)
+            cb.ax.yaxis.label.set_font_properties(font)
+            if not (cbticks is None):
+                cb.set_ticks(np.log10(cbticks) if log else cbticks)
+            if not (cbticklabels is None):
+                cb.set_ticklabels(cbticklabels)
+            elif log:
+                cb.set_ticks(t := cb.get_ticks())
+                cb.set_ticklabels([f'{d:.1e}' for d in 10**t])
+        if show_beam:
+            self.add_beam(bmaj, bmin, bpa, beamcolor)
+
+    def add_contour(self, fitsimage: str = None,
+                    x: list = None, y: list = None, skip: int = 1,
+                    v: list = None, c: list = None,
+                    restfrq: float = None,
+                    sigma: str or float = 'edge',
+                    levels: list = [-12,-6,-3,3,6,12,24,48,96,192,384],
+                    Tb: bool = False,
+                    show_beam: bool = True, beamcolor: str = 'gray',
+                    bmaj: float = 0., bmin: float = 0., bpa: float = 0.,
+                    **kwargs) -> None:
+        kwargs0 = {'colors':'gray', 'linewidths':1.0, 'zorder':2}
+        if fitsimage is None:
+            if np.ndim(c) == 2 and sigma == 'edge': sigma = 'out'
+            rms = estimate_rms(c, sigma)
+            c, (x, y) = readdata(x, y, v, self.lims, c)
+        else:
+            c, (x, y), (bmaj, bmin, bpa), _, rms \
+                = readfits(self, fitsimage, Tb, sigma, restfrq)
+        x, y = x[::skip], y[::skip]
+        c = self.skipfill(c, skip, self.vskip, self.nv, self.nchan)
+        for axnow, cnow in zip(self.ax, c):
+            axnow.contour(x, y, cnow, np.array(levels) * rms,
+                          **dict(kwargs0, **kwargs))
+        if show_beam:
+            self.add_beam(bmaj, bmin, bpa, beamcolor)
+            
+    def add_segment(self, ampfits: str = None, angfits: str = None,
+                    x: list = None, y: list = None, skip: int = 1,
+                    v: list = None, amp: list = None, ang: list = None,
+                    ampfactor: float = 1.,
+                    show_beam: bool = True, beamcolor: str = 'gray',
+                    bmaj: float = 0., bmin: float = 0., bpa: float = 0.,
+                    **kwargs) -> None:
+        kwargs0 = {'angles':'xy', 'scale_units':'xy', 'color':'gray',
+                   'pivot':'mid', 'headwidth':0, 'headlength':0,
+                   'headaxislength':0, 'width':0.007, 'zorder':3}
+        if ampfits is None:
+            amp, (x, y) = readdata(x, y, v, self.lims, amp)
+        else:
+            amp, (x, y), (bmaj, bmin, bpa), _, _ = readfits(self, ampfits)
+        if angfits is None:
+            ang, (x, y) = readdata(x, y, v, self.lims, ang)
+        else:
+            ang, (x, y), (bmaj, bmin, bpa), _, _ = readfits(self, angfits)
+        if amp is None: amp = np.ones_like(ang)
+        x, y = x[::skip], y[::skip]
+        amp = self.skipfill(amp, skip, self.vskip, self.nv, self.nchan)
+        ang = self.skipfill(ang, skip, self.vskip, self.nv, self.nchan)
+        u = ampfactor * amp * np.sin(np.radians(ang))
+        v = ampfactor * amp * np.cos(np.radians(ang))
+        kwargs0['scale'] = 1. / np.abs(x[1] - x[0])
+        for axnow, unow, vnow in zip(self.ax, u, v):
+            axnow.quiver(x, y, unow, vnow, **dict(kwargs0, **kwargs))
+        if show_beam:
+            self.add_beam(bmaj, bmin, bpa, beamcolor)
+    
     def set_axis(self, xticks: list = None, yticks: list = None,
                  xticksminor: list = None, yticksminor: list = None,
                  xticklabels: list = None, yticklabels: list= None,
@@ -246,105 +373,7 @@ class plotastro2D(plotastroND):
         set_rcparams(fontsize=18)
         fig = plt.figure(0, figsize=(7, 5)) if fig is None else fig
         self.ax = [fig.add_subplot(1, 1, 1) if ax is None else ax]
-    
-    def add_color(self, fitsimage: str = None,
-                   x: list = None, y: list = None, skip: int = 1,
-                   c: list = None, restfrq: float = None,
-                   Tb: bool = False, log: bool = False,
-                   show_cbar: bool = True,
-                   cblabel: str = None, cbformat: float = '%.1e',
-                   cbticks: list = None, cbticklabels: list = None,
-                   show_beam: bool = True, beamcolor: str = 'gray',
-                   bmaj: float = 0., bmin: float = 0.,
-                   bpa: float = 0., **kwargs) -> None:
-        kwargs0 = {'cmap':'cubehelix', 'alpha':1, 'zorder':1}
-        if fitsimage is None:
-            bunit, rms = '', estimate_rms(c, 'out')
-            c, (x, y) = readdata(x, y, None, self.lims, c)
-        else:
-            c, (x, y), (bmaj, bmin, bpa), bunit, rms \
-                = readfits(self, fitsimage, Tb, 'out', restfrq)
-        x, y = x[::skip], y[::skip]
-        c = c[::skip, ::skip]
-        if log: c = np.log10(c.clip(c[c > 0].min(), None))
-        if 'vmin' in kwargs:
-            if log: kwargs['vmin'] = np.log10(kwargs['vmin'])
-        else:
-            kwargs['vmin'] = np.log10(rms) if log else np.nanmean(c)
-        if 'vmax' in kwargs:
-            if log: kwargs['vmax'] = np.log10(kwargs['vmax'])
-        else:
-            kwargs['vmax'] = np.nanmax(c)
-        c = c.clip(kwargs['vmin'], kwargs['vmax'])
-        p = self.ax[0].pcolormesh(x, y, c, shading='nearest',
-                               **dict(kwargs0, **kwargs))
-        if show_cbar:
-            cblabel = bunit if cblabel is None else cblabel
-            cb = plt.colorbar(p, ax=self.ax[0], label=cblabel, format=cbformat)
-            cb.ax.tick_params(labelsize=16)
-            font = mpl.font_manager.FontProperties(size=16)
-            cb.ax.yaxis.label.set_font_properties(font)
-            if not (cbticks is None):
-                cb.set_ticks(np.log10(cbticks) if log else cbticks)
-            if not (cbticklabels is None):
-                cb.set_ticklabels(cbticklabels)
-            elif log:
-                cb.set_ticks(t := cb.get_ticks())
-                cb.set_ticklabels([f'{d:.1e}' for d in 10**t])
-        if show_beam:
-            self.add_beam(bmaj, bmin, bpa, beamcolor)
-            
-    def add_contour(self, fitsimage: str = None,
-                    x: list = None, y: list = None, skip: int = 1,
-                    c: list = None, restfrq: float = None,
-                    sigma: str or float = 'out',
-                    levels: list = [-12,-6,-3,3,6,12,24,48,96,192,384],
-                    Tb: bool = False,
-                    show_beam: bool = True, beamcolor: str = 'gray',
-                    bmaj: float = 0., bmin: float = 0., bpa: float = 0.,
-                    **kwargs) -> None:
-        kwargs0 = {'colors':'gray', 'linewidths':1.0, 'zorder':2}
-        if fitsimage is None:
-            rms = estimate_rms(c, sigma)
-            c, (x, y) = readdata(x, y, None, self.lims, c)
-        else:
-            c, (x, y), (bmaj, bmin, bpa), _, rms \
-                = readfits(self, fitsimage, Tb, sigma, restfrq)
-        x, y = x[::skip], y[::skip]
-        c = c[::skip, ::skip]
-        self.ax[0].contour(x, y, c, np.array(levels) * rms,
-                        **dict(kwargs0, **kwargs))
-        if show_beam:
-            self.add_beam(bmaj, bmin, bpa, beamcolor)
-    
-    def add_segment(self, ampfits: str = None, angfits: str = None,
-                    x: list = None, y: list = None, skip: int = 1,
-                    amp: list = None, ang: list = None,
-                    ampfactor: float = 1.,
-                    show_beam: bool = True, beamcolor: str = 'gray',
-                    bmaj: float = 0., bmin: float = 0., bpa: float = 0.,
-                    **kwargs) -> None:
-        kwargs0 = {'angles':'xy', 'scale_units':'xy', 'color':'gray',
-                   'pivot':'mid', 'headwidth':0, 'headlength':0,
-                   'headaxislength':0, 'width':0.007, 'zorder':3}
-        if ampfits is None:
-            amp, (x, y) = readdata(x, y, None, self.lims, amp)
-        else:
-            amp, (x, y), (bmaj, bmin, bpa), _, _ = readfits(self, ampfits)
-        if angfits is None:
-            ang, (x, y) = readdata(x, y, None, self.lims, ang)
-        else:
-            ang, (x, y), (bmaj, bmin, bpa), _, _ = readfits(self, angfits)
-        if amp is None: amp = np.ones_like(ang)
-        x, y = x[::skip], y[::skip]
-        amp, ang = amp[::skip, ::skip], ang[::skip, ::skip]
-        u = ampfactor * amp * np.sin(np.radians(ang))
-        v = ampfactor * amp * np.cos(np.radians(ang))
-        kwargs0['scale'] = 1. / np.abs(x[1] - x[0])
-        self.ax[0].quiver(x, y, u, v, **dict(kwargs0, **kwargs))
-        if show_beam:
-            self.add_beam(bmaj, bmin, bpa, beamcolor)
-    
+ 
             
 class plotastro3D(plotastroND):
     """Make a figure from 3D FITS files or 3D arrays.
@@ -396,126 +425,9 @@ class plotastro3D(plotastroND):
                         rf'${v[ch]:.{veldigit:d}f}$', color='black',
                         backgroundcolor='white', zorder=20)
         
-        self.nij2ch, self.ch2nij = nij2ch, ch2nij  
+        self.ch2nij = ch2nij  
         self.ax = ax
         self.vskip, self.nv = vskip, nv
         self.npages, self.nchan = npages, nchan
         self.allchan = np.arange(nchan)
         self.bottomleft = nij2ch(np.arange(npages), nrows - 1, 0)
-            
-    def __fill(self, c: list, skip: int = 1) -> list:
-        if np.ndim(c) == 3:
-            d = c[::self.vskip, ::skip, ::skip]
-        else:
-            d = c[::skip, ::skip]
-            d = np.full((self.nv, *np.shape(d)), d)
-        shape = (self.nchan - len(d), len(d[0]), len(d[0, 0]))
-        dnan = np.full(shape, d[0] * np.nan)
-        return np.concatenate((d, dnan), axis=0)
-
-    def add_color(self, fitsimage: str = None,
-                  x: list = None, y: list = None, skip: int = 1,
-                  v: list = None, c: list = None,
-                  restfrq: float = None,
-                  Tb: bool = False, log: bool = False,
-                  show_cbar: bool = True,
-                  cblabel: str = None, cbformat: float = '%.1e',
-                  cbticks: list = None, cbticklabels: list = None,
-                  show_beam: bool = True, beamcolor: str = 'gray',
-                  bmaj: float = 0., bmin: float = 0.,
-                  bpa: float = 0., **kwargs) -> None:
-        kwargs0 = {'cmap':'cubehelix', 'alpha':1, 'zorder':1}
-        if fitsimage is None:
-            bunit, rms = '', estimate_rms(c, 'out')
-            c, (x, y) = readdata(x, y, v, self.lims, c)    
-        else:
-            c, (x, y), (bmaj, bmin, bpa), bunit, rms \
-                = readfits(self, fitsimage, Tb, 'out', restfrq)
-        if log: c = np.log10(c.clip(c[c > 0].min(), None))
-        if 'vmin' in kwargs:
-            if log: kwargs['vmin'] = np.log10(kwargs['vmin'])
-        else:
-            kwargs['vmin'] = np.log10(rms) if log else np.nanmin(c)
-        if 'vmax' in kwargs:
-            if log: kwargs['vmax'] = np.log10(kwargs['vmax'])
-        else:
-            kwargs['vmax'] = np.nanmax(c)
-        c = c.clip(kwargs['vmin'], kwargs['vmax'])
-        x, y = x[::skip], y[::skip]
-        c = self.__fill(c, skip)
-        for ch, (axnow, cnow) in enumerate(zip(self.ax, c)):
-            p = axnow.pcolormesh(x, y, cnow, shading='nearest',
-                                 **dict(kwargs0, **kwargs))
-            if not (show_cbar and ch % (self.nchan//self.npages) == 0):
-                continue
-            plt.figure(self.ch2nij(ch)[0])
-            cblabel = bunit if cblabel is None else cblabel
-            cax = plt.axes([0.88, 0.105, 0.015, 0.77])
-            cb = plt.colorbar(p, cax=cax, label=cblabel, format=cbformat)
-            cb.ax.tick_params(labelsize=14)
-            font = mpl.font_manager.FontProperties(size=16)
-            cb.ax.yaxis.label.set_font_properties(font)
-            if not (cbticks is None):
-                cb.set_ticks(np.log10(cbticks) if log else cbticks)
-            if not (cbticklabels is None):
-                cb.set_ticklabels(cbticklabels)
-            elif log:
-                cb.set_ticks(t := cb.get_ticks())
-                cb.set_ticklabels([f'{d:.1e}' for d in 10**t])
-        if show_beam:
-            self.add_beam(bmaj, bmin, bpa, beamcolor)
-
-    def add_contour(self, fitsimage: str = None,
-                    x: list = None, y: list = None, skip: int = 1,
-                    v: list = None, c: list = None,
-                    restfrq: float = None,
-                    sigma: str or float = 'edge',
-                    levels: list = [-12,-6,-3,3,6,12,24,48,96,192,384],
-                    Tb: bool = False,
-                    show_beam: bool = True, beamcolor: str = 'gray',
-                    bmaj: float = 0., bmin: float = 0., bpa: float = 0.,
-                    **kwargs) -> None:
-        kwargs0 = {'colors':'gray', 'linewidths':1.0, 'zorder':2}
-        if fitsimage is None:
-            if np.ndim(c) == 2 and sigma == 'edge': sigma = 'out'
-            rms = estimate_rms(c, sigma)
-            c, (x, y) = readdata(x, y, v, self.lims, c)
-        else:
-            c, (x, y), (bmaj, bmin, bpa), _, rms \
-                = readfits(self, fitsimage, Tb, sigma, restfrq)
-        x, y = x[::skip], y[::skip]
-        c = self.__fill(c, skip)
-        for axnow, cnow in zip(self.ax, c):
-            axnow.contour(x, y, cnow, np.array(levels) * rms,
-                          **dict(kwargs0, **kwargs))
-        if show_beam:
-            self.add_beam(bmaj, bmin, bpa, beamcolor)
-            
-    def add_segment(self, ampfits: str = None, angfits: str = None,
-                    x: list = None, y: list = None, skip: int = 1,
-                    v: list = None, amp: list = None, ang: list = None,
-                    ampfactor: float = 1.,
-                    show_beam: bool = True, beamcolor: str = 'gray',
-                    bmaj: float = 0., bmin: float = 0., bpa: float = 0.,
-                    **kwargs) -> None:
-        kwargs0 = {'angles':'xy', 'scale_units':'xy', 'color':'gray',
-                   'pivot':'mid', 'headwidth':0, 'headlength':0,
-                   'headaxislength':0, 'width':0.007, 'zorder':3}
-        if ampfits is None:
-            amp, (x, y) = readata(x, y, v, self.lims, amp)
-        else:
-            amp, (x, y), (bmaj, bmin, bpa), _, _ = readfits(self, ampfits)
-        if angfits is None:
-            ang, (x, y) = readata(x, y, v, self.lims, ang)
-        else:
-            ang, (x, y), (bmaj, bmin, bpa), _, _ = readfits(self, angfits)
-        if amp is None: amp = np.ones_like(ang)
-        x, y = x[::skip], y[::skip]
-        amp, ang = self.__fill(amp, skip), self.__fill(ang, skip)
-        u = ampfactor * amp * np.sin(np.radians(ang))
-        v = ampfactor * amp * np.cos(np.radians(ang))
-        kwargs0['scale'] = 1. / np.abs(x[1] - x[0])
-        for axnow, unow, vnow in zip(self.ax, u, v):
-            axnow.quiver(x, y, unow, vnow, **dict(kwargs0, **kwargs))
-        if show_beam:
-            self.add_beam(bmaj, bmin, bpa, beamcolor)
