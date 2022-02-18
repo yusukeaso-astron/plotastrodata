@@ -243,10 +243,10 @@ class plotastrodata():
                   bmaj: float = 0., bmin: float = 0.,
                   bpa: float = 0., **kwargs) -> None:
         kwargs0 = {'cmap':'cubehelix', 'alpha':1, 'zorder':1}
-        if fitsimage is None:
+        if not (c is None):
             bunit, rms = '', estimate_rms(c, 'out')
             c, (x, y) = self.readdata(c, x, y, v)    
-        else:
+        if not (fitsimage is None):
             c, (x, y), (bmaj, bmin, bpa), bunit, rms \
                 = self.readfits(fitsimage, Tb, 'out', center, restfrq)
         if log: c = np.log10(c.clip(c[c > 0].min(), None))
@@ -299,11 +299,11 @@ class plotastrodata():
                     bmaj: float = 0., bmin: float = 0., bpa: float = 0.,
                     **kwargs) -> None:
         kwargs0 = {'colors':'gray', 'linewidths':1.0, 'zorder':2}
-        if fitsimage is None:
+        if not (c is None):
             if np.ndim(c) == 2 and sigma == 'edge': sigma = 'out'
             rms = estimate_rms(c, sigma)
             c, (x, y) = self.readdata(c, x, y, v)
-        else:
+        if not (fitsimage is None):
             c, (x, y), (bmaj, bmin, bpa), _, rms \
                 = self.readfits(fitsimage, Tb, sigma, center, restfrq)
         x, y = x[::skip], y[::skip]
@@ -325,14 +325,14 @@ class plotastrodata():
         kwargs0 = {'angles':'xy', 'scale_units':'xy', 'color':'gray',
                    'pivot':'mid', 'headwidth':0, 'headlength':0,
                    'headaxislength':0, 'width':0.007, 'zorder':3}
-        if ampfits is None:
+        if not (amp is None):
             amp, (x, y) = self.readdata(amp, x, y, v)
-        else:
+        if not (ampfits is None):
             amp, (x, y), (bmaj, bmin, bpa), _, _ \
                 = self.readfits(ampfits, False, None, center, restfrq)
-        if angfits is None:
+        if not (ang is None):
             ang, (x, y) = self.readdata(ang, x, y, v)
-        else:
+        if not (angfits is None):
             ang, (x, y), (bmaj, bmin, bpa), _, _ \
                 = self.readfits(angfits, False, None, center, restfrq)
         if amp is None: amp = np.ones_like(ang)
