@@ -21,11 +21,11 @@ def Jy2K(header = None, bmaj: float = None, bmin: float = None,
         float: the conversion factor in the unit of K/Jy.
     """
     freq = None
-    if not header is None:
+    if header is not None:
         bmaj, bmin = header['BMAJ'], header['BMIN']
         if 'RESTFREQ' in header.keys(): freq = header['RESTFREQ']
         if 'RESTFRQ' in header.keys(): freq = header['RESTFRQ']
-    if not (restfrq is None): freq = restfrq
+    if restfrq is not None: freq = restfrq
     if freq is None:
         print('Please input restfrq.')
         return -1
@@ -98,7 +98,7 @@ class FitsData:
         if not hasattr(self, 'header'):
             self.gen_header()
         h = self.header
-        if not center is None:
+        if center is not None:
             cx, cy = coord2xy(center)
         else:
             cx, cy = h['CRVAL1'], h['CRVAL2']
@@ -112,8 +112,8 @@ class FitsData:
             freq = None
             if 'RESTFREQ' in h.keys(): freq = h['RESTFREQ']
             if 'RESTFRQ' in h.keys(): freq = h['RESTFRQ']
-            if not restfrq is None: freq = restfrq
-            if not (freq is None):
+            if restfrq is not None: freq = restfrq
+            if freq is not None:
                 s = (freq-s) / freq
                 s = s * constants.c.to('km*s**(-1)').value - vsys
                 self.v, self.dv = s, s[1] - s[0]
