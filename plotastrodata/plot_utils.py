@@ -44,21 +44,20 @@ class plotastrodata():
     like [0.2, 0.3] (0 is left or bottom, 1 is right or top).
     Parameters for original methods in matplotlib.axes.Axes can be
     used as kwargs; see the default kwargs0 for reference.
-    
-    Future: Each method (color, contour, segment) should be able to receive
-    a different 'center'.
     """
     def __init__(self, fitsimage: str = None,
                  v: list = [0], vskip: int = 1,
                  vmin: float = -1e10, vmax: float = 1e10,
                  vsys: float = 0., veldigit: int = 2,
+                 restfrq: float = None,
                  nrows: int = 4, ncols: int = 6,
                  center: str = None, rmax: float = 1e10, dist: float = 1.,
                  xoff: float = 0, yoff: float = 0,
                  xflip: bool = True, yflip: bool = False):
         if not fitsimage is None:
             fd = FitsData(fitsimage)
-            _, _, v = fd.get_grid(vsys=vsys, vmin=vmin, vmax=vmax)
+            _, _, v = fd.get_grid(restfrq=restfrq, vsys=vsys,
+                                  vmin=vmin, vmax=vmax)
         nv = len(v := v[::vskip])
         if nv == 1:
             nrows = ncols = npages = nchan = 1
@@ -93,9 +92,7 @@ class plotastrodata():
         self.ydir = ydir = -1 if yflip else 1
         self.xlim = xlim = [xoff - xdir*rmax, xoff + xdir*rmax]
         self.ylim = ylim = [yoff - ydir*rmax, yoff + ydir*rmax]
-        self.gridpar = {'center':center, 'rmax':rmax,
-                        'dist':dist, 'xoff':xoff, 'yoff':yoff,
-                        'vsys':vsys, 'vmin':vmin, 'vmax':vmax}
+        self.rmax = rmax
         self.rowcol = nrows * ncols
         self.npages = npages
         self.allchan = np.arange(nchan)
@@ -124,11 +121,13 @@ class plotastrodata():
             return np.concatenate((d, dnan), axis=0)
         self.skipfill = skipfill
         
-        def readfits(fitsimage: str, Tb: bool = False,
-                     sigma: str = None, restfrq: float = None) -> list:
+        def readfits(fitsimage: str, Tb: bool = False, sigma: str = None,
+                     center: str = None, restfrq: float = None) -> list:
             data, grid, beam, bunit, rms \
                 = fits2data(fitsimage=fitsimage, Tb=Tb, log=False,
-                            sigma=sigma, restfrq=restfrq, **self.gridpar)
+                            sigma=sigma, restfrq=restfrq, center=center,
+                            rmax=rmax, dist=dist, xoff=xoff, yoff=yoff,
+                            vsys=vsys, vmin=vmin, vmax=vmax)
             return [data, grid[:2], beam, bunit, rms]
         self.readfits = readfits
         
@@ -158,7 +157,7 @@ class plotastrodata():
                 axnow.add_patch(e)
                 
     def add_beam(self, bmaj, bmin, bpa, beamcolor) -> None:
-        bpos = max(0.7 * bmaj / self.gridpar['rmax'], 0.075)
+        bpos = max(0.7 * bmaj / self.rmax, 0.075)
         self.add_ellipse(include_chan=self.bottomleft,
                          poslist=[[bpos, bpos]],
                          majlist=[bmaj], minlist=[bmin], palist=[bpa],
@@ -235,7 +234,7 @@ class plotastrodata():
     def add_color(self, fitsimage: str = None,
                   x: list = None, y: list = None, skip: int = 1,
                   v: list = None, c: list = None,
-                  restfrq: float = None,
+                  center: str = None, restfrq: float = None,
                   Tb: bool = False, log: bool = False,
                   show_cbar: bool = True,
                   cblabel: str = None, cbformat: float = '%.1e',
@@ -249,7 +248,7 @@ class plotastrodata():
             c, (x, y) = self.readdata(c, x, y, v)    
         else:
             c, (x, y), (bmaj, bmin, bpa), bunit, rms \
-                = self.readfits(fitsimage, Tb, 'out', restfrq)
+                = self.readfits(fitsimage, Tb, 'out', center, restfrq)
         if log: c = np.log10(c.clip(c[c > 0].min(), None))
         if 'vmin' in kwargs:
             if log: kwargs['vmin'] = np.log10(kwargs['vmin'])
@@ -292,7 +291,7 @@ class plotastrodata():
     def add_contour(self, fitsimage: str = None,
                     x: list = None, y: list = None, skip: int = 1,
                     v: list = None, c: list = None,
-                    restfrq: float = None,
+                    center: str = None, restfrq: float = None,
                     sigma: str or float = 'edge',
                     levels: list = [-12,-6,-3,3,6,12,24,48,96,192,384],
                     Tb: bool = False,
@@ -306,7 +305,7 @@ class plotastrodata():
             c, (x, y) = self.readdata(c, x, y, v)
         else:
             c, (x, y), (bmaj, bmin, bpa), _, rms \
-                = self.readfits(fitsimage, Tb, sigma, restfrq)
+                = self.readfits(fitsimage, Tb, sigma, center, restfrq)
         x, y = x[::skip], y[::skip]
         c = self.skipfill(c, skip)
         for axnow, cnow in zip(self.ax, c):
@@ -319,6 +318,7 @@ class plotastrodata():
                     x: list = None, y: list = None, skip: int = 1,
                     v: list = None, amp: list = None, ang: list = None,
                     ampfactor: float = 1.,
+                    center: str = None, restfrq: float = None,
                     show_beam: bool = True, beamcolor: str = 'gray',
                     bmaj: float = 0., bmin: float = 0., bpa: float = 0.,
                     **kwargs) -> None:
@@ -328,11 +328,13 @@ class plotastrodata():
         if ampfits is None:
             amp, (x, y) = self.readdata(amp, x, y, v)
         else:
-            amp, (x, y), (bmaj, bmin, bpa), _, _ = self.readfits(ampfits)
+            amp, (x, y), (bmaj, bmin, bpa), _, _ \
+                = self.readfits(ampfits, False, None, center, restfrq)
         if angfits is None:
             ang, (x, y) = self.readdata(ang, x, y, v)
         else:
-            ang, (x, y), (bmaj, bmin, bpa), _, _ = self.readfits(angfits)
+            ang, (x, y), (bmaj, bmin, bpa), _, _ \
+                = self.readfits(angfits, False, None, center, restfrq)
         if amp is None: amp = np.ones_like(ang)
         x, y = x[::skip], y[::skip]
         amp = self.skipfill(amp, skip)
