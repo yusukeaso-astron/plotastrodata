@@ -131,9 +131,9 @@ def estimate_rms(data: list, sigma: float or str) -> float:
     return noise
 
 
-def trim(x: list = None, y: list = None, v: list = None,
+def trim(data: list = None, x: list = None, y: list = None, v: list = None,
          xlim: list = None, ylim: list = None, vlim: list = None,
-         data: list = None) -> list:
+         pv: bool = False) -> list:
     """Trim 2D or 3D data by given coordinates and their limits.
 
     Args:

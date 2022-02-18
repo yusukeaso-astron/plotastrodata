@@ -93,7 +93,8 @@ class FitsData:
     def gen_grid(self, center: str = None, rmax: float = 1e10,
                  xoff: float = 0., yoff: float = 0., dist: float = 1.,
                  restfrq: float = None, vsys: float = 0.,
-                 vmin: float = -1e10, vmax: float = 1e10) -> None:
+                 vmin: float = -1e10, vmax: float = 1e10,
+                 pv: bool = False) -> None:
         if not hasattr(self, 'header'):
             self.gen_header()
         h = self.header
@@ -103,46 +104,54 @@ class FitsData:
             cx, cy = h['CRVAL1'], h['CRVAL2']
         self.x, self.y, self.v = None, None, None
         self.dx, self.dy, self.dv = None, None, None
+        def genlist(i: int) -> list:
+            s = np.arange(h[f'NAXIS{i:d}'])
+            s = (s-h[f'CRPIX{i:d}']+1) * h[f'CDELT{i:d}'] + h[f'CRVAL{i:d}']
+            return s
+        def genv(s: list) -> list:
+            freq = None
+            if 'RESTFREQ' in h.keys(): freq = h['RESTFREQ']
+            if 'RESTFRQ' in h.keys(): freq = h['RESTFRQ']
+            if not restfrq is None: freq = restfrq
+            if not (freq is None):
+                s = (freq-s) / freq
+                s = s * constants.c.to('km*s**(-1)').value - vsys
+                self.v, self.dv = s, s[1] - s[0]
+            else:
+                print('Please input restfrq.')
         if h['NAXIS'] > 0:
             if h['NAXIS1'] > 1:
-                s = np.arange(h['NAXIS1'])
-                s = (s-h['CRPIX1']+1) * h['CDELT1'] + h['CRVAL1'] - cx
-                s *= 3600. * dist
+                s = genlist(1)
+                s = (s - cx) * 3600. * dist
                 self.x, self.dx = s, s[1] - s[0]
         if h['NAXIS'] > 1:
             if h['NAXIS2'] > 1:
-                s = np.arange(h['NAXIS2'])
-                s = (s-h['CRPIX2']+1) * h['CDELT2'] + h['CRVAL2'] - cy
-                s *= 3600. * dist
-                self.y, self.dy = s, s[1] - s[0]
-        if h['NAXIS'] > 2:
-            if h['NAXIS3'] > 1:
-                s = np.arange(h['NAXIS3'])
-                s = (s-h['CRPIX3']+1) * h['CDELT3'] + h['CRVAL3']
-                freq = None
-                if 'RESTFREQ' in h.keys(): freq = h['RESTFREQ']
-                if 'RESTFRQ' in h.keys(): freq = h['RESTFRQ']
-                if not restfrq is None: freq = restfrq
-                if not (freq is None):
-                    s = (freq-s) / freq
-                    s = s * constants.c.to('km*s**(-1)').value - vsys
+                s = genlist(2)
+                if pv:
+                    genv(s)
                     self.v, self.dv = s, s[1] - s[0]
                 else:
-                    print('Please input restfrq.')
+                    s = (s - cy) * 3600. * dist
+                    self.y, self.dy = s, s[1] - s[0]
+        if h['NAXIS'] > 2:
+            if h['NAXIS3'] > 1:
+                s = genlist(3)
+                s = genv(s)
         if not hasattr(self, 'data'): self.data = None
         self.data, (self.x, self.y, self.v) \
-            = trim(x=self.x, y=self.y, v=self.v,
+            = trim(data=self.data, x=self.x, y=self.y, v=self.v,
                    xlim=[xoff - rmax, xoff + rmax],
                    ylim=[yoff - rmax, yoff + rmax],
-                   vlim=[vmin, vmax], data=self.data)
+                   vlim=[vmin, vmax], pv=pv)
                     
     def get_grid(self, center: str = None, rmax: float = 1e10,
                  xoff: float = 0., yoff: float = 0., dist: float = 1.,
                  restfrq: float = None, vsys: float = 0.,
-                 vmin: float = -1e10, vmax: float = 1e10) -> None:
+                 vmin: float = -1e10, vmax: float = 1e10,
+                 pv: bool = False) -> None:
         if not hasattr(self, 'x') or not hasattr(self, 'y'):
             self.gen_grid(center, rmax, xoff, yoff, dist,
-                          restfrq, vsys, vmin, vmax)
+                          restfrq, vsys, vmin, vmax, pv)
         return [self.x, self.y, self.v]
 
 
