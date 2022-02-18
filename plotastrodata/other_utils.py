@@ -149,21 +149,24 @@ def trim(x: list = None, y: list = None, v: list = None,
         list: Trimmed [data, [x,y,v]]. 
     """
     xout, yout, vout, dataout = x, y, v, data
-    if not (x is None or xlim is None or xlim == [None, None]):
-        i0 = np.argmin(np.abs(x - xlim[0]))
-        i1 = np.argmin(np.abs(x - xlim[1]))
-        i0, i1 = sorted([i0, i1])
-        xout = x[i0:i1+1]
-    if not (y is None or ylim is None or ylim == [None, None]):
-        j0 = np.argmin(np.abs(y - ylim[0]))
-        j1 = np.argmin(np.abs(y - ylim[1]))
-        j0, j1 = sorted([j0, j1])
-        yout = y[j0:j1+1]
-    if not (v is None or vlim is None or vlim == [None, None]):
-        k0 = np.argmin(np.abs(v - vlim[0]))
-        k1 = np.argmin(np.abs(v - vlim[1]))
-        k0, k1 = sorted([k0, k1])
-        vout = v[k0:k1+1]
+    if not (x is None or xlim is None):
+        if not (None in xlim):
+            i0 = np.argmin(np.abs(x - xlim[0]))
+            i1 = np.argmin(np.abs(x - xlim[1]))
+            i0, i1 = sorted([i0, i1])
+            xout = x[i0:i1+1]
+    if not (y is None or ylim is None):
+        if not (None in ylim):
+            j0 = np.argmin(np.abs(y - ylim[0]))
+            j1 = np.argmin(np.abs(y - ylim[1]))
+            j0, j1 = sorted([j0, j1])
+            yout = y[j0:j1+1]
+    if not (v is None or vlim is None):
+        if not (None in vlim):
+            k0 = np.argmin(np.abs(v - vlim[0]))
+            k1 = np.argmin(np.abs(v - vlim[1]))
+            k0, k1 = sorted([k0, k1])
+            vout = v[k0:k1+1]
     if not (data is None):
         if np.ndim(d := np.squeeze(data)) == 2:
             dataout = d[j0:j1+1, i0:i1+1]
