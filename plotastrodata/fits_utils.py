@@ -143,10 +143,7 @@ class FitsData:
         if not hasattr(self, 'x') or not hasattr(self, 'y'):
             self.gen_grid(center, rmax, xoff, yoff, dist,
                           restfrq, vsys, vmin, vmax)
-        if hasattr(self, 'v'):
-            return [self.x, self.y, self.v]
-        else:
-            return [self.x, self.y, None]
+        return [self.x, self.y, self.v]
 
 
 def fits2data(fitsimage: str, Tb: bool = False, log: bool = False,
