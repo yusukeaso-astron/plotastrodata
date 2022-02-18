@@ -315,9 +315,12 @@ class plotastrodata():
             self.add_beam(bmaj, bmin, bpa, beamcolor)
             
     def add_segment(self, ampfits: str = None, angfits: str = None,
+                    Ufits: str = None, Qfits: str = None,
                     x: list = None, y: list = None, skip: int = 1,
                     v: list = None, amp: list = None, ang: list = None,
-                    ampfactor: float = 1.,
+                    stU: list = None, stQ: list = None,
+                    ampfactor: float = 1., cutoff: float = 3.,
+                    sigma: str or float = 'out',
                     center: str = None, restfrq: float = None,
                     show_beam: bool = True, beamcolor: str = 'gray',
                     bmaj: float = 0., bmin: float = 0., bpa: float = 0.,
@@ -335,6 +338,25 @@ class plotastrodata():
         if not (angfits is None):
             ang, (x, y), (bmaj, bmin, bpa), _, _ \
                 = self.readfits(angfits, False, None, center, restfrq)
+        if not (stU is None):
+            rmsU = estimate_rms(stU, sigma)
+            stU, (x, y) = self.readdata(stU, x, y, v)
+        if not (Ufits is None):
+            stU, (x, y), (bmaj, bmin, bpa), _, rmsU \
+                = self.readfits(Ufits, False, None, center, restfrq)
+        if not (stQ is None):
+            rmsU = estimate_rms(stU, sigma)
+            stQ, (x, y) = self.readdata(stQ, x, y, v)
+        if not (Qfits is None):
+            stQ, (x, y), (bmaj, bmin, bpa), _, rmsQ \
+                = self.readfits(Qfits, False, None, center, restfrq)
+        if not (stU is None or stQ is None):
+            rms = (rmsU + rmsQ) / 2.
+            stU[np.abs(stU) < cutoff * rms] = np.nan
+            stQ[np.abs(stQ) < cutoff * rms] = np.nan
+            amp = np.hypot(stU, stQ)
+            ang = np.degrees(np.arctan(stU / stQ) / 2.)
+            
         if amp is None: amp = np.ones_like(ang)
         x, y = x[::skip], y[::skip]
         amp = self.skipfill(amp, skip)
