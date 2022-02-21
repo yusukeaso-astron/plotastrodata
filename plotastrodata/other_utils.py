@@ -167,7 +167,7 @@ def trim(data: list = None, x: list = None, y: list = None, v: list = None,
             k1 = np.argmin(np.abs(v - vlim[1]))
             k0, k1 = sorted([k0, k1])
             vout = v[k0:k1+1]
-    if not (data is None):
+    if data is not None:
         if np.ndim(d := np.squeeze(data)) == 2:
             dataout = d[j0:j1+1, i0:i1+1]
         else:

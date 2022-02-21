@@ -54,7 +54,7 @@ class plotastrodata():
                  center: str = None, rmax: float = 1e10, dist: float = 1.,
                  xoff: float = 0, yoff: float = 0,
                  xflip: bool = True, yflip: bool = False):
-        if not fitsimage is None:
+        if fitsimage is not None:
             fd = FitsData(fitsimage)
             _, _, v = fd.get_grid(restfrq=restfrq, vsys=vsys,
                                   vmin=vmin, vmax=vmax)
@@ -92,6 +92,7 @@ class plotastrodata():
         self.ydir = ydir = -1 if yflip else 1
         self.xlim = xlim = [xoff - xdir*rmax, xoff + xdir*rmax]
         self.ylim = ylim = [yoff - ydir*rmax, yoff + ydir*rmax]
+        vlim = [vmin, vmax]
         self.rmax = rmax
         self.rowcol = nrows * ncols
         self.npages = npages
@@ -243,10 +244,10 @@ class plotastrodata():
                   bmaj: float = 0., bmin: float = 0.,
                   bpa: float = 0., **kwargs) -> None:
         kwargs0 = {'cmap':'cubehelix', 'alpha':1, 'zorder':1}
-        if not (c is None):
+        if c is not None:
             bunit, rms = '', estimate_rms(c, 'out')
             c, (x, y) = self.readdata(c, x, y, v)    
-        if not (fitsimage is None):
+        if fitsimage is not None:
             c, (x, y), (bmaj, bmin, bpa), bunit, rms \
                 = self.readfits(fitsimage, Tb, 'out', center, restfrq)
         if log: c = np.log10(c.clip(c[c > 0].min(), None))
@@ -278,9 +279,9 @@ class plotastrodata():
             cb.ax.tick_params(labelsize=14)
             font = mpl.font_manager.FontProperties(size=16)
             cb.ax.yaxis.label.set_font_properties(font)
-            if not (cbticks is None):
+            if cbticks is not None:
                 cb.set_ticks(np.log10(cbticks) if log else cbticks)
-            if not (cbticklabels is None):
+            if cbticklabels is not None:
                 cb.set_ticklabels(cbticklabels)
             elif log:
                 cb.set_ticks(t := cb.get_ticks())
@@ -299,11 +300,11 @@ class plotastrodata():
                     bmaj: float = 0., bmin: float = 0., bpa: float = 0.,
                     **kwargs) -> None:
         kwargs0 = {'colors':'gray', 'linewidths':1.0, 'zorder':2}
-        if not (c is None):
+        if c is not None:
             if np.ndim(c) == 2 and sigma == 'edge': sigma = 'out'
             rms = estimate_rms(c, sigma)
             c, (x, y) = self.readdata(c, x, y, v)
-        if not (fitsimage is None):
+        if fitsimage is not None:
             c, (x, y), (bmaj, bmin, bpa), _, rms \
                 = self.readfits(fitsimage, Tb, sigma, center, restfrq)
         x, y = x[::skip], y[::skip]
@@ -328,26 +329,26 @@ class plotastrodata():
         kwargs0 = {'angles':'xy', 'scale_units':'xy', 'color':'gray',
                    'pivot':'mid', 'headwidth':0, 'headlength':0,
                    'headaxislength':0, 'width':0.007, 'zorder':3}
-        if not (amp is None):
+        if amp is not None:
             amp, (x, y) = self.readdata(amp, x, y, v)
-        if not (ampfits is None):
+        if ampfits is not None:
             amp, (x, y), (bmaj, bmin, bpa), _, _ \
                 = self.readfits(ampfits, False, None, center, restfrq)
-        if not (ang is None):
+        if ang is not None:
             ang, (x, y) = self.readdata(ang, x, y, v)
-        if not (angfits is None):
+        if angfits is not None:
             ang, (x, y), (bmaj, bmin, bpa), _, _ \
                 = self.readfits(angfits, False, None, center, restfrq)
-        if not (stU is None):
+        if stU is not None:
             rmsU = estimate_rms(stU, sigma)
             stU, (x, y) = self.readdata(stU, x, y, v)
-        if not (Ufits is None):
+        if Ufits is not None:
             stU, (x, y), (bmaj, bmin, bpa), _, rmsU \
                 = self.readfits(Ufits, False, None, center, restfrq)
-        if not (stQ is None):
+        if stQ is not None:
             rmsU = estimate_rms(stU, sigma)
             stQ, (x, y) = self.readdata(stQ, x, y, v)
-        if not (Qfits is None):
+        if Qfits is not None:
             stQ, (x, y), (bmaj, bmin, bpa), _, rmsQ \
                 = self.readfits(Qfits, False, None, center, restfrq)
         if not (stU is None or stQ is None):
@@ -376,28 +377,28 @@ class plotastrodata():
                  ylabel: str = 'Dec. (arcsec)',
                  grid: dict = None, samexy: bool = True) -> None:
         
-        if xticklabels is None and not (xticks is None):
+        if xticklabels is None and xticks is not None:
                 xticklabels = [str(t) for t in xticks]
-        if yticklabels is None and not (xticks is None):
+        if yticklabels is None and xticks is not None:
                 yticklabels = [str(t) for t in yticks]
         for ch, axnow in enumerate(self.ax):
             if samexy:
                 axnow.set_xticks(axnow.get_yticks())
                 axnow.set_yticks(axnow.get_xticks())
                 axnow.set_aspect(1)
-            if not xticks is None: axnow.set_xticks(xticks)
-            if not yticks is None: axnow.set_yticks(yticks)
-            if not xticksminor is None:
+            if xticks is not None: axnow.set_xticks(xticks)
+            if yticks is not None: axnow.set_yticks(yticks)
+            if xticksminor is not None:
                 axnow.set_xticks(xticksminor, minor=True)
-            if not yticksminor is None:
+            if yticksminor is not None:
                 axnow.set_yticks(yticksminor, minor=True)
-            if not (xticklabels is None):
+            if xticklabels is not None:
                 axnow.set_xticklabels(xticklabels)
-            if not (yticklabels is None):
+            if yticklabels is not None:
                 axnow.set_yticklabels(yticklabels)
-            if not xlabel is None:
+            if xlabel is not None:
                 axnow.set_xlabel(xlabel)
-            if not ylabel is None:
+            if ylabel is not None:
                 axnow.set_ylabel(ylabel)
             if not (ch in self.bottomleft):
                 plt.setp(axnow.get_xticklabels(), visible=False)
@@ -406,7 +407,7 @@ class plotastrodata():
                 axnow.set_ylabel('')
             axnow.set_xlim(*self.xlim)
             axnow.set_ylim(*self.ylim)
-            if not grid is None:
+            if grid is not None:
                 axnow.grid(**({} if grid == True else grid))
             if len(self.ax) == 1: plt.figure(0).tight_layout()
             
@@ -428,3 +429,4 @@ class plotastrodata():
             axnow.set_xlim(*self.xlim)
             axnow.set_ylim(*self.ylim)
         plt.show()
+        plt.close()
