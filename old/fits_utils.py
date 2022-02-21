@@ -25,7 +25,7 @@ def Jy2K(header = None, bmaj: float = None, bmin: float = None,
         bmaj, bmin = header['BMAJ'], header['BMIN']
         if 'RESTFREQ' in header.keys(): freq = header['RESTFREQ']
         if 'RESTFRQ' in header.keys(): freq = header['RESTFRQ']
-    omega = bmaj * bmin * np.radians(1)**2 * np.pi / 4. * np.log(2.)
+    omega = bmaj * bmin * np.radians(1)**2 * np.pi / 4. / np.log(2.)
     lam = constants.c.to('m/s').value / freq
     a = units.Jy.to('J*s**(-1)*m**(-2)*Hz**(-1)') \
         * lam**2 / 2. / constants.k_B.to('J/K').value / omega
