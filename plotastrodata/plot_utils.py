@@ -53,15 +53,16 @@ class plotastrodata():
                  nrows: int = 4, ncols: int = 6,
                  center: str = None, rmax: float = 1e10, dist: float = 1.,
                  xoff: float = 0, yoff: float = 0,
-                 xflip: bool = True, yflip: bool = False):
+                 xflip: bool = True, yflip: bool = False,
+                 pv : bool = False):
         if fitsimage is not None:
             fd = FitsData(fitsimage)
             _, _, v = fd.get_grid(restfrq=restfrq, vsys=vsys,
                                   vmin=vmin, vmax=vmax)
-        nv = len(v := v[::vskip])
-        if nv == 1:
-            nrows = ncols = npages = nchan = 1
+        if pv or v is None or v == [] or len(v) == 1:
+            nv = nrows = ncols = npages = nchan = 1
         else:
+            nv = len(v := v[::vskip])
             npages = int(np.ceil(nv / nrows / ncols))
             nchan = npages * nrows * ncols
             v = np.r_[v, v[-1] + (np.arange(nchan-nv)+1) * (v[1] - v[0])]

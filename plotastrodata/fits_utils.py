@@ -98,45 +98,46 @@ class FitsData:
         if not hasattr(self, 'header'):
             self.gen_header()
         h = self.header
+        # spatial center
         if center is not None:
             cx, cy = coord2xy(center)
         else:
             cx, cy = h['CRVAL1'], h['CRVAL2']
+        # rest frequency
+        if 'RESTFRQ' in h.keys():
+            restfrq = h['RESTFRQ']
+        elif 'RESTFREQ' in h.keys():
+            restfrq = h['RESTFREQ']
         self.x, self.y, self.v = None, None, None
         self.dx, self.dy, self.dv = None, None, None
-        def genlist(i: int) -> list:
+        def get_list(i: int) -> list:
             s = np.arange(h[f'NAXIS{i:d}'])
             s = (s-h[f'CRPIX{i:d}']+1) * h[f'CDELT{i:d}'] + h[f'CRVAL{i:d}']
             return s
-        def genv(s: list) -> list:
-            freq = None
-            if 'RESTFREQ' in h.keys(): freq = h['RESTFREQ']
-            if 'RESTFRQ' in h.keys(): freq = h['RESTFRQ']
-            if restfrq is not None: freq = restfrq
-            if freq is not None:
-                s = (freq-s) / freq
-                s = s * constants.c.to('km*s**(-1)').value - vsys
-                self.v, self.dv = s, s[1] - s[0]
+        def gen_x(s: list) -> None:
+            s = (s - cx) * 3600. * dist
+            self.x, self.dx = s, s[1] - s[0]
+        def gen_y(s: list) -> None:
+            s = (s - cy) * 3600. * dist
+            self.y, self.dy = s, s[1] - s[0]
+        def gen_v(s: list) -> None:
+            if restfrq is None:
+                freq = np.mean(s)
+                print('restfrq is assumed to be the center.')            
             else:
-                print('Please input restfrq.')
+                freq = restfrq
+            s = (freq-s) / freq
+            s = s * constants.c.to('km*s**(-1)').value - vsys
+            self.v, self.dv = s, s[1] - s[0]
         if h['NAXIS'] > 0:
             if h['NAXIS1'] > 1:
-                s = genlist(1)
-                s = (s - cx) * 3600. * dist
-                self.x, self.dx = s, s[1] - s[0]
+                gen_x(get_list(1))
         if h['NAXIS'] > 1:
             if h['NAXIS2'] > 1:
-                s = genlist(2)
-                if pv:
-                    genv(s)
-                    self.v, self.dv = s, s[1] - s[0]
-                else:
-                    s = (s - cy) * 3600. * dist
-                    self.y, self.dy = s, s[1] - s[0]
+                gen_v(get_list(2)) if pv else gen_y(get_list(2))
         if h['NAXIS'] > 2:
             if h['NAXIS3'] > 1:
-                s = genlist(3)
-                s = genv(s)
+                gen_v(get_list(3))
         if not hasattr(self, 'data'): self.data = None
         self.data, (self.x, self.y, self.v) \
             = trim(data=self.data, x=self.x, y=self.y, v=self.v,
