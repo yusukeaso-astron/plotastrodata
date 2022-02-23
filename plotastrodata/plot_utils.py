@@ -44,6 +44,9 @@ class plotastrodata():
     like [0.2, 0.3] (0 is left or bottom, 1 is right or top).
     Parameters for original methods in matplotlib.axes.Axes can be
     used as kwargs; see the default kwargs0 for reference.
+    plotastrodata does not support ellipse, line, arrow, and segment in
+    position-velocity diagrams because the units of abscissa and ordinate
+    are different.
     """
     def __init__(self, fitsimage: str = None,
                  v: list = [0], vskip: int = 1,
@@ -59,7 +62,7 @@ class plotastrodata():
             fd = FitsData(fitsimage)
             _, _, v = fd.get_grid(restfrq=restfrq, vsys=vsys,
                                   vmin=vmin, vmax=vmax)
-        if pv or v is None or v == [] or len(v) == 1:
+        if pv or v is None or len(v) == 1:
             nv = nrows = ncols = npages = nchan = 1
         else:
             nv = len(v := v[::vskip])
@@ -94,11 +97,13 @@ class plotastrodata():
         self.xlim = xlim = [xoff - xdir*rmax, xoff + xdir*rmax]
         self.ylim = ylim = [yoff - ydir*rmax, yoff + ydir*rmax]
         vlim = [vmin, vmax]
+        if pv: self.ylim = ylim = vlim
         self.rmax = rmax
         self.rowcol = nrows * ncols
         self.npages = npages
         self.allchan = np.arange(nchan)
         self.bottomleft = nij2ch(np.arange(npages), nrows - 1, 0)
+        self.pv = pv
 
         def pos2xy(poslist: list = []) -> list:
             if np.shape(poslist) in [(), (2,)]:
@@ -129,15 +134,21 @@ class plotastrodata():
                 = fits2data(fitsimage=fitsimage, Tb=Tb, log=False,
                             sigma=sigma, restfrq=restfrq, center=center,
                             rmax=rmax, dist=dist, xoff=xoff, yoff=yoff,
-                            vsys=vsys, vmin=vmin, vmax=vmax)
-            return [data, grid[:2], beam, bunit, rms]
+                            vsys=vsys, vmin=vmin, vmax=vmax, pv=pv)
+            if pv:
+                return [data, grid[:3:2], beam, bunit, rms]
+            else:
+                return [data, grid[:2], beam, bunit, rms]
         self.readfits = readfits
         
         def readdata(data: list = None, x: list = None,
                      y: list = None, v: list = None) -> list:
             dataout, grid = trim(data=data, x=x, y=y, v=v,
-                                 xlim=xlim, ylim=ylim, vlim=vlim)
-            return [dataout, grid[:2]]
+                                 xlim=xlim, ylim=ylim, vlim=vlim, pv=pv)
+            if pv:
+                return [dataout, grid[:3:2]]
+            else:
+                return [dataout, grid[:2]]
         self.readdata = readdata
 
         
@@ -183,7 +194,7 @@ class plotastrodata():
         for ch, axnow in enumerate(self.ax):
             if not (ch in include_chan):
                 continue
-            for x, y, s in zip(*self.pos2xy(poslist), *listing(slist)):
+            for x, y, s in zip(*self.pos2xy(poslist), listing(slist)):
                 axnow.text(x=x, y=y, s=s, **dict(kwargs0, **kwargs))
 
     def add_line(self, poslist: list = [], anglelist: list = [],
@@ -374,10 +385,16 @@ class plotastrodata():
     def set_axis(self, xticks: list = None, yticks: list = None,
                  xticksminor: list = None, yticksminor: list = None,
                  xticklabels: list = None, yticklabels: list= None,
-                 xlabel: str = 'R.A. (arcsec)',
-                 ylabel: str = 'Dec. (arcsec)',
+                 xlabel: str = None, ylabel: str = None,
                  grid: dict = None, samexy: bool = True) -> None:
         
+        if self.pv:
+            if xlabel is None: xlabel = 'Offset (arcsec)'
+            if ylabel is None: ylabel = r'Velocity (km s$^{-1})$'
+            samexy = False
+        else:
+            if xlabel is None: xlabel = 'R.A. (arcsec)'
+            if ylabel is None: ylabel = 'Dec. (arcsec)'
         if xticklabels is None and xticks is not None:
                 xticklabels = [str(t) for t in xticks]
         if yticklabels is None and xticks is not None:
@@ -413,7 +430,8 @@ class plotastrodata():
             if len(self.ax) == 1: plt.figure(0).tight_layout()
             
     def savefig(self, filename: str = 'plotastrodata.png',
-                transparent: bool =True) -> None:
+                show: bool = False, **kwargs) -> None:
+        kwargs0 = {'transparent': True, 'bbox_inches': 'tight'}
         for axnow in self.ax:
             axnow.set_xlim(*self.xlim)
             axnow.set_ylim(*self.ylim)
@@ -423,11 +441,10 @@ class plotastrodata():
             fig = plt.figure(i)
             fig.patch.set_alpha(0)
             fig.savefig(filename.replace('.' + ext, ver + '.' + ext),
-                        bbox_inches='tight', transparent=transparent)
-            
-    def show(self):
-        for axnow in self.ax:
-            axnow.set_xlim(*self.xlim)
-            axnow.set_ylim(*self.ylim)
-        plt.show()
+                        **dict(kwargs0, **kwargs))
+        if show:
+            for axnow in self.ax:
+                axnow.set_xlim(*self.xlim)
+                axnow.set_ylim(*self.ylim)
+            plt.show()
         plt.close()

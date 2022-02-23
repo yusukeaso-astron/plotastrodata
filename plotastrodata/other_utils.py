@@ -13,7 +13,7 @@ def listing(*args) -> list:
     nums = [float, int, np.float64, np.int64, np.float32, np.int32]
     b = [None] * len(args)
     for i, a in enumerate(args):
-        b[i] = [a] if type(a) in nums + [str] else a
+        b[i] = [a] if type(a) in (nums + [str]) else a
     if len(args) == 1: b = b[0]
     return b
 
