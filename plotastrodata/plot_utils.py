@@ -187,7 +187,7 @@ class plotastrodata():
             for x, y in zip(*self.pos2xy(poslist)):
                 axnow.plot(x, y, **dict(kwsmark0, **kwargs), zorder=10)
             
-    def add_label(self, poslist: list = [], slist: list = [],
+    def add_text(self, poslist: list = [], slist: list = [],
                   include_chan: list = None, **kwargs) -> None:
         kwargs0 = {'color':'gray', 'fontsize':15, 'zorder':10}
         if include_chan is None: include_chan = self.allchan
