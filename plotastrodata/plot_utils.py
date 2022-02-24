@@ -266,6 +266,7 @@ class plotastrodata():
         if fitsimage is not None:
             c, (x, y), (bmaj, bmin, bpa), bunit, rms \
                 = self.readfits(fitsimage, Tb, 'out', center, restfrq)
+        self.rms = rms
         if log: c = np.log10(c.clip(c[c > 0].min(), None))
         if 'vmin' in kwargs:
             if log: kwargs['vmin'] = np.log10(kwargs['vmin'])
@@ -323,6 +324,7 @@ class plotastrodata():
         if fitsimage is not None:
             c, (x, y), (bmaj, bmin, bpa), _, rms \
                 = self.readfits(fitsimage, Tb, sigma, center, restfrq)
+        self.rms = rms
         x, y = x[::skip], y[::skip]
         c = self.skipfill(c, skip)
         for axnow, cnow in zip(self.ax, c):
@@ -369,11 +371,11 @@ class plotastrodata():
                 = self.readfits(Qfits, False, None, center, restfrq)
         if not (stU is None or stQ is None):
             rms = (rmsU + rmsQ) / 2.
+            self.rms = rms
             stU[np.abs(stU) < cutoff * rms] = np.nan
             stQ[np.abs(stQ) < cutoff * rms] = np.nan
             amp = np.hypot(stU, stQ)
             ang = np.degrees(np.arctan(stU / stQ) / 2.)
-            
         if amp is None: amp = np.ones_like(ang)
         x, y = x[::skip], y[::skip]
         amp = self.skipfill(amp, skip)
