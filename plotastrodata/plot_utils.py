@@ -34,7 +34,7 @@ class plotastrodata():
     Basic rules --- For 3D data, a 1D velocity array or a FITS file
     with a velocity axis must be given to set up channels in each page.
     len(v)=1 (default) means to make a 2D figure.
-    Lengths are in the unit of arcsec.
+    Lengths are in the unit of arcsec, or au if self.dist != 1.
     Angles are in the unit of degree.
     For ellipse, line, arrow, label, and marker,
     a single input can be treated without a list, i.e., anglelist=60,
@@ -99,6 +99,7 @@ class plotastrodata():
         vlim = [vmin, vmax]
         if pv: self.ylim = ylim = vlim
         self.rmax = rmax
+        self.dist = dist
         self.rowcol = nrows * ncols
         self.npages = npages
         self.allchan = np.arange(nchan)
@@ -169,10 +170,13 @@ class plotastrodata():
                             **dict(kwargs0, **kwargs))
                 axnow.add_patch(e)
                 
-    def add_beam(self, bmaj, bmin, bpa, beamcolor) -> None:
-        bpos = max(0.35 * bmaj / self.rmax, 0.1)
-        self.add_ellipse(include_chan=self.bottomleft,
-                         poslist=[[bpos, bpos]],
+    def add_beam(self, bmaj: float = 0, bmin: float = 0,
+                 bpa: float = 0, beamcolor: str = 'gray',
+                 poslist: list = None) -> None:
+        if poslist is None:
+            bpos = max(0.35 * bmaj / self.rmax, 0.1)
+            poslist = [[bpos, bpos]]
+        self.add_ellipse(include_chan=self.bottomleft, poslist=poslist,
                          majlist=[bmaj], minlist=[bmin], palist=[bpa],
                          facecolor=beamcolor, edgecolor=None)
     
@@ -230,8 +234,9 @@ class plotastrodata():
                      color: str = 'gray', barpos: tuple = (0.75, 0.17),
                      fontsize: float = None, linewidth: float = 3):
         if length == 0 or label == '':
-            print('Please set length and label.')
-            return -1
+            length = self.rmax / 2. * (self.dist)
+            length = round(length, 1 - int(np.floor(np.log10(length))))
+            label = str(length) + ' (arcsec)' if self.dist == 1 else ' (au)'
         if fontsize is None:
             fontsize = 20 if len(self.ax) == 1 else 15 
         for ch, axnow in enumerate(self.ax):
@@ -389,12 +394,15 @@ class plotastrodata():
                  grid: dict = None, samexy: bool = True) -> None:
         
         if self.pv:
-            if xlabel is None: xlabel = 'Offset (arcsec)'
+            if xlabel is None:
+                xlabel = 'Offset ' + '(arcsec)' if self.dist == 1 else '(au)'
             if ylabel is None: ylabel = r'Velocity (km s$^{-1})$'
             samexy = False
         else:
-            if xlabel is None: xlabel = 'R.A. (arcsec)'
-            if ylabel is None: ylabel = 'Dec. (arcsec)'
+            if xlabel is None:
+                xlabel = 'R.A. ' + '(arcsec)' if self.dist == 1 else '(au)'
+            if ylabel is None:
+                ylabel = 'Dec. ' + '(arcsec)' if self.dist == 1 else '(au)'
         if xticklabels is None and xticks is not None:
                 xticklabels = [str(t) for t in xticks]
         if yticklabels is None and xticks is not None:
