@@ -232,7 +232,7 @@ class plotastrodata():
                              **dict(kwargs0, **kwargs))
                 
     def add_scalebar(self, length: float = 0, label: str = '',
-                     color: str = 'gray', barpos: tuple = (0.75, 0.17),
+                     color: str = 'gray', barpos: tuple = (0.8, 0.12),
                      fontsize: float = None, linewidth: float = 3):
         if length == 0 or label == '':
             print('Please input length and label.')
