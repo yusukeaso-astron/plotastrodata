@@ -170,7 +170,7 @@ class plotastrodata():
                 axnow.add_patch(e)
                 
     def add_beam(self, bmaj, bmin, bpa, beamcolor) -> None:
-        bpos = max(0.7 * bmaj / self.rmax, 0.075)
+        bpos = max(0.35 * bmaj / self.rmax, 0.1)
         self.add_ellipse(include_chan=self.bottomleft,
                          poslist=[[bpos, bpos]],
                          majlist=[bmaj], minlist=[bmin], palist=[bpa],
