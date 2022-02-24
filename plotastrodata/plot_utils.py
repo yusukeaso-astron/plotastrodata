@@ -193,7 +193,8 @@ class plotastrodata():
             
     def add_text(self, poslist: list = [], slist: list = [],
                   include_chan: list = None, **kwargs) -> None:
-        kwargs0 = {'color':'gray', 'fontsize':15, 'zorder':10}
+        kwargs0 = {'color':'gray', 'fontsize':15, 'ha':'center',
+                   'va':'center', 'zorder':10}
         if include_chan is None: include_chan = self.allchan
         for ch, axnow in enumerate(self.ax):
             if not (ch in include_chan):
