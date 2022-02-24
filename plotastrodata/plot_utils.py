@@ -34,7 +34,7 @@ class plotastrodata():
     Basic rules --- For 3D data, a 1D velocity array or a FITS file
     with a velocity axis must be given to set up channels in each page.
     len(v)=1 (default) means to make a 2D figure.
-    Lengths are in the unit of arcsec, or au if self.dist != 1.
+    Lengths are in the unit of arcsec, or au if dist (!= 1) is given.
     Angles are in the unit of degree.
     For ellipse, line, arrow, label, and marker,
     a single input can be treated without a list, i.e., anglelist=60,
