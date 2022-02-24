@@ -28,7 +28,7 @@ def Jy2K(header = None, bmaj: float = None, bmin: float = None,
     if restfrq is not None: freq = restfrq
     if freq is None:
         print('Please input restfrq.')
-        return -1
+        return np.nan
     omega = bmaj * bmin * np.radians(1)**2 * np.pi / 4. * np.log(2.)
     lam = constants.c.to('m/s').value / freq
     a = units.Jy.to('J*s**(-1)*m**(-2)*Hz**(-1)') \
