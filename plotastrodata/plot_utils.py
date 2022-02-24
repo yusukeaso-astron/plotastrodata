@@ -234,9 +234,8 @@ class plotastrodata():
                      color: str = 'gray', barpos: tuple = (0.75, 0.17),
                      fontsize: float = None, linewidth: float = 3):
         if length == 0 or label == '':
-            length = self.rmax / 2. * self.dist
-            length = round(length, 1 - int(np.floor(np.log10(length))))
-            label = str(length) + ' arcsec' if self.dist == 1 else ' au'
+            print('Please input length and label.')
+            return -1
         if fontsize is None:
             fontsize = 20 if len(self.ax) == 1 else 15 
         for ch, axnow in enumerate(self.ax):
