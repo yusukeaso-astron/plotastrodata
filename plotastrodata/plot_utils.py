@@ -339,8 +339,8 @@ class plotastrodata():
                     x: list = None, y: list = None, skip: int = 1,
                     v: list = None, amp: list = None, ang: list = None,
                     stU: list = None, stQ: list = None,
-                    ampfactor: float = 1., cutoff: float = 3.,
-                    sigma: str or float = 'out',
+                    ampfactor: float = 1., angonly: bool = False,
+                    cutoff: float = 3., sigma: str or float = 'out',
                     center: str = None, restfrq: float = None,
                     show_beam: bool = True, beamcolor: str = 'gray',
                     bmaj: float = 0., bmin: float = 0., bpa: float = 0.,
@@ -377,7 +377,7 @@ class plotastrodata():
             stQ[np.abs(stQ) < cutoff * rms] = np.nan
             amp = np.hypot(stU, stQ)
             ang = np.degrees(np.arctan(stU / stQ) / 2.)
-        if amp is None: amp = np.ones_like(ang)
+        if amp is None or angonly: amp = np.ones_like(ang)
         x, y = x[::skip], y[::skip]
         amp = self.skipfill(amp, skip)
         ang = self.skipfill(ang, skip)
