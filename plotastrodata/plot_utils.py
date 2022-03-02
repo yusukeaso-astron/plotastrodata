@@ -254,7 +254,7 @@ class plotastrodata():
                   v: list = None, c: list = None,
                   center: str = None, restfrq: float = None,
                   Tb: bool = False, log: bool = False,
-                  show_cbar: bool = True,
+                  sigma: float or str = 'out', show_cbar: bool = True,
                   cblabel: str = None, cbformat: float = '%.1e',
                   cbticks: list = None, cbticklabels: list = None,
                   show_beam: bool = True, beamcolor: str = 'gray',
@@ -262,11 +262,11 @@ class plotastrodata():
                   bpa: float = 0., **kwargs) -> None:
         kwargs0 = {'cmap':'cubehelix', 'alpha':1, 'zorder':1}
         if c is not None:
-            bunit, rms = '', estimate_rms(c, 'out')
+            bunit, rms = '', estimate_rms(c, sigma)
             c, (x, y) = self.readdata(c, x, y, v)    
         if fitsimage is not None:
             c, (x, y), (bmaj, bmin, bpa), bunit, rms \
-                = self.readfits(fitsimage, Tb, 'out', center, restfrq)
+                = self.readfits(fitsimage, Tb, sigma, center, restfrq)
         self.rms = rms
         if log: c = np.log10(c.clip(c[c > 0].min(), None))
         if 'vmin' in kwargs:
