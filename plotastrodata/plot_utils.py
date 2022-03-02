@@ -340,6 +340,7 @@ class plotastrodata():
                     v: list = None, amp: list = None, ang: list = None,
                     stU: list = None, stQ: list = None,
                     ampfactor: float = 1., angonly: bool = False,
+                    rotation: float = 0.,
                     cutoff: float = 3., sigma: str or float = 'out',
                     center: str = None, restfrq: float = None,
                     show_beam: bool = True, beamcolor: str = 'gray',
@@ -381,6 +382,7 @@ class plotastrodata():
         x, y = x[::skip], y[::skip]
         amp = self.skipfill(amp, skip)
         ang = self.skipfill(ang, skip)
+        ang += rotation
         u = ampfactor * amp * np.sin(np.radians(ang))
         v = ampfactor * amp * np.cos(np.radians(ang))
         kwargs0['scale'] = 1. / np.abs(x[1] - x[0])
