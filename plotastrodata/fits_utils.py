@@ -197,7 +197,7 @@ def data2fits(d: list = None, h: dict = {}, crpix: int = None,
             w.wcs.cdelt = [1] * naxis if cdelt is None else cdelt
             w.wcs.ctype = ctype0[:naxis] if ctype is None else ctype
         header = w.to_header()
-        hdu = fits.PrimaryHDU(d, header=header, uint=False, do_not_scale_image_data=True)
+        hdu = fits.PrimaryHDU(d, header=header)
         for k in h.keys():
             if not ('COMMENT' in k or 'HISTORY' in k):
                 hdu.header[k]=h[k]
