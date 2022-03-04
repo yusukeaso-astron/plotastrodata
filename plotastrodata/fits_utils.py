@@ -191,12 +191,13 @@ def data2fits(d: list = None, h: dict = {}, crpix: int = None,
     else:
         naxis = len(np.shape(d))
         w = wcs.WCS(naxis=naxis)
-        w.wcs.crpix = [0] * naxis if crpix is None else crpix
-        w.wcs.crval = [0] * naxis if crval is None else crval
-        w.wcs.cdelt = [1] * naxis if cdelt is None else cdelt
-        w.wcs.ctype = ctype0[:naxis] if ctype is None else ctype
+        if 'crpix1' in h.keys():
+            w.wcs.crpix = [0] * naxis if crpix is None else crpix
+            w.wcs.crval = [0] * naxis if crval is None else crval
+            w.wcs.cdelt = [1] * naxis if cdelt is None else cdelt
+            w.wcs.ctype = ctype0[:naxis] if ctype is None else ctype
         header = w.to_header()
-        hdu = fits.PrimaryHDU(d, header=header)
+        hdu = fits.PrimaryHDU(d, header=header, uint=False, do_not_scale_image_data=True)
         for k in h.keys():
             if not ('COMMENT' in k or 'HISTORY' in k):
                 hdu.header[k]=h[k]
