@@ -254,7 +254,7 @@ class plotastrodata():
                   v: list = None, c: list = None,
                   center: str = None, restfrq: float = None,
                   Tb: bool = False, log: bool = False,
-                  cfactor: float = 1, show_cbar: bool = True,
+                  sigma: float or str = 'out', show_cbar: bool = True,
                   cblabel: str = None, cbformat: float = '%.1e',
                   cbticks: list = None, cbticklabels: list = None,
                   show_beam: bool = True, beamcolor: str = 'gray',
@@ -262,12 +262,11 @@ class plotastrodata():
                   bpa: float = 0., **kwargs) -> None:
         kwargs0 = {'cmap':'cubehelix', 'alpha':1, 'zorder':1}
         if c is not None:
-            bunit, rms = '', estimate_rms(c, 'out')
+            bunit, rms = '', estimate_rms(c, sigma)
             c, (x, y) = self.readdata(c, x, y, v)    
         if fitsimage is not None:
             c, (x, y), (bmaj, bmin, bpa), bunit, rms \
-                = self.readfits(fitsimage, Tb, 'out', center, restfrq)
-        c = c * cfactor
+                = self.readfits(fitsimage, Tb, sigma, center, restfrq)
         self.rms = rms
         if log: c = np.log10(c.clip(c[c > 0].min(), None))
         if 'vmin' in kwargs:
@@ -341,6 +340,7 @@ class plotastrodata():
                     v: list = None, amp: list = None, ang: list = None,
                     stU: list = None, stQ: list = None,
                     ampfactor: float = 1., angonly: bool = False,
+                    rotation: float = 0.,
                     cutoff: float = 3., sigma: str or float = 'out',
                     center: str = None, restfrq: float = None,
                     show_beam: bool = True, beamcolor: str = 'gray',
@@ -382,6 +382,7 @@ class plotastrodata():
         x, y = x[::skip], y[::skip]
         amp = self.skipfill(amp, skip)
         ang = self.skipfill(ang, skip)
+        ang += rotation
         u = ampfactor * amp * np.sin(np.radians(ang))
         v = ampfactor * amp * np.cos(np.radians(ang))
         kwargs0['scale'] = 1. / np.abs(x[1] - x[0])
