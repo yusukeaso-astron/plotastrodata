@@ -254,7 +254,7 @@ class plotastrodata():
                   v: list = None, c: list = None,
                   center: str = None, restfrq: float = None,
                   Tb: bool = False, log: bool = False,
-                  show_cbar: bool = True,
+                  cfactor: float = 1, show_cbar: bool = True,
                   cblabel: str = None, cbformat: float = '%.1e',
                   cbticks: list = None, cbticklabels: list = None,
                   show_beam: bool = True, beamcolor: str = 'gray',
@@ -267,6 +267,7 @@ class plotastrodata():
         if fitsimage is not None:
             c, (x, y), (bmaj, bmin, bpa), bunit, rms \
                 = self.readfits(fitsimage, Tb, 'out', center, restfrq)
+        c = c * cfactor
         self.rms = rms
         if log: c = np.log10(c.clip(c[c > 0].min(), None))
         if 'vmin' in kwargs:
