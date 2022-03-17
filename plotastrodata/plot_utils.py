@@ -28,7 +28,7 @@ def set_rcparams(fontsize: int = 18, nancolor: str ='w') -> None:
     plt.rcParams['ytick.minor.width'] = 1.5
 
 
-class plotastrodata():
+class PlotAstroData():
     """Make a figure from 2D/3D FITS files or 2D/3D arrays.
     
     Basic rules --- For 3D data, a 1D velocity array or a FITS file
