@@ -237,7 +237,7 @@ class PlotAstroData():
             print('Please input length and label.')
             return -1
         if fontsize is None:
-            fontsize = 20 if len(self.ax) == 1 else 12 
+            fontsize = 20 if len(self.ax) == 1 else 15
         for ch, axnow in enumerate(self.ax):
             if not (ch in self.bottomleft):
                 continue
