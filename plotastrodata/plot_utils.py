@@ -137,20 +137,18 @@ class plotastrodata():
                             sigma=sigma, restfrq=restfrq, center=center,
                             rmax=rmax, dist=dist, xoff=xoff, yoff=yoff,
                             vsys=vsys, vmin=vmin, vmax=vmax, pv=pv)
-            if pv:
-                return [data, grid[:3:2], beam, bunit, rms]
-            else:
-                return [data, grid[:2], beam, bunit, rms]
+            a = [data, grid[:2], beam, bunit, rms]
+            if pv: a[1] = grid[:3:2]
+            return a
         self.readfits = readfits
         
         def readdata(data: list = None, x: list = None,
                      y: list = None, v: list = None) -> list:
             dataout, grid = trim(data=data, x=x, y=y, v=v,
                                  xlim=xlim, ylim=ylim, vlim=vlim, pv=pv)
-            if pv:
-                return [dataout, grid[:3:2]]
-            else:
-                return [dataout, grid[:2]]
+            a = [dataout, grid[:2]]
+            if pv: a[1] = grid[:3:2]
+            return a
         self.readdata = readdata
 
         
