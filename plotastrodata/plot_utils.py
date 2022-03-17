@@ -99,6 +99,7 @@ class plotastrodata():
         vlim = [vmin, vmax]
         if pv: self.ylim = ylim = vlim
         self.rmax = rmax
+        self.center = center
         self.dist = dist
         self.rowcol = nrows * ncols
         self.npages = npages
@@ -252,7 +253,7 @@ class plotastrodata():
     def add_color(self, fitsimage: str = None,
                   x: list = None, y: list = None, skip: int = 1,
                   v: list = None, c: list = None,
-                  center: str = None, restfrq: float = None,
+                  center: str = 'common', restfrq: float = None,
                   Tb: bool = False, log: bool = False,
                   cfactor: float = 1,
                   sigma: float or str = 'out', show_cbar: bool = True,
@@ -262,6 +263,8 @@ class plotastrodata():
                   bmaj: float = 0., bmin: float = 0.,
                   bpa: float = 0., **kwargs) -> None:
         kwargs0 = {'cmap':'cubehelix', 'alpha':1, 'zorder':1}
+        if center == 'common':
+            center = self.center
         if c is not None:
             bunit, rms = '', estimate_rms(c, sigma)
             c, (x, y) = self.readdata(c, x, y, v)    
@@ -312,7 +315,7 @@ class plotastrodata():
     def add_contour(self, fitsimage: str = None,
                     x: list = None, y: list = None, skip: int = 1,
                     v: list = None, c: list = None,
-                    center: str = None, restfrq: float = None,
+                    center: str = 'common', restfrq: float = None,
                     sigma: str or float = 'edge',
                     levels: list = [-12,-6,-3,3,6,12,24,48,96,192,384],
                     Tb: bool = False,
@@ -320,6 +323,8 @@ class plotastrodata():
                     bmaj: float = 0., bmin: float = 0., bpa: float = 0.,
                     **kwargs) -> None:
         kwargs0 = {'colors':'gray', 'linewidths':1.0, 'zorder':2}
+        if center == 'common':
+            center = self.center
         if c is not None:
             if np.ndim(c) == 2 and sigma == 'edge': sigma = 'out'
             rms = estimate_rms(c, sigma)
@@ -344,13 +349,15 @@ class plotastrodata():
                     ampfactor: float = 1., angonly: bool = False,
                     rotation: float = 0.,
                     cutoff: float = 3., sigma: str or float = 'out',
-                    center: str = None, restfrq: float = None,
+                    center: str = 'common', restfrq: float = None,
                     show_beam: bool = True, beamcolor: str = 'gray',
                     bmaj: float = 0., bmin: float = 0., bpa: float = 0.,
                     **kwargs) -> None:
         kwargs0 = {'angles':'xy', 'scale_units':'xy', 'color':'gray',
                    'pivot':'mid', 'headwidth':0, 'headlength':0,
                    'headaxislength':0, 'width':0.007, 'zorder':3}
+        if center == 'common':
+            center = self.center
         if amp is not None:
             amp, (x, y) = self.readdata(amp, x, y, v)
         if ampfits is not None:
