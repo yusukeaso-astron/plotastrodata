@@ -372,13 +372,13 @@ class PlotAstroData():
             stU, (x, y) = self.readdata(stU, x, y, v)
         if Ufits is not None:
             stU, (x, y), (bmaj, bmin, bpa), _, rmsU \
-                = self.readfits(Ufits, False, None, center, restfrq)
+                = self.readfits(Ufits, False, sigma, center, restfrq)
         if stQ is not None:
             rmsU = estimate_rms(stU, sigma)
             stQ, (x, y) = self.readdata(stQ, x, y, v)
         if Qfits is not None:
             stQ, (x, y), (bmaj, bmin, bpa), _, rmsQ \
-                = self.readfits(Qfits, False, None, center, restfrq)
+                = self.readfits(Qfits, False, sigma, center, restfrq)
         if not (stU is None or stQ is None):
             rms = (rmsU + rmsQ) / 2.
             self.rms = rms
