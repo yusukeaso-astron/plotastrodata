@@ -7,6 +7,7 @@ from plotastrodata.other_utils import coord2xy, rel2abs, estimate_rms, trim, lis
 from plotastrodata.fits_utils import FitsData, fits2data
 
     
+plt.ioff()  # force to turn off interactive mode
 
 def set_rcparams(fontsize: int = 18, nancolor: str ='w') -> None:
     #plt.rcParams['font.family'] = 'arial'
