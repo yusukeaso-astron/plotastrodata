@@ -1,3 +1,4 @@
+import re
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -404,7 +405,6 @@ class PlotAstroData():
                  xticklabels: list = None, yticklabels: list= None,
                  xlabel: str = None, ylabel: str = None,
                  grid: dict = None, samexy: bool = True) -> None:
-        
         if self.pv:
             if xlabel is None:
                 xlabel = 'Offset ' + '(arcsec)' if self.dist == 1 else '(au)'
@@ -438,6 +438,76 @@ class PlotAstroData():
                 axnow.set_xlabel(xlabel)
             if ylabel is not None:
                 axnow.set_ylabel(ylabel)
+            if not (ch in self.bottomleft):
+                plt.setp(axnow.get_xticklabels(), visible=False)
+                plt.setp(axnow.get_yticklabels(), visible=False)
+                axnow.set_xlabel('')
+                axnow.set_ylabel('')
+            axnow.set_xlim(*self.xlim)
+            axnow.set_ylim(*self.ylim)
+            if grid is not None:
+                axnow.grid(**({} if grid == True else grid))
+            if len(self.ax) == 1: plt.figure(0).tight_layout()
+            
+    def set_axis_radec(self, xlabel: str = 'R.A. (ICRS)',
+                       ylabel: str = 'Dec. (ICRS)',
+                       grid: dict = None) -> None:
+        center = re.split('[hdms ]', self.center)
+        ra0, ra1, ra2, _, dec0, dec1, dec2, _ = center
+        ra01 = ra0 + r'$^{\rm h}$' + ra1 + r'$^{\rm m}$'
+        dec01 = dec0 + r'$^{\rm d}$' + dec1 + r'$^{\rm m}$'
+        ra2, dec2 = float(ra2), float(dec2)
+        log2r = np.log10(2. * self.rmax)
+        n = np.array([-3, -2, -1, 0, 1, 2, 3])
+        # for R.A. ticks
+        dorder = log2r - (order := int(np.round(log2r)))
+        if -0.5 < dorder <= -0.17:
+            g, gra = 0.15, 0.01
+        elif -0.17 < dorder <= 0.18:
+            g, gra = 0.30, 0.02
+        elif 0.18 < dorder <= 0.50:
+            g, gra = 0.75, 0.05
+        g *= 10**order
+        gra *= 10**order
+        decimals = max(2 - order, 0)
+        dra2 = ra2 - (cra2 := np.round(ra2, decimals))
+        xticks = n * g + dra2
+        xticksminor = np.linspace(xticks[0], xticks[-1], 31)
+        ticks = (cra2 + n * gra) % 60.
+        t0 = ticks - (t1 := ticks % 1)
+        xticklabels = [f'{s0:.0f}.' + r'$\hspace{-0.4}^{\rm s}$'
+                       + f'{s1:.{decimals:d}f}'[2:]
+                       for s0, s1 in zip(t0, t1)]
+        xticklabels[3] = ra01 + xticklabels[3]
+        # for Dec. ticks
+        dorder = log2r - 0.4 - (order := int(np.floor(log2r - 0.4)))
+        if 0.00 < dorder <= 0.25:
+            g = 1.0
+        elif 0.25 < dorder <= 0.60:
+            g = 2.0
+        elif 0.60 < dorder <= 1.00:
+            g = 5.0
+        g *= 10**order
+        decimals = max(-order, 0)
+        ddec2 = dec2 - (cdec2 := np.round(dec2, decimals))
+        yticks = n * g + ddec2
+        yticksminor = np.linspace(yticks[0], yticks[-1], 31)
+        ticks = (cdec2 + n * g) % 60.
+        t0 = ticks - (t1 := ticks % 1)
+        yticklabels = [f'{s0:.0f}.' + r'$\hspace{-0.4}^{\rm s}$'
+                       + f'{s1:.{decimals:d}f}'[2:]
+                       for s0, s1 in zip(t0, t1)]
+        yticklabels[3] = dec01 + '\n' + yticklabels[3]
+        for ch, axnow in enumerate(self.ax):
+            axnow.set_aspect(1)
+            axnow.set_xticks(xticks)
+            axnow.set_yticks(yticks)
+            axnow.set_xticks(xticksminor, minor=True)
+            axnow.set_yticks(yticksminor, minor=True)
+            axnow.set_xticklabels(xticklabels)
+            axnow.set_yticklabels(yticklabels)
+            axnow.set_xlabel(xlabel)
+            axnow.set_ylabel(ylabel)
             if not (ch in self.bottomleft):
                 plt.setp(axnow.get_xticklabels(), visible=False)
                 plt.setp(axnow.get_yticklabels(), visible=False)
