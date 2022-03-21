@@ -455,25 +455,28 @@ class PlotAstroData():
         center = re.split('[hdms ]', self.center)
         ra0, ra1, ra2, _, dec0, dec1, dec2, _ = center
         ra01 = ra0 + r'$^{\rm h}$' + ra1 + r'$^{\rm m}$'
-        dec01 = dec0 + r'$^{\rm d}$' + dec1 + r'$^{\rm m}$'
+        dec01 = dec0 + r'$^{\circ}$' + dec1 + r'$^{\prime}$'
         ra2, dec2 = float(ra2), float(dec2)
         log2r = np.log10(2. * self.rmax)
         n = np.array([-3, -2, -1, 0, 1, 2, 3])
         # for R.A. ticks
-        dorder = log2r - (order := int(np.round(log2r)))
-        if -0.5 < dorder <= -0.17:
-            g, gra = 0.15, 0.01
+        dorder = log2r - 2 - (order := int(np.round(log2r) - 2))
+        if -0.50 < dorder <= -0.17:
+            g, gra = 15, 1
         elif -0.17 < dorder <= 0.18:
-            g, gra = 0.30, 0.02
+            g, gra = 30, 2
         elif 0.18 < dorder <= 0.50:
-            g, gra = 0.75, 0.05
+            g, gra = 75, 5
         g *= 10**order
         gra *= 10**order
-        decimals = max(2 - order, 0)
-        dra2 = ra2 - (cra2 := np.round(ra2, decimals))
-        xticks = n * g + dra2
+        decimals = max(-order, 0)
+        cra2 = np.round(ra2, decimals)
+        lastdigit = int(round(cra2 // 10**(-decimals-1) % 100 / 10))
+        cra2 -= lastdigit * 10**(-decimals) % gra
+        dra2 = ra2 - cra2
+        xticks = n*g + dra2
         xticksminor = np.linspace(xticks[0], xticks[-1], 6*nticksminor + 1)
-        ticks = (cra2 + n * gra) % 60.
+        ticks = (cra2 + n*gra) % 60.
         t0 = ticks - (t1 := ticks % 1)
         xticklabels = [f'{s0:.0f}.' + r'$\hspace{-0.4}^{\rm s}$'
                        + f'{s1:.{decimals:d}f}'[2:]
@@ -482,19 +485,22 @@ class PlotAstroData():
         # for Dec. ticks
         dorder = log2r - 0.4 - (order := int(np.floor(log2r - 0.4)))
         if 0.00 < dorder <= 0.25:
-            g = 1.0
+            g = 1
         elif 0.25 < dorder <= 0.60:
-            g = 2.0
+            g = 2
         elif 0.60 < dorder <= 1.00:
-            g = 5.0
+            g = 5
         g *= 10**order
         decimals = max(-order, 0)
-        ddec2 = dec2 - (cdec2 := np.round(dec2, decimals))
-        yticks = n * g + ddec2
+        cdec2 = np.round(dec2, decimals)
+        lastdigit = int(round(cdec2 // 10**(-decimals-1) % 100 / 10))
+        cdec2 -= lastdigit * 10**(-decimals) % g
+        ddec2 = dec2 - cdec2
+        yticks = n*g + ddec2
         yticksminor = np.linspace(yticks[0], yticks[-1], 6*nticksminor + 1)
-        ticks = (cdec2 + n * g) % 60.
+        ticks = (cdec2 + n*g) % 60.
         t0 = ticks - (t1 := ticks % 1)
-        yticklabels = [f'{s0:.0f}.' + r'$\hspace{-0.4}^{\rm s}$'
+        yticklabels = [f'{s0:.0f}.' + r'$\hspace{-0.4}^{\rm \prime\prime}$'
                        + f'{s1:.{decimals:d}f}'[2:]
                        for s0, s1 in zip(t0, t1)]
         yticklabels[3] = dec01 + '\n' + yticklabels[3]
