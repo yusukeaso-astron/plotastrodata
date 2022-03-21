@@ -15,7 +15,7 @@ f.add_marker('04h04m43.07s 26d18m56.20s')
 f.add_line([[0.5, 0.5], [0.6, 0.6]], anglelist=[60, 60], rlist=[0.5, 0.5])
 f.add_arrow([0.4, 0.4], anglelist=150, rlist=0.5)
 f.add_ellipse([0.2, 0.8], majlist=0.4, minlist=0.2, palist=45)
-f.set_axis_radec()
+f.set_axis_radec(nticksminor=5)
 f.savefig('test2D.png', show=True)
 
 # 3D case

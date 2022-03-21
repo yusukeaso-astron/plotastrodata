@@ -451,7 +451,7 @@ class PlotAstroData():
             
     def set_axis_radec(self, xlabel: str = 'R.A. (ICRS)',
                        ylabel: str = 'Dec. (ICRS)',
-                       nminorticks: int = 2, grid: dict = None) -> None:
+                       nticksminor: int = 2, grid: dict = None) -> None:
         center = re.split('[hdms ]', self.center)
         ra0, ra1, ra2, _, dec0, dec1, dec2, _ = center
         ra01 = ra0 + r'$^{\rm h}$' + ra1 + r'$^{\rm m}$'
@@ -472,7 +472,7 @@ class PlotAstroData():
         decimals = max(2 - order, 0)
         dra2 = ra2 - (cra2 := np.round(ra2, decimals))
         xticks = n * g + dra2
-        xticksminor = np.linspace(xticks[0], xticks[-1], 6*nminorticks + 1)
+        xticksminor = np.linspace(xticks[0], xticks[-1], 6*nticksminor + 1)
         ticks = (cra2 + n * gra) % 60.
         t0 = ticks - (t1 := ticks % 1)
         xticklabels = [f'{s0:.0f}.' + r'$\hspace{-0.4}^{\rm s}$'
@@ -491,7 +491,7 @@ class PlotAstroData():
         decimals = max(-order, 0)
         ddec2 = dec2 - (cdec2 := np.round(dec2, decimals))
         yticks = n * g + ddec2
-        yticksminor = np.linspace(yticks[0], yticks[-1], 6*nminorticks + 1)
+        yticksminor = np.linspace(yticks[0], yticks[-1], 6*nticksminor + 1)
         ticks = (cdec2 + n * g) % 60.
         t0 = ticks - (t1 := ticks % 1)
         yticklabels = [f'{s0:.0f}.' + r'$\hspace{-0.4}^{\rm s}$'
