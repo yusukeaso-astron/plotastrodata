@@ -658,7 +658,8 @@ class PlotAstroData():
                  xticksminor: list = None, yticksminor: list = None,
                  xticklabels: list = None, yticklabels: list= None,
                  xlabel: str = None, ylabel: str = None,
-                 grid: dict = None, samexy: bool = True) -> None:
+                 grid: dict = None, title: dict = None,
+                 samexy: bool = True) -> None:
         """Use ax.set_* of matplotlib.
 
         Args:
@@ -672,6 +673,9 @@ class PlotAstroData():
             ylabel (str, optional): Defaults to None.
             grid (dict, optional):
                 True means merely grid(). Defaults to None.
+            title (dict, optional):
+                str means set_title(str) for 2D or fig.suptitle(str) for 3D.
+                Defaults to None.
             samexy (bool, optional):
                 True supports same ticks between x and y. Defaults to True.
         """
@@ -718,10 +722,21 @@ class PlotAstroData():
             if grid is not None:
                 axnow.grid(**({} if grid == True else grid))
             if len(self.ax) == 1: plt.figure(0).tight_layout()
+        if title is not None:
+            if len(self.ax) > 1:
+                if type(title) == str: title = {'t':title}
+                title = dict({'y':0.9}, **title)
+                for i in range(self.npages):
+                    fig = plt.figure(i)
+                    fig.suptitle(**title)
+            else:
+                if type(title) == str: title = {'label':title}
+                axnow.set_title(**title)
             
     def set_axis_radec(self, xlabel: str = 'R.A. (ICRS)',
                        ylabel: str = 'Dec. (ICRS)',
-                       nticksminor: int = 2, grid: dict = None) -> None:
+                       nticksminor: int = 2,
+                       grid: dict = None, title: dict = None) -> None:
         """Use ax.set_* of matplotlib.
 
         Args:
@@ -731,6 +746,9 @@ class PlotAstroData():
                 Interval ratio of major and minor ticks. Defaults to 2.
             grid (dict, optional):
                 True means merely grid(). Defaults to None.
+            title (dict, optional):
+                str means set_title(str) for 2D or fig.suptitle(str) for 3D.
+                Defaults to None.
         """
         if self.rmax > 50.:
             print('WARNING: set_axis_radec() is not supported '
@@ -791,6 +809,16 @@ class PlotAstroData():
             if grid is not None:
                 axnow.grid(**({} if grid == True else grid))
             if len(self.ax) == 1: plt.figure(0).tight_layout()
+        if title is not None:
+            if len(self.ax) > 1:
+                if type(title) == str: title = {'t':title}
+                title = dict({'y':0.9}, **title)
+                for i in range(self.npages):
+                    fig = plt.figure(i)
+                    fig.suptitle(**title)
+            else:
+                if type(title) == str: title = {'label':title}
+                axnow.set_title(**title)
             
     def savefig(self, filename: str = 'plotastrodata.png',
                 show: bool = False, **kwargs) -> None:
