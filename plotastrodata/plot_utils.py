@@ -463,7 +463,10 @@ class PlotAstroData():
         log2r = np.log10(2. * self.rmax)
         n = np.array([-3, -2, -1, 0, 1, 2, 3])
         def makegrid(second, mode):
-            scale = 1.5 if mode == 'ra' else 0.5
+            if mode == 'ra':
+                scale, factor, sec = 1.5, 15, r'$^{\rm s}$'
+            else:
+                scale, factor, sec = 0.5, 1, r'$^{\rm \prime\prime}$'
             dorder = log2r - scale - (order := np.floor(log2r - scale))
             if 0.00 < dorder <= 0.33:
                 g = 1
@@ -476,22 +479,17 @@ class PlotAstroData():
             rounded = round(second, decimals)
             lastdigit = round(rounded // 10**(-decimals-1) % 100 / 10)
             rounded -= lastdigit * 10**(-decimals) % g
-            ticks = n*g*(15 if mode == 'ra' else 1) + second - rounded
+            ticks = n*g*factor + second - rounded
             ticksminor = np.linspace(ticks[0], ticks[-1], 6*nticksminor + 1)
-            ticklabels0, ticklabels1 = np.divmod((rounded + n*g) % 60., 1)
+            tlint, tldec = np.divmod((rounded + n*g) % 60., 1)
             decimals = max(decimals, 0)
-            return [decimals, ticklabels0, ticklabels1, ticks, ticksminor]
-        # for R.A. ticks
-        decimals, t0, t1, xticks, xticksminor = makegrid(ra2, 'ra')
-        xticklabels = [f'{s0:.0f}.' + r'$\hspace{-0.4}^{\rm s}$'
-                       + f'{s1:.{decimals:d}f}'[2:]
-                       for s0, s1 in zip(t0, t1)]
+            ticklabels = [f'{i:.0f}.' + r'$\hspace{-0.4}$' + sec
+                          + f'{j:.{decimals:d}f}'[2:]
+                          for i, j in zip(tlint, tldec)]
+            return [ticks, ticksminor, ticklabels]
+        xticks, xticksminor, xticklabels = makegrid(ra2, 'ra')
         xticklabels[3] = ra01 + xticklabels[3]
-        # for Dec. ticks
-        decimals, t0, t1, yticks, yticksminor = makegrid(dec2, 'dec')
-        yticklabels = [f'{s0:.0f}.' + r'$\hspace{-0.4}^{\rm \prime\prime}$'
-                       + f'{s1:.{decimals:d}f}'[2:]
-                       for s0, s1 in zip(t0, t1)]
+        yticks, yticksminor, yticklabels = makegrid(dec2, 'dec')
         yticklabels[3] = dec01 + '\n' + yticklabels[3]
         for ch, axnow in enumerate(self.ax):
             axnow.set_aspect(1)
