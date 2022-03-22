@@ -28,9 +28,12 @@ f.add_segment(ampfits=pre+'test2Damp.fits',
 f.add_scalebar(length=50 / 140, label='50 au')
 f.add_text([[0.3, 0.3]], slist=['text'], include_chan=[0,1,2])
 f.add_marker([0.7, 0.7])
-f.add_line([[0.5, 0.5], [0.6, 0.6]], anglelist=[60, 60], rlist=[0.5, 0.5], include_chan=[6,7,8])
-f.add_arrow([[0.4, 0.4]], anglelist=[150], rlist=[0.5], include_chan=[9,10,11])
-f.add_ellipse([[0.2, 0.8]], majlist=[0.4], minlist=[0.2], palist=[45], include_chan=[12,13,14])
+f.add_line([[0.5, 0.5], [0.6, 0.6]], anglelist=[60, 60], rlist=[0.5, 0.5],
+           include_chan=[6,7,8])
+f.add_arrow([[0.4, 0.4]], anglelist=[150], rlist=[0.5],
+            include_chan=[9,10,11])
+f.add_ellipse([[0.2, 0.8]], majlist=[0.4], minlist=[0.2], palist=[45],
+              include_chan=[12,13,14])
 f.set_axis(grid={}, title='3D channel maps')
 f.savefig('test3D.png', show=True)
 
