@@ -20,6 +20,7 @@ plotastrodata can do the following things.
 * Select the R.A.-Dec. style or the offset style as the x/y tick labels.
 * Fill channel maps with a 2D image.
 * Add line, arrow, ellipse, text, and marker in a specified channel.
+* Use original arguments of matplotlib (pcolormesh, contour, and quiver).
  
 ## Requirement
 
