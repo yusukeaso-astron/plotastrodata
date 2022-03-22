@@ -4,7 +4,7 @@ Python package to make figures from radio astronomical data by astropy and matpl
 
 ## Demo and Usage
  
-The file example.py shows will help to find how to use this package.
+The file example.py will help to find how to use this package.
 ```bash
 git clone https://github.com/yusukeaso-astron/plotastrodata
 cd plotastrodata-main
