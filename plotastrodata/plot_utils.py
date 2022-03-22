@@ -452,54 +452,43 @@ class PlotAstroData():
     def set_axis_radec(self, xlabel: str = 'R.A. (ICRS)',
                        ylabel: str = 'Dec. (ICRS)',
                        nticksminor: int = 2, grid: dict = None) -> None:
-        center = re.split('[hdms ]', self.center)
-        ra0, ra1, ra2, _, dec0, dec1, dec2, _ = center
+        if self.rmax > 50.:
+            print('WARNING: set_axis_radec() is not supported '
+                  + 'with rmax>50 yet.')
+        ra0, ra1, ra2, _, dec0, dec1, dec2, _ \
+            = re.split('[hdms ]', self.center)
         ra01 = ra0 + r'$^{\rm h}$' + ra1 + r'$^{\rm m}$'
         dec01 = dec0 + r'$^{\circ}$' + dec1 + r'$^{\prime}$'
         ra2, dec2 = float(ra2), float(dec2)
         log2r = np.log10(2. * self.rmax)
         n = np.array([-3, -2, -1, 0, 1, 2, 3])
+        def makegrid(second, mode):
+            scale = 1.5 if mode == 'ra' else 0.5
+            dorder = log2r - scale - (order := np.floor(log2r - scale))
+            if 0.00 < dorder <= 0.33:
+                g = 1
+            elif 0.33 < dorder <= 0.68:
+                g = 2
+            elif 0.68 < dorder <= 1.00:
+                g = 5
+            g *= 10**order
+            decimals = max(-int(order), -1)
+            rounded = round(second, decimals)
+            lastdigit = round(rounded // 10**(-decimals-1) % 100 / 10)
+            rounded -= lastdigit * 10**(-decimals) % g
+            ticks = n*g*(15 if mode == 'ra' else 1) + second - rounded
+            ticksminor = np.linspace(ticks[0], ticks[-1], 6*nticksminor + 1)
+            ticklabels0, ticklabels1 = np.divmod((rounded + n*g) % 60., 1)
+            decimals = max(decimals, 0)
+            return [decimals, ticklabels0, ticklabels1, ticks, ticksminor]
         # for R.A. ticks
-        dorder = log2r - 2 - (order := int(np.round(log2r) - 2))
-        if -0.50 < dorder <= -0.17:
-            g, gra = 15, 1
-        elif -0.17 < dorder <= 0.18:
-            g, gra = 30, 2
-        elif 0.18 < dorder <= 0.50:
-            g, gra = 75, 5
-        g *= 10**order
-        gra *= 10**order
-        decimals = max(-order, 0)
-        cra2 = np.round(ra2, decimals)
-        lastdigit = int(round(cra2 // 10**(-decimals-1) % 100 / 10))
-        cra2 -= lastdigit * 10**(-decimals) % gra
-        dra2 = ra2 - cra2
-        xticks = n*g + dra2
-        xticksminor = np.linspace(xticks[0], xticks[-1], 6*nticksminor + 1)
-        ticks = (cra2 + n*gra) % 60.
-        t0 = ticks - (t1 := ticks % 1)
+        decimals, t0, t1, xticks, xticksminor = makegrid(ra2, 'ra')
         xticklabels = [f'{s0:.0f}.' + r'$\hspace{-0.4}^{\rm s}$'
                        + f'{s1:.{decimals:d}f}'[2:]
                        for s0, s1 in zip(t0, t1)]
         xticklabels[3] = ra01 + xticklabels[3]
         # for Dec. ticks
-        dorder = log2r - 0.4 - (order := int(np.floor(log2r - 0.4)))
-        if 0.00 < dorder <= 0.25:
-            g = 1
-        elif 0.25 < dorder <= 0.60:
-            g = 2
-        elif 0.60 < dorder <= 1.00:
-            g = 5
-        g *= 10**order
-        decimals = max(-order, 0)
-        cdec2 = np.round(dec2, decimals)
-        lastdigit = int(round(cdec2 // 10**(-decimals-1) % 100 / 10))
-        cdec2 -= lastdigit * 10**(-decimals) % g
-        ddec2 = dec2 - cdec2
-        yticks = n*g + ddec2
-        yticksminor = np.linspace(yticks[0], yticks[-1], 6*nticksminor + 1)
-        ticks = (cdec2 + n*g) % 60.
-        t0 = ticks - (t1 := ticks % 1)
+        decimals, t0, t1, yticks, yticksminor = makegrid(dec2, 'dec')
         yticklabels = [f'{s0:.0f}.' + r'$\hspace{-0.4}^{\rm \prime\prime}$'
                        + f'{s1:.{decimals:d}f}'[2:]
                        for s0, s1 in zip(t0, t1)]
