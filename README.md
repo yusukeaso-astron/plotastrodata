@@ -1,5 +1,5 @@
 # plotastrodata
-Python package to make figures from radio astronomical data.
+Python package to make figures from radio astronomical data by astropy and matplotlib.
 
 
 ## Demo and Usage
