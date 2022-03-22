@@ -13,7 +13,13 @@ python example.py
  
 ## Features
  
-"hoge"のセールスポイントや差別化などを説明する
+plotastrodata can do the following things.
+* Make 3D channel maps or 2D images including position-velocity diagrams.
+* Combine color, contour and segment maps.
+* Input fits files or 2D/3D numpy arrays.
+* Select the R.A.-Dec. style or the offset style as the x/y tick labels.
+* Fill channel maps with a 2D image.
+* Add line, arrow, ellipse, text, and marker in a specified channel.
  
 ## Requirement
 
