@@ -161,6 +161,25 @@ class FitsData:
 def fits2data(fitsimage: str, Tb: bool = False, log: bool = False,
               dist: float = 1., sigma: str = None,
               restfrq: float = None, **kwargs) -> list:
+    """Extract data from a fits file.
+
+    Args:
+        fitsimage (str): Input fits name.
+        Tb (bool, optional):
+            True means ouput data are brightness temperature.
+            Defaults to False.
+        log (bool, optional):
+            True means output data are logarhismic. Defaults to False.
+        dist (float, optional):
+            Change x and y in arcsec to au. Defaults to 1..
+        sigma (str, optional):
+            Noise level or method for measuring it. Defaults to None.
+        restfrq (float, optional):
+            Used for velocity and brightness temperature. Defaults to None.
+
+    Returns:
+        list: [data, (x, y, v), (bmaj, bmin, bpa), bunit, rms]
+    """
     fd = FitsData(fitsimage)
     fd.gen_data(Tb=Tb, log=log, drop=True, restfrq=restfrq)
     rms = None if sigma is None else estimate_rms(fd.data, sigma)
@@ -170,49 +189,31 @@ def fits2data(fitsimage: str, Tb: bool = False, log: bool = False,
     return [fd.data, grid, beam, bunit, rms]
 
     
-def data2fits(d: list = None, h: dict = {}, crpix: int = None,
-              crval: int = None, cdelt: float = None, ctype: str = None,
-              fitsname: str = 'test', foraplpy: bool = False):
+def data2fits(d: list = None, h: dict = {}, crpix: list = None,
+              crval: list = None, cdelt: list = None, ctype: str = None,
+              fitsname: str = 'test') -> None:
+    """Make a fits file from a N-D array.
+
+    Args:
+        d (list, optional): N-D array. Defaults to None.
+        h (dict, optional): Fits header. Defaults to {}.
+        crpix (list, optional): Defaults to None.
+        crval (list, optional): Defaults to None.
+        cdelt (list, optional): Defaults to None.
+        ctype (str, optional): Defaults to None.
+        fitsname (str, optional): Output name. Defaults to 'test'.
+    """
     ctype0 = ["RA---AIR", "DEC--AIR", "VELOCITY"]
-    if foraplpy:
-        w = wcs.WCS(naxis=2)
-        w.wcs.crpix = [h['CRPIX1'], h['CRPIX2']]
-        w.wcs.cdelt = [h['CDELT1'], h['CDELT2']]
-        w.wcs.crval = [h['CRVAL1'], h['CRVAL2']]
-        w.wcs.ctype = ctype0[:2]
-        header = w.to_header()
-        hdu = fits.PrimaryHDU(d, header=header)
-        if 'BUNIT' in h.keys(): hdu.header['BUNIT'] = h['BUNIT']
-        hdu.header['BMAJ'] = h['BMAJ']
-        hdu.header['BMIN'] = h['BMIN']
-        hdu.header['BPA'] = h['BPA']
-        if 'RESTFREQ' in h.keys(): hdu.header['RESTFRQ'] = h['RESTFREQ']
-        if 'RESTFRQ' in h.keys(): hdu.header['RESTFRQ'] = h['RESTFRQ']
-    else:
-        naxis = len(np.shape(d))
-        w = wcs.WCS(naxis=naxis)
-        w.wcs.crpix = [0] * naxis if crpix is None else crpix
-        w.wcs.crval = [0] * naxis if crval is None else crval
-        w.wcs.cdelt = [1] * naxis if cdelt is None else cdelt
-        w.wcs.ctype = ctype0[:naxis] if ctype is None else ctype
-        header = w.to_header()
-        hdu = fits.PrimaryHDU(d, header=header)
-        for k in h.keys():
-            if not ('COMMENT' in k or 'HISTORY' in k):
-                hdu.header[k]=h[k]
+    naxis = np.ndim(d)
+    w = wcs.WCS(naxis=naxis)
+    w.wcs.crpix = [0] * naxis if crpix is None else crpix
+    w.wcs.crval = [0] * naxis if crval is None else crval
+    w.wcs.cdelt = [1] * naxis if cdelt is None else cdelt
+    w.wcs.ctype = ctype0[:naxis] if ctype is None else ctype
+    header = w.to_header()
+    hdu = fits.PrimaryHDU(d, header=header)
+    for k in h.keys():
+        if not ('COMMENT' in k or 'HISTORY' in k):
+            hdu.header[k]=h[k]
     hdu = fits.HDUList([hdu])
     hdu.writeto(fitsname.replace('.fits', '') + '.fits', overwrite=True)
-
-'''
-import subprocess, shlex
-
-def hdu4aplpy(fitslist: list, data: list) -> list:
-    if type(fitslist) is str: fitslist = [fitslist] 
-    c = [None] * len(fitslist)
-    for i, (n, d) in enumerate(zip(fitslist, data)):
-        h = fits.open(n)[0].header
-        data2fits(d=d, h=h, foraplpy=True, fitsname='hdu4aplpy')
-        c[i] = fits.open('hdu4aplpy.fits')[0]
-        subprocess.run(shlex.split('rm hdu4aplpy.fits'))
-    return c
-'''
