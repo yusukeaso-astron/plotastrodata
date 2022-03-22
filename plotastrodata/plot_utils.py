@@ -36,19 +36,21 @@ class PlotAstroData():
     Basic rules --- For 3D data, a 1D velocity array or a FITS file
     with a velocity axis must be given to set up channels in each page.
     len(v)=1 (default) means to make a 2D figure.
-    Lengths are in the unit of arcsec, or au if dist (!= 1) is given.
+    Spatial lengths are in the unit of arcsec, or au if dist (!= 1) is given.
     Angles are in the unit of degree.
     For ellipse, line, arrow, label, and marker,
-    a single input can be treated without a list, i.e., anglelist=60,
+    a single input can be treated without a list, e.g., anglelist=60,
     as well as anglelist=[60].
     Each element of poslist supposes a text coordinate
     like '01h23m45.6s 01d23m45.6s' or a list of relative x and y
     like [0.2, 0.3] (0 is left or bottom, 1 is right or top).
     Parameters for original methods in matplotlib.axes.Axes can be
     used as kwargs; see the default kwargs0 for reference.
-    plotastrodata does not support ellipse, line, arrow, and segment in
-    position-velocity diagrams because the units of abscissa and ordinate
+    Position-velocity diagrams (pv=True) does not yet suppot ellipse, line,
+    arrow, and segment because the units of abscissa and ordinate
     are different.
+    The parameter sigma can be one of the methods of
+    ['edge', 'neg', 'med', 'iter', 'out'] as well as a specific value.
     """
     def __init__(self, fitsimage: str = None,
                  v: list = [0], vskip: int = 1,
@@ -59,7 +61,46 @@ class PlotAstroData():
                  center: str = None, rmax: float = 1e10, dist: float = 1.,
                  xoff: float = 0, yoff: float = 0,
                  xflip: bool = True, yflip: bool = False,
-                 pv : bool = False):
+                 pv : bool = False) -> None:
+        """Set up common parameters.
+
+        Args:
+            fitsimage (str, optional):
+                Used to set up channels. Defaults to None.
+            v (list, optional):
+                Used to set up channels if fitsimage not given.
+                Defaults to [0].
+            vskip (int, optional):
+                How many channels are skipped. Defaults to 1.
+            vmin (float, optional):
+                Velocity at the upper left. Defaults to -1e10.
+            vmax (float, optional):
+                Velocity at the lower bottom. Defaults to 1e10.
+            vsys (float, optional):
+                Each channel shows v-vsys. Defaults to 0..
+            veldigit (int, optional):
+                How many digits after the decimal point. Defaults to 2.
+            restfrq (float, optional):
+                Used for velocity and brightness T. Defaults to None.
+            nrows (int, optional): Used for channel maps. Defaults to 4.
+            ncols (int, optional): Used for channel maps. Defaults to 6.
+            center (str, optional):
+                Central coordinate like '12h34m56.7s 12d34m56.7s'.
+                Defaults to None.
+            rmax (float, optional):
+                Map size is 2rmax x 2rmax. Defaults to 1e10.
+            dist (float, optional):
+                Change x and y in arcsec to au. Defaults to 1..
+            xoff (float, optional):
+                Map center relative to the center. Defaults to 0.
+            yoff (float, optional):
+                Map center relative to the center. Defaults to 0.
+            xflip (bool, optional):
+                True means left is positive x. Defaults to True.
+            yflip (bool, optional):
+                True means bottom is positive y. Defaults to False.
+            pv (bool, optional): Mode for PV diagram. Defaults to False.
+        """
         if fitsimage is not None:
             fd = FitsData(fitsimage)
             _, _, v = fd.get_grid(restfrq=restfrq, vsys=vsys,
@@ -110,6 +151,15 @@ class PlotAstroData():
         self.pv = pv
 
         def pos2xy(poslist: list = []) -> list:
+            """Text or relative to absolute coordinates.
+
+            Args:
+                poslist (list, optional):
+                    Text coordinates or relative coordinates. Defaults to [].
+
+            Returns:
+                list: absolute coordinates.
+            """
             if np.shape(poslist) in [(), (2,)]:
                 poslist = [poslist]
             x, y = [None] * len(poslist), [None] * len(poslist)
@@ -122,6 +172,15 @@ class PlotAstroData():
         self.pos2xy = pos2xy
 
         def skipfill(c: list, skip: int = 1) -> list:
+            """Skip and fill channels with nan.
+
+            Args:
+                c (list): 2D or 3D arrays.
+                skip (int, optional): Spatial skip number. Defaults to 1.
+
+            Returns:
+                list: 3D arrays skipped and filled with nan.
+            """
             if np.ndim(c) == 3:
                 d = c[::vskip, ::skip, ::skip]
             else:
@@ -132,8 +191,27 @@ class PlotAstroData():
             return np.concatenate((d, dnan), axis=0)
         self.skipfill = skipfill
         
-        def readfits(fitsimage: str, Tb: bool = False, sigma: str = None,
+        def readfits(fitsimage: str, Tb: bool = False,
+                     sigma: str or float = None,
                      center: str = None, restfrq: float = None) -> list:
+            """Use fits2data() to read a fits file.
+
+            Args:
+                fitsimage (str): Input fits name.
+                Tb (bool, optional):
+                    True means the output data are brightness temperature.
+                    Defaults to False.
+                sigma (str or float, optional):
+                    Noise level or method for measuring it. Defaults to None.
+                center (str, optional):
+                    Text coordinates like '12h34m56.7s 12d34m56.7s.
+                    Defaults to None.
+                restfrq (float, optional):
+                    Used for velocity and brightness T. Defaults to None.
+
+            Returns:
+                list: [data, (x, y or v), (bmaj, bmin, bpa), bunit, rms]
+            """
             data, grid, beam, bunit, rms \
                 = fits2data(fitsimage=fitsimage, Tb=Tb, log=False,
                             sigma=sigma, restfrq=restfrq, center=center,
@@ -146,6 +224,17 @@ class PlotAstroData():
         
         def readdata(data: list = None, x: list = None,
                      y: list = None, v: list = None) -> list:
+            """Input data without a fits file.
+
+            Args:
+                data (list, optional): 2D or 3D array. Defaults to None.
+                x (list, optional): 1D array. Defaults to None.
+                y (list, optional): 1D array. Defaults to None.
+                v (list, optional): 1D array. Defaults to None.
+
+            Returns:
+                list: [data, (x, y or v)]
+            """
             dataout, grid = trim(data=data, x=x, y=y, v=v,
                                  xlim=xlim, ylim=ylim, vlim=vlim, pv=pv)
             a = [dataout, grid[:2]]
@@ -157,6 +246,16 @@ class PlotAstroData():
     def add_ellipse(self, poslist: list = [],
                     majlist: list = [], minlist: list = [], palist: list = [],
                     include_chan: list = None, **kwargs) -> None:
+        """Use add_patch() and Ellipse of matplotlib.
+
+        Args:
+            poslist (list, optional): text or relative. Defaults to [].
+            majlist (list, optional): Ellipse major axis. Defaults to [].
+            minlist (list, optional): Ellipse minor axis. Defaults to [].
+            palist (list, optional):
+                Ellipse position angle (north to east). Defaults to [].
+            include_chan (list, optional): None means all. Defaults to None.
+        """
         kwargs0 = {'facecolor':'none', 'edgecolor':'gray',
                    'linewidth':1.5, 'zorder':10}
         if include_chan is None: include_chan = self.allchan
@@ -174,6 +273,15 @@ class PlotAstroData():
     def add_beam(self, bmaj: float = 0, bmin: float = 0,
                  bpa: float = 0, beamcolor: str = 'gray',
                  poslist: list = None) -> None:
+        """Use add_ellipse().
+
+        Args:
+            bmaj (float, optional): Beam major axis. Defaults to 0.
+            bmin (float, optional): Beam minor axis. Defaults to 0.
+            bpa (float, optional): Beam position angle. Defaults to 0.
+            beamcolor (str, optional): matplotlib color. Defaults to 'gray'.
+            poslist (list, optional): text or relative. Defaults to None.
+        """
         if poslist is None:
             bpos = max(0.35 * bmaj / self.rmax, 0.1)
             poslist = [[bpos, bpos]]
@@ -182,7 +290,13 @@ class PlotAstroData():
                          facecolor=beamcolor, edgecolor=None)
     
     def add_marker(self, poslist: list = [],
-                   include_chan: list = None, **kwargs):
+                   include_chan: list = None, **kwargs) -> None:
+        """Use plot of matplotlib.
+
+        Args:
+            poslist (list, optional): Text or relative. Defaults to [].
+            include_chan (list, optional): None means all. Defaults to None.
+        """
         kwsmark0 = {'marker':'+', 'ms':10, 'mfc':'gray',
                     'mec':'gray', 'mew':2, 'alpha':1}
         if include_chan is None: include_chan = self.allchan
@@ -194,6 +308,13 @@ class PlotAstroData():
             
     def add_text(self, poslist: list = [], slist: list = [],
                   include_chan: list = None, **kwargs) -> None:
+        """Use text of matplotlib.
+
+        Args:
+            poslist (list, optional): Text or relative. Defaults to [].
+            slist (list, optional): List of text. Defaults to [].
+            include_chan (list, optional): None means all. Defaults to None.
+        """
         kwargs0 = {'color':'gray', 'fontsize':15, 'ha':'center',
                    'va':'center', 'zorder':10}
         if include_chan is None: include_chan = self.allchan
@@ -204,7 +325,16 @@ class PlotAstroData():
                 axnow.text(x=x, y=y, s=s, **dict(kwargs0, **kwargs))
 
     def add_line(self, poslist: list = [], anglelist: list = [],
-                 rlist: list = [], include_chan: list = None, **kwargs):
+                 rlist: list = [], include_chan: list = None,
+                 **kwargs) -> None:
+        """Use plot of matplotlib.
+
+        Args:
+            poslist (list, optional): Text or relative. Defaults to [].
+            anglelist (list, optional): North to east. Defaults to [].
+            rlist (list, optional): List of radius. Defaults to [].
+            include_chan (list, optional): None means all. Defaults to None.
+        """
         kwargs0 = {'color':'gray', 'linewidth':1.5, 'zorder':10}
         if include_chan is None: include_chan = self.allchan
         for ch, axnow in enumerate(self.ax):
@@ -218,7 +348,16 @@ class PlotAstroData():
                            **dict(kwargs0, **kwargs))
 
     def add_arrow(self, poslist: list = [], anglelist: list = [],
-                  rlist: list = [], include_chan: list = None, **kwargs):
+                  rlist: list = [], include_chan: list = None,
+                  **kwargs) -> None:
+        """Use quiver of matplotlib.
+
+        Args:
+            poslist (list, optional): Text or relative. Defaults to [].
+            anglelist (list, optional): North to east. Defaults to [].
+            rlist (list, optional): List of radius. Defaults to [].
+            include_chan (list, optional): None means all. Defaults to None.
+        """
         kwargs0 = {'color':'gray', 'width':0.012,
                    'headwidth':5, 'headlength':5, 'zorder':10}
         if include_chan is None: include_chan = self.allchan
@@ -234,7 +373,19 @@ class PlotAstroData():
                 
     def add_scalebar(self, length: float = 0, label: str = '',
                      color: str = 'gray', barpos: tuple = (0.8, 0.12),
-                     fontsize: float = None, linewidth: float = 3):
+                     fontsize: float = None, linewidth: float = 3) -> None:
+        """Use text and plot of matplotlib.
+
+        Args:
+            length (float, optional): In the unit of arcsec. Defaults to 0.
+            label (str, optional): Text like '100 au'. Defaults to ''.
+            color (str, optional): Same for bar and label. Defaults to 'gray'.
+            barpos (tuple, optional):
+                Relative position. Defaults to (0.8, 0.12).
+            fontsize (float, optional):
+                None means 15 if one channel else 20. Defaults to None.
+            linewidth (float, optional): Width of the bar. Defaults to 3.
+        """
         if length == 0 or label == '':
             print('Please input length and label.')
             return -1
@@ -262,6 +413,41 @@ class PlotAstroData():
                   show_beam: bool = True, beamcolor: str = 'gray',
                   bmaj: float = 0., bmin: float = 0.,
                   bpa: float = 0., **kwargs) -> None:
+        """Use pcolormesh of matplotlib.
+
+        Args:
+            fitsimage (str, optional): Input fits name. Defaults to None.
+            x (list, optional): 1D array. Defaults to None.
+            y (list, optional): 1D array. Defaults to None.
+            skip (int, optional): Spatial pixel skip. Defaults to 1.
+            v (list, optional): 1D array. Defaults to None.
+            c (list, optional): 2D or 3D array. Defaults to None.
+            center (str, optional):
+                Text coordinates. 'common' means initialized value.
+                Defaults to 'common'.
+            restfrq (float, optional):
+                Used for velocity and brightness T. Defaults to None.
+            Tb (bool, optional):
+                True means the mapped data are brightness T. Defaults to False.
+            log (bool, optional):
+                True means the mapped data are logarithmic. Defaults to False.
+            cfactor (float, optional):
+                Output data times cfactor. Defaults to 1.
+            sigma (float or str, optional):
+                Noise level or method for measuring it. Defaults to 'out'.
+            show_cbar (bool, optional): Show color bar. Defaults to True.
+            cblabel (str, optional): Colorbar label. Defaults to None.
+            cbformat (float, optional):
+                Format for ticklabels of colorbar. Defaults to '%.1e'.
+            cbticks (list, optional): Ticks of colorbar. Defaults to None.
+            cbticklabels (list, optional):
+                Ticklabels of colorbar. Defaults to None.
+            show_beam (bool, optional): Defaults to True.
+            beamcolor (str, optional): Matplotlib color. Defaults to 'gray'.
+            bmaj (float, optional): Beam major axis. Defaults to 0..
+            bmin (float, optional): Beam minor axis. Defaults to 0..
+            bpa (float, optional): Beam position angle. Defaults to 0..
+        """
         kwargs0 = {'cmap':'cubehelix', 'alpha':1, 'zorder':1}
         if center == 'common':
             center = self.center
@@ -316,12 +502,39 @@ class PlotAstroData():
                     x: list = None, y: list = None, skip: int = 1,
                     v: list = None, c: list = None,
                     center: str = 'common', restfrq: float = None,
-                    sigma: str or float = 'edge',
+                    sigma: str or float = 'out',
                     levels: list = [-12,-6,-3,3,6,12,24,48,96,192,384],
                     Tb: bool = False,
                     show_beam: bool = True, beamcolor: str = 'gray',
                     bmaj: float = 0., bmin: float = 0., bpa: float = 0.,
                     **kwargs) -> None:
+        """Use contour of matplotlib.
+
+        Args:
+            fitsimage (str, optional): Input fits name. Defaults to None.
+            x (list, optional): 1D array. Defaults to None.
+            y (list, optional): 1D array. Defaults to None.
+            skip (int, optional): Spatial pixel skip. Defaults to 1.
+            v (list, optional): 1D array. Defaults to None.
+            c (list, optional): 1D array. Defaults to None.
+            center (str, optional):
+                Text coordinate. 'common' means initalized value.
+                Defaults to 'common'.
+            restfrq (float, optional):
+                Used for velocity and brightness T. Defaults to None.
+            sigma (strorfloat, optional):
+                Noise level or method for measuring it. Defaults to 'out'.
+            levels (list, optional):
+                Contour levels in the unit of sigma.
+                Defaults to [-12,-6,-3,3,6,12,24,48,96,192,384].
+            Tb (bool, optional):
+                True means the mapped data are brightness T. Defaults to False.
+            show_beam (bool, optional): Defaults to True.
+            beamcolor (str, optional): Matplotlib color. Defaults to 'gray'.
+            bmaj (float, optional): Beam major axis. Defaults to 0..
+            bmin (float, optional): Beam minor axis. Defaults to 0..
+            bpa (float, optional): Beam position angle. Defaults to 0..
+        """
         kwargs0 = {'colors':'gray', 'linewidths':1.0, 'zorder':2}
         if center == 'common':
             center = self.center
@@ -353,6 +566,47 @@ class PlotAstroData():
                     show_beam: bool = True, beamcolor: str = 'gray',
                     bmaj: float = 0., bmin: float = 0., bpa: float = 0.,
                     **kwargs) -> None:
+        """Use quiver of matplotlib.
+
+        Args:
+            ampfits (str, optional):
+                In put fits name. Length of segment. Defaults to None.
+            angfits (str, optional):
+                In put fits name. North to east. Defaults to None.
+            Ufits (str, optional):
+                In put fits name. Stokes U. Defaults to None.
+            Qfits (str, optional):
+                In put fits name. Stokes Q. Defaults to None.
+            x (list, optional): 1D array. Defaults to None.
+            y (list, optional): 1D array. Defaults to None.
+            skip (int, optional): Spatial pixel skip. Defaults to 1.
+            v (list, optional): 1D array. Defaults to None.
+            amp (list, optional): Length of segment. Defaults to None.
+            ang (list, optional): North to east. Defaults to None.
+            stU (list, optional): Stokes U. Defaults to None.
+            stQ (list, optional): Stokes Q. Defaults to None.
+            ampfactor (float, optional):
+                Length of segment is amp times ampfactor. Defaults to 1..
+            angonly (bool, optional):
+                True means amp=1 for all. Defaults to False.
+            rotation (float, optional):
+                Segment angle is ang + rotation. Defaults to 0..
+            cutoff (float, optional):
+                Used when amp and ang are calculated from Stokes U and Q.
+                In the unit of sigma. Defaults to 3..
+            sigma (str or float, optional):
+                Noise level or method for measuring it. Defaults to 'out'.
+            center (str, optional):
+                Text coordinate. 'common' means initialized value.
+                Defaults to 'common'.
+            restfrq (float, optional):
+                Used for velocity and brightness T. Defaults to None.
+            show_beam (bool, optional): Defaults to True.
+            beamcolor (str, optional): Matplotlib color. Defaults to 'gray'.
+            bmaj (float, optional): Beam major axis. Defaults to 0..
+            bmin (float, optional): Beam minor axis. Defaults to 0..
+            bpa (float, optional): Beam position angle. Defaults to 0..
+        """
         kwargs0 = {'angles':'xy', 'scale_units':'xy', 'color':'gray',
                    'pivot':'mid', 'headwidth':0, 'headlength':0,
                    'headaxislength':0, 'width':0.007, 'zorder':3}
@@ -405,6 +659,22 @@ class PlotAstroData():
                  xticklabels: list = None, yticklabels: list= None,
                  xlabel: str = None, ylabel: str = None,
                  grid: dict = None, samexy: bool = True) -> None:
+        """Use ax.set_* of matplotlib.
+
+        Args:
+            xticks (list, optional): Defaults to None.
+            yticks (list, optional): Defaults to None.
+            xticksminor (list, optional): Defaults to None.
+            yticksminor (list, optional): Defaults to None.
+            xticklabels (list, optional): Defaults to None.
+            yticklabels (list, optional): Defaults to None.
+            xlabel (str, optional): Defaults to None.
+            ylabel (str, optional): Defaults to None.
+            grid (dict, optional):
+                True means merely grid(). Defaults to None.
+            samexy (bool, optional):
+                True supports same ticks between x and y. Defaults to True.
+        """
         if self.pv:
             if xlabel is None:
                 xlabel = 'Offset ' + '(arcsec)' if self.dist == 1 else '(au)'
@@ -452,6 +722,16 @@ class PlotAstroData():
     def set_axis_radec(self, xlabel: str = 'R.A. (ICRS)',
                        ylabel: str = 'Dec. (ICRS)',
                        nticksminor: int = 2, grid: dict = None) -> None:
+        """Use ax.set_* of matplotlib.
+
+        Args:
+            xlabel (str, optional): Defaults to 'R.A. (ICRS)'.
+            ylabel (str, optional): Defaults to 'Dec. (ICRS)'.
+            nticksminor (int, optional):
+                Interval ratio of major and minor ticks. Defaults to 2.
+            grid (dict, optional):
+                True means merely grid(). Defaults to None.
+        """
         if self.rmax > 50.:
             print('WARNING: set_axis_radec() is not supported '
                   + 'with rmax>50 yet.')
@@ -514,6 +794,14 @@ class PlotAstroData():
             
     def savefig(self, filename: str = 'plotastrodata.png',
                 show: bool = False, **kwargs) -> None:
+        """Use savefig of matplotlib.
+
+        Args:
+            filename (str, optional):
+                Output image file name. Defaults to 'plotastrodata.png'.
+            show (bool, optional):
+                True means doing plt.show(). Defaults to False.
+        """
         kwargs0 = {'transparent': True, 'bbox_inches': 'tight'}
         for axnow in self.ax:
             axnow.set_xlim(*self.xlim)
