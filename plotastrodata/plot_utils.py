@@ -850,3 +850,4 @@ class PlotAstroData():
 
 
 def profile():
+    pass
