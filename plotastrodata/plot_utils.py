@@ -847,3 +847,6 @@ class PlotAstroData():
                 axnow.set_ylim(*self.ylim)
             plt.show()
         plt.close()
+
+
+def profile():
