@@ -49,6 +49,5 @@ f.savefig('testPV.png', show=True)
 '''
 # Line profile
 profile(fitsimage=pre+'test3D.fits',
-        #coords=['04h04m43.07s 26d18m57.20s', '04h04m43.07s 26d18m55.20s'],
-        coords=['04h04m43.07s 26d18m56.20s'],
+        coords=['04h04m43.045s 26d18m55.766s', '04h04m43.109s 26d18m56.704s'],
         savefig='testprofile.png', show=True)

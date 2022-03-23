@@ -868,12 +868,14 @@ def profile(fitsimage: str = '', Tb: bool = False,
         = fits2data(fitsimage, Tb, False, dist, None, restfrq,
                     vsys=vsys, vmin=xmin, vmax=xmax,
                     center=coords[0])
-    x0, y0 = coord2xy(coords[0])
-    if radius == 'point': radius = y[1] - y[0]
+    xlist, ylist = coord2xy(coords)
+    xlist = (np.array(xlist) - xlist[0]) * 3600.
+    ylist = (np.array(ylist) - ylist[0]) * 3600.
+    if radius == 'point': radius = np.abs(y[1] - y[0]) / np.sqrt(2) * 1.01
     x, y = np.meshgrid(x, y)
     prof = [None] * nprof
-    for i, (xc, yc) in enumerate(zip(*coord2xy(coords))):
-        r = np.hypot(x - (xc - x0), y - (yc - y0))
+    for i, (xc, yc) in enumerate(zip(xlist, ylist)):
+        r = np.hypot(x - xc, y - yc)
         if flux:
             prof[i] = [np.sum(d[r < radius]) for d in data]
         else:
@@ -886,7 +888,7 @@ def profile(fitsimage: str = '', Tb: bool = False,
             w += v[i:i + newlen*width:width]
             q += prof[:, i:i + newlen*width:width]
         v, prof = w / width, q / width
-    if Tb:
+    if Tb and flux:
         flux = False
         print('WARNING: ignore flux=True because Tb=True.')
     if flux:
@@ -898,15 +900,15 @@ def profile(fitsimage: str = '', Tb: bool = False,
     def gauss(x, p, c, w):
         return p / np.exp(4 * np.log(2) * ((x - c) / w)**2)
 
+    xmin, xmax = np.min(v), np.max(v)
     if ymin is None: ymin = np.nanmin(prof)
     if ymax is None: ymax = np.nanmax(prof)
     set_rcparams(20, 'w')
     fig = plt.figure(figsize=(6, 3 * nprof))
-    ax = np.empty(nprof)
-    if nprof > 1:
-        for i in range(nprof):
-            sharex = ax[i - 1] if i > 0 else None
-            ax[i] = fig.add_subplot(nprof, 1, i + 1, sharex=sharex)
+    ax = np.empty(nprof, dtype='object')
+    for i in range(nprof):
+        sharex = ax[i - 1] if i > 0 else None
+        ax[i] = fig.add_subplot(nprof, 1, i + 1, sharex=sharex)
     if gaussfit:
         bounds = [[ymin, xmin, v[1] - v[0]], [ymax, xmax, xmax - xmin]]
     if ylabel is None:
