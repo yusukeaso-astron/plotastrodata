@@ -1,7 +1,8 @@
 from plotastrodata.plot_utils import PlotAstroData as pad
+from plotastrodata.plot_utils import profile
 
 pre = 'testFITS/'
-
+'''
 # 2D case
 f = pad(rmax=0.8, center='04h04m43.07s 26d18m56.20s')
 f.add_color(fitsimage=pre+'test2D.fits', Tb=True, cblabel='Tb (K)')
@@ -45,3 +46,9 @@ f.add_text([0.3, 0.3], slist='label')
 f.add_marker([[0.5, 0.5]])
 f.set_axis(title='PV diagram')
 f.savefig('testPV.png', show=True)
+'''
+# Line profile
+profile(fitsimage=pre+'test3D.fits',
+        #coords=['04h04m43.07s 26d18m57.20s', '04h04m43.07s 26d18m55.20s'],
+        coords=['04h04m43.07s 26d18m56.20s'],
+        savefig='testprofile.png', show=True)

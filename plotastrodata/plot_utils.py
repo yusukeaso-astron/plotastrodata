@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
+from scipy.optimize import curve_fit
 
 from plotastrodata.other_utils import coord2xy, rel2abs, estimate_rms, trim, listing
 from plotastrodata.fits_utils import FitsData, fits2data
@@ -849,5 +850,98 @@ class PlotAstroData():
         plt.close()
 
 
-def profile():
-    pass
+def profile(fitsimage: str = '', Tb: bool = False,
+            flux: bool = False, dist: float = 1.,
+            restfrq: float = None, vsys: float = 0.,
+            coords: list = [], radius: float = 'point',
+            xmin: float = -1e10, xmax: float = 1e10,
+            ymin: float = None, ymax: float = None, yfactor: float = 1.,
+            title: list = None, xticks: list = None, yticks: list = None,
+            xticklabels: list = None, yticklabels: list = None,
+            xticksminor: list = None, yticksminor: list = None,
+            xlabel: str = r'Velocity (km s$^{-1}$)', ylabel: list = None,
+            text: dict = None,  savefig: dict = None, show: bool = True,
+            gaussfit: bool = False, width: int = 1, **kwargs) -> None:
+    kwargs0 = {'drawstyle':'steps-mid', 'color':'k'}
+    nprof = len(coords)
+    data, (x, y, v), (bmaj, bmin, _), bunit, _ \
+        = fits2data(fitsimage, Tb, False, dist, None, restfrq,
+                    vsys=vsys, vmin=xmin, vmax=xmax,
+                    center=coords[0])
+    x0, y0 = coord2xy(coords[0])
+    if radius == 'point': radius = y[1] - y[0]
+    x, y = np.meshgrid(x, y)
+    prof = [None] * nprof
+    for i, (xc, yc) in enumerate(zip(*coord2xy(coords))):
+        r = np.hypot(x - (xc - x0), y - (yc - y0))
+        if flux:
+            prof[i] = [np.sum(d[r < radius]) for d in data]
+        else:
+            prof[i] = [np.mean(d[r < radius]) for d in data]
+    if width > 1:
+        width = int(width)
+        newlen = len(v) // width
+        w, q = np.zeros(newlen), np.zeros((nprof, newlen))
+        for i in range(width):
+            w += v[i:i + newlen*width:width]
+            q += prof[:, i:i + newlen*width:width]
+        v, prof = w / width, q / width
+    if Tb:
+        flux = False
+        print('WARNING: ignore flux=True because Tb=True.')
+    if flux:
+        Omega = np.pi * bmaj * bmin / 4. / np.log(2.)
+        dxdy = np.abs((y[1, 0] - y[0, 0]) * (x[0, 1] - x[0, 0]))
+        prof *= dxdy / Omega
+    prof = np.array(prof) * yfactor
+
+    def gauss(x, p, c, w):
+        return p / np.exp(4 * np.log(2) * ((x - c) / w)**2)
+
+    if ymin is None: ymin = np.nanmin(prof)
+    if ymax is None: ymax = np.nanmax(prof)
+    set_rcparams(20, 'w')
+    fig = plt.figure(figsize=(6, 3 * nprof))
+    ax = np.empty(nprof)
+    if nprof > 1:
+        for i in range(nprof):
+            sharex = ax[i - 1] if i > 0 else None
+            ax[i] = fig.add_subplot(nprof, 1, i + 1, sharex=sharex)
+    if gaussfit:
+        bounds = [[ymin, xmin, v[1] - v[0]], [ymax, xmax, xmax - xmin]]
+    if ylabel is None:
+        if Tb:
+            ylabel = r'$T_b$ (K)'
+        elif flux:
+            ylabel = 'Flux (Jy)'
+        else:
+            ylabel = bunit
+    if type(ylabel) == str: ylabel = [ylabel] * nprof
+    if type(text) == dict: text = [text] * nprof
+    for i in range(nprof):
+        if gaussfit:
+            popt, pcov = curve_fit(gauss, v, prof[i], bounds=bounds)
+            print('Gauss best:', popt)
+            print('Gauss error:', np.diag(pcov))
+            ax[i].plot(v, gauss(v, *popt), drawstyle='default', color='g')
+        ax[i].plot(v, prof[i], **dict(kwargs0, **kwargs))
+        if i == nprof - 1: ax[i].set_xlabel(xlabel)
+        ax[i].set_ylabel(ylabel[i])
+        ax[i].set_xlim(xmin, xmax)
+        ax[i].set_ylim(ymin, ymax)
+        if text is not None: ax[i].text(**text[i])
+        if xticks is not None: ax[i].set_xticks(xticks)
+        if yticks is not None: ax[i].set_yticks(yticks)
+        if xticklabels is not None: ax[i].set_xticklabels(xticklabels)
+        if yticklabels is not None: ax[i].set_yticklabels(yticklabels)
+        if xticksminor is not None: ax[i].set_xticks(xticksminor, minor=True)
+        if yticksminor is not None: ax[i].set_yticks(yticksminor, minor=True)
+        if title is not None: ax[i].set_title(**title[i])
+        ax[i].hlines([0], xmin, xmax, linestyle='dashed', color='k')
+    fig.tight_layout()
+    if savefig is not None:
+        savefig0 = {'bbox_inches':'tight', 'transparent':True}
+        if type(savefig) is str: savefig = {'fname':savefig} 
+        fig.savefig(**dict(savefig, **savefig0))
+    if show: plt.show()
+    plt.close()    
