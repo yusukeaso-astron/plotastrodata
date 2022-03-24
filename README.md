@@ -15,6 +15,7 @@ python example.py
  
 plotastrodata can do the following things.
 * Make 3D channel maps or 2D images including position-velocity diagrams.
+* Make a figure of line profiles with Gaussian fitting.
 * Combine color, contour and segment maps.
 * Input fits files or 2D/3D numpy arrays.
 * Select the R.A.-Dec. style or the offset style as the x/y tick labels.
@@ -28,6 +29,7 @@ plotastrodata can do the following things.
 * matplotlib
 * numpy
 * re
+* scipy
 * warnings
 
  
