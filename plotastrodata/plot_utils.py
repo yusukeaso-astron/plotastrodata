@@ -837,7 +837,7 @@ class PlotAstroData():
             axnow.set_ylim(*self.ylim)
         ext = filename.split('.')[-1]
         for i in range(self.npages):
-            ver = '' if len(self.ax) == 1 else f'_{i:d}'
+            ver = '' if self.npages == 1 else f'_{i:d}'
             fig = plt.figure(i)
             fig.patch.set_alpha(0)
             fig.savefig(filename.replace('.' + ext, ver + '.' + ext),
