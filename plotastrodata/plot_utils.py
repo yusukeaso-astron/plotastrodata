@@ -862,7 +862,8 @@ def profile(fitsimage: str = '', Tb: bool = False,
             xlabel: str = r'Velocity (km s$^{-1}$)', ylabel: list = None,
             text: list = None,  savefig: dict = None, show: bool = True,
             gaussfit: bool = False, width: int = 1,
-            gauss_kwargs: dict = {}, **kwargs) -> None:
+            getfigax: bool = False, gauss_kwargs: dict = {},
+            **kwargs) -> list:
     """Use plot of matplotlib.
 
     Args:
@@ -905,9 +906,16 @@ def profile(fitsimage: str = '', Tb: bool = False,
         gaussfit (bool, optional):
             True means doing Gaussian fitting. Defaults to False.
         width (int, optional): To rebin with the width. Defaults to 1.
+        getfigax (bool, optional):
+            True means return [fig, ax], where ax is a list.
+            Defaults to False.
         gauss_kwargs (dict, optional):
             Input dictionary for ax.plot() to show the best Gaussian.
             Defaults to {}.
+            
+    Returns:
+        [fig, ax], where ax is a list, if getfigax=True.
+        Otherwise, no return.
     """
     kwargs0 = {'drawstyle':'steps-mid', 'color':'k'}
     gauss_kwargs0 = {'drawstyle':'default', 'color':'g'}
@@ -987,6 +995,8 @@ def profile(fitsimage: str = '', Tb: bool = False,
             if type(title[i]) is str: title[i] = {'label':title[i]}
             ax[i].set_title(**title[i])
         ax[i].hlines([0], xmin, xmax, linestyle='dashed', color='k')
+    if getfigax:
+        return [fig, ax]
     fig.tight_layout()
     if savefig is not None:
         if type(savefig) is str: savefig = {'fname':savefig} 
