@@ -2,7 +2,7 @@ from plotastrodata.plot_utils import PlotAstroData as pad
 from plotastrodata.plot_utils import profile
 
 pre = 'testFITS/'
-'''
+
 # 2D case
 f = pad(rmax=0.8, center='04h04m43.07s 26d18m56.20s')
 f.add_color(fitsimage=pre+'test2D.fits', Tb=True, cblabel='Tb (K)')
@@ -42,12 +42,12 @@ f.savefig('test3D.png', show=True)
 f = pad(rmax=0.8, pv=True, vmin=-5, vmax=5)
 f.add_color(fitsimage=pre+'testPV.fits', Tb=True, cblabel='Tb (K)')
 f.add_contour(fitsimage=pre+'testPV.fits', colors='r', sigma=5e-3)
-f.add_text([0.3, 0.3], slist='label')
+f.add_text([0.3, 0.3], slist='text')
 f.add_marker([[0.5, 0.5]])
 f.set_axis(title='PV diagram')
 f.savefig('testPV.png', show=True)
-'''
+
 # Line profile
-profile(fitsimage=pre+'test3D.fits',
+profile(fitsimage=pre+'test3D.fits', radius=0.2, flux=True,
         coords=['04h04m43.045s 26d18m55.766s', '04h04m43.109s 26d18m56.704s'],
-        savefig='testprofile.png', show=True)
+        gaussfit=True, savefig='testprofile.png', show=True, width=2)
