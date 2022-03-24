@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
+from scipy.optimize import curve_fit
 
 from plotastrodata.other_utils import coord2xy, rel2abs, estimate_rms, trim, listing
 from plotastrodata.fits_utils import FitsData, fits2data
@@ -164,7 +165,7 @@ class PlotAstroData():
                 poslist = [poslist]
             x, y = [None] * len(poslist), [None] * len(poslist)
             for i, p in enumerate(poslist):
-                if type(p) == str:
+                if type(p) is str:
                     x[i], y[i] = (coord2xy(p)-coord2xy(center)) * 3600.
                 else:
                     x[i], y[i] = rel2abs(*p, xlim, ylim)
@@ -724,13 +725,13 @@ class PlotAstroData():
             if len(self.ax) == 1: plt.figure(0).tight_layout()
         if title is not None:
             if len(self.ax) > 1:
-                if type(title) == str: title = {'t':title}
+                if type(title) is str: title = {'t':title}
                 title = dict({'y':0.9}, **title)
                 for i in range(self.npages):
                     fig = plt.figure(i)
                     fig.suptitle(**title)
             else:
-                if type(title) == str: title = {'label':title}
+                if type(title) is str: title = {'label':title}
                 axnow.set_title(**title)
             
     def set_axis_radec(self, xlabel: str = 'R.A. (ICRS)',
@@ -811,13 +812,13 @@ class PlotAstroData():
             if len(self.ax) == 1: plt.figure(0).tight_layout()
         if title is not None:
             if len(self.ax) > 1:
-                if type(title) == str: title = {'t':title}
+                if type(title) is str: title = {'t':title}
                 title = dict({'y':0.9}, **title)
                 for i in range(self.npages):
                     fig = plt.figure(i)
                     fig.suptitle(**title)
             else:
-                if type(title) == str: title = {'label':title}
+                if type(title) is str: title = {'label':title}
                 axnow.set_title(**title)
             
     def savefig(self, filename: str = 'plotastrodata.png',
@@ -847,3 +848,148 @@ class PlotAstroData():
                 axnow.set_ylim(*self.ylim)
             plt.show()
         plt.close()
+
+
+def profile(fitsimage: str = '', Tb: bool = False,
+            flux: bool = False, dist: float = 1.,
+            restfrq: float = None, vsys: float = 0.,
+            coords: list = [], radius: float = 0,
+            xmin: float = -1e10, xmax: float = 1e10,
+            ymin: float = None, ymax: float = None, yfactor: float = 1.,
+            title: list = None, xticks: list = None, yticks: list = None,
+            xticklabels: list = None, yticklabels: list = None,
+            xticksminor: list = None, yticksminor: list = None,
+            xlabel: str = r'Velocity (km s$^{-1}$)', ylabel: list = None,
+            text: list = None,  savefig: dict = None, show: bool = True,
+            gaussfit: bool = False, width: int = 1,
+            gauss_kwargs: dict = {}, **kwargs) -> None:
+    """Use plot of matplotlib.
+
+    Args:
+        fitsimage (str, optional): Input fits name. Defaults to ''.
+        Tb (bool, optional):
+            True means line profiles of brightness T. Defaults to False.
+        flux (bool, optional):
+            True means line profiles in the unit of Jy. Defaults to False.
+        dist (float, optional):
+            Change x and y in arcsec to au. Defaults to 1..
+        restfrq (float, optional):
+            Used for velocity and brightness T. Defaults to None.
+        vsys (float, optional): x-axis is v - vsys. Defaults to 0..
+        coords (list, optional):
+            Text coordinates of centers to make line profiles. Defaults to [].
+        radius (float, optional): 0 means nearest pixel. Defaults to 0.
+        xmin (float, optional): Minimum velocity. Defaults to -1e10.
+        xmax (float, optional): Maximum velocity. Defaults to 1e10.
+        ymin (float, optional): Mminimum intensity etc. Defaults to None.
+        ymax (float, optional): Maximum intensity etc. Defaults to None.
+        yfactor (float, optional):
+            Y-axis is yfactor times intensity etc. Defaults to 1..
+        title (list, optional):
+            List of input dictionary for ax.set_title().
+            List of title strings is also acceptable. Defaults to None.
+        xticks (list, optional): Defaults to None.
+        yticks (list, optional): Defaults to None.
+        xticklabels (list, optional): Defaults to None.
+        yticklabels (list, optional): Defaults to None.
+        xticksminor (list, optional): Defaults to None.
+        yticksminor (list, optional): Defaults to None.
+        xlabel (str, optional): Defaults to r'Velocity (km s$^{-1}$)'.
+        ylabel (list, optional): Defaults to None.
+        text (list, optional):
+            List of input dictionary for ax.text(). Defaults to None.
+        savefig (dict, optional):
+            List of input dictionary for fig.savefig().
+            A file name string is also acceptable. Defaults to None.
+        show (bool, optional): True means plt.show(). Defaults to True.
+        gaussfit (bool, optional):
+            True means doing Gaussian fitting. Defaults to False.
+        width (int, optional): To rebin with the width. Defaults to 1.
+        gauss_kwargs (dict, optional):
+            Input dictionary for ax.plot() to show the best Gaussian.
+            Defaults to {}.
+    """
+    kwargs0 = {'drawstyle':'steps-mid', 'color':'k'}
+    gauss_kwargs0 = {'drawstyle':'default', 'color':'g'}
+    savefig0 = {'bbox_inches':'tight', 'transparent':True}
+    if type(coords) is str: coords = [coords]
+    data, (x, y, v), (bmaj, bmin, _), bunit, _ \
+        = fits2data(fitsimage, Tb, False, dist, None, restfrq,
+                    vsys=vsys, vmin=xmin, vmax=xmax,
+                    center=coords[0])
+    xlist, ylist = coord2xy(coords) * 3600.
+    xlist, ylist = xlist - xlist[0], ylist - ylist[0]
+    x, y = np.meshgrid(x, y)
+    prof = np.empty(((nprof := len(coords)), len(v)))
+    for i, (xc, yc) in enumerate(zip(xlist, ylist)):
+        r = np.hypot(x - xc, y - yc)
+        if radius == 0:
+            idx = np.unravel_index(np.argmin(r), np.shape(r))
+            prof[i] = [d[idx] for d in data]
+        elif flux:
+            prof[i] = [np.sum(d[r < radius]) for d in data]
+        else:
+            prof[i] = [np.mean(d[r < radius]) for d in data]
+    newlen = len(v) // (width := int(width))
+    w, q = np.zeros(newlen), np.zeros((nprof, newlen))
+    for i in range(width):
+        w += v[i:i + newlen*width:width]
+        q += prof[:, i:i + newlen*width:width]
+    v, prof = w / width, q / width
+    if Tb and flux:
+        flux = False
+        print('WARNING: ignore flux=True because Tb=True.')
+    if flux:
+        Omega = np.pi * bmaj * bmin / 4. / np.log(2.)
+        dxdy = np.abs((y[1, 0]-y[0, 0]) * (x[0, 1]-x[0, 0]))
+        prof *= dxdy / Omega
+    prof *= yfactor
+    xmin, xmax = np.min(v), np.max(v)
+    if ymin is None: ymin = np.nanmin(prof)
+    if ymax is None: ymax = np.nanmax(prof)
+    if ylabel is None:
+        if Tb:
+            ylabel = r'$T_b$ (K)'
+        elif flux:
+            ylabel = 'Flux (Jy)'
+        else:
+            ylabel = bunit
+    if type(ylabel) is str: ylabel = [ylabel] * nprof
+    if gaussfit:
+        bounds = [[ymin, xmin, v[1] - v[0]], [ymax, xmax, xmax - xmin]]
+    def gauss(x, p, c, w):
+        return p * np.exp(-4. * np.log(2.) * ((x - c) / w)**2)
+    set_rcparams(20, 'w')
+    fig = plt.figure(figsize=(6, 3 * nprof))
+    ax = np.empty(nprof, dtype='object')
+    for i in range(nprof):
+        sharex = ax[i - 1] if i > 0 else None
+        ax[i] = fig.add_subplot(nprof, 1, i + 1, sharex=sharex)
+        if gaussfit:
+            popt, pcov = curve_fit(gauss, v, prof[i], bounds=bounds)
+            print('Gauss (peak, center, FWHM):', popt)
+            print('Gauss error:', np.sqrt(np.diag(pcov)))
+            ax[i].plot(v, gauss(v, *popt),
+                       **dict(gauss_kwargs0, **gauss_kwargs))
+        ax[i].plot(v, prof[i], **dict(kwargs0, **kwargs))
+        if i == nprof - 1: ax[i].set_xlabel(xlabel)
+        ax[i].set_ylabel(ylabel[i])
+        ax[i].set_xlim(xmin, xmax)
+        ax[i].set_ylim(ymin, ymax)
+        if text is not None: ax[i].text(**text[i])
+        if xticks is not None: ax[i].set_xticks(xticks)
+        if yticks is not None: ax[i].set_yticks(yticks)
+        if xticklabels is not None: ax[i].set_xticklabels(xticklabels)
+        if yticklabels is not None: ax[i].set_yticklabels(yticklabels)
+        if xticksminor is not None: ax[i].set_xticks(xticksminor, minor=True)
+        if yticksminor is not None: ax[i].set_yticks(yticksminor, minor=True)
+        if title is not None:
+            if type(title[i]) is str: title[i] = {'label':title[i]}
+            ax[i].set_title(**title[i])
+        ax[i].hlines([0], xmin, xmax, linestyle='dashed', color='k')
+    fig.tight_layout()
+    if savefig is not None:
+        if type(savefig) is str: savefig = {'fname':savefig} 
+        fig.savefig(**dict(savefig0, **savefig))
+    if show: plt.show()
+    plt.close()    
