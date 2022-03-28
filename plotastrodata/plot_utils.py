@@ -223,7 +223,7 @@ class PlotAstroData():
                             vsys=vsys, vmin=vmin, vmax=vmax, pv=pv)
             if grid[2] is not None and grid[2][1] < grid[2][0]:
                 data, grid[2] = data[::-1], v[::-1]
-                print('Inverted velocity..')
+                print('Inverted velocity.')
             a = [data, grid[:2], beam, bunit, rms]
             if pv: a[1] = grid[:3:2]
             return a
