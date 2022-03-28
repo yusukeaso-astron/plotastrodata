@@ -782,7 +782,7 @@ class PlotAstroData():
             g *= 10**order
             decimals = max(-int(order), -1)
             rounded = round(second, decimals)
-            lastdigit = round(rounded // 10**(-decimals-1) % 100 / 10)
+            lastdigit = round(rounded // 10**(-decimals-1) % 100 / 10) % 10
             rounded -= lastdigit * 10**(-decimals) % g
             ticks = n*g*factor + second - rounded
             ticksminor = np.linspace(ticks[0], ticks[-1], 6*nticksminor + 1)
