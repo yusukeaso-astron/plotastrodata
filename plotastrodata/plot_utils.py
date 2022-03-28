@@ -106,6 +106,9 @@ class PlotAstroData():
             fd = FitsData(fitsimage)
             _, _, v = fd.get_grid(restfrq=restfrq, vsys=vsys,
                                   vmin=vmin, vmax=vmax)
+            if v is not None and v[1] < v[0]:
+                v = v[::-1]
+                print('Inverted velocity.')
         if pv or v is None or len(v) == 1:
             nv = nrows = ncols = npages = nchan = 1
         else:
@@ -218,6 +221,9 @@ class PlotAstroData():
                             sigma=sigma, restfrq=restfrq, center=center,
                             rmax=rmax, dist=dist, xoff=xoff, yoff=yoff,
                             vsys=vsys, vmin=vmin, vmax=vmax, pv=pv)
+            if grid[2] is not None and grid[2][1] < grid[2][0]:
+                data, grid[2] = data[::-1], v[::-1]
+                print('Inverted velocity..')
             a = [data, grid[:2], beam, bunit, rms]
             if pv: a[1] = grid[:3:2]
             return a
