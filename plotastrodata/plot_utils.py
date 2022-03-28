@@ -5,7 +5,8 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
 from scipy.optimize import curve_fit
 
-from plotastrodata.other_utils import coord2xy, rel2abs, estimate_rms, trim, listing
+from plotastrodata.other_utils import (coord2xy, xy2coord, rel2abs,
+                                       estimate_rms, trim, listing)
 from plotastrodata.fits_utils import FitsData, fits2data
 
     
@@ -106,6 +107,10 @@ class PlotAstroData():
             fd = FitsData(fitsimage)
             _, _, v = fd.get_grid(restfrq=restfrq, vsys=vsys,
                                   vmin=vmin, vmax=vmax)
+            if center is None:
+                ra_deg = fd.get_header('CRVAL1')
+                dec_deg = fd.get_header('CRVAL2')
+                center = xy2coord([ra_deg, dec_deg])
             if v is not None and v[1] < v[0]:
                 v = v[::-1]
                 print('Inverted velocity.')

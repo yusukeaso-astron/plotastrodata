@@ -55,15 +55,16 @@ def xy2coord(xy: list) -> str:
         str: something like '01h23m45.6s 01d23m45.6s'.
              With multiple inputs, the output has the input shape.
     """
+    one = np.shape(xy) == (2,)
     if one: xy = [xy]
     coords = []
     for c in xy:
-        x, y = c[0] / 15., c[1]
-        ra  = f'{x:02d}h'
-        dec = f'{y:02d}d'
+        x, y = c[0] / 15., c[1] / (decsign := np.sign(c[1]))
+        ra  = f'{int(x):02d}h'
+        dec = ('-' if decsign < 0 else '+') + f'{int(y):02d}d'
         x, y = 60 * (x - int(x)), 60 * (y - int(y))
-        ra  += f'{x:02.0f}m'
-        dec += f'{y:02.0f}m'
+        ra  += f'{int(x):02d}m'
+        dec += f'{int(y):02d}m'
         x, y = 60 * (x - int(x)), 60 * (y - int(y))
         ra  += f'{x:09.6f}s'
         dec += f'{y:09.6f}s'
