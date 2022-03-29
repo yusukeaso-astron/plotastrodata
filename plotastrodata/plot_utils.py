@@ -780,6 +780,7 @@ class PlotAstroData():
                 scale, factor, sec = 1.5, 15, r'$^{\rm s}$'
             else:
                 scale, factor, sec = 0.5, 1, r'$^{\rm \prime\prime}$'
+            sec = r'.$\hspace{-0.4}$' + sec
             dorder = log2r - scale - (order := np.floor(log2r - scale))
             if 0.00 < dorder <= 0.33:
                 g = 1
@@ -794,11 +795,10 @@ class PlotAstroData():
             rounded -= lastdigit * 10**(-decimals) % g
             ticks = (n*g - second + rounded) * factor
             ticksminor = np.linspace(ticks[0], ticks[-1], 6*nticksminor + 1)
-            tlint, tldec = np.divmod((rounded + n*g) % 60., 1)
+            ticklabelvalues = np.divmod((rounded + n*g) % 60., 1)
             decimals = max(decimals, 0)
-            ticklabels = [f'{int(i):02d}.' + r'$\hspace{-0.4}$' + sec
-                          + f'{j:.{decimals:d}f}'[2:]
-                          for i, j in zip(tlint, tldec)]
+            ticklabels = [f'{int(i):02d}{sec}' + f'{j:.{decimals:d}f}'[2:]
+                          for i, j in zip(*ticklabelvalues)]
             return [ticks, ticksminor, ticklabels]
         xticks, xticksminor, xticklabels = makegrid(ra_s, 'ra')
         xticklabels[3] = ra_hm + xticklabels[3]
