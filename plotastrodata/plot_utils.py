@@ -796,7 +796,7 @@ class PlotAstroData():
             ticksminor = np.linspace(ticks[0], ticks[-1], 6*nticksminor + 1)
             tlint, tldec = np.divmod((rounded + n*g) % 60., 1)
             decimals = max(decimals, 0)
-            ticklabels = [f'{i:.0f}.' + r'$\hspace{-0.4}$' + sec
+            ticklabels = [f'{int(i):02d}.' + r'$\hspace{-0.4}$' + sec
                           + f'{j:.{decimals:d}f}'[2:]
                           for i, j in zip(tlint, tldec)]
             return [ticks, ticksminor, ticklabels]
