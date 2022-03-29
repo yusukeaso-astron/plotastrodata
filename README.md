@@ -10,6 +10,14 @@ git clone https://github.com/yusukeaso-astron/plotastrodata
 cd plotastrodata
 python example.py
 ```
+Keep the package updated before you use.
+```bash
+git pull
+```
+Also, setting the path in .bashrc (or .zshrc etc.) will be useful.
+```bash
+export PYTHONPATH=${PYTHONPATH}:/PATH_TO/plotastrodata
+```
  
 ## Features
  
