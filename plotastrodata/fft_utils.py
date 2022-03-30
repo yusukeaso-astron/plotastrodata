@@ -1,7 +1,9 @@
 import numpy as np
+import matplotlib.pyplot as plt
 from astropy import constants
 
 from plotastrodata.fits_utils import fits2data
+from plotastrodata.plot_utils import set_rcparams
 
 
 
@@ -58,6 +60,7 @@ def fftcentering(f: list, x: list = None, xcenter: float = 0) -> list:
     F = np.fft.fftshift(np.fft.fft(f))
     F = shiftphase(F, u=u, xoff=xcenter - X[-1] - dx)
     return [F, u]
+
 
 def fftcentering2(f: list, x: list = None, y: list = None,
                   xcenter: float = 0, ycenter: float = 0) -> list:
@@ -191,15 +194,17 @@ def zeropadding(f: list, x: list, y: list, xlim: list, ylim: list) -> list:
 
 
 def fftfits(fitsimage: str, center: str = None, lam: float = 1,
-            xlim: list = None, ylim: list = None) -> list:
+            xlim: list = None, ylim: list = None,
+            plot: bool = False) -> list:
     """FFT a fits image with the phase referring to a specific point.
 
     Args:
         fitsimage (str): Input fits name in the unit of Jy/pixel.
         center (str, optional): Text coordinate. Defaults to None.
         lam (float, optional): Return u * lam and v * lam. Defaults to 1.
-        xlim (list, optional): range of x for zero padding in arcsec.
-        ylim (list, optional): range of y for zero padding in arcsec.
+        xlim (list, optional): Range of x for zero padding in arcsec.
+        ylim (list, optional): Range of y for zero padding in arcsec.
+        plot (bool, optional): Check F through images.
 
     Returns:
         list: [F, u, v]. F is FFT of f in the unit of Jy.
@@ -212,6 +217,29 @@ def fftfits(fitsimage: str, center: str = None, lam: float = 1,
     arcsec = np.radians(1) / 3600.
     F, u, v = fftcentering2(f, x * arcsec, y * arcsec)
     u, v = u * lam, v * lam
+    if plot:
+        set_rcparams()
+        fig = plt.figure(figsize=(10, 8))
+        ax = fig.add_subplot(2, 2, 1)
+        m = ax.pcolormesh(u, v, np.real(F), shading='nearest', cmap='jet')
+        fig.colorbar(m, ax=ax, label='Real', format='%.1e')
+        ax.set_ylabel(r'v ($\lambda$)')
+        ax = fig.add_subplot(2, 2, 2)
+        m = ax.pcolormesh(u, v, np.imag(F), shading='nearest', cmap='jet')
+        fig.colorbar(m, ax=ax, label='Imaginary', format='%.1e')
+        ax = fig.add_subplot(2, 2, 3)
+        m = ax.pcolormesh(u, v, np.abs(F), shading='nearest', cmap='jet')
+        fig.colorbar(m, ax=ax, label='Amplitude', format='%.1e')
+        ax.set_xlabel(r'u ($\lambda$)')
+        ax.set_ylabel(r'v ($\lambda$)')
+        ax = fig.add_subplot(2, 2, 4)
+        m = ax.pcolormesh(u, v, np.angle(F) * np.degrees(1),
+                          shading='nearest', cmap='jet')
+        fig.colorbar(m, ax=ax, label='Phase (deg)', format='%.0f')
+        ax.set_xlabel(r'u ($\lambda$)')
+        fig.tight_layout()
+        plt.show()
+        plt.close()
     return [F, u, v]
 
 
