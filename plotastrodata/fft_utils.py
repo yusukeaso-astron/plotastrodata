@@ -129,7 +129,20 @@ def ifftcentering(F: list, u: list = None, v: list = None,
         print(f'{dim:d}-D array is not supported.')
 
 
-def fftfits(fitsimage: str, center: str = None, restfrq: float = None):
+def fftfits(fitsimage: str, center: str = None, restfrq: float = None) -> list:
+    """FFT a fits image with the phase referring to a specific point.
+
+    Args:
+        fitsimage (str): Input fits name.
+        center (str, optional): Text coordinate. Defaults to None.
+        restfrq (float, optional):
+            If not None, return u and v in the unit of meter.
+            Defaults to None.
+
+    Returns:
+        list: [F, u, v]. F is FFT of f.
+              u and v are 1D arrays in the unit of lambda.
+    """
     f, (x, y, v), _, _, _ \
         = fits2data(fitsimage, center=center, restfrq=restfrq)
     arcsec = np.radians(1) / 3600.
