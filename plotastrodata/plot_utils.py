@@ -490,13 +490,13 @@ class PlotAstroData():
             if not show_cbar:
                 break
             cblabel = bunit if cblabel is None else cblabel
-            plt.figure(ch // self.rowcol)
+            fig = plt.figure(ch // self.rowcol)
             if len(self.ax) == 1:
                 ax = self.ax[0]
-                cb = plt.colorbar(p, ax=ax, label=cblabel, format=cbformat)
+                cb = fig.colorbar(p, ax=ax, label=cblabel, format=cbformat)
             else:
                 cax = plt.axes([0.88, 0.105, 0.015, 0.77])
-                cb = plt.colorbar(p, cax=cax, label=cblabel, format=cbformat)
+                cb = fig.colorbar(p, cax=cax, label=cblabel, format=cbformat)
             cb.ax.tick_params(labelsize=14)
             font = mpl.font_manager.FontProperties(size=16)
             cb.ax.yaxis.label.set_font_properties(font)
