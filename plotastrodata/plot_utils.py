@@ -796,7 +796,7 @@ class PlotAstroData():
             rounded -= lastdigit * 10**(-decimals) % g
             ticks = (n*g - second + rounded) * factor
             ticksminor = np.linspace(ticks[0], ticks[-1], 6*nticksminor + 1)
-            ticklabelvalues = np.divmod((rounded + n*g) % 60., 1)
+            ticklabelvalues = np.divmod(np.round((rounded + n*g) % 60, 6), 1)
             decimals = max(decimals, 0)
             ticklabels = [f'{int(i):02d}{sec}' + f'{j:.{decimals:d}f}'[2:]
                           for i, j in zip(*ticklabelvalues)]
