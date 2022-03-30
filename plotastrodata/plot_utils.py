@@ -780,6 +780,7 @@ class PlotAstroData():
                 scale, factor, sec = 1.5, 15, r'$^{\rm s}$'
             else:
                 scale, factor, sec = 0.5, 1, r'$^{\rm \prime\prime}$'
+                if dec_sign == r'$-$': factor *= -1
             sec = r'.$\hspace{-0.4}$' + sec
             dorder = log2r - scale - (order := np.floor(log2r - scale))
             if 0.00 < dorder <= 0.33:
