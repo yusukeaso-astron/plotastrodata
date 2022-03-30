@@ -1,4 +1,7 @@
 import numpy as np
+from astropy import constants
+
+from plotastrodata.fits_utils import fits2data
 
 
 
@@ -50,9 +53,10 @@ def fftcentering(f: list, x: list = None, y: list = None,
         nx = np.shape(f)[0]
         if x is None: x = np.arange(nx)
         X = x[0, :] if np.ndim(x) == 2 else x
-        u = np.fft.fftshift(np.fft.fftfreq(nx, d=X[1] - X[0]))
+        dx = X[1] - X[0]
+        u = np.fft.fftshift(np.fft.fftfreq(nx, d=dx))
         F = np.fft.fftshift(np.fft.fft(f))
-        F = shiftphase(F, u=u, xoff=xcenter - X[-1])
+        F = shiftphase(F, u=u, xoff=xcenter - X[-1] - dx)
         return [F, u]
     elif dim == 2:
         ny, nx = np.shape(f)
@@ -60,10 +64,11 @@ def fftcentering(f: list, x: list = None, y: list = None,
         if y is None: y = np.arange(ny)
         X = x[0, :] if np.ndim(x) == 2 else x
         Y = y[:, 0] if np.ndim(y) == 2 else y
-        u = np.fft.fftshift(np.fft.fftfreq(nx, d=X[1] - X[0]))
-        v = np.fft.fftshift(np.fft.fftfreq(ny, d=Y[1] - Y[0]))
+        dx, dy = X[1] - X[0], Y[1] - Y[0]
+        u = np.fft.fftshift(np.fft.fftfreq(nx, d=dx))
+        v = np.fft.fftshift(np.fft.fftfreq(ny, d=dy))
         F = np.fft.fftshift(np.fft.fft2(f))
-        F = shiftphase(F, u, v, xcenter - X[-1], ycenter - Y[-1])
+        F = shiftphase(F, u, v, xcenter - X[-1] - dx, ycenter - Y[-1] - dy)
         return [F, u, v]
     else:
         print(f'{dim:d}-D array is not supported.')
@@ -102,7 +107,8 @@ def ifftcentering(F: list, u: list = None, v: list = None,
         if u is None: u = np.fft.fftshift(np.fft.fftfreq(nx, d=1))
         x = (np.arange(nx) - (nx-1)/2.) / (u[1]-u[0]) / nx + xcenter
         if x0 is not None: x = x - x[0] + x0
-        F = shiftphase(F, u=u, xoff=x[-1] - xcenter)
+        dx = x[1] - x[0]
+        F = shiftphase(F, u=u, xoff=x[-1] + dx - xcenter)
         f = np.fft.ifft(np.fft.ifftshift(F))
         if outreal: f = np.real(f)
         return [f, x]
@@ -114,9 +120,21 @@ def ifftcentering(F: list, u: list = None, v: list = None,
         y = (np.arange(ny) - (ny-1)/2.) / (v[1]-v[0]) / ny + ycenter
         if x0 is not None: x = x - x[0] + x0
         if y0 is not None: y = y - y[0] + y0
-        F = shiftphase(F, u, v, x[-1] - xcenter, y[-1] - ycenter)
+        dx, dy = x[1] - x[0], y[1] - y[0]
+        F = shiftphase(F, u, v, x[-1] + dx - xcenter, y[-1] + dy - ycenter)
         f = np.fft.ifft2(np.fft.ifftshift(F))
         if outreal: f = np.real(f)
         return [f, x, y]
     else:
         print(f'{dim:d}-D array is not supported.')
+
+
+def fftfits(fitsimage: str, center: str = None, restfrq: float = None):
+    f, (x, y, v), _, _, _ \
+        = fits2data(fitsimage, center=center, restfrq=restfrq)
+    arcsec = np.radians(1) / 3600.
+    F, u, v = fftcentering(f, x * arcsec, y * arcsec)
+    if restfrq is not None:
+        lam = constants.c.to('m/s').value / restfrq
+        u, v = u * lam, v * lam  # lambda -> m
+    return [F, u, v]

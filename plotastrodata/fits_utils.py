@@ -115,11 +115,11 @@ class FitsData:
             s = (s-h[f'CRPIX{i:d}']+1) * h[f'CDELT{i:d}'] + h[f'CRVAL{i:d}']
             return s
         def gen_x(s: list) -> None:
-            cunit = 3600. if h['CUNIT1'] == 'deg' else 1.
+            cunit = 3600. if h['CUNIT1'].strip() in ['deg', 'DEG'] else 1.
             s = (s - cx) * cunit * dist
             self.x, self.dx = s, s[1] - s[0]
         def gen_y(s: list) -> None:
-            cunit = 3600. if h['CUNIT2'] == 'deg' else 1.
+            cunit = 3600. if h['CUNIT2'].strip() in ['deg', 'DEG'] else 1.
             s = (s - cy) * cunit * dist
             self.y, self.dy = s, s[1] - s[0]
         def gen_v(s: list) -> None:
