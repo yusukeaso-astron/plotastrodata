@@ -9,6 +9,7 @@ from plotastrodata.other_utils import (coord2xy, xy2coord, rel2abs,
                                        estimate_rms, trim, listing)
 from plotastrodata.fits_utils import FitsData, fits2data
 
+
     
 plt.ioff()  # force to turn off interactive mode
 
@@ -63,7 +64,7 @@ class PlotAstroData():
                  center: str = None, rmax: float = 1e10, dist: float = 1.,
                  xoff: float = 0, yoff: float = 0,
                  xflip: bool = True, yflip: bool = False,
-                 pv : bool = False) -> None:
+                 pv : bool = False, fig=None, ax=None) -> None:
         """Set up common parameters.
 
         Args:
@@ -102,7 +103,11 @@ class PlotAstroData():
             yflip (bool, optional):
                 True means bottom is positive y. Defaults to False.
             pv (bool, optional): Mode for PV diagram. Defaults to False.
+            fig (optional): External plt.figure(). Defaults to None.
+            ax (optional): External fig.add_subplot(). Defaults to None.
         """
+        internalfig = fig is None
+        internalax = ax is None
         if fitsimage is not None:
             fd = FitsData(fitsimage)
             _, _, v = fd.get_grid(restfrq=restfrq, vsys=vsys,
@@ -129,20 +134,23 @@ class PlotAstroData():
             j = ch % ncols
             return [n, i, j]
         set_rcparams(fontsize=18 if nv == 1 else 12)
-        ax = np.empty(nchan, dtype='object')
+        ax = np.empty(nchan, dtype='object') if internalax else [ax]
         for ch in range(nchan):
             n, i, j = ch2nij(ch)
             figsize = (7, 5) if nchan == 1 else (ncols*2, max(nrows, 1.5)*2)
-            fig = plt.figure(n, figsize=figsize)
+            if internalfig:
+                fig = plt.figure(n, figsize=figsize)
             sharex = ax[nij2ch(n, i - 1, j)] if i > 0 else None
             sharey = ax[nij2ch(n, i, j - 1)] if j > 0 else None
-            ax[ch] = fig.add_subplot(nrows, ncols, i*ncols + j + 1,
-                                     sharex=sharex, sharey=sharey)
+            if internalax:
+                ax[ch] = fig.add_subplot(nrows, ncols, i*ncols + j + 1,
+                                         sharex=sharex, sharey=sharey)
             if nchan > 1:
                 fig.subplots_adjust(hspace=0, wspace=0, right=0.87, top=0.87)
                 ax[ch].text(0.9 * rmax, 0.7 * rmax,
                             rf'${v[ch]:.{veldigit:d}f}$', color='black',
                             backgroundcolor='white', zorder=20)
+        self.fig = None if internalfig else fig
         self.ax = ax
         self.xdir = xdir = -1 if xflip else 1
         self.ydir = ydir = -1 if yflip else 1
@@ -276,7 +284,8 @@ class PlotAstroData():
             for ch, axnow in enumerate(self.ax):
                 if not (ch in include_chan):
                     continue
-                plt.figure(ch // self.rowcol)
+                if self.fig is None:
+                    plt.figure(ch // self.rowcol)
                 e = Ellipse((x, y), width=width, height=height,
                             angle=angle * self.xdir,
                             **dict(kwargs0, **kwargs))
@@ -483,14 +492,17 @@ class PlotAstroData():
         c = c.clip(kwargs['vmin'], kwargs['vmax'])
         x, y = x[::skip], y[::skip]
         c = self.skipfill(c, skip)
-        for ch, (axnow, cnow) in enumerate(zip(self.ax, c)):
+        for axnow, cnow in zip(self.ax, c):
             p = axnow.pcolormesh(x, y, cnow, shading='nearest',
                                  **dict(kwargs0, **kwargs))
         for ch in self.bottomleft:
             if not show_cbar:
                 break
             cblabel = bunit if cblabel is None else cblabel
-            fig = plt.figure(ch // self.rowcol)
+            if self.fig is None:
+                fig = plt.figure(ch // self.rowcol)
+            else:
+                fig = self.fig
             if len(self.ax) == 1:
                 ax = self.ax[0]
                 cb = fig.colorbar(p, ax=ax, label=cblabel, format=cbformat)
@@ -733,7 +745,9 @@ class PlotAstroData():
             axnow.set_ylim(*self.ylim)
             if grid is not None:
                 axnow.grid(**({} if grid == True else grid))
-            if len(self.ax) == 1: plt.figure(0).tight_layout()
+            if len(self.ax) == 1:
+                if self.fig is None:
+                    plt.figure(0).tight_layout()
         if title is not None:
             if len(self.ax) > 1:
                 if type(title) is str: title = {'t':title}
@@ -824,7 +838,9 @@ class PlotAstroData():
             axnow.set_ylim(*self.ylim)
             if grid is not None:
                 axnow.grid(**({} if grid == True else grid))
-            if len(self.ax) == 1: plt.figure(0).tight_layout()
+            if len(self.ax) == 1:
+                if self.fig is None:
+                    plt.figure(0).tight_layout()
         if title is not None:
             if len(self.ax) > 1:
                 if type(title) is str: title = {'t':title}
@@ -863,6 +879,17 @@ class PlotAstroData():
                 axnow.set_ylim(*self.ylim)
             plt.show()
         plt.close()
+
+    def get_figax(self) -> list:
+        """Output the external fig and ax after plotting.
+
+        Returns:
+            list: [fig, ax]
+        """
+        if len(self.ax) > 1:
+            print('get_figax is not supported with channel maps')
+            return -1
+        return [self.fig, self.ax[0]]
 
 
 def profile(fitsimage: str = '', Tb: bool = False,
