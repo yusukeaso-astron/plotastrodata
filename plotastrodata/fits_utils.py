@@ -194,7 +194,7 @@ def fits2data(fitsimage: str, Tb: bool = False, log: bool = False,
     
 def data2fits(d: list = None, h: dict = {}, crpix: list = None,
               crval: list = None, cdelt: list = None, ctype: str = None,
-              fitsname: str = 'test') -> None:
+              fitsimage: str = 'test') -> None:
     """Make a fits file from a N-D array.
 
     Args:
@@ -204,7 +204,7 @@ def data2fits(d: list = None, h: dict = {}, crpix: list = None,
         crval (list, optional): Defaults to None.
         cdelt (list, optional): Defaults to None.
         ctype (str, optional): Defaults to None.
-        fitsname (str, optional): Output name. Defaults to 'test'.
+        fitsimage (str, optional): Output name. Defaults to 'test'.
     """
     ctype0 = ["RA---AIR", "DEC--AIR", "VELOCITY"]
     naxis = np.ndim(d)
@@ -219,4 +219,4 @@ def data2fits(d: list = None, h: dict = {}, crpix: list = None,
         if not ('COMMENT' in k or 'HISTORY' in k):
             hdu.header[k]=h[k]
     hdu = fits.HDUList([hdu])
-    hdu.writeto(fitsname.replace('.fits', '') + '.fits', overwrite=True)
+    hdu.writeto(fitsimage.replace('.fits', '') + '.fits', overwrite=True)
