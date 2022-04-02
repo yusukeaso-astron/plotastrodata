@@ -52,6 +52,7 @@ git clone https://github.com/yusukeaso-astron/plotastrodata
 ## Note
 
 * For 3D data, a 1D velocity array or a FITS file with a velocity axis must be given to set up channels in each page.
+* For 2D data, the spatial center can be read from a FITS file or manually given.
 * len(v)=1 (default) means to make a 2D figure.
 * Spatial lengths are in the unit of arcsec, or au if dist (!= 1) is given.
 * Angles are in the unit of degree.
