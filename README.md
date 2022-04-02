@@ -25,7 +25,7 @@ plotastrodata can do the following things.
 * Make 3D channel maps or 2D images including position-velocity diagrams.
 * Make a figure of line profiles with Gaussian fitting.
 * Plot images to externally given fig and ax (2D images only).
-* Combine color, contour and segment maps.
+* Combine color, contour and segment maps using images with different spatial grids.
 * Input fits files or 2D/3D numpy arrays.
 * Select the R.A.-Dec. style or the offset style as the x/y tick labels.
 * Fill channel maps with a 2D image.
@@ -52,7 +52,7 @@ git clone https://github.com/yusukeaso-astron/plotastrodata
 ## Note
 
 * For 3D data, a 1D velocity array or a FITS file with a velocity axis must be given to set up channels in each page.
-* For 2D data, the spatial center can be read from a FITS file or manually given.
+* For 2D/3D data, the spatial center can be read from a FITS file or manually given.
 * len(v)=1 (default) means to make a 2D figure.
 * Spatial lengths are in the unit of arcsec, or au if dist (!= 1) is given.
 * Angles are in the unit of degree.
