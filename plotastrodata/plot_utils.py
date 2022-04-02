@@ -672,7 +672,7 @@ class PlotAstroData():
             stU[np.abs(stU) < cutoff * rms] = np.nan
             stQ[np.abs(stQ) < cutoff * rms] = np.nan
             amp = np.hypot(stU, stQ)
-            ang = np.degrees(np.arctan(stU / stQ) / 2.)
+            ang = np.degrees(np.arctan2(stU, stQ) / 2.)
         if amp is None or angonly: amp = np.ones_like(ang)
         x, y = x[::skip], y[::skip]
         amp = self.skipfill(amp, skip)
