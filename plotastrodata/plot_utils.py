@@ -64,7 +64,9 @@ class PlotAstroData():
                  center: str = None, rmax: float = 1e10, dist: float = 1.,
                  xoff: float = 0, yoff: float = 0,
                  xflip: bool = True, yflip: bool = False,
-                 pv : bool = False, fig=None, ax=None) -> None:
+                 pv : bool = False,
+                 fontsize: int = None, nancolor: str = 'w',
+                 fig=None, ax=None) -> None:
         """Set up common parameters.
 
         Args:
@@ -103,6 +105,10 @@ class PlotAstroData():
             yflip (bool, optional):
                 True means bottom is positive y. Defaults to False.
             pv (bool, optional): Mode for PV diagram. Defaults to False.
+            fontsize (int, optional): rc_Params['font.size'].
+                None means 18 (2D) or 12 (3D). Defaults to None.
+            nancolor (str, optional):
+                Color for masked regions. Defaults to white.
             fig (optional): External plt.figure(). Defaults to None.
             ax (optional): External fig.add_subplot(). Defaults to None.
         """
@@ -133,7 +139,9 @@ class PlotAstroData():
             i = (ch - n*nrows*ncols) // ncols
             j = ch % ncols
             return [n, i, j]
-        set_rcparams(fontsize=18 if nv == 1 else 12)
+        if fontsize is None:
+            fontsize=18 if nv == 1 else 12
+        set_rcparams(fontsize=fontsize, nancolor=nancolor)
         ax = np.empty(nchan, dtype='object') if internalax else [ax]
         for ch in range(nchan):
             n, i, j = ch2nij(ch)
