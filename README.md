@@ -24,11 +24,12 @@ export PYTHONPATH=${PYTHONPATH}:/YOUR_PATH_TO/plotastrodata
 plotastrodata can do the following things.
 * Make 3D channel maps or 2D images including position-velocity diagrams.
 * Make a figure of line profiles with Gaussian fitting.
+* Plot images to externally given fig and ax (2D images only).
 * Combine color, contour and segment maps.
 * Input fits files or 2D/3D numpy arrays.
 * Select the R.A.-Dec. style or the offset style as the x/y tick labels.
 * Fill channel maps with a 2D image.
-* Add line, arrow, ellipse, text, and marker in a specified channel.
+* Add line, arrow, ellipse, text, and marker in specified channels.
 * Use original arguments of matplotlib (pcolormesh, contour, quiver, plot, text, Ellipse).
  
 ## Requirement
