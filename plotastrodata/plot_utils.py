@@ -23,10 +23,10 @@ def set_rcparams(fontsize: int = 18, nancolor: str ='w') -> None:
     plt.rcParams['ytick.direction'] = 'inout'
     plt.rcParams['xtick.top'] = True
     plt.rcParams['ytick.right'] = True
-    plt.rcParams['xtick.major.size'] = 8
-    plt.rcParams['ytick.major.size'] = 8
-    plt.rcParams['xtick.minor.size'] = 4
-    plt.rcParams['ytick.minor.size'] = 4
+    plt.rcParams['xtick.major.size'] = 10
+    plt.rcParams['ytick.major.size'] = 10
+    plt.rcParams['xtick.minor.size'] = 6
+    plt.rcParams['ytick.minor.size'] = 6
     plt.rcParams['xtick.major.width'] = 1.5
     plt.rcParams['ytick.major.width'] = 1.5
     plt.rcParams['xtick.minor.width'] = 1.5
@@ -735,8 +735,20 @@ class PlotAstroData():
             if xticks is not None: axnow.set_xticks(xticks)
             if yticks is not None: axnow.set_yticks(yticks)
             if xticksminor is not None:
+                if type(xticksminor) is int:
+                    t = axnow.get_xticks()
+                    dt = t[1] - t[0]
+                    t = np.r_[t[0] - dt, t, t[-1] + dt]
+                    xticksminor = np.linspace(t[0], t[-1],
+                                              xticksminor*(len(t) - 1) + 1)
                 axnow.set_xticks(xticksminor, minor=True)
             if yticksminor is not None:
+                if type(yticksminor) is int:
+                    t = axnow.get_yticks()
+                    dt = t[1] - t[0]
+                    t = np.r_[t[0] - dt, t, t[-1] + dt]
+                    yticksminor = np.linspace(t[0], t[-1],
+                                              yticksminor*(len(t) - 1) + 1)
                 axnow.set_yticks(yticksminor, minor=True)
             if xticklabels is not None:
                 axnow.set_xticklabels(xticklabels)
