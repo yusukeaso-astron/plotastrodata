@@ -2,7 +2,7 @@ import re
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from matplotlib.patches import Ellipse
+from matplotlib.patches import Ellipse, Rectangle
 from scipy.optimize import curve_fit
 
 from plotastrodata.other_utils import (coord2xy, xy2coord, rel2abs,
@@ -38,10 +38,12 @@ class PlotAstroData():
     
     Basic rules --- For 3D data, a 1D velocity array or a FITS file
     with a velocity axis must be given to set up channels in each page.
+    For 2D/3D data, the spatial center can be read from a FITS file
+    or manually given.
     len(v)=1 (default) means to make a 2D figure.
     Spatial lengths are in the unit of arcsec, or au if dist (!= 1) is given.
     Angles are in the unit of degree.
-    For ellipse, line, arrow, label, and marker,
+    For region, line, arrow, label, and marker,
     a single input can be treated without a list, e.g., anglelist=60,
     as well as anglelist=[60].
     Each element of poslist supposes a text coordinate
@@ -49,7 +51,7 @@ class PlotAstroData():
     like [0.2, 0.3] (0 is left or bottom, 1 is right or top).
     Parameters for original methods in matplotlib.axes.Axes can be
     used as kwargs; see the default kwargs0 for reference.
-    Position-velocity diagrams (pv=True) does not yet suppot ellipse, line,
+    Position-velocity diagrams (pv=True) does not yet suppot region, line,
     arrow, and segment because the units of abscissa and ordinate
     are different.
     The parameter sigma can be one of the methods of
@@ -271,22 +273,27 @@ class PlotAstroData():
         self.readdata = readdata
 
         
-    def add_ellipse(self, poslist: list = [],
-                    majlist: list = [], minlist: list = [], palist: list = [],
-                    include_chan: list = None, **kwargs) -> None:
-        """Use add_patch() and Ellipse of matplotlib.
+    def add_region(self, patch: str = 'ellipse', poslist: list = [],
+                   majlist: list = [], minlist: list = [], palist: list = [],
+                   include_chan: list = None, **kwargs) -> None:
+        """Use add_patch() and Rectangle or Ellipse of matplotlib.
 
         Args:
-            poslist (list, optional): text or relative. Defaults to [].
+            patch (str, optional):
+                'ellipse' or 'rectangle'. Defaults to 'ellipse'.
+            poslist (list, optional): Text or relative center. Defaults to [].
             majlist (list, optional): Ellipse major axis. Defaults to [].
             minlist (list, optional): Ellipse minor axis. Defaults to [].
             palist (list, optional):
-                Ellipse position angle (north to east). Defaults to [].
+                Position angle (north to east). Defaults to [].
             include_chan (list, optional): None means all. Defaults to None.
         """
         kwargs0 = {'facecolor':'none', 'edgecolor':'gray',
                    'linewidth':1.5, 'zorder':10}
         if include_chan is None: include_chan = self.allchan
+        if not (patch in ['rectangle', 'ellipse']):
+            print('Only patch=\'rectangle\' or \'ellipse\' supported. ')
+            return -1
         for x, y, width, height, angle\
             in zip(*self.pos2xy(poslist), *listing(minlist, majlist, palist)):
             for ch, axnow in enumerate(self.ax):
@@ -294,15 +301,22 @@ class PlotAstroData():
                     continue
                 if self.fig is None:
                     plt.figure(ch // self.rowcol)
-                e = Ellipse((x, y), width=width, height=height,
-                            angle=angle * self.xdir,
-                            **dict(kwargs0, **kwargs))
-                axnow.add_patch(e)
+                if patch == 'rectangle':
+                    a = np.radians(angle)
+                    xp = x - (width*np.cos(a) + height*np.sin(a)) / 2.
+                    yp = y - (-width*np.sin(a) + height*np.cos(a)) / 2.
+                    p = Rectangle
+                else:
+                    xp, yp = x, y
+                    p = Ellipse
+                p = p((xp, yp), width=width, height=height,
+                      angle=angle * self.xdir, **dict(kwargs0, **kwargs))
+                axnow.add_patch(p)
                 
     def add_beam(self, bmaj: float = 0, bmin: float = 0,
                  bpa: float = 0, beamcolor: str = 'gray',
                  poslist: list = None) -> None:
-        """Use add_ellipse().
+        """Use add_region().
 
         Args:
             bmaj (float, optional): Beam major axis. Defaults to 0.
@@ -314,9 +328,10 @@ class PlotAstroData():
         if poslist is None:
             bpos = max(0.35 * bmaj / self.rmax, 0.1)
             poslist = [[bpos, bpos]]
-        self.add_ellipse(include_chan=self.bottomleft, poslist=poslist,
-                         majlist=[bmaj], minlist=[bmin], palist=[bpa],
-                         facecolor=beamcolor, edgecolor=None)
+        self.add_region(patch='ellipse', poslist=poslist,
+                        majlist=[bmaj], minlist=[bmin], palist=[bpa],
+                        include_chan=self.bottomleft,
+                        facecolor=beamcolor, edgecolor=None)
     
     def add_marker(self, poslist: list = [],
                    include_chan: list = None, **kwargs) -> None:
