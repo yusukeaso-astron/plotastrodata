@@ -68,7 +68,7 @@ class PlotAstroData():
                  xflip: bool = True, yflip: bool = False,
                  pv : bool = False,
                  fontsize: int = None, nancolor: str = 'w',
-                 fig=None, ax=None) -> None:
+                 figsize: tuple =None, fig=None, ax=None) -> None:
         """Set up common parameters.
 
         Args:
@@ -111,6 +111,7 @@ class PlotAstroData():
                 None means 18 (2D) or 12 (3D). Defaults to None.
             nancolor (str, optional):
                 Color for masked regions. Defaults to white.
+            figsize (tuple, optional): Defaults to None.
             fig (optional): External plt.figure(). Defaults to None.
             ax (optional): External fig.add_subplot(). Defaults to None.
         """
@@ -147,7 +148,8 @@ class PlotAstroData():
         ax = np.empty(nchan, dtype='object') if internalax else [ax]
         for ch in range(nchan):
             n, i, j = ch2nij(ch)
-            figsize = (7, 5) if nchan == 1 else (ncols*2, max(nrows, 1.5)*2)
+            if figsize is None:
+                figsize = (7, 5) if nchan == 1 else (ncols*2, max(nrows*2, 3))
             if internalfig:
                 fig = plt.figure(n, figsize=figsize)
             sharex = ax[nij2ch(n, i - 1, j)] if i > 0 else None
@@ -450,10 +452,10 @@ class PlotAstroData():
                   v: list = None, c: list = None,
                   center: str = 'common', restfrq: float = None,
                   Tb: bool = False, log: bool = False,
-                  cfactor: float = 1,
-                  sigma: float or str = 'out', show_cbar: bool = True,
-                  cblabel: str = None, cbformat: float = '%.1e',
-                  cbticks: list = None, cbticklabels: list = None,
+                  cfactor: float = 1, sigma: float or str = 'out',
+                  show_cbar: bool = True, cblabel: str = None,
+                  cbformat: float = '%.1e', cbticks: list = None,
+                  cbticklabels: list = None, cblocation: str = 'right',
                   show_beam: bool = True, beamcolor: str = 'gray',
                   bmaj: float = 0., bmin: float = 0.,
                   bpa: float = 0., **kwargs) -> None:
@@ -486,6 +488,8 @@ class PlotAstroData():
             cbticks (list, optional): Ticks of colorbar. Defaults to None.
             cbticklabels (list, optional):
                 Ticklabels of colorbar. Defaults to None.
+            cblocation (str, optional): 'left', 'top', 'left', 'right'.
+                Only for 2D images. Defaults to 'right'.
             show_beam (bool, optional): Defaults to True.
             beamcolor (str, optional): Matplotlib color. Defaults to 'gray'.
             bmaj (float, optional): Beam major axis. Defaults to 0..
@@ -528,7 +532,8 @@ class PlotAstroData():
                 fig = self.fig
             if len(self.ax) == 1:
                 ax = self.ax[0]
-                cb = fig.colorbar(p, ax=ax, label=cblabel, format=cbformat)
+                cb = fig.colorbar(p, ax=ax, label=cblabel,
+                                  format=cbformat, location=cblocation)
             else:
                 cax = plt.axes([0.88, 0.105, 0.015, 0.77])
                 cb = fig.colorbar(p, cax=cax, label=cblabel, format=cbformat)
