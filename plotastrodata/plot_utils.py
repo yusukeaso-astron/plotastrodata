@@ -525,8 +525,10 @@ class PlotAstroData():
             if cbticklabels is not None:
                 cb.set_ticklabels(cbticklabels)
             elif log:
-                cb.set_ticks(t := cb.get_ticks())
-                cb.set_ticklabels([f'{d:.1e}' for d in 10**t])
+                t = cb.get_ticks()
+                t = t[(kwargs['vmin'] < t) * (t < kwargs['vmax'])]
+                cb.set_ticks(t)
+                cb.set_ticklabels([f'{d:{cbformat[1:]}}' for d in 10**t])
         if show_beam:
             self.add_beam(bmaj, bmin, bpa, beamcolor)
 
@@ -1026,7 +1028,7 @@ def profile(fitsimage: str = '', Tb: bool = False,
         if gaussfit:
             popt, pcov = curve_fit(gauss, v, prof[i], bounds=bounds)
             print('Gauss (peak, center, FWHM):', popt)
-            print('Gauss error:', np.sqrt(np.diag(pcov)))
+            print('Gauss uncertainties:', np.sqrt(np.diag(pcov)))
             ax[i].plot(v, gauss(v, *popt),
                        **dict(gauss_kwargs0, **gauss_kwargs))
         ax[i].plot(v, prof[i], **dict(kwargs0, **kwargs))
