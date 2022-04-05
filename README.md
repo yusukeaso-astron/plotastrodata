@@ -29,8 +29,8 @@ plotastrodata can do the following things.
 * Input fits files or 2D/3D numpy arrays.
 * Select the R.A.-Dec. style or the offset style as the x/y tick labels.
 * Fill channel maps with a 2D image.
-* Add line, arrow, ellipse, text, and marker in specified channels.
-* Use original arguments of matplotlib (pcolormesh, contour, quiver, plot, text, Ellipse).
+* Add line, arrow, ellipse, rectangle, text, and marker in specified channels.
+* Use original arguments of matplotlib (pcolormesh, contour, quiver, plot, text, Ellipse, Rectangle).
  
 ## Requirement
 
@@ -56,10 +56,10 @@ git clone https://github.com/yusukeaso-astron/plotastrodata
 * len(v)=1 (default) means to make a 2D figure.
 * Spatial lengths are in the unit of arcsec, or au if dist (!= 1) is given.
 * Angles are in the unit of degree.
-* For ellipse, line, arrow, label, and marker, a single input can be treated without a list, e.g., anglelist=60, as well as anglelist=[60].
+* For region, line, arrow, label, and marker, a single input can be treated without a list, e.g., anglelist=60, as well as anglelist=[60].
 * Each element of poslist supposes a text coordinate like '01h23m45.6s 01d23m45.6s' or a list of relative x and y like [0.2, 0.3] (0 is left or bottom, 1 is right or top).
 * Parameters for original methods in matplotlib.axes.Axes can be used as kwargs; see the default kwargs0 for reference.
-* Position-velocity diagrams (pv=True) does not yet suppot ellipse, line, arrow, and segment because the units of abscissa and ordinate are different.
+* Position-velocity diagrams (pv=True) does not yet suppot region, line, arrow, and segment because the units of abscissa and ordinate are different.
 * The parameter sigma can be one of the methods of ['edge', 'neg', 'med', 'iter', 'out'] as well as a specific value.
  
 ## Author
