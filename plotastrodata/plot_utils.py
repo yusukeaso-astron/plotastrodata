@@ -699,8 +699,10 @@ class PlotAstroData():
         Args:
             xticks (list, optional): Defaults to None.
             yticks (list, optional): Defaults to None.
-            xticksminor (list, optional): Defaults to None.
-            yticksminor (list, optional): Defaults to None.
+            xticksminor (list or int, optional):
+                If int, int times more than xticks. Defaults to None.
+            yticksminor (list ot int, optional): Defaults to None.
+                If int, int times more than xticks. Defaults to None.
             xticklabels (list, optional): Defaults to None.
             yticklabels (list, optional): Defaults to None.
             xlabel (str, optional): Defaults to None.
