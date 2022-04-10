@@ -189,7 +189,9 @@ class PlotAstroData():
             Returns:
                 list: absolute coordinates.
             """
-            if np.shape(poslist) in [(), (2,)]:
+            if np.shape(poslist) == () \
+                or (np.shape(poslist) == (2,) 
+                    and type(poslist[0]) is not str):
                 poslist = [poslist]
             x, y = [None] * len(poslist), [None] * len(poslist)
             for i, p in enumerate(poslist):
