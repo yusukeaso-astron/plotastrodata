@@ -605,7 +605,7 @@ class PlotAstroData():
         x, y = x[::skip], y[::skip]
         c = self.skipfill(c, skip)
         for axnow, cnow in zip(self.ax, c):
-            axnow.contour(x, y, cnow, np.array(levels) * rms,
+            axnow.contour(x, y, cnow, np.sort(levels) * rms,
                           **dict(kwargs0, **kwargs))
         if show_beam:
             self.add_beam(bmaj, bmin, bpa, beamcolor)
