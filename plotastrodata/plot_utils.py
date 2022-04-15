@@ -551,7 +551,7 @@ class PlotAstroData():
                 t = t[(kwargs['vmin'] < t) * (t < kwargs['vmax'])]
                 cb.set_ticks(t)
                 cb.set_ticklabels([f'{d:{cbformat[1:]}}' for d in 10**t])
-        if show_beam:
+        if show_beam and not self.pv:
             self.add_beam(bmaj, bmin, bpa, beamcolor)
 
     def add_contour(self, fitsimage: str = None,
@@ -607,7 +607,7 @@ class PlotAstroData():
         for axnow, cnow in zip(self.ax, c):
             axnow.contour(x, y, cnow, np.sort(levels) * rms,
                           **dict(kwargs0, **kwargs))
-        if show_beam:
+        if show_beam and not self.pv:
             self.add_beam(bmaj, bmin, bpa, beamcolor)
             
     def add_segment(self, ampfits: str = None, angfits: str = None,
@@ -707,7 +707,7 @@ class PlotAstroData():
         kwargs0['scale'] = 1. / np.abs(x[1] - x[0])
         for axnow, unow, vnow in zip(self.ax, u, v):
             axnow.quiver(x, y, unow, vnow, **dict(kwargs0, **kwargs))
-        if show_beam:
+        if show_beam and not self.pv:
             self.add_beam(bmaj, bmin, bpa, beamcolor)
     
     def set_axis(self, xticks: list = None, yticks: list = None,
