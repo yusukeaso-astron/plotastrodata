@@ -383,7 +383,8 @@ class PlotAstroData():
             rlist (list, optional): List of radius. Defaults to [].
             include_chan (list, optional): None means all. Defaults to None.
         """
-        kwargs0 = {'color':'gray', 'linewidth':1.5, 'zorder':10}
+        kwargs0 = {'color':'gray', 'linewidth':1.5,
+                   'linestyle':'-', 'zorder':10}
         if include_chan is None: include_chan = self.allchan
         for ch, axnow in enumerate(self.ax):
             if not (ch in include_chan):
