@@ -158,7 +158,7 @@ class FitsData:
         if not hasattr(self, 'x') or not hasattr(self, 'y'):
             self.gen_grid(center, rmax, xoff, yoff, dist,
                           restfrq, vsys, vmin, vmax, pv)
-        return [self.x, self.y, self.v]
+        return self.x, self.y, self.v
 
 
 def fits2data(fitsimage: str, Tb: bool = False, log: bool = False,
@@ -189,7 +189,7 @@ def fits2data(fitsimage: str, Tb: bool = False, log: bool = False,
     grid = fd.get_grid(dist=dist, restfrq=restfrq, **kwargs)
     beam = fd.get_beam(dist=dist)
     bunit = fd.get_header('BUNIT')
-    return [fd.data, grid, beam, bunit, rms]
+    return fd.data, grid, beam, bunit, rms
 
     
 def data2fits(d: list = None, h: dict = {}, crpix: list = None,

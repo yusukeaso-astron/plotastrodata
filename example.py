@@ -48,7 +48,15 @@ f.add_marker([[0.5, 0.5]])
 f.set_axis(title='PV diagram')
 f.savefig('testPV.png', show=True)
 
+# log log PV case
+f = pad(rmax=0.8 * 140, pv=True, quadrants='13', vmin=-5, vmax=5, dist=140)
+f.add_color(fitsimage=pre+'testPV.fits', Tb=True, cblabel='Tb (K)')
+f.add_contour(fitsimage=pre+'testPV.fits', colors='r', sigma=5e-3)
+f.set_axis(title='loglog PV diagram', loglog=20)
+f.savefig('testloglogPV.png', show=True)
+
 # Line profile
 profile(fitsimage=pre+'test3D.fits', radius=0.2, flux=True,
         coords=['04h04m43.045s 26d18m55.766s', '04h04m43.109s 26d18m56.704s'],
         gaussfit=True, savefig='testprofile.png', show=True, width=2)
+

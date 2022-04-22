@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse, Rectangle
+from scipy.interpolate import RectBivariateSpline as RBS
 from scipy.optimize import curve_fit
 
 from plotastrodata.other_utils import (coord2xy, xy2coord, rel2abs,
@@ -31,6 +32,24 @@ def set_rcparams(fontsize: int = 18, nancolor: str ='w') -> None:
     plt.rcParams['ytick.major.width'] = 1.5
     plt.rcParams['xtick.minor.width'] = 1.5
     plt.rcParams['ytick.minor.width'] = 1.5
+
+
+def quadrantmean(c: list, x: list, y: list, quadrants: str ='13'):
+    """Take mean between 1st and 3rd (or 2nd and 4th) quadrants.
+    """
+    dx, dy = x[1] - x[0], y[1] - y[0]
+    nx = int(np.floor(max(np.abs(x[0]), np.abs(x[-1])) / dx))
+    ny = int(np.floor(max(np.abs(y[0]), np.abs(y[-1])) / dy))
+    xnew = np.linspace(-nx * dx, nx * dx, 2 * nx + 1)
+    ynew = np.linspace(-ny * dy, ny * dy, 2 * ny + 1)
+    if quadrants == '13':
+        cnew = RBS(y, x, c)(ynew, xnew)
+    elif quadrants == '24':
+        cnew = RBS(y, -x, c)(ynew, xnew)
+    else:
+        print('quadrants must be \'13\' or \'24\'.')
+    cnew = (cnew + cnew[::-1, ::-1]) / 2.
+    return cnew[ny:, nx:], xnew[nx:], ynew[ny:]
 
 
 class PlotAstroData():
@@ -66,7 +85,7 @@ class PlotAstroData():
                  center: str = None, rmax: float = 1e10, dist: float = 1.,
                  xoff: float = 0, yoff: float = 0,
                  xflip: bool = True, yflip: bool = False,
-                 pv : bool = False,
+                 pv: bool = False, quadrants: str = None,
                  fontsize: int = None, nancolor: str = 'w',
                  figsize: tuple =None, fig=None, ax=None) -> None:
         """Set up common parameters.
@@ -107,6 +126,8 @@ class PlotAstroData():
             yflip (bool, optional):
                 True means bottom is positive y. Defaults to False.
             pv (bool, optional): Mode for PV diagram. Defaults to False.
+            quadrants (str, optional): '13' or '24'. Quadrants to take mean.
+                None means not taking mean. Defaults to None.
             fontsize (int, optional): rc_Params['font.size'].
                 None means 18 (2D) or 12 (3D). Defaults to None.
             nancolor (str, optional):
@@ -141,7 +162,7 @@ class PlotAstroData():
             n = ch // (nrows*ncols)
             i = (ch - n*nrows*ncols) // ncols
             j = ch % ncols
-            return [n, i, j]
+            return n, i, j
         if fontsize is None:
             fontsize=18 if nv == 1 else 12
         set_rcparams(fontsize=fontsize, nancolor=nancolor)
@@ -166,9 +187,15 @@ class PlotAstroData():
         self.ax = ax
         self.xdir = xdir = -1 if xflip else 1
         self.ydir = ydir = -1 if yflip else 1
-        self.xlim = xlim = [xoff - xdir*rmax, xoff + xdir*rmax]
-        self.ylim = ylim = [yoff - ydir*rmax, yoff + ydir*rmax]
+        xlim = [xoff - xdir*rmax, xoff + xdir*rmax]
+        ylim = [yoff - ydir*rmax, yoff + ydir*rmax]
         vlim = [vmin, vmax]
+        if pv: xlim = np.sort(xlim)
+        if quadrants is not None:
+            xlim = [0, rmax]
+            vlim = [0, min(vmax - vsys, vsys - vmin)]
+        self.xlim = xlim
+        self.ylim = ylim
         if pv: self.ylim = ylim = vlim
         self.rmax = rmax
         self.center = center
@@ -178,6 +205,7 @@ class PlotAstroData():
         self.allchan = np.arange(nchan)
         self.bottomleft = nij2ch(np.arange(npages), nrows - 1, 0)
         self.pv = pv
+        self.quadrants = quadrants
 
         def pos2xy(poslist: list = []) -> list:
             """Text or relative to absolute coordinates.
@@ -199,7 +227,7 @@ class PlotAstroData():
                     x[i], y[i] = (coord2xy(p)-coord2xy(center)) * 3600.
                 else:
                     x[i], y[i] = rel2abs(*p, xlim, ylim)
-            return [x, y]
+            return x, y
         self.pos2xy = pos2xy
 
         def skipfill(c: list, skip: int = 1) -> list:
@@ -508,6 +536,8 @@ class PlotAstroData():
         if fitsimage is not None:
             c, (x, y), (bmaj, bmin, bpa), bunit, rms \
                 = self.readfits(fitsimage, Tb, sigma, center, restfrq)
+        if self.quadrants is not None:
+            c, x, y = quadrantmean(c, x, y, self.quadrants)
         c = c * cfactor
         self.rms = rms
         if log: c = np.log10(c.clip(c[c > 0].min(), None))
@@ -603,6 +633,8 @@ class PlotAstroData():
             c, (x, y), (bmaj, bmin, bpa), _, rms \
                 = self.readfits(fitsimage, Tb, sigma, center, restfrq)
         self.rms = rms
+        if self.quadrants is not None:
+            c, x, y = quadrantmean(c, x, y, self.quadrants)
         x, y = x[::skip], y[::skip]
         c = self.skipfill(c, skip)
         for axnow, cnow in zip(self.ax, c):
@@ -716,7 +748,7 @@ class PlotAstroData():
                  xticklabels: list = None, yticklabels: list= None,
                  xlabel: str = None, ylabel: str = None,
                  grid: dict = None, title: dict = None,
-                 samexy: bool = True) -> None:
+                 samexy: bool = True, loglog: int = None) -> None:
         """Use ax.set_* of matplotlib.
 
         Args:
@@ -737,28 +769,37 @@ class PlotAstroData():
                 Defaults to None.
             samexy (bool, optional):
                 True supports same ticks between x and y. Defaults to True.
+            loglog (float, optional):
+                If a float is given, plot on a log-log plane, and
+                xlim=(xmax / loglog, xmax) and so does ylim. Defaults to None.
         """
         if self.pv:
             if xlabel is None:
-                xlabel = 'Offset ' + '(arcsec)' if self.dist == 1 else '(au)'
-            if ylabel is None: ylabel = r'Velocity (km s$^{-1})$'
+                xlabel = 'Offset ' + ('(arcsec)' if self.dist == 1 else '(au)')
+            if ylabel is None:
+                ylabel = r'Velocity (km s$^{-1})$'
             samexy = False
         else:
             if xlabel is None:
                 xlabel = 'R.A. ' + '(arcsec)' if self.dist == 1 else '(au)'
             if ylabel is None:
                 ylabel = 'Dec. ' + '(arcsec)' if self.dist == 1 else '(au)'
-        if xticklabels is None and xticks is not None:
-                xticklabels = [str(t) for t in xticks]
-        if yticklabels is None and xticks is not None:
-                yticklabels = [str(t) for t in yticks]
         for ch, axnow in enumerate(self.ax):
             if samexy:
                 axnow.set_xticks(axnow.get_yticks())
                 axnow.set_yticks(axnow.get_xticks())
+            if samexy or loglog is not None:
                 axnow.set_aspect(1)
-            if xticks is not None: axnow.set_xticks(xticks)
-            if yticks is not None: axnow.set_yticks(yticks)
+            if loglog is not None:
+                axnow.set_xscale('log')
+                axnow.set_yscale('log')
+            if xticks is None: xticks = axnow.get_xticks()
+            axnow.set_xticks(xticks)
+            if yticks is None: yticks = axnow.get_yticks()
+            axnow.set_yticks(yticks)
+            if loglog is not None:
+                xticklabels = [str(t if t < 0 else int(t)) for t in xticks]
+                yticklabels = [str(t if t < 0 else int(t)) for t in yticks]
             if xticksminor is not None:
                 if type(xticksminor) is int:
                     t = axnow.get_xticks()
@@ -790,6 +831,9 @@ class PlotAstroData():
                 axnow.set_ylabel('')
             axnow.set_xlim(*self.xlim)
             axnow.set_ylim(*self.ylim)
+            if loglog is not None:
+                axnow.set_xlim(self.xlim[1] / loglog, self.xlim[1])
+                axnow.set_ylim(self.ylim[1] / loglog, self.ylim[1])
             if grid is not None:
                 axnow.grid(**({} if grid == True else grid))
             if len(self.ax) == 1:
@@ -861,7 +905,7 @@ class PlotAstroData():
             decimals = max(decimals, 0)
             ticklabels = [f'{int(i):02d}{sec}' + f'{j:.{decimals:d}f}'[2:]
                           for i, j in zip(*ticklabelvalues)]
-            return [ticks, ticksminor, ticklabels]
+            return ticks, ticksminor, ticklabels
         xticks, xticksminor, xticklabels = makegrid(ra_s, 'ra')
         xticklabels[3] = ra_hm + xticklabels[3]
         yticks, yticksminor, yticklabels = makegrid(dec_s, 'dec')
@@ -921,9 +965,6 @@ class PlotAstroData():
             fig.savefig(filename.replace('.' + ext, ver + '.' + ext),
                         **dict(kwargs0, **kwargs))
         if show:
-            for axnow in self.ax:
-                axnow.set_xlim(*self.xlim)
-                axnow.set_ylim(*self.ylim)
             plt.show()
         plt.close()
 
@@ -936,7 +977,7 @@ class PlotAstroData():
         if len(self.ax) > 1:
             print('get_figax is not supported with channel maps')
             return -1
-        return [self.fig, self.ax[0]]
+        return self.fig, self.ax[0]
 
 
 def profile(fitsimage: str = '', Tb: bool = False,
@@ -1085,7 +1126,7 @@ def profile(fitsimage: str = '', Tb: bool = False,
             ax[i].set_title(**title[i])
         ax[i].hlines([0], xmin, xmax, linestyle='dashed', color='k')
     if getfigax:
-        return [fig, ax]
+        return fig, ax
     fig.tight_layout()
     if savefig is not None:
         if type(savefig) is str: savefig = {'fname':savefig} 
