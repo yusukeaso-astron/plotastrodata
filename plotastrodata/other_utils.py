@@ -136,7 +136,7 @@ def estimate_rms(data: list, sigma: float or str) -> float:
 
 def trim(data: list = None, x: list = None, y: list = None, v: list = None,
          xlim: list = None, ylim: list = None, vlim: list = None,
-         pv: bool = False) -> list:
+         pv: bool = False) -> tuple:
     """Trim 2D or 3D data by given coordinates and their limits.
 
     Args:
@@ -149,7 +149,7 @@ def trim(data: list = None, x: list = None, y: list = None, v: list = None,
         data (list, optional): 2D or 3D array. Defaults to None.
 
     Returns:
-        list: Trimmed [data, [x,y,v]]. 
+        tuple: Trimmed ([data, [x,y,v]). 
     """
     xout, yout, vout, dataout = x, y, v, data
     if not (x is None or xlim is None):
@@ -178,4 +178,4 @@ def trim(data: list = None, x: list = None, y: list = None, v: list = None,
             dataout = d[j0:j1+1, i0:i1+1]
         else:
             dataout = d[k0:k1+1, j0:j1+1, i0:i1+1]
-    return [dataout, [xout, yout, vout]]        
+    return dataout, [xout, yout, vout]

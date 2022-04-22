@@ -49,7 +49,7 @@ class FitsData:
             self.gen_hdu()
         self.header = self.hdu.header
 
-    def get_header(self, key: str = None) -> int or float:
+    def get_header(self, key: str = None) -> dict or float:
         if not hasattr(self, 'header'):
             self.gen_header()
         if key is None:
@@ -68,10 +68,10 @@ class FitsData:
         bpa = 0 if bpa is None else bpa
         self.bmaj, self.bmin, self.bpa = bmaj * dist, bmin * dist, bpa
 
-    def get_beam(self, dist: float = 1.) -> list:
+    def get_beam(self, dist: float = 1.) -> tuple:
         if not hasattr(self, 'bmaj'):
             self.gen_beam(dist)
-        return [self.bmaj, self.bmin, self.bpa]
+        return self.bmaj, self.bmin, self.bpa
 
     def gen_data(self, Tb: bool = False, log: bool = False,
                  drop: bool = True, restfrq: float = None) -> None:
@@ -154,7 +154,7 @@ class FitsData:
                  xoff: float = 0., yoff: float = 0., dist: float = 1.,
                  restfrq: float = None, vsys: float = 0.,
                  vmin: float = -1e10, vmax: float = 1e10,
-                 pv: bool = False) -> None:
+                 pv: bool = False) -> tuple:
         if not hasattr(self, 'x') or not hasattr(self, 'y'):
             self.gen_grid(center, rmax, xoff, yoff, dist,
                           restfrq, vsys, vmin, vmax, pv)
@@ -163,7 +163,7 @@ class FitsData:
 
 def fits2data(fitsimage: str, Tb: bool = False, log: bool = False,
               dist: float = 1., sigma: str = None,
-              restfrq: float = None, **kwargs) -> list:
+              restfrq: float = None, **kwargs) -> tuple:
     """Extract data from a fits file.
 
     Args:
@@ -181,7 +181,7 @@ def fits2data(fitsimage: str, Tb: bool = False, log: bool = False,
             Used for velocity and brightness temperature. Defaults to None.
 
     Returns:
-        list: [data, (x, y, v), (bmaj, bmin, bpa), bunit, rms]
+        tuple: (data, (x, y, v), (bmaj, bmin, bpa), bunit, rms)
     """
     fd = FitsData(fitsimage)
     fd.gen_data(Tb=Tb, log=log, drop=True, restfrq=restfrq)

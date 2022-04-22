@@ -34,7 +34,7 @@ def set_rcparams(fontsize: int = 18, nancolor: str ='w') -> None:
     plt.rcParams['ytick.minor.width'] = 1.5
 
 
-def quadrantmean(c: list, x: list, y: list, quadrants: str ='13'):
+def quadrantmean(c: list, x: list, y: list, quadrants: str ='13') -> tuple:
     """Take mean between 1st and 3rd (or 2nd and 4th) quadrants.
     """
     dx, dy = x[1] - x[0], y[1] - y[0]
@@ -207,7 +207,7 @@ class PlotAstroData():
         self.pv = pv
         self.quadrants = quadrants
 
-        def pos2xy(poslist: list = []) -> list:
+        def pos2xy(poslist: list = []) -> tuple:
             """Text or relative to absolute coordinates.
 
             Args:
@@ -215,7 +215,7 @@ class PlotAstroData():
                     Text coordinates or relative coordinates. Defaults to [].
 
             Returns:
-                list: absolute coordinates.
+                tuple: absolute coordinates.
             """
             if np.shape(poslist) == () \
                 or (np.shape(poslist) == (2,) 
@@ -252,7 +252,7 @@ class PlotAstroData():
         
         def readfits(fitsimage: str, Tb: bool = False,
                      sigma: str or float = None,
-                     center: str = None, restfrq: float = None) -> list:
+                     center: str = None, restfrq: float = None) -> tuple:
             """Use fits2data() to read a fits file.
 
             Args:
@@ -968,11 +968,11 @@ class PlotAstroData():
             plt.show()
         plt.close()
 
-    def get_figax(self) -> list:
+    def get_figax(self) -> tuple:
         """Output the external fig and ax after plotting.
 
         Returns:
-            list: [fig, ax]
+            tuple: (fig, ax)
         """
         if len(self.ax) > 1:
             print('get_figax is not supported with channel maps')
@@ -1037,15 +1037,15 @@ def profile(fitsimage: str = '', Tb: bool = False,
             True means doing Gaussian fitting. Defaults to False.
         width (int, optional): To rebin with the width. Defaults to 1.
         getfigax (bool, optional):
-            True means return [fig, ax], where ax is a list.
+            True means return (fig, ax), where ax is a list.
             Defaults to False.
         gauss_kwargs (dict, optional):
             Input dictionary for ax.plot() to show the best Gaussian.
             Defaults to {}.
             
     Returns:
-        [fig, ax], where ax is a list, if getfigax=True.
-        Otherwise, no return.
+        tuple: (fig, ax), where ax is a list, if getfigax=True.
+               Otherwise, no return.
     """
     kwargs0 = {'drawstyle':'steps-mid', 'color':'k'}
     gauss_kwargs0 = {'drawstyle':'default', 'color':'g'}
