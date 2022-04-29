@@ -87,7 +87,7 @@ class PlotAstroData():
                  xflip: bool = True, yflip: bool = False,
                  pv: bool = False, quadrants: str = None,
                  fontsize: int = None, nancolor: str = 'w',
-                 figsize: tuple =None, fig=None, ax=None) -> None:
+                 figsize: tuple = None, fig=None, ax=None) -> None:
         """Set up common parameters.
 
         Args:
