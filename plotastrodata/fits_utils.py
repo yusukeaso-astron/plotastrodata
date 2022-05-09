@@ -42,7 +42,14 @@ class FitsData:
         self.fitsimage = fitsimage
 
     def gen_hdu(self):
-        self.hdu = fits.open(self.fitsimage)[0]
+        hdu = fits.open(self.fitsimage)
+        self.hdu = hdu[0]
+        if 'BEAMS' in hdu:
+            print('Beam table found in HDU list.')
+            b = hdu['BEAMS'].data
+            area = b['BMAJ'] * b['BMIN']  # arcsec^2?
+            imed = np.nanargmin(np.abs(area - np.nanmedian(area)))
+            self.hdubeam = b['BMAJ'][imed], b['BMIN'][imed], b['BPA'][imed]
         
     def gen_header(self) -> None:
         if not hasattr(self, 'hdu'):
@@ -60,12 +67,15 @@ class FitsData:
         return None
 
     def gen_beam(self, dist: float = 1.) -> None:
-        bmaj = self.get_header('BMAJ')
-        bmin = self.get_header('BMIN')
-        bpa = self.get_header('BPA')
-        bmaj = 0 if bmaj is None else bmaj * 3600.
-        bmin = 0 if bmin is None else bmin * 3600.
-        bpa = 0 if bpa is None else bpa
+        if hasattr(self, 'hdubeam'):
+            bmaj, bmin, bpa = self.hdubeam
+        else:
+            bmaj = self.get_header('BMAJ')
+            bmin = self.get_header('BMIN')
+            bpa = self.get_header('BPA')
+            bmaj = 0 if bmaj is None else bmaj * 3600.
+            bmin = 0 if bmin is None else bmin * 3600.
+            bpa = 0 if bpa is None else bpa
         self.bmaj, self.bmin, self.bpa = bmaj * dist, bmin * dist, bpa
 
     def get_beam(self, dist: float = 1.) -> tuple:
