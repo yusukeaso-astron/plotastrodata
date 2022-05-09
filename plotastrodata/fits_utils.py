@@ -45,7 +45,7 @@ class FitsData:
         hdu = fits.open(self.fitsimage)
         self.hdu = hdu[0]
         if 'BEAMS' in hdu:
-            print('Beam table found in HDU list.')
+            print('Beam table found in HDU list. Use median beam.')
             b = hdu['BEAMS'].data
             area = b['BMAJ'] * b['BMIN']  # arcsec^2?
             imed = np.nanargmin(np.abs(area - np.nanmedian(area)))
