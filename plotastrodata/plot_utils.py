@@ -142,7 +142,7 @@ class PlotAstroData():
             fd = FitsData(fitsimage)
             _, _, v = fd.get_grid(restfrq=restfrq, vsys=vsys,
                                   vmin=vmin, vmax=vmax)
-            if center is None:
+            if center is None and not pv:
                 ra_deg = fd.get_header('CRVAL1')
                 dec_deg = fd.get_header('CRVAL2')
                 center = xy2coord([ra_deg, dec_deg])
