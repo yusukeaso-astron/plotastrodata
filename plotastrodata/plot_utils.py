@@ -539,7 +539,7 @@ class PlotAstroData():
         if self.quadrants is not None:
             c, x, y = quadrantmean(c, x, y, self.quadrants)
         c = c * cfactor
-        self.rms = rms
+        self.rms = rms * cfactor
         if log: c = np.log10(c.clip(c[c > 0].min(), None))
         if 'vmin' in kwargs:
             if log: kwargs['vmin'] = np.log10(kwargs['vmin'])
