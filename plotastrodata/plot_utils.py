@@ -471,10 +471,10 @@ class PlotAstroData():
         for ch, axnow in enumerate(self.ax):
             if not (ch in self.bottomleft):
                 continue
-            x, y = self.pos2xy([barpos[0], barpos[1] * 0.9])
+            x, y = self.pos2xy([barpos[0], barpos[1] - 0.13])
             axnow.text(x[0], y[0], label, color=color, size=fontsize,
                        ha='center', va='top', zorder=10)
-            x, y = self.pos2xy([barpos[0], barpos[1] * 1.1])
+            x, y = self.pos2xy([barpos[0], barpos[1] + 0.13])
             axnow.plot([x[0] - length/2., x[0] + length/2.], [y[0], y[0]],
                        '-', linewidth=linewidth, color=color)
     
