@@ -21,7 +21,7 @@ f.savefig('test2D.png', show=True)
 
 # 3D case
 f = pad(rmax=0.8, fitsimage=pre+'test3D.fits', vmin=-5, vmax=5, vskip=2)
-f.add_color(fitsimage=pre+'test3D.fits', log=True)
+f.add_color(fitsimage=pre+'test3D.fits', stretch='log')
 f.add_contour(fitsimage=pre+'test3D.fits', colors='r')
 f.add_contour(fitsimage=pre+'test2D.fits', colors='b')
 f.add_segment(ampfits=pre+'test2Damp.fits',
