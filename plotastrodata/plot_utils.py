@@ -607,7 +607,7 @@ class PlotAstroData():
                 if stretch == 'log':
                     ticklin = 10**t
                 elif stretch == 'asinh':
-                    ticklin = np.sinh(t)
+                    ticklin = np.sinh(t) * stretchscale
                 cb.set_ticklabels([f'{d:{cbformat[1:]}}' for d in ticklin])
         if show_beam and not self.pv:
             self.add_beam(bmaj, bmin, bpa, beamcolor)
