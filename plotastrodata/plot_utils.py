@@ -873,6 +873,9 @@ class PlotAstroData():
                   + 'with rmax>50 yet.')
         ra_h, ra_m, ra_s, _, dec_d, dec_m, dec_s, _ \
             = re.split('[hdms ]', self.center)
+        dec_sign = np.sign((dec_d := int(dec_d)))
+        dec_d = str(dec_d // dec_sign)
+        dec_sign = r'$-$' if dec_sign < 0 else r'$+$'
         log2r = np.log10(2. * self.rmax)
         n = np.array([-3, -2, -1, 0, 1, 2, 3])
         def makegrid(second, minute, mode):
@@ -906,9 +909,6 @@ class PlotAstroData():
         xticks, xticksminor, xticklabels, ra_m = makegrid(ra_s, ra_m, 'ra')
         yticks, yticksminor, yticklabels, dec_m = makegrid(dec_s, dec_m, 'dec')
         ra_hm = ra_h + r'$^{\rm h}$' + ra_m + r'$^{\rm m}$'
-        dec_sign = np.sign((dec_d := int(dec_d)))
-        dec_d = str(dec_d // dec_sign)
-        dec_sign = r'$-$' if dec_sign < 0 else r'$+$'
         dec_dm = dec_sign + dec_d + r'$^{\circ}$' + dec_m + r'$^{\prime}$'
         xticklabels[3] = ra_hm + xticklabels[3]
         yticklabels[3] = dec_dm + '\n' + yticklabels[3]
