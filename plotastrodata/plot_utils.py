@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse, Rectangle
 from scipy.interpolate import RectBivariateSpline as RBS
 from scipy.optimize import curve_fit
+from PIL import Image
 
 from plotastrodata.other_utils import (coord2xy, xy2coord, rel2abs,
                                        estimate_rms, trim, listing)
