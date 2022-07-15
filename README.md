@@ -23,6 +23,7 @@ export PYTHONPATH=${PYTHONPATH}:/YOUR_PATH_TO/plotastrodata
  
 plotastrodata can do the following things.
 * Make 3D channel maps or 2D images including position-velocity diagrams.
+* Color scale can be linear, log, and asinh.
 * Make a figure of line profiles with Gaussian fitting.
 * Plot images to externally given fig and ax (2D images only).
 * Combine color, contour and segment maps using images with different spatial grids.
