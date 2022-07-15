@@ -533,6 +533,10 @@ class PlotAstroData():
             bpa (float, optional): Beam position angle. Defaults to 0..
         """
         kwargs0 = {'cmap':'cubehelix', 'alpha':1, 'zorder':1}
+        if 'log' in kwargs.keys() and kwargs['log']:
+            del kwargs['log']
+            stretch == 'log'
+            print('WARNING: log=True was replaced to stretch=\'log\'.')
         if center == 'common':
             center = self.center
         if c is not None:
