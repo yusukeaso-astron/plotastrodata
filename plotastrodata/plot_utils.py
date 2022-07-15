@@ -482,7 +482,8 @@ class PlotAstroData():
                   x: list = None, y: list = None, skip: int = 1,
                   v: list = None, c: list = None,
                   center: str = 'common', restfrq: float = None,
-                  Tb: bool = False, log: bool = False,
+                  Tb: bool = False, stretch: str = 'linear',
+                  stretchscale: float = None,
                   cfactor: float = 1, sigma: float or str = 'out',
                   show_cbar: bool = True, cblabel: str = None,
                   cbformat: float = '%.1e', cbticks: list = None,
@@ -506,8 +507,12 @@ class PlotAstroData():
                 Used for velocity and brightness T. Defaults to None.
             Tb (bool, optional):
                 True means the mapped data are brightness T. Defaults to False.
-            log (bool, optional):
-                True means the mapped data are logarithmic. Defaults to False.
+            stretch (str, optional):
+                'log' means the mapped data are logarithmic.
+                'asinh' means the mapped data are arc sin hyperbolic.
+                Defaults to 'linear'.
+            stretchscale (float, optional):
+                color scale is asinh(data / stretchscale). Defaults to None.
             cfactor (float, optional):
                 Output data times cfactor. Defaults to 1.
             sigma (float or str, optional):
@@ -541,13 +546,26 @@ class PlotAstroData():
         c = c * cfactor
         rms = rms * cfactor
         self.rms = rms
-        if log: c = np.log10(c.clip(c[c > 0].min(), None))
+        if stretchscale is None: stretchscale = rms
+        if stretch == 'log':
+            c = np.log10(c.clip(c[c > 0].min(), None))
+        elif stretch == 'asinh':
+            c = np.arcsinh(c / stretchscale)
         if 'vmin' in kwargs:
-            if log: kwargs['vmin'] = np.log10(kwargs['vmin'])
+            if stretch == 'log':
+                kwargs['vmin'] = np.log10(kwargs['vmin'])
+            elif stretch == 'asinh':
+                kwargs['vmin'] = np.arcsinh(kwargs['vmin'] / stretchscale)
         else:
-            kwargs['vmin'] = np.log10(rms) if log else np.nanmin(c)
+            if stretch == 'log':
+                kwargs['vmin'] = np.log10(rms)
+            else:
+                kwargs['vmin'] = np.nanmin(c)
         if 'vmax' in kwargs:
-            if log: kwargs['vmax'] = np.log10(kwargs['vmax'])
+            if stretch == 'log':
+                kwargs['vmax'] = np.log10(kwargs['vmax'])
+            elif stretch == 'asinh':
+                kwargs['vmax'] = np.arcsinh(kwargs['vmax'] / stretchscale)
         else:
             kwargs['vmax'] = np.nanmax(c)
         c = c.clip(kwargs['vmin'], kwargs['vmax'])
@@ -575,14 +593,22 @@ class PlotAstroData():
             font = mpl.font_manager.FontProperties(size=16)
             cb.ax.yaxis.label.set_font_properties(font)
             if cbticks is not None:
-                cb.set_ticks(np.log10(cbticks) if log else cbticks)
+                if stretch == 'log':
+                    cbticks = np.log10(cbticks)
+                elif stretch == 'asinh':
+                    cbticks = np.arcsinh(cbticks / stretchscale)
+                cb.set_ticks(cbticks)
             if cbticklabels is not None:
                 cb.set_ticklabels(cbticklabels)
-            elif log:
+            elif stretch in ['log', 'asinh']:
                 t = cb.get_ticks()
                 t = t[(kwargs['vmin'] < t) * (t < kwargs['vmax'])]
                 cb.set_ticks(t)
-                cb.set_ticklabels([f'{d:{cbformat[1:]}}' for d in 10**t])
+                if stretch == 'log':
+                    ticklin = 10**t
+                elif stretch == 'asinh':
+                    ticklin = np.sinh(t)
+                cb.set_ticklabels([f'{d:{cbformat[1:]}}' for d in ticklin])
         if show_beam and not self.pv:
             self.add_beam(bmaj, bmin, bpa, beamcolor)
 
