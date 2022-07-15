@@ -904,7 +904,7 @@ class PlotAstroData():
                           for i, j in zip(*ticklabelvalues)]
             return ticks, ticksminor, ticklabels, minute
         xticks, xticksminor, xticklabels, ra_m = makegrid(ra_s, ra_m, 'ra')
-        yticks, yticksminor, yticklabels, dec_m = makegrid(dec_s, ra_m, 'dec')
+        yticks, yticksminor, yticklabels, dec_m = makegrid(dec_s, dec_m, 'dec')
         ra_hm = ra_h + r'$^{\rm h}$' + ra_m + r'$^{\rm m}$'
         dec_sign = np.sign((dec_d := int(dec_d)))
         dec_d = str(dec_d // dec_sign)
