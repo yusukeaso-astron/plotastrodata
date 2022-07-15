@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse, Rectangle
 from scipy.interpolate import RectBivariateSpline as RBS
 from scipy.optimize import curve_fit
+from PIL import Image
 
 from plotastrodata.other_utils import (coord2xy, xy2coord, rel2abs,
                                        estimate_rms, trim, listing)
@@ -773,6 +774,120 @@ class PlotAstroData():
             axnow.quiver(x, y, unow, vnow, **dict(kwargs0, **kwargs))
         if show_beam and not self.pv:
             self.add_beam(bmaj, bmin, bpa, beamcolor)
+
+    def add_rgb(self, fitsimage: list = None,
+                x: list = None, y: list = None, skip: int = 1,
+                v: list = None, c: list = None,
+                center: str = 'common',
+                restfrq: list = [None, None, None],
+                Tb: list = [False, False, False],
+                stretch: list = ['linear', 'linear', 'linear'],
+                stretchscale: list = None,
+                sigma: list = ['out', 'out', 'out'],
+                show_beam: bool = True,
+                beamcolor: list = ['red', 'green', 'blue'],
+                bmaj: list = [0, 0, 0], bmin: list = [0, 0, 0],
+                bpa: list = [0, 0, 0], **kwargs) -> None:
+        """Use PIL.Image and imshow of matplotlib.
+        
+        A three-element array ([red, green, blue]) is supposed for
+        all arguments, except for skip and show_beam,
+        including vmax and vmin.
+
+        Args:
+            fitsimage (list, optional): Input fits name. Defaults to None.
+            x (list, optional): 1D array. Defaults to None.
+            y (list, optional): 1D array. Defaults to None.
+            skip (int, optional): Spatial pixel skip. Defaults to 1.
+            v (list, optional): 1D array. Defaults to None.
+            c (list, optional): 2D or 3D array. Defaults to None.
+            center (str, optional):
+                Text coordinates. 'common' means initialized value.
+                Defaults to 'common'.
+            restfrq (float, optional):
+                Used for velocity and brightness T. Defaults to None.
+            Tb (bool, optional):
+                True means the mapped data are brightness T. Defaults to False.
+            stretch (str, optional):
+                'log' means the mapped data are logarithmic.
+                'asinh' means the mapped data are arc sin hyperbolic.
+                Defaults to 'linear'.
+            stretchscale (float, optional):
+                color scale is asinh(data / stretchscale). Defaults to None.
+            sigma (float or str, optional):
+                Noise level or method for measuring it. Defaults to 'out'.
+            show_beam (bool, optional): Defaults to True.
+            beamcolor (str, optional): Matplotlib color. Defaults to 'gray'.
+            bmaj (float, optional): Beam major axis. Defaults to 0..
+            bmin (float, optional): Beam minor axis. Defaults to 0..
+            bpa (float, optional): Beam position angle. Defaults to 0..
+        """
+        if center == 'common':
+            center = [self.center, self.center, self.center]
+        if c is not None:
+            bunit, rms = [None] * 3, [None] * 3
+            for i in range(3):
+                bunit[i], rms[i] = '', estimate_rms(c[i], sigma[i])
+                c[i], (x[i], y[i]) = self.readdata(c[i], x[i], y[i], v[i])    
+        if fitsimage is not None:
+            c, x, y = [None] * 3, [None] * 3, [None] * 3
+            bunit, rms = [None] * 3, [None] * 3
+            bmaj, bmin, bpa = [None] * 3, [None] * 3, [None] * 3
+            for i in range(3):
+                c[i], (x[i], y[i]), (bmaj[i], bmin[i], bpa[i]), bunit[i], rms[i] \
+                    = self.readfits(fitsimage[i], Tb[i], sigma[i], center[i], restfrq[i])
+        if self.quadrants is not None:
+            for i in range(3):
+                c[i], x[i], y[i] = quadrantmean(c[i], x[i], y[i], self.quadrants)
+        self.rms = rms
+        for i in range(3):
+            if stretch[i] == 'log':
+                c[i] = np.log10(c[i].clip(c[i][c[i] > 0].min(), None))
+            elif stretch[i] == 'asinh':
+                c[i] = np.arcsinh(c[i] / stretchscale[i])
+        if 'vmin' in kwargs:
+            for i in range(3):
+                if stretch[i] == 'log':
+                    kwargs['vmin'][i] = np.log10(kwargs['vmin'][i])
+                elif stretch[i] == 'asinh':
+                    kwargs['vmin'][i] = np.arcsinh(kwargs['vmin'][i] / stretchscale[i])
+        else:
+            kwargs['vmin'] = [None, None, None]
+            for i in range(3):
+                if stretch[i] == 'log':
+                    kwargs['vmin'][i] = np.log10(rms[i])
+                else:
+                    kwargs['vmin'][i] = max(np.nanmin(c[i]), 0)
+        if 'vmax' in kwargs:
+            for i in range(3):
+                if stretch[i] == 'log':
+                    kwargs['vmax'][i] = np.log10(kwargs['vmax'][i])
+                elif stretch[i] == 'asinh':
+                    kwargs['vmax'][i] = np.arcsinh(kwargs['vmax'][i])
+        else:
+            kwargs['vmax'] = [np.nanmax(c[i]) for i in range(3)]
+        for i in range(3):
+            c[i] = c[i].clip(kwargs['vmin'][i], kwargs['vmax'][i])
+            c[i] = (c[i] - kwargs['vmin'][i]) \
+                   / (kwargs['vmax'][i] - kwargs['vmin'][i]) * 255
+            x[i], y[i] = x[i][::skip], y[i][::skip]
+            c[i] = self.skipfill(c[i], skip)
+        if not (np.shape(c[0]) == np.shape(c[1]) == np.shape(c[2])):
+            print('RGB shapes mismatch. Skip add_rgb.')
+            return -1
+
+        for axnow, red, green, blue in zip(self.ax, c[0], c[1], c[2]):
+            size = np.shape(red)
+            im = Image.new('RGB', size, (128, 128, 128))
+            rgb = [red, green, blue]
+            for j in range(size[0]):
+                for i in range(size[1]):
+                    value = tuple(int(a[j, i]) for a in rgb)
+                    im.putpixel((i, j), value)
+            axnow.imshow(im, extent=[x[0][0], x[0][-1], y[0][0], y[0][-1]])
+        if show_beam and not self.pv:
+            for i in range(3):
+                self.add_beam(bmaj[i], bmin[i], bpa[i], beamcolor[i])
     
     def set_axis(self, xticks: list = None, yticks: list = None,
                  xticksminor: list = None, yticksminor: list = None,

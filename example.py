@@ -60,3 +60,9 @@ profile(fitsimage=pre+'test3D.fits', radius=0.2, flux=True,
         coords=['04h04m43.045s 26d18m55.766s', '04h04m43.109s 26d18m56.704s'],
         gaussfit=True, savefig='testprofile.png', show=True, width=2)
 
+# RGB case
+f = pad(rmax=0.8, center='04h04m43.07s 26d18m56.20s')
+f.add_rgb(fitsimage=[pre+'test'+c+'.fits' for c in ['R', 'G', 'B']])
+f.add_scalebar(length=50 / 140, label='50 au')
+f.set_axis_radec(nticksminor=5, title={'label':'2D image', 'loc':'right'})
+f.savefig('test2Drgb.png', show=True)

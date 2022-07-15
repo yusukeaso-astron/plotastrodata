@@ -26,7 +26,7 @@ plotastrodata can do the following things.
 * Color scale can be linear, log, and asinh.
 * Make a figure of line profiles with Gaussian fitting.
 * Plot images to externally given fig and ax (2D images only).
-* Combine color, contour and segment maps using images with different spatial grids.
+* Combine color, contour, segment, and RGB maps using images with different spatial grids.
 * Input fits files or 2D/3D numpy arrays.
 * Select the R.A.-Dec. style or the offset style as the x/y tick labels.
 * Fill channel maps with a 2D image.
@@ -38,6 +38,7 @@ plotastrodata can do the following things.
 * astropy
 * matplotlib
 * numpy
+* PIL (only for RGB figures)
 * re
 * scipy
 * warnings
