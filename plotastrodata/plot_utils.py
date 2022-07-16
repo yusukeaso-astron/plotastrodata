@@ -537,7 +537,7 @@ class PlotAstroData():
         if 'log' in kwargs.keys() and kwargs['log']:
             del kwargs['log']
             stretch == 'log'
-            print('WARNING: log=True was replaced to stretch=\'log\'.')
+            print('WARNING: log=True was replaced by stretch=\'log\'.')
         if center == 'common':
             center = self.center
         if c is not None:
