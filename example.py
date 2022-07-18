@@ -63,6 +63,10 @@ profile(fitsimage=pre+'test3D.fits', radius=0.2, flux=True,
 # RGB case
 f = pad(rmax=0.8, center='04h04m43.07s 26d18m56.20s')
 f.add_rgb(fitsimage=[pre+'test'+c+'.fits' for c in ['R', 'G', 'B']])
+f.add_contour(fitsimage=pre+'test2D_2.fits', colors='r', sigma=5e-3)
+f.add_contour(fitsimage=pre+'test2D.fits', skip=2, sigma=5e-3)
+f.add_segment(ampfits=pre+'test2Damp.fits',
+              angfits=pre+'test2Dang.fits', skip=3)
 f.add_scalebar(length=50 / 140, label='50 au')
 f.add_text([0.3, 0.3], slist='text')
 f.add_marker('04h04m43.07s 26d18m56.20s')
