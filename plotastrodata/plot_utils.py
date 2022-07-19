@@ -1137,6 +1137,7 @@ def profile(fitsimage: str = '', Tb: bool = False,
             xticklabels: list = None, yticklabels: list = None,
             xticksminor: list = None, yticksminor: list = None,
             xlabel: str = r'Velocity (km s$^{-1}$)', ylabel: list = None,
+            nrows: int = 0, ncols: int = 1,
             text: list = None,  savefig: dict = None, show: bool = True,
             gaussfit: bool = False, width: int = 1,
             getfigax: bool = False, gauss_kwargs: dict = {},
@@ -1174,6 +1175,8 @@ def profile(fitsimage: str = '', Tb: bool = False,
         yticksminor (list, optional): Defaults to None.
         xlabel (str, optional): Defaults to r'Velocity (km s$^{-1}$)'.
         ylabel (list, optional): Defaults to None.
+        nrows (int, optional): Defaults to 0.
+        ncols (int, optional): Defaults to 1.
         text (list, optional):
             List of input dictionary for ax.text(). Defaults to None.
         savefig (dict, optional):
@@ -1245,11 +1248,12 @@ def profile(fitsimage: str = '', Tb: bool = False,
     def gauss(x, p, c, w):
         return p * np.exp(-4. * np.log(2.) * ((x - c) / w)**2)
     set_rcparams(20, 'w')
-    fig = plt.figure(figsize=(6, 3 * nprof))
+    if ncols == 1: nrows = nprof
+    fig = plt.figure(figsize=(6 * ncols, 3 * nrows))
     ax = np.empty(nprof, dtype='object')
     for i in range(nprof):
-        sharex = ax[i - 1] if i > 0 else None
-        ax[i] = fig.add_subplot(nprof, 1, i + 1, sharex=sharex)
+        sharex = None if i % nrows == 0 else ax[i - 1]
+        ax[i] = fig.add_subplot(nrows, ncols, i + 1, sharex=sharex)
         if gaussfit:
             popt, pcov = curve_fit(gauss, v, prof[i], bounds=bounds)
             print('Gauss (peak, center, FWHM):', popt)
@@ -1257,16 +1261,19 @@ def profile(fitsimage: str = '', Tb: bool = False,
             ax[i].plot(v, gauss(v, *popt),
                        **dict(gauss_kwargs0, **gauss_kwargs))
         ax[i].plot(v, prof[i], **dict(kwargs0, **kwargs))
-        if i == nprof - 1: ax[i].set_xlabel(xlabel)
+        ax[i].set_xticklabels([])
+        if i % nrows == nrows - 1:
+            ax[i].set_xlabel(xlabel)
+            if xticks is not None: ax[i].set_xticks(xticks)
+            if xticklabels is not None: ax[i].set_xticklabels(xticklabels)
+            if xticksminor is not None:
+                ax[i].set_xticks(xticksminor, minor=True)
         ax[i].set_ylabel(ylabel[i])
         ax[i].set_xlim(xmin, xmax)
         ax[i].set_ylim(ymin, ymax)
         if text is not None: ax[i].text(**text[i])
-        if xticks is not None: ax[i].set_xticks(xticks)
         if yticks is not None: ax[i].set_yticks(yticks)
-        if xticklabels is not None: ax[i].set_xticklabels(xticklabels)
         if yticklabels is not None: ax[i].set_yticklabels(yticklabels)
-        if xticksminor is not None: ax[i].set_xticks(xticksminor, minor=True)
         if yticksminor is not None: ax[i].set_yticks(yticksminor, minor=True)
         if title is not None:
             if type(title[i]) is str: title[i] = {'label':title[i]}
