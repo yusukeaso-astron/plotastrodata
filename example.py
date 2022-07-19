@@ -63,6 +63,15 @@ profile(fitsimage=pre+'test3D.fits', radius=0.2, flux=True,
 # RGB case
 f = pad(rmax=0.8, center='04h04m43.07s 26d18m56.20s')
 f.add_rgb(fitsimage=[pre+'test'+c+'.fits' for c in ['R', 'G', 'B']])
+f.add_contour(fitsimage=pre+'test2D_2.fits', colors='r', sigma=5e-3)
+f.add_contour(fitsimage=pre+'test2D.fits', skip=2, sigma=5e-3)
+f.add_segment(ampfits=pre+'test2Damp.fits',
+              angfits=pre+'test2Dang.fits', skip=3)
 f.add_scalebar(length=50 / 140, label='50 au')
-f.set_axis_radec(nticksminor=5, title={'label':'2D image', 'loc':'right'})
+f.add_text([0.3, 0.3], slist='text')
+f.add_marker('04h04m43.07s 26d18m56.20s')
+f.add_line([[0.5, 0.5], [0.6, 0.6]], anglelist=[60, 60], rlist=[0.5, 0.5])
+f.add_arrow([0.4, 0.4], anglelist=150, rlist=0.5)
+f.add_region('ellipse', [0.2, 0.8], majlist=0.4, minlist=0.2, palist=45)
+f.set_axis_radec(nticksminor=5, title={'label':'2D RGB', 'loc':'right'})
 f.savefig('test2Drgb.png', show=True)
