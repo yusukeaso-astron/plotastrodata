@@ -1252,7 +1252,7 @@ def profile(fitsimage: str = '', Tb: bool = False,
     fig = plt.figure(figsize=(6 * ncols, 3 * nrows))
     ax = np.empty(nprof, dtype='object')
     for i in range(nprof):
-        sharex = None if i % nrows == 0 else ax[i - 1]
+        sharex = None if i < nrows - 1 else ax[i - 1]
         ax[i] = fig.add_subplot(nrows, ncols, i + 1, sharex=sharex)
         if gaussfit:
             popt, pcov = curve_fit(gauss, v, prof[i], bounds=bounds)
@@ -1268,7 +1268,7 @@ def profile(fitsimage: str = '', Tb: bool = False,
             if xticksminor is not None:
                 ax[i].set_xticks(xticksminor, minor=True)
         else:
-            ax[i].set_xticklabels([])
+            plt.setp(ax[i].get_xticklabels(), visible=False)
         ax[i].set_ylabel(ylabel[i])
         ax[i].set_xlim(xmin, xmax)
         ax[i].set_ylim(ymin, ymax)
