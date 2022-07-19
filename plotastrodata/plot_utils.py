@@ -1261,13 +1261,14 @@ def profile(fitsimage: str = '', Tb: bool = False,
             ax[i].plot(v, gauss(v, *popt),
                        **dict(gauss_kwargs0, **gauss_kwargs))
         ax[i].plot(v, prof[i], **dict(kwargs0, **kwargs))
-        ax[i].set_xticklabels([])
-        if i % nrows == nrows - 1:
+        if i > nprof - ncols - 1:
             ax[i].set_xlabel(xlabel)
             if xticks is not None: ax[i].set_xticks(xticks)
             if xticklabels is not None: ax[i].set_xticklabels(xticklabels)
             if xticksminor is not None:
                 ax[i].set_xticks(xticksminor, minor=True)
+        else:
+            ax[i].set_xticklabels([])
         ax[i].set_ylabel(ylabel[i])
         ax[i].set_xlim(xmin, xmax)
         ax[i].set_ylim(ymin, ymax)
