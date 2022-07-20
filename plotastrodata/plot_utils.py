@@ -1233,8 +1233,8 @@ def profile(fitsimage: str = '', Tb: bool = False,
         prof *= dxdy / Omega
     prof *= yfactor
     xmin, xmax = np.min(v), np.max(v)
-    if ymin is None: ymin = np.nanmin(prof)
-    if ymax is None: ymax = np.nanmax(prof)
+    if ymin is None: ymin = np.nanmin(prof) * 1.1
+    if ymax is None: ymax = np.nanmax(prof) * 1.1
     if ylabel is None:
         if Tb:
             ylabel = r'$T_b$ (K)'
