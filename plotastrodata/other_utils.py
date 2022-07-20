@@ -129,7 +129,12 @@ def estimate_rms(data: list, sigma: float or str) -> float:
         n, n0, n1 = data.copy(), len(data), len(data[0])
         n = np.moveaxis(n, [-2, -1], [0, 1])
         n[n0//5 : n0*4//5, n1//5 : n1*4//5] = np.nan
-        noise = np.nanstd(n)
+        if np.all(np.isnan(n)):
+            print('sigma=\'neg\' instead of \'out\' because'
+                  + ' the outer region is filled with nan.')
+            noise = np.sqrt(np.nanmean(data[data < 0]**2))
+        else:
+            noise = np.nanstd(n)
     print(f'sigma = {noise:.2e}')
     return noise
 
