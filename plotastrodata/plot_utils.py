@@ -1211,7 +1211,7 @@ def profile(fitsimage: str = '', Tb: bool = False,
     x, y = np.meshgrid(x, y)
     prof = np.empty(((nprof := len(coords)), len(v)))
     if 'radius' in kwargs.keys():
-        ellipse = [kwargs['radius'], kwargs['radius', 0]] * nprof
+        ellipse = [[kwargs['radius'], kwargs['radius'], 0]] * nprof
         del kwargs['radius']
         print('WARNING: radius was replaced by ellipse.')
     if ellipse is None: ellipse = [[0, 0, 0]] * nprof
