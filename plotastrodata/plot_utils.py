@@ -1220,6 +1220,7 @@ def profile(fitsimage: str = '', Tb: bool = False,
         z = ((y - yc) + 1j * (x - xc)) / np.exp(1j * np.radians(pa))
         y, x = np.real(z), np.imag(z)
         if major == 0 or minor == 0:
+            r = np.hypot(y, x)
             idx = np.unravel_index(np.argmin(r), np.shape(r))
             prof[i] = [d[idx] for d in data]
         else:
