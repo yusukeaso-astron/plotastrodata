@@ -1130,7 +1130,7 @@ class PlotAstroData():
 def profile(fitsimage: str = '', Tb: bool = False,
             flux: bool = False, dist: float = 1.,
             restfrq: float = None, vsys: float = 0.,
-            coords: list = [], radius: float = 0,
+            coords: list = [], ellipse: list = None,
             xmin: float = -1e10, xmax: float = 1e10,
             ymin: float = None, ymax: float = None, yfactor: float = 1.,
             title: list = None, xticks: list = None, yticks: list = None,
@@ -1157,7 +1157,8 @@ def profile(fitsimage: str = '', Tb: bool = False,
         vsys (float, optional): x-axis is v - vsys. Defaults to 0..
         coords (list, optional):
             Text coordinates of centers to make line profiles. Defaults to [].
-        radius (float, optional): 0 means nearest pixel. Defaults to 0.
+        ellipse (list, optional): List of [major, minor, pa].
+            major=minor=0 means nearest pixel. Defaults to None.
         xmin (float, optional): Minimum velocity. Defaults to -1e10.
         xmax (float, optional): Maximum velocity. Defaults to 1e10.
         ymin (float, optional): Mminimum intensity etc. Defaults to None.
@@ -1209,15 +1210,24 @@ def profile(fitsimage: str = '', Tb: bool = False,
     xlist, ylist = xlist - xlist[0], ylist - ylist[0]
     x, y = np.meshgrid(x, y)
     prof = np.empty(((nprof := len(coords)), len(v)))
-    for i, (xc, yc) in enumerate(zip(xlist, ylist)):
-        r = np.hypot(x - xc, y - yc)
-        if radius == 0:
+    if 'radius' in kwargs.keys():
+        ellipse = [kwargs['radius'], kwargs['radius', 0]] * nprof
+        del kwargs['radius']
+        print('WARNING: radius was replaced by ellipse.')
+    if ellipse is None: ellipse = [[0, 0, 0]] * nprof
+    for i, (xc, yc, e) in enumerate(zip(xlist, ylist, ellipse)):
+        major, minor, pa = e
+        z = ((y - yc) + 1j * (x - xc)) / np.exp(1j * np.radians(pa))
+        y, x = np.real(z), np.imag(z)
+        if major == 0 or minor == 0:
             idx = np.unravel_index(np.argmin(r), np.shape(r))
             prof[i] = [d[idx] for d in data]
-        elif flux:
-            prof[i] = [np.sum(d[r < radius]) for d in data]
         else:
-            prof[i] = [np.mean(d[r < radius]) for d in data]
+            r = np.hypot(y / major, x / minor)
+            if flux:
+                prof[i] = [np.sum(d[r <= 1]) for d in data]
+            else:
+                prof[i] = [np.mean(d[r <= 1]) for d in data]
     newlen = len(v) // (width := int(width))
     w, q = np.zeros(newlen), np.zeros((nprof, newlen))
     for i in range(width):
