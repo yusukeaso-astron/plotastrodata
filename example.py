@@ -56,7 +56,7 @@ f.set_axis(title='loglog PV diagram', loglog=20)
 f.savefig('testloglogPV.png', show=True)
 
 # Line profile
-profile(fitsimage=pre+'test3D.fits', radius=0.2, flux=True,
+profile(fitsimage=pre+'test3D.fits', ellipse=[[0.2, 0.2, 0]] * 2, flux=True,
         coords=['04h04m43.045s 26d18m55.766s', '04h04m43.109s 26d18m56.704s'],
         gaussfit=True, savefig='testprofile.png', show=True, width=2)
 
