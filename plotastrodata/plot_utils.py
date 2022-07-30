@@ -1218,13 +1218,12 @@ def profile(fitsimage: str = '', Tb: bool = False,
     for i, (xc, yc, e) in enumerate(zip(xlist, ylist, ellipse)):
         major, minor, pa = e
         z = ((y - yc) + 1j * (x - xc)) / np.exp(1j * np.radians(pa))
-        y, x = np.real(z), np.imag(z)
         if major == 0 or minor == 0:
-            r = np.hypot(y, x)
+            r = np.abs(z)
             idx = np.unravel_index(np.argmin(r), np.shape(r))
             prof[i] = [d[idx] for d in data]
         else:
-            r = np.hypot(y / major, x / minor)
+            r = np.abs(np.real(z) / major + 1j *  (np.imag(z) / minor))
             if flux:
                 prof[i] = [np.sum(d[r <= 1]) for d in data]
             else:
