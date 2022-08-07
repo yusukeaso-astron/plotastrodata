@@ -56,9 +56,10 @@ def xy2coord(xy: list) -> str:
              With multiple inputs, the output has the input shape.
     """
     one = np.shape(xy) == (2,)
-    if one: xy = [xy]
+    if one: xy = [[xy[0]], [xy[1]]]
+    xy = np.array(xy)
     coords = []
-    for c in xy:
+    for c in xy.T:
         x, y = c[0] / 15., c[1] / (decsign := np.sign(c[1]))
         intx, inty = int(x), int(y)
         ra  = f'{intx:02d}h'
@@ -71,9 +72,7 @@ def xy2coord(xy: list) -> str:
         ra  += f'{x:09.6f}s'
         dec += f'{y:09.6f}s'
         coords.append(ra + ' ' + dec)
-    shape = np.shape(xy[0])
-    one = (shape == (2,))
-    coords = coords[0] if one else np.reshape(coords, shape)
+    if len(coords) == 1: coords = coords[0]
     return coords
 
 
