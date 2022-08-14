@@ -216,13 +216,14 @@ def data2fits(d: list = None, h: dict = {}, crpix: list = None,
         ctype (str, optional): Defaults to None.
         fitsimage (str, optional): Output name. Defaults to 'test'.
     """
-    ctype0 = ["RA---AIR", "DEC--AIR", "VELOCITY"]
+    ctype0 = ["RA---SIN", "DEC--SIN", "VELOCITY"]
     naxis = np.ndim(d)
     w = wcs.WCS(naxis=naxis)
-    w.wcs.crpix = [0] * naxis if crpix is None else crpix
-    w.wcs.crval = [0] * naxis if crval is None else crval
-    w.wcs.cdelt = [1] * naxis if cdelt is None else cdelt
-    w.wcs.ctype = ctype0[:naxis] if ctype is None else ctype
+    if h == {}:
+        w.wcs.crpix = [0] * naxis if crpix is None else crpix
+        w.wcs.crval = [0] * naxis if crval is None else crval
+        w.wcs.cdelt = [1] * naxis if cdelt is None else cdelt
+        w.wcs.ctype = ctype0[:naxis] if ctype is None else ctype
     header = w.to_header()
     hdu = fits.PrimaryHDU(d, header=header)
     for k in h.keys():
