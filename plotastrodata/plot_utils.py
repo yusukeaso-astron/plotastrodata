@@ -878,13 +878,14 @@ class PlotAstroData():
 
         for axnow, red, green, blue in zip(self.ax, c[0], c[1], c[2]):
             size = np.shape(red)
-            im = Image.new('RGB', size, (128, 128, 128))
-            rgb = [red, green, blue]
+            im = Image.new('RGB', size[::-1], (128, 128, 128))
+            rgb = [red[::-1, :], green[::-1, :], blue[::-1, :]]
             for j in range(size[0]):
                 for i in range(size[1]):
                     value = tuple(int(a[j, i]) for a in rgb)
                     im.putpixel((i, j), value)
             axnow.imshow(im, extent=[x[0][0], x[0][-1], y[0][0], y[0][-1]])
+            axnow.set_aspect(np.abs((x[0][-1]-x[0][0])/(y[0][-1]-y[0][0])))
         if show_beam and not self.pv:
             for i in range(3):
                 self.add_beam(bmaj[i], bmin[i], bpa[i], beamcolor[i])
