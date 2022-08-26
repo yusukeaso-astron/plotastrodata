@@ -18,7 +18,7 @@ def listing(*args) -> list:
     return b
 
 def coord2xy(coords: str, frame: str = 'icrs') -> list:
-    """Transform R.A.-Dec. to (arcsec, arcsec).
+    """Transform R.A.-Dec. to (deg, deg).
 
     Args:
         coords (str): something like '01h23m45.6s 01d23m45.6s'
