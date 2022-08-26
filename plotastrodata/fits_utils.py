@@ -125,7 +125,8 @@ class FitsData:
             s = (s-h[f'CRPIX{i:d}']+1) * h[f'CDELT{i:d}'] + h[f'CRVAL{i:d}']
             return s
         def gen_x(s: list) -> None:
-            s = (s - cx) * dist
+            cos = 1 if pv else np.cos(np.radians(h['CRVAL2']))
+            s = (s - h['CRVAL1'] - (cx - h['CRVAL1']) * cos) * dist
             if h['CUNIT1'].strip() in ['deg', 'DEG', 'degree']:
                 s *= 3600.
             self.x, self.dx = s, s[1] - s[0]
@@ -216,13 +217,14 @@ def data2fits(d: list = None, h: dict = {}, crpix: list = None,
         ctype (str, optional): Defaults to None.
         fitsimage (str, optional): Output name. Defaults to 'test'.
     """
-    ctype0 = ["RA---AIR", "DEC--AIR", "VELOCITY"]
+    ctype0 = ["RA---SIN", "DEC--SIN", "VELOCITY"]
     naxis = np.ndim(d)
     w = wcs.WCS(naxis=naxis)
-    w.wcs.crpix = [0] * naxis if crpix is None else crpix
-    w.wcs.crval = [0] * naxis if crval is None else crval
-    w.wcs.cdelt = [1] * naxis if cdelt is None else cdelt
-    w.wcs.ctype = ctype0[:naxis] if ctype is None else ctype
+    if h == {}:
+        w.wcs.crpix = [0] * naxis if crpix is None else crpix
+        w.wcs.crval = [0] * naxis if crval is None else crval
+        w.wcs.cdelt = [1] * naxis if cdelt is None else cdelt
+        w.wcs.ctype = ctype0[:naxis] if ctype is None else ctype
     header = w.to_header()
     hdu = fits.PrimaryHDU(d, header=header)
     for k in h.keys():
