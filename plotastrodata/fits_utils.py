@@ -125,7 +125,8 @@ class FitsData:
             s = (s-h[f'CRPIX{i:d}']+1) * h[f'CDELT{i:d}'] + h[f'CRVAL{i:d}']
             return s
         def gen_x(s: list) -> None:
-            s = (s - cx) * dist
+            cos = 1 if pv else np.cos(np.radians(h['CRVAL2']))
+            s = (s - h['CRVAL1'] - (cx - h['CRVAL1']) * cos) * dist
             if h['CUNIT1'].strip() in ['deg', 'DEG', 'degree']:
                 s *= 3600.
             self.x, self.dx = s, s[1] - s[0]

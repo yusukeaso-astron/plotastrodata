@@ -1019,6 +1019,7 @@ class PlotAstroData():
         ra_h, ra_m, ra_s, _, dec_d, dec_m, dec_s, _ \
             = re.split('[hdms ]', self.center)
         dec_sign = np.sign((dec_d := int(dec_d)))
+        dec = np.radians(dec_d + int(dec_m)/60. + float(dec_s)/3600.)
         dec_d = str(dec_d // dec_sign)
         dec_sign = r'$-$' if dec_sign < 0 else r'$+$'
         log2r = np.log10(2. * self.rmax)
@@ -1026,7 +1027,7 @@ class PlotAstroData():
         def makegrid(second, minute, mode):
             second = float(second)
             if mode == 'ra':
-                scale, factor, sec = 1.5, 15, r'$^{\rm s}$'
+                scale, factor, sec = 1.5, 15 * np.cos(dec), r'$^{\rm s}$'
             else:
                 scale, factor, sec = 0.5, 1, r'$^{\rm \prime\prime}$'
                 if dec_sign == r'$-$': factor *= -1
