@@ -225,7 +225,10 @@ class PlotAstroData():
             x, y = [None] * len(poslist), [None] * len(poslist)
             for i, p in enumerate(poslist):
                 if type(p) is str:
-                    x[i], y[i] = (coord2xy(p)-coord2xy(center)) * 3600.
+                    x0, y0 = coord2xy(center)
+                    x1, y1 = coord2xy(p)
+                    x[i] = (x1 - x0) * np.cos(np.radians(y0)) * 3600.
+                    y[i] = (y1 - y0) * 3600.
                 else:
                     x[i], y[i] = rel2abs(*p, xlim, ylim)
             return x, y
