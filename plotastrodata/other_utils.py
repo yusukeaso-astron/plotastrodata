@@ -27,6 +27,7 @@ def coord2xy(coords: str, coordorg: str = '00h00m00s 00d00m00s',
                       The input can be a list of str in an arbitrary shape.
         coordorg (str): something like '01h23m45.6s 01d23m45.6s'
                         The origin of the relative (deg, deg).
+                        Defaults to '00h00m00s 00d00m00s'.
         frame (str): coordinate frame. Defaults to 'icrs'.
         frameorg (str): coordinate frame of the origin. Defaults to 'icrs'.
 
@@ -37,22 +38,30 @@ def coord2xy(coords: str, coordorg: str = '00h00m00s 00d00m00s',
     """
     clist = SkyCoord(coords, frame=frame)
     c0 = SkyCoord(coordorg, frame=frameorg)
-    c = c0.spherical_offsets_to(clist)
-    return np.array([c[0].degree, c[1].degree])
+    xy = c0.spherical_offsets_to(clist)
+    return np.array([xy[0].degree, xy[1].degree])
 
 
-def xy2coord(xy: list) -> str:
-    """Transform (degree, degree) to R.A.-Dec.
+def xy2coord(xy: list, coordorg: str = '00h00m00s 00d00m00s',
+             frame: str = 'icrs', frameorg: str = 'icrs') -> str:
+    """Transform relative (deg, deg) to R.A.-Dec.
 
     Args:
         xy (list): [(array of) alphas, (array of) deltas] in degree.
                    alphas and deltas can have an arbitrary shape.
-
+        coordorg (str): something like '01h23m45.6s 01d23m45.6s'
+                        The origin of the relative (deg, deg).
+                        Defaults to '00h00m00s 00d00m00s'.
+        frame (str): coordinate frame. Defaults to 'icrs'.
+        frameorg (str): coordinate frame of the origin. Defaults to 'icrs'.
+        
     Returns:
         str: something like '01h23m45.6s 01d23m45.6s'.
              With multiple inputs, the output has the input shape.
     """
-    coords = SkyCoord(ra=xy[0] * units.degree, dec=xy[1] * units.degree)
+    c0 = SkyCoord(coordorg, frame=frameorg)
+    coords = c0.spherical_offsets_by(*xy * units.degree)
+    coords = coords.transform_to(frame=frame)
     return coords.to_string('hmsdms')
 
 
