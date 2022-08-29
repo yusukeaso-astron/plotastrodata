@@ -225,10 +225,7 @@ class PlotAstroData():
             x, y = [None] * len(poslist), [None] * len(poslist)
             for i, p in enumerate(poslist):
                 if type(p) is str:
-                    x0, y0 = coord2xy(center)
-                    x1, y1 = coord2xy(p)
-                    x[i] = (x1 - x0) * np.cos(np.radians(y0)) * 3600.
-                    y[i] = (y1 - y0) * 3600.
+                    x[i], y[i] = coord2xy(p, center) * 3600.
                 else:
                     x[i], y[i] = rel2abs(*p, xlim, ylim)
             return x, y
@@ -1020,21 +1017,20 @@ class PlotAstroData():
         if self.rmax > 50.:
             print('WARNING: set_axis_radec() is not supported '
                   + 'with rmax>50 yet.')
-        ra_h, ra_m, ra_s, _, dec_d, dec_m, dec_s, _ \
-            = re.split('[hdms ]', self.center)
-        dec_sign = np.sign((dec_d := int(dec_d)))
-        dec = np.radians(dec_d + int(dec_m)/60. + float(dec_s)/3600.)
-        dec_d = str(dec_d // dec_sign)
-        dec_sign = r'$-$' if dec_sign < 0 else r'$+$'
+        _, dec = coord2xy(self.center)
+        dec = np.radians(dec)
+        c_sec = lambda x, i: x.split(' ')[i].split('m')[1].strip('s')
+        c_deg = lambda x, i: x.split(' ')[i].split('m')[0]
+        ra_s = c_sec(self.center, 0)
+        dec_s = c_sec(self.center, 1)
         log2r = np.log10(2. * self.rmax)
         n = np.array([-3, -2, -1, 0, 1, 2, 3])
-        def makegrid(second, minute, mode):
+        def makegrid(second, mode):
             second = float(second)
             if mode == 'ra':
                 scale, factor, sec = 1.5, 15 * np.cos(dec), r'$^{\rm s}$'
             else:
                 scale, factor, sec = 0.5, 1, r'$^{\rm \prime\prime}$'
-                if dec_sign == r'$-$': factor *= -1
             sec = r'.$\hspace{-0.4}$' + sec
             dorder = log2r - scale - (order := np.floor(log2r - scale))
             if 0.00 < dorder <= 0.33:
@@ -1046,20 +1042,27 @@ class PlotAstroData():
             g *= 10**order
             decimals = max(-int(order), -1)
             rounded = round(second, decimals)
-            if rounded == 60.0: minute = str(int(minute) + 1)
             lastdigit = round(rounded // 10**(-decimals-1) % 100 / 10) % 10
             rounded -= lastdigit * 10**(-decimals) % g
             ticks = (n*g - second + rounded) * factor
             ticksminor = np.linspace(ticks[0], ticks[-1], 6*nticksminor + 1)
-            ticklabelvalues = np.divmod(np.round((rounded + n*g) % 60, 6), 1)
             decimals = max(decimals, 0)
+            if mode == 'ra':
+                xy, i = [ticks / 3600., ticks * 0], 0
+            else:
+                xy, i = [ticks * 0, ticks / 3600.], 1
+            tickvalues = xy2coord(xy, self.center)
+            tickvalues = [float(c_sec(t, i)) for t in tickvalues]
+            tickvalues = np.divmod(tickvalues, 1)
             ticklabels = [f'{int(i):02d}{sec}' + f'{j:.{decimals:d}f}'[2:]
-                          for i, j in zip(*ticklabelvalues)]
-            return ticks, ticksminor, ticklabels, minute
-        xticks, xticksminor, xticklabels, ra_m = makegrid(ra_s, ra_m, 'ra')
-        yticks, yticksminor, yticklabels, dec_m = makegrid(dec_s, dec_m, 'dec')
-        ra_hm = ra_h + r'$^{\rm h}$' + ra_m + r'$^{\rm m}$'
-        dec_dm = dec_sign + dec_d + r'$^{\circ}$' + dec_m + r'$^{\prime}$'
+                          for i, j in zip(*tickvalues)]
+            return ticks, ticksminor, ticklabels
+        xticks, xticksminor, xticklabels = makegrid(ra_s, 'ra')
+        yticks, yticksminor, yticklabels = makegrid(dec_s, 'dec')
+        ra_hm = c_deg(xy2coord([xticks[3] / 3600., 0], self.center), 0)
+        ra_hm = ra_hm.replace('h', r'$^{\rm h}$') + r'$^{\rm m}$'
+        dec_dm = c_deg(xy2coord([0, yticks[3] / 3600.], self.center), 1)
+        dec_dm = dec_dm.replace('d', r'$^{\circ}$') + r'$^{\prime}$'
         xticklabels[3] = ra_hm + xticklabels[3]
         yticklabels[3] = dec_dm + '\n' + yticklabels[3]
         for ch, axnow in enumerate(self.ax):
@@ -1211,8 +1214,7 @@ def profile(fitsimage: str = '', Tb: bool = False,
         = fits2data(fitsimage, Tb, False, dist, None, restfrq,
                     vsys=vsys, vmin=xmin, vmax=xmax,
                     center=coords[0])
-    xlist, ylist = coord2xy(coords) * 3600.
-    xlist, ylist = xlist - xlist[0], ylist - ylist[0]
+    xlist, ylist = coord2xy(coords, coords[0]) * 3600.
     x, y = np.meshgrid(x, y)
     prof = np.empty(((nprof := len(coords)), len(v)))
     if 'radius' in kwargs.keys():

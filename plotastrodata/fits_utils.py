@@ -2,7 +2,7 @@ import numpy as np
 from astropy.io import fits
 from astropy import constants, units, wcs
 
-from plotastrodata.other_utils import coord2xy, estimate_rms, trim
+from plotastrodata.other_utils import coord2xy, xy2coord, estimate_rms, trim
 
 
 
@@ -110,9 +110,10 @@ class FitsData:
         h = self.header
         # spatial center
         if center is not None:
-            cx, cy = coord2xy(center)
+            c0 = xy2coord([h['CRVAL1'], h['CRVAL2']])
+            cx, cy = coord2xy(coords=center, coordorg=c0)
         else:
-            cx, cy = h['CRVAL1'], h['CRVAL2']
+            cx, cy = 0, 0
         # rest frequency
         if 'RESTFRQ' in h.keys():
             restfrq = h['RESTFRQ']
@@ -120,13 +121,13 @@ class FitsData:
             restfrq = h['RESTFREQ']
         self.x, self.y, self.v = None, None, None
         self.dx, self.dy, self.dv = None, None, None
-        def get_list(i: int) -> list:
+        def get_list(i: int, crval=False) -> list:
             s = np.arange(h[f'NAXIS{i:d}'])
-            s = (s-h[f'CRPIX{i:d}']+1) * h[f'CDELT{i:d}'] + h[f'CRVAL{i:d}']
+            s = (s - h[f'CRPIX{i:d}'] + 1) * h[f'CDELT{i:d}']
+            if crval: s = s + h[f'CRVAL{i:d}']
             return s
         def gen_x(s: list) -> None:
-            cos = 1 if pv else np.cos(np.radians(h['CRVAL2']))
-            s = (s - h['CRVAL1'] - (cx - h['CRVAL1']) * cos) * dist
+            s = (s - cx) * dist
             if h['CUNIT1'].strip() in ['deg', 'DEG', 'degree']:
                 s *= 3600.
             self.x, self.dx = s, s[1] - s[0]
@@ -134,7 +135,6 @@ class FitsData:
             s = (s - cy) * dist
             if h['CUNIT2'].strip() in ['deg', 'DEG', 'degree']:
                 s *= 3600. 
-
             self.y, self.dy = s, s[1] - s[0]
         def gen_v(s: list) -> None:
             if restfrq is None:
@@ -150,10 +150,10 @@ class FitsData:
                 gen_x(get_list(1))
         if h['NAXIS'] > 1:
             if h['NAXIS2'] > 1:
-                gen_v(get_list(2)) if pv else gen_y(get_list(2))
+                gen_v(get_list(2, True)) if pv else gen_y(get_list(2))
         if h['NAXIS'] > 2:
             if h['NAXIS3'] > 1:
-                gen_v(get_list(3))
+                gen_v(get_list(3, True))
         if not hasattr(self, 'data'): self.data = None
         self.data, (self.x, self.y, self.v) \
             = trim(data=self.data, x=self.x, y=self.y, v=self.v,

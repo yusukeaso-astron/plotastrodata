@@ -1,4 +1,5 @@
-from astropy.coordinates import SkyCoord 
+from astropy.coordinates import SkyCoord
+from astropy import units
 import numpy as np
 
 
@@ -17,63 +18,51 @@ def listing(*args) -> list:
     if len(args) == 1: b = b[0]
     return b
 
-def coord2xy(coords: str, frame: str = 'icrs') -> list:
-    """Transform R.A.-Dec. to (deg, deg).
+def coord2xy(coords: str, coordorg: str = '00h00m00s 00d00m00s',
+             frame: str = 'icrs', frameorg: str = 'icrs') -> list:
+    """Transform R.A.-Dec. to relative (deg, deg).
 
     Args:
         coords (str): something like '01h23m45.6s 01d23m45.6s'
                       The input can be a list of str in an arbitrary shape.
+        coordorg (str): something like '01h23m45.6s 01d23m45.6s'
+                        The origin of the relative (deg, deg).
+                        Defaults to '00h00m00s 00d00m00s'.
         frame (str): coordinate frame. Defaults to 'icrs'.
+        frameorg (str): coordinate frame of the origin. Defaults to 'icrs'.
 
     Returns:
         ndarray: [(array of) alphas, (array of) deltas] in degree.
                  The shape of alphas and deltas is the input shape.
                  With a single input, the output is [alpha0, delta0].
     """
-    clist = np.ravel(coords)
-    cx = [None] * len(clist)
-    cy = [None] * len(clist)
-    for i, c in enumerate(clist):
-        c = SkyCoord(c, frame=frame)
-        cx[i] = c.ra.degree
-        cy[i] = c.dec.degree
-    one = (type(coords) is str)
-    shape = np.shape(coords)
-    cx = cx[0] if one else np.reshape(cx, shape)
-    cy = cy[0] if one else np.reshape(cy, shape)
-    return np.array([cx, cy])
+    clist = SkyCoord(coords, frame=frame)
+    c0 = SkyCoord(coordorg, frame=frameorg)
+    xy = c0.spherical_offsets_to(clist)
+    return np.array([xy[0].degree, xy[1].degree])
 
 
-def xy2coord(xy: list) -> str:
-    """Transform (degree, degree) to R.A.-Dec.
+def xy2coord(xy: list, coordorg: str = '00h00m00s 00d00m00s',
+             frame: str = 'icrs', frameorg: str = 'icrs') -> str:
+    """Transform relative (deg, deg) to R.A.-Dec.
 
     Args:
         xy (list): [(array of) alphas, (array of) deltas] in degree.
                    alphas and deltas can have an arbitrary shape.
-
+        coordorg (str): something like '01h23m45.6s 01d23m45.6s'
+                        The origin of the relative (deg, deg).
+                        Defaults to '00h00m00s 00d00m00s'.
+        frame (str): coordinate frame. Defaults to 'icrs'.
+        frameorg (str): coordinate frame of the origin. Defaults to 'icrs'.
+        
     Returns:
         str: something like '01h23m45.6s 01d23m45.6s'.
              With multiple inputs, the output has the input shape.
     """
-    one = np.shape(xy) == (2,)
-    if one: xy = [[xy[0]], [xy[1]]]
-    xy = np.array(xy)
-    coords = []
-    for c in xy.T:
-        x, y = c[0] / 15., c[1] / (decsign := np.sign(c[1]))
-        intx, inty = int(x), int(y)
-        ra  = f'{intx:02d}h'
-        dec = ('-' if decsign < 0 else '+') + f'{inty:02d}d'
-        x, y = 60 * (x - intx), 60 * (y - inty)
-        intx, inty = int(x), int(y)
-        ra  += f'{intx:02d}m'
-        dec += f'{inty:02d}m'
-        x, y = 60 * (x - intx), 60 * (y - inty)
-        ra  += f'{x:09.6f}s'
-        dec += f'{y:09.6f}s'
-        coords.append(ra + ' ' + dec)
-    if len(coords) == 1: coords = coords[0]
-    return coords
+    c0 = SkyCoord(coordorg, frame=frameorg)
+    coords = c0.spherical_offsets_by(*xy * units.degree)
+    coords = coords.transform_to(frame=frame)
+    return coords.to_string('hmsdms')
 
 
 def rel2abs(xrel: float, yrel: float, x: list, y: list) -> list:
