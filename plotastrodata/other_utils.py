@@ -37,11 +37,8 @@ def coord2xy(coords: str, coordorg: str = '00h00m00s 00d00m00s',
     """
     clist = SkyCoord(coords, frame=frame)
     c0 = SkyCoord(coordorg, frame=frameorg)
-    rlist = c0.separation(clist).degree
-    alist = c0.position_angle(clist).radian
-    cx = rlist * np.sin(alist)
-    cy = rlist * np.cos(alist)
-    return np.array([cx, cy])
+    c = c0.spherical_offsets_to(clist)
+    return np.array([c[0].degree, c[1].degree])
 
 
 def xy2coord(xy: list) -> str:
