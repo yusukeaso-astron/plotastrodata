@@ -1017,8 +1017,7 @@ class PlotAstroData():
         if self.rmax > 50.:
             print('WARNING: set_axis_radec() is not supported '
                   + 'with rmax>50 yet.')
-        _, dec = coord2xy(self.center)
-        dec = np.radians(dec)
+        dec = np.radians(coord2xy(self.center)[1])
         c_sec = lambda x, i: x.split(' ')[i].split('m')[1].strip('s')
         c_deg = lambda x, i: x.split(' ')[i].split('m')[0]
         ra_s = c_sec(self.center, 0)
@@ -1059,9 +1058,9 @@ class PlotAstroData():
             return ticks, ticksminor, ticklabels
         xticks, xticksminor, xticklabels = makegrid(ra_s, 'ra')
         yticks, yticksminor, yticklabels = makegrid(dec_s, 'dec')
-        ra_hm = c_deg(xy2coord([xticks[3] / 3600., 0], self.center), 0)
-        ra_hm = ra_hm.replace('h', r'$^{\rm h}$') + r'$^{\rm m}$'
+        ra_hm  = c_deg(xy2coord([xticks[3] / 3600., 0], self.center), 0)
         dec_dm = c_deg(xy2coord([0, yticks[3] / 3600.], self.center), 1)
+        ra_hm  = ra_hm.replace('h', r'$^{\rm h}$') + r'$^{\rm m}$'
         dec_dm = dec_dm.replace('d', r'$^{\circ}$') + r'$^{\prime}$'
         xticklabels[3] = ra_hm + xticklabels[3]
         yticklabels[3] = dec_dm + '\n' + yticklabels[3]
