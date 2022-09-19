@@ -551,6 +551,7 @@ class PlotAstroData():
         c = c * cfactor
         rms = rms * cfactor
         self.rms = rms
+        self.beam = [bmaj, bmin, bpa]
         if stretchscale is None: stretchscale = rms
         if stretch == 'log':
             c = np.log10(c.clip(c[c > 0].min(), None))
@@ -665,6 +666,7 @@ class PlotAstroData():
             c, (x, y), (bmaj, bmin, bpa), _, rms \
                 = self.readfits(fitsimage, Tb, sigma, center, restfrq)
         self.rms = rms
+        self.beam = [bmaj, bmin, bpa]
         if self.quadrants is not None:
             c, x, y = quadrantmean(c, x, y, self.quadrants)
         x, y = x[::skip], y[::skip]
@@ -758,6 +760,7 @@ class PlotAstroData():
         if not (stU is None or stQ is None):
             rms = (rmsU + rmsQ) / 2.
             self.rms = rms
+            self.beam = [bmaj, bmin, bpa]
             stU[np.abs(stU) < cutoff * rms] = np.nan
             stQ[np.abs(stQ) < cutoff * rms] = np.nan
             amp = np.hypot(stU, stQ)
@@ -840,6 +843,7 @@ class PlotAstroData():
             for i in range(3):
                 c[i], x[i], y[i] = quadrantmean(c[i], x[i], y[i], self.quadrants)
         self.rms = rms
+        self.beam = [bmaj, bmin, bpa]
         for i in range(3):
             if stretch[i] == 'log':
                 c[i] = np.log10(c[i].clip(c[i][c[i] > 0].min(), None))
