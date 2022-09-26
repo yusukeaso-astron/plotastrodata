@@ -555,6 +555,7 @@ class PlotAstroData():
         if self.quadrants is not None:
             c, x, y = quadrantmean(c, x, y, self.quadrants)
         c = c * cfactor
+        if self.pvflip: np.moveaxis(c, 1, 0)
         rms = rms * cfactor
         self.rms = rms
         self.beam = [bmaj, bmin, bpa]
@@ -671,6 +672,7 @@ class PlotAstroData():
         if fitsimage is not None:
             c, (x, y), (bmaj, bmin, bpa), _, rms \
                 = self.readfits(fitsimage, Tb, sigma, center, restfrq)
+        if self.pvflip: np.moveaxis(c, 1, 0)
         self.rms = rms
         self.beam = [bmaj, bmin, bpa]
         if self.quadrants is not None:
@@ -764,6 +766,8 @@ class PlotAstroData():
             stQ, (x, y), (bmaj, bmin, bpa), _, rmsQ \
                 = self.readfits(Qfits, False, sigma, center, restfrq)
         if not (stU is None or stQ is None):
+            if self.pvflip: np.moveaxis(stU, 1, 0)
+            if self.pvflip: np.moveaxis(stQ, 1, 0)
             rms = (rmsU + rmsQ) / 2.
             self.rms = rms
             self.beam = [bmaj, bmin, bpa]
@@ -848,6 +852,7 @@ class PlotAstroData():
         if self.quadrants is not None:
             for i in range(3):
                 c[i], x[i], y[i] = quadrantmean(c[i], x[i], y[i], self.quadrants)
+        if self.pvflip: [np.moveaxis(cc, 1, 0) for cc in c]
         self.rms = rms
         self.beam = [bmaj, bmin, bpa]
         for i in range(3):
