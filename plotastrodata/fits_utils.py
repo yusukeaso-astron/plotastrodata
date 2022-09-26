@@ -29,11 +29,10 @@ def Jy2K(header = None, bmaj: float = None, bmin: float = None,
     if freq is None:
         print('Please input restfrq.')
         return 1
-    omega = bmaj * bmin * np.radians(1)**2 * np.pi / 4. / np.log(2.)
-    lam = constants.c.to('m/s').value / freq
-    a = units.Jy.to('J*s**(-1)*m**(-2)*Hz**(-1)') \
-        * lam**2 / 2. / constants.k_B.to('J/K').value / omega
-    return a
+    omega = bmaj * bmin * units.deg**2 * np.pi / 4. / np.log(2.)
+    eqv = units.brightness_temperature(freq * units.Hz, beam_area=omega)
+    T = (1 * units.Jy / units.beam).to(units.K, equivalencies=eqv)
+    return T.value
 
 
 class FitsData:
