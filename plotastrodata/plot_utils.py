@@ -86,7 +86,8 @@ class PlotAstroData():
                  center: str = None, rmax: float = 1e10, dist: float = 1.,
                  xoff: float = 0, yoff: float = 0,
                  xflip: bool = True, yflip: bool = False,
-                 pv: bool = False, quadrants: str = None,
+                 pv: bool = False, pvflip: bool = False,
+                 quadrants: str = None,
                  fontsize: int = None, nancolor: str = 'w',
                  figsize: tuple = None, fig=None, ax=None) -> None:
         """Set up common parameters.
@@ -139,6 +140,7 @@ class PlotAstroData():
         """
         internalfig = fig is None
         internalax = ax is None
+        if pvflip: pv = True
         if fitsimage is not None:
             fd = FitsData(fitsimage)
             _, _, v = fd.get_grid(restfrq=restfrq, vsys=vsys,
@@ -195,9 +197,10 @@ class PlotAstroData():
         if quadrants is not None:
             xlim = [0, rmax]
             vlim = [0, min(vmax - vsys, vsys - vmin)]
+        if pv:
+                xlim, ylim = (vlim, xlim) if pvflip else (xlim, vlim)
         self.xlim = xlim
         self.ylim = ylim
-        if pv: self.ylim = ylim = vlim
         self.rmax = rmax
         self.center = center
         self.dist = dist
@@ -206,6 +209,7 @@ class PlotAstroData():
         self.allchan = np.arange(nchan)
         self.bottomleft = nij2ch(np.arange(npages), nrows - 1, 0)
         self.pv = pv
+        self.pvflip = pvflip
         self.quadrants = quadrants
 
         def pos2xy(poslist: list = []) -> tuple:
@@ -282,6 +286,7 @@ class PlotAstroData():
                 print('Inverted velocity.')
             a = [data, grid[:2], beam, bunit, rms]
             if pv: a[1] = grid[:3:2]
+            if pvflip: a[1] = a[1][::-1]
             return a
         self.readfits = readfits
         
@@ -302,6 +307,7 @@ class PlotAstroData():
                                  xlim=xlim, ylim=ylim, vlim=vlim, pv=pv)
             a = [dataout, grid[:2]]
             if pv: a[1] = grid[:3:2]
+            if pvflip: a[1] = a[1][::-1]
             return a
         self.readdata = readdata
 
@@ -549,6 +555,7 @@ class PlotAstroData():
         if self.quadrants is not None:
             c, x, y = quadrantmean(c, x, y, self.quadrants)
         c = c * cfactor
+        if self.pvflip: c = np.moveaxis(c, 1, 0)
         rms = rms * cfactor
         self.rms = rms
         self.beam = [bmaj, bmin, bpa]
@@ -665,6 +672,7 @@ class PlotAstroData():
         if fitsimage is not None:
             c, (x, y), (bmaj, bmin, bpa), _, rms \
                 = self.readfits(fitsimage, Tb, sigma, center, restfrq)
+        if self.pvflip: c = np.moveaxis(c, 1, 0)
         self.rms = rms
         self.beam = [bmaj, bmin, bpa]
         if self.quadrants is not None:
@@ -758,6 +766,8 @@ class PlotAstroData():
             stQ, (x, y), (bmaj, bmin, bpa), _, rmsQ \
                 = self.readfits(Qfits, False, sigma, center, restfrq)
         if not (stU is None or stQ is None):
+            if self.pvflip: stU = np.moveaxis(stU, 1, 0)
+            if self.pvflip: stQ = np.moveaxis(stQ, 1, 0)
             rms = (rmsU + rmsQ) / 2.
             self.rms = rms
             self.beam = [bmaj, bmin, bpa]
@@ -842,6 +852,7 @@ class PlotAstroData():
         if self.quadrants is not None:
             for i in range(3):
                 c[i], x[i], y[i] = quadrantmean(c[i], x[i], y[i], self.quadrants)
+        if self.pvflip: c = [np.moveaxis(cc, 1, 0) for cc in c]
         self.rms = rms
         self.beam = [bmaj, bmin, bpa]
         for i in range(3):
@@ -924,17 +935,20 @@ class PlotAstroData():
                 If a float is given, plot on a log-log plane, and
                 xlim=(xmax / loglog, xmax) and so does ylim. Defaults to None.
         """
+        offunit = '(arcsec)' if self.dist == 1 else '(au)'
         if self.pv:
+            offlabel = f'Offset {offunit}'
+            vellabel = r'Velocity (km s$^{-1})$'
             if xlabel is None:
-                xlabel = 'Offset ' + ('(arcsec)' if self.dist == 1 else '(au)')
+                xlabel = vellabel if self.pvflip else offlabel
             if ylabel is None:
-                ylabel = r'Velocity (km s$^{-1})$'
+                ylabel = offlabel if self.pvflip else vellabel
             samexy = False
         else:
             if xlabel is None:
-                xlabel = 'R.A. ' + '(arcsec)' if self.dist == 1 else '(au)'
+                xlabel = f'R.A. {offunit}'
             if ylabel is None:
-                ylabel = 'Dec. ' + '(arcsec)' if self.dist == 1 else '(au)'
+                ylabel = f'Dec. {offunit}'
         for ch, axnow in enumerate(self.ax):
             if samexy:
                 axnow.set_xticks(axnow.get_yticks())
