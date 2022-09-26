@@ -86,7 +86,7 @@ class PlotAstroData():
                  center: str = None, rmax: float = 1e10, dist: float = 1.,
                  xoff: float = 0, yoff: float = 0,
                  xflip: bool = True, yflip: bool = False,
-                 pv: bool = False, pvflip: bool = False,
+                 pv: bool = False, swapxy: bool = False,
                  quadrants: str = None,
                  fontsize: int = None, nancolor: str = 'w',
                  figsize: tuple = None, fig=None, ax=None) -> None:
@@ -140,7 +140,6 @@ class PlotAstroData():
         """
         internalfig = fig is None
         internalax = ax is None
-        if pvflip: pv = True
         if fitsimage is not None:
             fd = FitsData(fitsimage)
             _, _, v = fd.get_grid(restfrq=restfrq, vsys=vsys,
@@ -193,12 +192,11 @@ class PlotAstroData():
         xlim = [xoff - xdir*rmax, xoff + xdir*rmax]
         ylim = [yoff - ydir*rmax, yoff + ydir*rmax]
         vlim = [vmin, vmax]
-        if pv: xlim = np.sort(xlim)
         if quadrants is not None:
             xlim = [0, rmax]
             vlim = [0, min(vmax - vsys, vsys - vmin)]
-        if pv:
-                xlim, ylim = (vlim, xlim) if pvflip else (xlim, vlim)
+        if pv: xlim, ylim = np.sort(xlim), vlim
+        if swapxy: xlim, ylim = ylim, xlim
         self.xlim = xlim
         self.ylim = ylim
         self.rmax = rmax
@@ -209,7 +207,7 @@ class PlotAstroData():
         self.allchan = np.arange(nchan)
         self.bottomleft = nij2ch(np.arange(npages), nrows - 1, 0)
         self.pv = pv
-        self.pvflip = pvflip
+        self.swapxy = swapxy
         self.quadrants = quadrants
 
         def pos2xy(poslist: list = []) -> tuple:
@@ -286,7 +284,7 @@ class PlotAstroData():
                 print('Inverted velocity.')
             a = [data, grid[:2], beam, bunit, rms]
             if pv: a[1] = grid[:3:2]
-            if pvflip:
+            if swapxy:
                 a[1] = a[1][::-1]
                 a[0] = np.moveaxis(a[0], 1, 0)
             return a
@@ -309,7 +307,7 @@ class PlotAstroData():
                                  xlim=xlim, ylim=ylim, vlim=vlim, pv=pv)
             a = [dataout, grid[:2]]
             if pv: a[1] = grid[:3:2]
-            if pvflip:
+            if swapxy:
                 a[1] = a[1][::-1]
                 a[0] = np.moveaxis(a[0], 1, 0)
             return a
@@ -939,15 +937,16 @@ class PlotAstroData():
             offlabel = f'Offset {offunit}'
             vellabel = r'Velocity (km s$^{-1})$'
             if xlabel is None:
-                xlabel = vellabel if self.pvflip else offlabel
+                xlabel = vellabel if self.swapxy else offlabel
             if ylabel is None:
-                ylabel = offlabel if self.pvflip else vellabel
+                ylabel = offlabel if self.swapxy else vellabel
             samexy = False
         else:
+            ralabel, declabel = f'R.A. {offunit}', f'Dec. {offunit}'
             if xlabel is None:
-                xlabel = f'R.A. {offunit}'
+                xlabel = declabel if self.swapxy else ralabel
             if ylabel is None:
-                ylabel = f'Dec. {offunit}'
+                ylabel = ralabel if self.swapxy else declabel
         for ch, axnow in enumerate(self.ax):
             if samexy:
                 axnow.set_xticks(axnow.get_yticks())
