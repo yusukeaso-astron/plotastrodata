@@ -1,10 +1,10 @@
-import re
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse, Rectangle
 from scipy.interpolate import RectBivariateSpline as RBS
 from scipy.optimize import curve_fit
+from dataclasses import dataclass
 from PIL import Image
 
 from plotastrodata.other_utils import (coord2xy, xy2coord, rel2abs,
@@ -51,6 +51,21 @@ def quadrantmean(c: list, x: list, y: list, quadrants: str ='13') -> tuple:
         print('quadrants must be \'13\' or \'24\'.')
     cnew = (cnew + cnew[::-1, ::-1]) / 2.
     return cnew[ny:, nx:], xnew[nx:], ynew[ny:]
+
+@dataclass
+class PlotParams():
+    c: np.ndarray
+    x: np.ndarray
+    y: np.ndarray
+    v: np.ndarray
+    beam: np.ndarray
+    fitsimage: str
+    Tb: bool
+    sigma: str
+    center: str
+    restfrq: float
+    bunit: str = ''
+    rms: float = 0
 
 
 class PlotAstroData():
@@ -313,6 +328,20 @@ class PlotAstroData():
             return a
         self.readdata = readdata
 
+        def read(pp):
+            if pp.center == 'common': pp.center = self.center
+            if pp.c is not None:
+                pp.bunit, pp.rms = '', estimate_rms(pp.c, pp.sigma)
+                pp.c, (pp.x, pp.y) = readdata(pp.c, pp.x, pp.y, pp.v)    
+            if pp.fitsimage is not None:
+                pp.c, (pp.x, pp.y), pp.beam, pp.bunit, pp.rms \
+                    = readfits(pp.fitsimage, pp.Tb, pp.sigma,
+                               pp.center, pp.restfrq)
+            if self.quadrants is not None:
+                pp.c, pp.x, pp.y = quadrantmean(pp.c, pp.x, pp.y,
+                                                self.quadrants)
+        self.read = read
+
         
     def add_region(self, patch: str = 'ellipse', poslist: list = [],
                    majlist: list = [], minlist: list = [], palist: list = [],
@@ -546,16 +575,21 @@ class PlotAstroData():
             del kwargs['log']
             stretch == 'log'
             print('WARNING: log=True was replaced by stretch=\'log\'.')
-        if center == 'common':
-            center = self.center
-        if c is not None:
-            bunit, rms = '', estimate_rms(c, sigma)
-            c, (x, y) = self.readdata(c, x, y, v)    
-        if fitsimage is not None:
-            c, (x, y), (bmaj, bmin, bpa), bunit, rms \
-                = self.readfits(fitsimage, Tb, sigma, center, restfrq)
-        if self.quadrants is not None:
-            c, x, y = quadrantmean(c, x, y, self.quadrants)
+        pp = PlotParams(c=c, x=x, y=y, v=v, beam=(bmaj, bmin, bpa),
+                        fitsimage=fitsimage, Tb=Tb,
+                        sigma=sigma, center=center, restfrq=restfrq)
+        self.read(pp)
+        c, x, y, beam, bunit, rms = pp.c, pp.x, pp.y, pp.beam, pp.bunit, pp.rms
+        #if center == 'common':
+        #    center = self.center
+        #if c is not None:
+        #    bunit, rms = '', estimate_rms(c, sigma)
+        #    c, (x, y) = self.readdata(c, x, y, v)    
+        #if fitsimage is not None:
+        #    c, (x, y), (bmaj, bmin, bpa), bunit, rms \
+        #        = self.readfits(fitsimage, Tb, sigma, center, restfrq)
+        #if self.quadrants is not None:
+        #    c, x, y = quadrantmean(c, x, y, self.quadrants)
         c = c * cfactor
         rms = rms * cfactor
         self.rms = rms
@@ -624,7 +658,7 @@ class PlotAstroData():
                     ticklin = np.sinh(t) * stretchscale
                 cb.set_ticklabels([f'{d:{cbformat[1:]}}' for d in ticklin])
         if show_beam and not self.pv:
-            self.add_beam(bmaj, bmin, bpa, beamcolor)
+            self.add_beam(*beam, beamcolor)
 
     def add_contour(self, fitsimage: str = None,
                     x: list = None, y: list = None, skip: int = 1,
@@ -664,26 +698,31 @@ class PlotAstroData():
             bpa (float, optional): Beam position angle. Defaults to 0..
         """
         kwargs0 = {'colors':'gray', 'linewidths':1.0, 'zorder':2}
-        if center == 'common':
-            center = self.center
-        if c is not None:
-            if np.ndim(c) == 2 and sigma == 'edge': sigma = 'out'
-            rms = estimate_rms(c, sigma)
-            c, (x, y) = self.readdata(c, x, y, v)
-        if fitsimage is not None:
-            c, (x, y), (bmaj, bmin, bpa), _, rms \
-                = self.readfits(fitsimage, Tb, sigma, center, restfrq)
-        self.rms = rms
-        self.beam = [bmaj, bmin, bpa]
-        if self.quadrants is not None:
-            c, x, y = quadrantmean(c, x, y, self.quadrants)
+        pp = PlotParams(c=c, x=x, y=y, v=v, beam=(bmaj, bmin, bpa),
+                        fitsimage=fitsimage, Tb=Tb,
+                        sigma=sigma, center=center, restfrq=restfrq)
+        self.read(pp)
+        c, x, y, beam, bunit, rms = pp.c, pp.x, pp.y, pp.beam, pp.bunit, pp.rms
+        #if center == 'common':
+        #    center = self.center
+        #if c is not None:
+        #    if np.ndim(c) == 2 and sigma == 'edge': sigma = 'out'
+        #    rms = estimate_rms(c, sigma)
+        #    c, (x, y) = self.readdata(c, x, y, v)
+        #if fitsimage is not None:
+        #    c, (x, y), (bmaj, bmin, bpa), _, rms \
+        #        = self.readfits(fitsimage, Tb, sigma, center, restfrq)
+        #self.rms = rms
+        #self.beam = [bmaj, bmin, bpa]
+        #if self.quadrants is not None:
+        #    c, x, y = quadrantmean(c, x, y, self.quadrants)
         x, y = x[::skip], y[::skip]
         c = self.skipfill(c, skip)
         for axnow, cnow in zip(self.ax, c):
             axnow.contour(x, y, cnow, np.sort(levels) * rms,
                           **dict(kwargs0, **kwargs))
         if show_beam and not self.pv:
-            self.add_beam(bmaj, bmin, bpa, beamcolor)
+            self.add_beam(*beam, beamcolor)
             
     def add_segment(self, ampfits: str = None, angfits: str = None,
                     Ufits: str = None, Qfits: str = None,
