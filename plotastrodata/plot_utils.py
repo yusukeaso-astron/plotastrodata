@@ -316,6 +316,7 @@ class PlotAstroData():
             return np.concatenate((d, dnan), axis=0)
         self.skipfill = skipfill
 
+
         def read(d, skip, cfactor: float =1):
             if d.center == 'common': d.center = self.center
             for i in range(n := len(d.data)):
