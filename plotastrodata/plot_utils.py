@@ -54,6 +54,7 @@ def quadrantmean(c: list, x: list, y: list, quadrants: str ='13') -> tuple:
 
 @dataclass
 class AstroData():
+    """Data to be processed before plotting"""
     data: np.ndarray
     x: np.ndarray
     y: np.ndarray
@@ -65,51 +66,54 @@ class AstroData():
     center: str
     restfrq: float
     def __post_init__(self):
+        if type(self.Tb) is bool:
+            self.data = [self.data]
+            self.beam = [self.beam]
+            self.fitsimage = [self.fitsimage]
+            self.Tb = [self.Tb]
+            self.sigma = [self.sigma]
+            self.restfrq = [self.restfrq]
         n = len(self.data)
         self.rms = [None] * n
         self.bunit = [''] * n
       
 def set_minmax(data: np.ndarray, stretch: str, stretchscale: float,
-               rms: float, kwargs: dict) -> np.ndarray:
+               rms: float, kw: dict) -> np.ndarray:
+    """Set vmin and vmax for color pcolormesh) and RGB maps."""
     if type(stretch) is str:
-        data, stretch, stretchscale, rms \
-            = [data], [stretch], [stretchscale], [rms]
-    newdata = [None] * (n := len(data))
-    for i, c in enumerate(data):
-        if stretchscale[i] is None:
-            stretchscale[i] = rms[i]
-        if stretchscale[i] == 'log':
+        data = [data]
+        rms = [rms]
+        stretch = [stretch]
+        stretchscale = [stretchscale]
+    z = (data, stretch, stretchscale, rms)
+    for i, (c, st, stsc, r) in enumerate(zip(*z)):
+        if stsc is None: stsc = r
+        if st == 'log':
             c = np.log10(c.clip(c[c > 0].min(), None))
-        elif stretchscale[i] == 'asinh':
-            c = np.arcsinh(c / stretchscale[i])
-        newdata[i] = c
+        elif st == 'asinh':
+            c = np.arcsinh(c / stsc)
+        data[i] = c
+    n = len(data)
     for m in ['vmin', 'vmax']:
-        if m in kwargs:
-            for i in range(n):
-                if stretch[i] == 'log':
-                    kwargs[m][i] = np.log10(kwargs[m][i])
-                elif stretch[i] == 'asinh':
-                    kwargs[m][i] = np.arcsinh(kwargs[m][i] / stretchscale)
+        if m in kw.keys():
+            for i, (_, st, stsc, _) in enumerate(zip(*z)):
+                if st == 'log':
+                    kw[m][i] = np.log10(kw[m][i])
+                elif st == 'asinh':
+                    kw[m][i] = np.arcsinh(kw[m][i] / stsc)
         else:
-            kwargs[m] = [None] * n
-            for i, c in enumerate(newdata):
-                if stretch[i] == 'log':
-                    if m == 'vmin':
-                        kwargs[m][i] = np.log10(rms)
-                    else:
-                        kwargs[m][i] = np.nanmax(c)
+            kw[m] = [None] * n
+            for i, (c, st, _, r) in enumerate(zip(*z)):
+                if m == 'vmin':
+                    kw[m][i] = np.log10(r) if st == 'log' else np.nanmin(c)
                 else:
-                    if m == 'vmin':
-                        kwargs[m][i] = np.nanmin(c)
-                    else:
-                        kwargs[m][i] = np.nanmax(c)
-    newdata = [c.clip(a, b) for c, a, b in
-               zip(newdata, kwargs['vmin'], kwargs['vmax'])]
-    if len(newdata) == 1:
-        newdata = newdata[0]
-        kwargs['vmin'] = kwargs['vmin'][0]
-        kwargs['vmax'] = kwargs['vmax'][0]
-    return newdata
+                    kw[m][i] = np.nanmax(c)
+    data = [c.clip(a, b) for c, a, b in zip(data, kw['vmin'], kw['vmax'])]
+    if n == 1:
+        data = data[0]
+        kw['vmin'] = kw['vmin'][0]
+        kw['vmax'] = kw['vmax'][0]
+    return data
             
             
 class PlotAstroData():
@@ -579,37 +583,12 @@ class PlotAstroData():
             bpa (float, optional): Beam position angle. Defaults to 0..
         """
         kwargs0 = {'cmap':'cubehelix', 'alpha':1, 'zorder':1}
-        d = AstroData(data=[c], x=x, y=y, v=v, beam=[(bmaj, bmin, bpa)],
-                      fitsimage=[fitsimage], Tb=[Tb],
-                      sigma=[sigma], center=center, restfrq=[restfrq])
+        d = AstroData(data=c, x=x, y=y, v=v, beam=(bmaj, bmin, bpa),
+                      fitsimage=fitsimage, Tb=Tb,
+                      sigma=sigma, center=center, restfrq=restfrq)
         self.read(d, skip, cfactor)
         c, x, y, beam, bunit, rms = d.data, d.x, d.y, d.beam, d.bunit, d.rms
         c = set_minmax(c, stretch, stretchscale, rms, kwargs)
-        '''
-        if stretchscale is None: stretchscale = rms
-        if stretch == 'log':
-            c = np.log10(c.clip(c[c > 0].min(), None))
-        elif stretch == 'asinh':
-            c = np.arcsinh(c / stretchscale)
-        if 'vmin' in kwargs:
-            if stretch == 'log':
-                kwargs['vmin'] = np.log10(kwargs['vmin'])
-            elif stretch == 'asinh':
-                kwargs['vmin'] = np.arcsinh(kwargs['vmin'] / stretchscale)
-        else:
-            if stretch == 'log':
-                kwargs['vmin'] = np.log10(rms)
-            else:
-                kwargs['vmin'] = np.nanmin(c)
-        if 'vmax' in kwargs:
-            if stretch == 'log':
-                kwargs['vmax'] = np.log10(kwargs['vmax'])
-            elif stretch == 'asinh':
-                kwargs['vmax'] = np.arcsinh(kwargs['vmax'] / stretchscale)
-        else:
-            kwargs['vmax'] = np.nanmax(c)
-        c = c.clip(kwargs['vmin'], kwargs['vmax'])
-        '''
         c = self.skipfill(c, skip)
         for axnow, cnow in zip(self.ax, c):
             p = axnow.pcolormesh(x, y, cnow, shading='nearest',
@@ -690,9 +669,9 @@ class PlotAstroData():
             bpa (float, optional): Beam position angle. Defaults to 0..
         """
         kwargs0 = {'colors':'gray', 'linewidths':1.0, 'zorder':2}
-        d = AstroData(data=[c], x=x, y=y, v=v, beam=[(bmaj, bmin, bpa)],
-                      fitsimage=[fitsimage], Tb=[Tb],
-                      sigma=[sigma], center=center, restfrq=[restfrq])
+        d = AstroData(data=c, x=x, y=y, v=v, beam=(bmaj, bmin, bpa),
+                      fitsimage=fitsimage, Tb=Tb,
+                      sigma=sigma, center=center, restfrq=restfrq)
         self.read(d, skip)
         c, x, y, beam, rms = d.data, d.x, d.y, d.beam, d.rms
         c = self.skipfill(c, skip)
@@ -838,35 +817,6 @@ class PlotAstroData():
         self.read(d, skip)
         c, x, y, beam, rms = d.data, d.x, d.y, d.beam, d.rms
         c = set_minmax(c, stretch, stretchscale, rms, kwargs)
-        '''
-        for i in range(3):
-            if stretchscale[i] is None: stretchscale[i] = rms[i]
-            if stretch[i] == 'log':
-                c[i] = np.log10(c[i].clip(c[i][c[i] > 0].min(), None))
-            elif stretch[i] == 'asinh':
-                c[i] = np.arcsinh(c[i] / stretchscale[i])
-        if 'vmin' in kwargs:
-            for i in range(3):
-                if stretch[i] == 'log':
-                    kwargs['vmin'][i] = np.log10(kwargs['vmin'][i])
-                elif stretch[i] == 'asinh':
-                    kwargs['vmin'][i] = np.arcsinh(kwargs['vmin'][i] / stretchscale[i])
-        else:
-            kwargs['vmin'] = [None, None, None]
-            for i in range(3):
-                if stretch[i] == 'log':
-                    kwargs['vmin'][i] = np.log10(rms[i])
-                else:
-                    kwargs['vmin'][i] = max(np.nanmin(c[i]), 0)
-        if 'vmax' in kwargs:
-            for i in range(3):
-                if stretch[i] == 'log':
-                    kwargs['vmax'][i] = np.log10(kwargs['vmax'][i])
-                elif stretch[i] == 'asinh':
-                    kwargs['vmax'][i] = np.arcsinh(kwargs['vmax'][i])
-        else:
-            kwargs['vmax'] = [np.nanmax(c[i]) for i in range(3)]
-        '''
         if not (np.shape(c[0]) == np.shape(c[1]) == np.shape(c[2])):
             print('RGB shapes mismatch. Skip add_rgb.')
             return -1
@@ -875,9 +825,8 @@ class PlotAstroData():
             c[i] = (c[i] - kwargs['vmin'][i]) \
                    / (kwargs['vmax'][i] - kwargs['vmin'][i]) * 255
             c[i] = self.skipfill(c[i], skip)
-
-        for axnow, red, green, blue in zip(self.ax, c[0], c[1], c[2]):
-            size = np.shape(red)
+        size = np.shape(c[0][0])
+        for axnow, red, green, blue in zip(self.ax, *c):
             im = Image.new('RGB', size[::-1], (128, 128, 128))
             rgb = [red[::-1, :], green[::-1, :], blue[::-1, :]]
             for j in range(size[0]):
