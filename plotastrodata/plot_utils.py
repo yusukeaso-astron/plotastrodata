@@ -1,10 +1,10 @@
-import re
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse, Rectangle
 from scipy.interpolate import RectBivariateSpline as RBS
 from scipy.optimize import curve_fit
+from dataclasses import dataclass
 from PIL import Image
 
 from plotastrodata.other_utils import (coord2xy, xy2coord, rel2abs,
@@ -51,6 +51,21 @@ def quadrantmean(c: list, x: list, y: list, quadrants: str ='13') -> tuple:
         print('quadrants must be \'13\' or \'24\'.')
     cnew = (cnew + cnew[::-1, ::-1]) / 2.
     return cnew[ny:, nx:], xnew[nx:], ynew[ny:]
+
+@dataclass
+class PlotParams():
+    c: np.ndarray
+    x: np.ndarray
+    y: np.ndarray
+    v: np.ndarray
+    beam: np.ndarray
+    fitsimage: str
+    Tb: bool
+    sigma: str
+    center: str
+    restfrq: float
+    bunit: str = ''
+    rms: float = 0
 
 
 class PlotAstroData():
@@ -316,6 +331,31 @@ class PlotAstroData():
             return a
         self.readdata = readdata
 
+        def read(d):
+            if d.center == 'common': d.center = self.center
+            if d.c is not None:
+                d.bunit, d.rms = '', estimate_rms(d.c, d.sigma)
+                d.c, (d.x, d.y) = readdata(d.c, d.x, d.y, d.v)    
+            if d.fitsimage is not None:
+                d.c, d.grid, d.beam, d.bunit, d.rms \
+                    = fits2data(fitsimage=d.fitsimage, Tb=d.Tb,
+                                sigma=d.sigma, restfrq=d.restfrq,
+                                center=d.center, log=False,
+                                rmax=rmax, dist=dist, xoff=xoff, yoff=yoff,
+                                vsys=vsys, vmin=vmin, vmax=vmax, pv=pv)
+            if d.grid[2] is not None and d.grid[2][1] < d.grid[2][0]:
+                d.c, d.grid[2] = d.c[::-1], v[::-1]
+                print('Inverted velocity.')
+            a = [data, grid[:2], beam, bunit, rms]
+            if pv: a[1] = grid[:3:2]
+            if swapxy:
+                a[1] = a[1][::-1]
+                a[0] = np.moveaxis(a[0], 1, 0)
+         
+            if self.quadrants is not None:
+                d.c, d.x, d.y = quadrantmean(d.c, d.x, d.y, self.quadrants)
+        self.read = read
+
         
     def add_region(self, patch: str = 'ellipse', poslist: list = [],
                    majlist: list = [], minlist: list = [], palist: list = [],
@@ -549,16 +589,21 @@ class PlotAstroData():
             del kwargs['log']
             stretch == 'log'
             print('WARNING: log=True was replaced by stretch=\'log\'.')
-        if center == 'common':
-            center = self.center
-        if c is not None:
-            bunit, rms = '', estimate_rms(c, sigma)
-            c, (x, y) = self.readdata(c, x, y, v)    
-        if fitsimage is not None:
-            c, (x, y), (bmaj, bmin, bpa), bunit, rms \
-                = self.readfits(fitsimage, Tb, sigma, center, restfrq)
-        if self.quadrants is not None:
-            c, x, y = quadrantmean(c, x, y, self.quadrants)
+        pp = PlotParams(c=c, x=x, y=y, v=v, beam=(bmaj, bmin, bpa),
+                        fitsimage=fitsimage, Tb=Tb,
+                        sigma=sigma, center=center, restfrq=restfrq)
+        self.read(pp)
+        c, x, y, beam, bunit, rms = pp.c, pp.x, pp.y, pp.beam, pp.bunit, pp.rms
+        #if center == 'common':
+        #    center = self.center
+        #if c is not None:
+        #    bunit, rms = '', estimate_rms(c, sigma)
+        #    c, (x, y) = self.readdata(c, x, y, v)    
+        #if fitsimage is not None:
+        #    c, (x, y), (bmaj, bmin, bpa), bunit, rms \
+        #        = self.readfits(fitsimage, Tb, sigma, center, restfrq)
+        #if self.quadrants is not None:
+        #    c, x, y = quadrantmean(c, x, y, self.quadrants)
         c = c * cfactor
         rms = rms * cfactor
         self.rms = rms
@@ -627,7 +672,7 @@ class PlotAstroData():
                     ticklin = np.sinh(t) * stretchscale
                 cb.set_ticklabels([f'{d:{cbformat[1:]}}' for d in ticklin])
         if show_beam and not self.pv:
-            self.add_beam(bmaj, bmin, bpa, beamcolor)
+            self.add_beam(*beam, beamcolor)
 
     def add_contour(self, fitsimage: str = None,
                     x: list = None, y: list = None, skip: int = 1,
@@ -667,26 +712,31 @@ class PlotAstroData():
             bpa (float, optional): Beam position angle. Defaults to 0..
         """
         kwargs0 = {'colors':'gray', 'linewidths':1.0, 'zorder':2}
-        if center == 'common':
-            center = self.center
-        if c is not None:
-            if np.ndim(c) == 2 and sigma == 'edge': sigma = 'out'
-            rms = estimate_rms(c, sigma)
-            c, (x, y) = self.readdata(c, x, y, v)
-        if fitsimage is not None:
-            c, (x, y), (bmaj, bmin, bpa), _, rms \
-                = self.readfits(fitsimage, Tb, sigma, center, restfrq)
-        self.rms = rms
-        self.beam = [bmaj, bmin, bpa]
-        if self.quadrants is not None:
-            c, x, y = quadrantmean(c, x, y, self.quadrants)
+        pp = PlotParams(c=c, x=x, y=y, v=v, beam=(bmaj, bmin, bpa),
+                        fitsimage=fitsimage, Tb=Tb,
+                        sigma=sigma, center=center, restfrq=restfrq)
+        self.read(pp)
+        c, x, y, beam, bunit, rms = pp.c, pp.x, pp.y, pp.beam, pp.bunit, pp.rms
+        #if center == 'common':
+        #    center = self.center
+        #if c is not None:
+        #    if np.ndim(c) == 2 and sigma == 'edge': sigma = 'out'
+        #    rms = estimate_rms(c, sigma)
+        #    c, (x, y) = self.readdata(c, x, y, v)
+        #if fitsimage is not None:
+        #    c, (x, y), (bmaj, bmin, bpa), _, rms \
+        #        = self.readfits(fitsimage, Tb, sigma, center, restfrq)
+        #self.rms = rms
+        #self.beam = [bmaj, bmin, bpa]
+        #if self.quadrants is not None:
+        #    c, x, y = quadrantmean(c, x, y, self.quadrants)
         x, y = x[::skip], y[::skip]
         c = self.skipfill(c, skip)
         for axnow, cnow in zip(self.ax, c):
             axnow.contour(x, y, cnow, np.sort(levels) * rms,
                           **dict(kwargs0, **kwargs))
         if show_beam and not self.pv:
-            self.add_beam(bmaj, bmin, bpa, beamcolor)
+            self.add_beam(*beam, beamcolor)
             
     def add_segment(self, ampfits: str = None, angfits: str = None,
                     Ufits: str = None, Qfits: str = None,
