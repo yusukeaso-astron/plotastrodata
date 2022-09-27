@@ -328,18 +328,29 @@ class PlotAstroData():
             return a
         self.readdata = readdata
 
-        def read(pp):
-            if pp.center == 'common': pp.center = self.center
-            if pp.c is not None:
-                pp.bunit, pp.rms = '', estimate_rms(pp.c, pp.sigma)
-                pp.c, (pp.x, pp.y) = readdata(pp.c, pp.x, pp.y, pp.v)    
-            if pp.fitsimage is not None:
-                pp.c, (pp.x, pp.y), pp.beam, pp.bunit, pp.rms \
-                    = readfits(pp.fitsimage, pp.Tb, pp.sigma,
-                               pp.center, pp.restfrq)
+        def read(d):
+            if d.center == 'common': d.center = self.center
+            if d.c is not None:
+                d.bunit, d.rms = '', estimate_rms(d.c, d.sigma)
+                d.c, (d.x, d.y) = readdata(d.c, d.x, d.y, d.v)    
+            if d.fitsimage is not None:
+                d.c, d.grid, d.beam, d.bunit, d.rms \
+                    = fits2data(fitsimage=d.fitsimage, Tb=d.Tb,
+                                sigma=d.sigma, restfrq=d.restfrq,
+                                center=d.center, log=False,
+                                rmax=rmax, dist=dist, xoff=xoff, yoff=yoff,
+                                vsys=vsys, vmin=vmin, vmax=vmax, pv=pv)
+            if d.grid[2] is not None and d.grid[2][1] < d.grid[2][0]:
+                d.c, d.grid[2] = d.c[::-1], v[::-1]
+                print('Inverted velocity.')
+            a = [data, grid[:2], beam, bunit, rms]
+            if pv: a[1] = grid[:3:2]
+            if swapxy:
+                a[1] = a[1][::-1]
+                a[0] = np.moveaxis(a[0], 1, 0)
+         
             if self.quadrants is not None:
-                pp.c, pp.x, pp.y = quadrantmean(pp.c, pp.x, pp.y,
-                                                self.quadrants)
+                d.c, d.x, d.y = quadrantmean(d.c, d.x, d.y, self.quadrants)
         self.read = read
 
         
