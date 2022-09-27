@@ -53,21 +53,69 @@ def quadrantmean(c: list, x: list, y: list, quadrants: str ='13') -> tuple:
     return cnew[ny:, nx:], xnew[nx:], ynew[ny:]
 
 @dataclass
-class PlotParams():
-    c: np.ndarray
+class AstroData():
+    """Data to be processed before plotting"""
+    data: np.ndarray
     x: np.ndarray
     y: np.ndarray
     v: np.ndarray
-    beam: np.ndarray
+    beam: list
     fitsimage: str
     Tb: bool
     sigma: str
     center: str
     restfrq: float
-    bunit: str = ''
-    rms: float = 0
-
-
+    def __post_init__(self):
+        if type(self.Tb) is bool:
+            self.data = [self.data]
+            self.beam = [self.beam]
+            self.fitsimage = [self.fitsimage]
+            self.Tb = [self.Tb]
+            self.sigma = [self.sigma]
+            self.restfrq = [self.restfrq]
+        n = len(self.data)
+        self.rms = [None] * n
+        self.bunit = [''] * n
+      
+def set_minmax(data: np.ndarray, stretch: str, stretchscale: float,
+               rms: float, kw: dict) -> np.ndarray:
+    """Set vmin and vmax for color pcolormesh) and RGB maps."""
+    if type(stretch) is str:
+        data = [data]
+        rms = [rms]
+        stretch = [stretch]
+        stretchscale = [stretchscale]
+    z = (data, stretch, stretchscale, rms)
+    for i, (c, st, stsc, r) in enumerate(zip(*z)):
+        if stsc is None: stsc = r
+        if st == 'log':
+            c = np.log10(c.clip(c[c > 0].min(), None))
+        elif st == 'asinh':
+            c = np.arcsinh(c / stsc)
+        data[i] = c
+    n = len(data)
+    for m in ['vmin', 'vmax']:
+        if m in kw.keys():
+            for i, (_, st, stsc, _) in enumerate(zip(*z)):
+                if st == 'log':
+                    kw[m][i] = np.log10(kw[m][i])
+                elif st == 'asinh':
+                    kw[m][i] = np.arcsinh(kw[m][i] / stsc)
+        else:
+            kw[m] = [None] * n
+            for i, (c, st, _, r) in enumerate(zip(*z)):
+                if m == 'vmin':
+                    kw[m][i] = np.log10(r) if st == 'log' else np.nanmin(c)
+                else:
+                    kw[m][i] = np.nanmax(c)
+    data = [c.clip(a, b) for c, a, b in zip(data, kw['vmin'], kw['vmax'])]
+    if n == 1:
+        data = data[0]
+        kw['vmin'] = kw['vmin'][0]
+        kw['vmax'] = kw['vmax'][0]
+    return data
+            
+            
 class PlotAstroData():
     """Make a figure from 2D/3D FITS files or 2D/3D arrays.
     
@@ -267,93 +315,44 @@ class PlotAstroData():
             dnan = np.full(shape, d[0] * np.nan)
             return np.concatenate((d, dnan), axis=0)
         self.skipfill = skipfill
-        
-        def readfits(fitsimage: str, Tb: bool = False,
-                     sigma: str or float = None,
-                     center: str = None, restfrq: float = None) -> tuple:
-            """Use fits2data() to read a fits file.
 
-            Args:
-                fitsimage (str): Input fits name.
-                Tb (bool, optional):
-                    True means the output data are brightness temperature.
-                    Defaults to False.
-                sigma (str or float, optional):
-                    Noise level or method for measuring it. Defaults to None.
-                center (str, optional):
-                    Text coordinates like '12h34m56.7s 12d34m56.7s.
-                    Defaults to None.
-                restfrq (float, optional):
-                    Used for velocity and brightness T. Defaults to None.
 
-            Returns:
-                list: [data, (x, y or v), (bmaj, bmin, bpa), bunit, rms]
-            """
-            data, grid, beam, bunit, rms \
-                = fits2data(fitsimage=fitsimage, Tb=Tb, log=False,
-                            sigma=sigma, restfrq=restfrq, center=center,
-                            rmax=rmax, dist=dist, xoff=xoff, yoff=yoff,
-                            vsys=vsys, vmin=vmin, vmax=vmax, pv=pv)
-            if grid[2] is not None and grid[2][1] < grid[2][0]:
-                data, grid[2] = data[::-1], grid[2][::-1]
-                print('Inverted velocity.')
-            a = [data, grid[:2], beam, bunit, rms]
-            if pv: a[1] = grid[:3:2]
-            if swapxy:
-                a[1] = a[1][::-1]
-                a[0] = np.moveaxis(a[0], 1, 0)
-            return a
-        self.readfits = readfits
-        
-        def readdata(data: list = None, x: list = None,
-                     y: list = None, v: list = None) -> list:
-            """Input data without a fits file.
-
-            Args:
-                data (list, optional): 2D or 3D array. Defaults to None.
-                x (list, optional): 1D array. Defaults to None.
-                y (list, optional): 1D array. Defaults to None.
-                v (list, optional): 1D array. Defaults to None.
-
-            Returns:
-                list: [data, (x, y or v)]
-            """
-            dataout, grid = trim(data=data, x=x, y=y, v=v,
-                                 xlim=xlim, ylim=ylim, vlim=vlim, pv=pv)
-            if grid[2] is not None and grid[2][1] < grid[2][0]:
-                dataout, grid[2] = dataout[::-1], grid[2][::-1]
-                print('Inverted velocity.')
-            a = [dataout, grid[:2]]
-            if pv: a[1] = grid[:3:2]
-            if swapxy:
-                a[1] = a[1][::-1]
-                a[0] = np.moveaxis(a[0], 1, 0)
-            return a
-        self.readdata = readdata
-
-        def read(d):
+        def read(d, skip, cfactor: float =1):
             if d.center == 'common': d.center = self.center
-            if d.c is not None:
-                d.bunit, d.rms = '', estimate_rms(d.c, d.sigma)
-                d.c, (d.x, d.y) = readdata(d.c, d.x, d.y, d.v)    
-            if d.fitsimage is not None:
-                d.c, d.grid, d.beam, d.bunit, d.rms \
-                    = fits2data(fitsimage=d.fitsimage, Tb=d.Tb,
-                                sigma=d.sigma, restfrq=d.restfrq,
-                                center=d.center, log=False,
-                                rmax=rmax, dist=dist, xoff=xoff, yoff=yoff,
-                                vsys=vsys, vmin=vmin, vmax=vmax, pv=pv)
-            if d.grid[2] is not None and d.grid[2][1] < d.grid[2][0]:
-                d.c, d.grid[2] = d.c[::-1], v[::-1]
-                print('Inverted velocity.')
-            a = [data, grid[:2], beam, bunit, rms]
-            if pv: a[1] = grid[:3:2]
-            if swapxy:
-                a[1] = a[1][::-1]
-                a[0] = np.moveaxis(a[0], 1, 0)
-         
+            for i in range(n := len(d.data)):
+                if d.data[i] is not None:
+                    d.data[i], grid \
+                        = trim(data=d.data[i], x=d.x, y=d.y, v=d.v,
+                               xlim=xlim, ylim=ylim, vlim=vlim, pv=pv)
+                    d.rms[i] = estimate_rms(d.data[i], d.sigma[i])
+                if d.fitsimage[i] is not None:
+                    d.data[i], grid, d.beam[i], d.bunit[i], d.rms[i] \
+                        = fits2data(fitsimage=d.fitsimage[i], Tb=d.Tb[i],
+                                    sigma=d.sigma[i], restfrq=d.restfrq[i],
+                                    center=d.center, log=False,
+                                    rmax=rmax, dist=dist,
+                                    xoff=xoff, yoff=yoff,
+                                    vsys=vsys, vmin=vmin, vmax=vmax, pv=pv)
+                if grid[2] is not None and grid[2][1] < grid[2][0]:
+                    d.data[i], grid[2] = d.data[i][::-1], grid[2][::-1]
+                    print('Inverted velocity.')
+                if swapxy: d.data[i] = np.moveaxis(d.data[i], 1, 0)
+            grid = grid[:3:2] if pv else grid[:2]
+            if swapxy: grid = grid[::-1]
+            d.x, d.y = grid
             if self.quadrants is not None:
-                d.c, d.x, d.y = quadrantmean(d.c, d.x, d.y, self.quadrants)
+                for i in range(n):
+                    d.data[i], d.x, d.y \
+                        = quadrantmean(d.data[i], d.x, d.y, self.quadrants)
+            if len(d.data) == 1:
+                d.data = d.data[0]
+                d.beam = d.beam[0]
+                d.bunit = d.bunit[0]
+                d.rms = d.rms[0]
+            d.x, d.y = d.x[::skip], d.y[::skip]
+            d.data = d.data * cfactor
+            self.rms = d.rms = d.rms * cfactor
+            self.beam = d.beam
         self.read = read
 
         
@@ -585,53 +584,12 @@ class PlotAstroData():
             bpa (float, optional): Beam position angle. Defaults to 0..
         """
         kwargs0 = {'cmap':'cubehelix', 'alpha':1, 'zorder':1}
-        if 'log' in kwargs.keys() and kwargs['log']:
-            del kwargs['log']
-            stretch == 'log'
-            print('WARNING: log=True was replaced by stretch=\'log\'.')
-        pp = PlotParams(c=c, x=x, y=y, v=v, beam=(bmaj, bmin, bpa),
-                        fitsimage=fitsimage, Tb=Tb,
-                        sigma=sigma, center=center, restfrq=restfrq)
-        self.read(pp)
-        c, x, y, beam, bunit, rms = pp.c, pp.x, pp.y, pp.beam, pp.bunit, pp.rms
-        #if center == 'common':
-        #    center = self.center
-        #if c is not None:
-        #    bunit, rms = '', estimate_rms(c, sigma)
-        #    c, (x, y) = self.readdata(c, x, y, v)    
-        #if fitsimage is not None:
-        #    c, (x, y), (bmaj, bmin, bpa), bunit, rms \
-        #        = self.readfits(fitsimage, Tb, sigma, center, restfrq)
-        #if self.quadrants is not None:
-        #    c, x, y = quadrantmean(c, x, y, self.quadrants)
-        c = c * cfactor
-        rms = rms * cfactor
-        self.rms = rms
-        self.beam = [bmaj, bmin, bpa]
-        if stretchscale is None: stretchscale = rms
-        if stretch == 'log':
-            c = np.log10(c.clip(c[c > 0].min(), None))
-        elif stretch == 'asinh':
-            c = np.arcsinh(c / stretchscale)
-        if 'vmin' in kwargs:
-            if stretch == 'log':
-                kwargs['vmin'] = np.log10(kwargs['vmin'])
-            elif stretch == 'asinh':
-                kwargs['vmin'] = np.arcsinh(kwargs['vmin'] / stretchscale)
-        else:
-            if stretch == 'log':
-                kwargs['vmin'] = np.log10(rms)
-            else:
-                kwargs['vmin'] = np.nanmin(c)
-        if 'vmax' in kwargs:
-            if stretch == 'log':
-                kwargs['vmax'] = np.log10(kwargs['vmax'])
-            elif stretch == 'asinh':
-                kwargs['vmax'] = np.arcsinh(kwargs['vmax'] / stretchscale)
-        else:
-            kwargs['vmax'] = np.nanmax(c)
-        c = c.clip(kwargs['vmin'], kwargs['vmax'])
-        x, y = x[::skip], y[::skip]
+        d = AstroData(data=c, x=x, y=y, v=v, beam=(bmaj, bmin, bpa),
+                      fitsimage=fitsimage, Tb=Tb,
+                      sigma=sigma, center=center, restfrq=restfrq)
+        self.read(d, skip, cfactor)
+        c, x, y, beam, bunit, rms = d.data, d.x, d.y, d.beam, d.bunit, d.rms
+        c = set_minmax(c, stretch, stretchscale, rms, kwargs)
         c = self.skipfill(c, skip)
         for axnow, cnow in zip(self.ax, c):
             p = axnow.pcolormesh(x, y, cnow, shading='nearest',
@@ -712,25 +670,11 @@ class PlotAstroData():
             bpa (float, optional): Beam position angle. Defaults to 0..
         """
         kwargs0 = {'colors':'gray', 'linewidths':1.0, 'zorder':2}
-        pp = PlotParams(c=c, x=x, y=y, v=v, beam=(bmaj, bmin, bpa),
-                        fitsimage=fitsimage, Tb=Tb,
-                        sigma=sigma, center=center, restfrq=restfrq)
-        self.read(pp)
-        c, x, y, beam, bunit, rms = pp.c, pp.x, pp.y, pp.beam, pp.bunit, pp.rms
-        #if center == 'common':
-        #    center = self.center
-        #if c is not None:
-        #    if np.ndim(c) == 2 and sigma == 'edge': sigma = 'out'
-        #    rms = estimate_rms(c, sigma)
-        #    c, (x, y) = self.readdata(c, x, y, v)
-        #if fitsimage is not None:
-        #    c, (x, y), (bmaj, bmin, bpa), _, rms \
-        #        = self.readfits(fitsimage, Tb, sigma, center, restfrq)
-        #self.rms = rms
-        #self.beam = [bmaj, bmin, bpa]
-        #if self.quadrants is not None:
-        #    c, x, y = quadrantmean(c, x, y, self.quadrants)
-        x, y = x[::skip], y[::skip]
+        d = AstroData(data=c, x=x, y=y, v=v, beam=(bmaj, bmin, bpa),
+                      fitsimage=fitsimage, Tb=Tb,
+                      sigma=sigma, center=center, restfrq=restfrq)
+        self.read(d, skip)
+        c, x, y, beam, rms = d.data, d.x, d.y, d.beam, d.rms
         c = self.skipfill(c, skip)
         for axnow, cnow in zip(self.ax, c):
             axnow.contour(x, y, cnow, np.sort(levels) * rms,
@@ -794,64 +738,45 @@ class PlotAstroData():
         kwargs0 = {'angles':'xy', 'scale_units':'xy', 'color':'gray',
                    'pivot':'mid', 'headwidth':0, 'headlength':0,
                    'headaxislength':0, 'width':0.007, 'zorder':3}
-        if center == 'common':
-            center = self.center
-        if amp is not None:
-            amp, (x, y) = self.readdata(amp, x, y, v)
-        if ampfits is not None:
-            amp, (x, y), (bmaj, bmin, bpa), _, _ \
-                = self.readfits(ampfits, False, None, center, restfrq)
-        if ang is not None:
-            ang, (x, y) = self.readdata(ang, x, y, v)
-        if angfits is not None:
-            ang, (x, y), (bmaj, bmin, bpa), _, _ \
-                = self.readfits(angfits, False, None, center, restfrq)
-        if stU is not None:
-            rmsU = estimate_rms(stU, sigma)
-            stU, (x, y) = self.readdata(stU, x, y, v)
-        if Ufits is not None:
-            stU, (x, y), (bmaj, bmin, bpa), _, rmsU \
-                = self.readfits(Ufits, False, sigma, center, restfrq)
-        if stQ is not None:
-            rmsU = estimate_rms(stU, sigma)
-            stQ, (x, y) = self.readdata(stQ, x, y, v)
-        if Qfits is not None:
-            stQ, (x, y), (bmaj, bmin, bpa), _, rmsQ \
-                = self.readfits(Qfits, False, sigma, center, restfrq)
-        if not (stU is None or stQ is None):
-            rms = (rmsU + rmsQ) / 2.
-            self.rms = rms
-            self.beam = [bmaj, bmin, bpa]
-            stU[np.abs(stU) < cutoff * rms] = np.nan
-            stQ[np.abs(stQ) < cutoff * rms] = np.nan
-            amp = np.hypot(stU, stQ)
+        d = AstroData(data=[amp, ang, stU, stQ],
+                      x=x, y=y, v=v, beam=[(bmaj, bmin, bpa)] * 4,
+                      fitsimage=[ampfits, angfits, Ufits, Qfits],
+                      Tb=[False] * 4, sigma=[sigma] * 4,
+                      center=center, restfrq=[None] * 4)
+        self.read(d, skip)
+        c, x, y, beam, rms = d.data, d.x, d.y, d.beam, d.rms
+        amp, ang, stU, stQ = c
+        rmsU, rmsQ = rms[2:]
+        self.beam = beam = beam[0]
+        if stU is not None and stQ is not None:
+            self.rms = rms = (rmsU + rmsQ) / 2.
             ang = np.degrees(np.arctan2(stU, stQ) / 2.)
+            amp = np.hypot(stU, stQ)
+            amp[amp < cutoff * rms] = np.nan
         if amp is None or angonly: amp = np.ones_like(ang)
-        x, y = x[::skip], y[::skip]
         amp = self.skipfill(amp, skip)
         ang = self.skipfill(ang, skip)
-        ang += rotation
-        u = ampfactor * amp * np.sin(np.radians(ang))
-        v = ampfactor * amp * np.cos(np.radians(ang))
+        u = ampfactor * amp * np.sin(np.radians(ang + rotation))
+        v = ampfactor * amp * np.cos(np.radians(ang + rotation))
         kwargs0['scale'] = 1. / np.abs(x[1] - x[0])
         for axnow, unow, vnow in zip(self.ax, u, v):
             axnow.quiver(x, y, unow, vnow, **dict(kwargs0, **kwargs))
         if show_beam and not self.pv:
-            self.add_beam(bmaj, bmin, bpa, beamcolor)
+            self.add_beam(*beam, beamcolor)
 
-    def add_rgb(self, fitsimage: list = None,
+    def add_rgb(self, fitsimage: list = [None] * 3,
                 x: list = None, y: list = None, skip: int = 1,
-                v: list = None, c: list = None,
+                v: list = None, c: list = [None] * 3,
                 center: str = 'common',
-                restfrq: list = [None, None, None],
-                Tb: list = [False, False, False],
-                stretch: list = ['linear', 'linear', 'linear'],
-                stretchscale: list = None,
-                sigma: list = ['out', 'out', 'out'],
+                restfrq: list = [None] * 3,
+                Tb: list = [False] * 3,
+                stretch: list = ['linear'] * 3,
+                stretchscale: list = [None] * 3,
+                sigma: list = ['out'] * 3,
                 show_beam: bool = True,
                 beamcolor: list = ['red', 'green', 'blue'],
-                bmaj: list = [0, 0, 0], bmin: list = [0, 0, 0],
-                bpa: list = [0, 0, 0], **kwargs) -> None:
+                bmaj: list = [0] * 3, bmin: list = [0] * 3,
+                bpa: list = [0] * 3, **kwargs) -> None:
         """Use PIL.Image and imshow of matplotlib.
         
         A three-element array ([red, green, blue]) is supposed for
@@ -886,74 +811,34 @@ class PlotAstroData():
             bmin (float, optional): Beam minor axis. Defaults to 0..
             bpa (float, optional): Beam position angle. Defaults to 0..
         """
-        if center == 'common':
-            center = [self.center, self.center, self.center]
-        if c is not None:
-            bunit, rms = [None] * 3, [None] * 3
-            for i in range(3):
-                bunit[i], rms[i] = '', estimate_rms(c[i], sigma[i])
-                c[i], (x[i], y[i]) = self.readdata(c[i], x[i], y[i], v[i])    
-        if fitsimage is not None:
-            c, x, y = [None] * 3, [None] * 3, [None] * 3
-            bunit, rms = [None] * 3, [None] * 3
-            bmaj, bmin, bpa = [None] * 3, [None] * 3, [None] * 3
-            for i in range(3):
-                c[i], (x[i], y[i]), (bmaj[i], bmin[i], bpa[i]), bunit[i], rms[i] \
-                    = self.readfits(fitsimage[i], Tb[i], sigma[i], center[i], restfrq[i])
-        if self.quadrants is not None:
-            for i in range(3):
-                c[i], x[i], y[i] = quadrantmean(c[i], x[i], y[i], self.quadrants)
-        self.rms = rms
-        self.beam = [bmaj, bmin, bpa]
-        for i in range(3):
-            if stretch[i] == 'log':
-                c[i] = np.log10(c[i].clip(c[i][c[i] > 0].min(), None))
-            elif stretch[i] == 'asinh':
-                c[i] = np.arcsinh(c[i] / stretchscale[i])
-        if 'vmin' in kwargs:
-            for i in range(3):
-                if stretch[i] == 'log':
-                    kwargs['vmin'][i] = np.log10(kwargs['vmin'][i])
-                elif stretch[i] == 'asinh':
-                    kwargs['vmin'][i] = np.arcsinh(kwargs['vmin'][i] / stretchscale[i])
-        else:
-            kwargs['vmin'] = [None, None, None]
-            for i in range(3):
-                if stretch[i] == 'log':
-                    kwargs['vmin'][i] = np.log10(rms[i])
-                else:
-                    kwargs['vmin'][i] = max(np.nanmin(c[i]), 0)
-        if 'vmax' in kwargs:
-            for i in range(3):
-                if stretch[i] == 'log':
-                    kwargs['vmax'][i] = np.log10(kwargs['vmax'][i])
-                elif stretch[i] == 'asinh':
-                    kwargs['vmax'][i] = np.arcsinh(kwargs['vmax'][i])
-        else:
-            kwargs['vmax'] = [np.nanmax(c[i]) for i in range(3)]
-        for i in range(3):
-            c[i] = c[i].clip(kwargs['vmin'][i], kwargs['vmax'][i])
-            c[i] = (c[i] - kwargs['vmin'][i]) \
-                   / (kwargs['vmax'][i] - kwargs['vmin'][i]) * 255
-            x[i], y[i] = x[i][::skip], y[i][::skip]
-            c[i] = self.skipfill(c[i], skip)
+        d = AstroData(data=c, x=x, y=y, v=v,
+                      beam=np.array([bmaj, bmin, bpa]).T,
+                      fitsimage=fitsimage, Tb=Tb, sigma=sigma,
+                      center=center, restfrq=restfrq)
+        self.read(d, skip)
+        c, x, y, beam, rms = d.data, d.x, d.y, d.beam, d.rms
+        c = set_minmax(c, stretch, stretchscale, rms, kwargs)
         if not (np.shape(c[0]) == np.shape(c[1]) == np.shape(c[2])):
             print('RGB shapes mismatch. Skip add_rgb.')
             return -1
 
-        for axnow, red, green, blue in zip(self.ax, c[0], c[1], c[2]):
-            size = np.shape(red)
+        for i in range(3):
+            c[i] = (c[i] - kwargs['vmin'][i]) \
+                   / (kwargs['vmax'][i] - kwargs['vmin'][i]) * 255
+            c[i] = self.skipfill(c[i], skip)
+        size = np.shape(c[0][0])
+        for axnow, red, green, blue in zip(self.ax, *c):
             im = Image.new('RGB', size[::-1], (128, 128, 128))
             rgb = [red[::-1, :], green[::-1, :], blue[::-1, :]]
             for j in range(size[0]):
                 for i in range(size[1]):
                     value = tuple(int(a[j, i]) for a in rgb)
                     im.putpixel((i, j), value)
-            axnow.imshow(im, extent=[x[0][0], x[0][-1], y[0][0], y[0][-1]])
-            axnow.set_aspect(np.abs((x[0][-1]-x[0][0])/(y[0][-1]-y[0][0])))
+            axnow.imshow(im, extent=[x[0], x[-1], y[0], y[-1]])
+            axnow.set_aspect(np.abs((x[-1]-x[0]) / (y[-1]-y[0])))
         if show_beam and not self.pv:
             for i in range(3):
-                self.add_beam(bmaj[i], bmin[i], bpa[i], beamcolor[i])
+                self.add_beam(*beam[i], beamcolor[i])
     
     def set_axis(self, xticks: list = None, yticks: list = None,
                  xticksminor: list = None, yticksminor: list = None,
