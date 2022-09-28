@@ -302,7 +302,6 @@ class PlotAstroData():
 
             Args:
                 c (list): 2D or 3D arrays.
-                skip (int, optional): Spatial skip number. Defaults to 1.
 
             Returns:
                 list: 3D arrays skipped and filled with nan.
@@ -316,13 +315,13 @@ class PlotAstroData():
             return np.concatenate((d, dnan), axis=0)
         self.vskipfill = vskipfill
 
-        def read(d, skip: int, cfactor: float = 1):
+        def read(d, xskip: int, yskip: int, cfactor: float = 1):
             """Get data, grid, rms, beam, and bunit from the input of
                add_color, add_contour, add_segment, and add_rgb.
 
             Args:
                 d (AstroData): Dataclass made of the add_* input.
-                skip (int): Spatial skip pixel number.
+                xskip, yskip (int): Spatial pixel skip.
                 cfactor (float, optional): Data times cfactor. Defaults to 1.
             """
             if d.center == 'common': d.center = self.center
@@ -345,19 +344,16 @@ class PlotAstroData():
                     if grid[2] is not None and grid[2][1] < grid[2][0]:
                         d.data[i], grid[2] = d.data[i][::-1], grid[2][::-1]
                         print('Inverted velocity.')
-                    grid[0] = grid[0][::skip]
-                    if not pv: grid[1] = grid[1][::skip]
-                    if np.ndim(d.data[i]) == 3:
-                        d.data[i] = d.data[i][:, ::skip, ::skip]
-                    else:
-                        if pv:
-                            d.data[i] = d.data[i][:, ::skip]
-                        else:
-                            d.data[i] = d.data[i][::skip, ::skip]
                     grid = grid[:3:2] if pv else grid[:2]
                     if swapxy:
                         grid = grid[::-1]
                         d.data[i] = np.moveaxis(d.data[i], 1, 0)
+                    grid[0] = grid[0][::xskip]
+                    grid[1] = grid[1][::yskip]
+                    if np.ndim(d.data[i]) == 3:
+                        d.data[i] = d.data[i][:, ::yskip, ::xskip]
+                    else:
+                        d.data[i] = d.data[i][::yskip, ::xskip]
                     d.x, d.y = grid
                     if quadrants is not None:
                         d.data[i], d.x, d.y \
@@ -547,7 +543,8 @@ class PlotAstroData():
                        '-', linewidth=linewidth, color=color)
     
     def add_color(self, fitsimage: str = None,
-                  x: list = None, y: list = None, skip: int = 1,
+                  x: list = None, y: list = None,
+                  xskip: int = 1, yskip: int = 1,
                   v: list = None, c: list = None,
                   center: str = 'common', restfrq: float = None,
                   Tb: bool = False, stretch: str = 'linear',
@@ -565,7 +562,7 @@ class PlotAstroData():
             fitsimage (str, optional): Input fits name. Defaults to None.
             x (list, optional): 1D array. Defaults to None.
             y (list, optional): 1D array. Defaults to None.
-            skip (int, optional): Spatial pixel skip. Defaults to 1.
+            xskip, yskip (int, optional): Spatial pixel skip. Defaults to 1.
             v (list, optional): 1D array. Defaults to None.
             c (list, optional): 2D or 3D array. Defaults to None.
             center (str, optional):
@@ -604,7 +601,7 @@ class PlotAstroData():
         d = AstroData(data=c, x=x, y=y, v=v, beam=(bmaj, bmin, bpa),
                       fitsimage=fitsimage, Tb=Tb,
                       sigma=sigma, center=center, restfrq=restfrq)
-        self.read(d, skip, cfactor)
+        self.read(d, xskip, yskip, cfactor)
         c, x, y, beam, bunit, rms = d.data, d.x, d.y, d.beam, d.bunit, d.rms
         c = set_minmax(c, stretch, stretchscale, rms, kwargs)
         c = self.vskipfill(c)
@@ -650,7 +647,8 @@ class PlotAstroData():
             self.add_beam(*beam, beamcolor)
 
     def add_contour(self, fitsimage: str = None,
-                    x: list = None, y: list = None, skip: int = 1,
+                    x: list = None, y: list = None,
+                    xskip: int = 1, yskip: int = 1,
                     v: list = None, c: list = None,
                     center: str = 'common', restfrq: float = None,
                     sigma: str or float = 'out',
@@ -665,7 +663,7 @@ class PlotAstroData():
             fitsimage (str, optional): Input fits name. Defaults to None.
             x (list, optional): 1D array. Defaults to None.
             y (list, optional): 1D array. Defaults to None.
-            skip (int, optional): Spatial pixel skip. Defaults to 1.
+            xskip, yskip (int, optional): Spatial pixel skip. Defaults to 1.
             v (list, optional): 1D array. Defaults to None.
             c (list, optional): 1D array. Defaults to None.
             center (str, optional):
@@ -690,7 +688,7 @@ class PlotAstroData():
         d = AstroData(data=c, x=x, y=y, v=v, beam=(bmaj, bmin, bpa),
                       fitsimage=fitsimage, Tb=Tb,
                       sigma=sigma, center=center, restfrq=restfrq)
-        self.read(d, skip)
+        self.read(d, xskip, yskip)
         c, x, y, beam, rms = d.data, d.x, d.y, d.beam, d.rms
         c = self.vskipfill(c)
         for axnow, cnow in zip(self.ax, c):
@@ -701,7 +699,8 @@ class PlotAstroData():
             
     def add_segment(self, ampfits: str = None, angfits: str = None,
                     Ufits: str = None, Qfits: str = None,
-                    x: list = None, y: list = None, skip: int = 1,
+                    x: list = None, y: list = None,
+                    xskip: int = 1, yskip: int = 1,
                     v: list = None, amp: list = None, ang: list = None,
                     stU: list = None, stQ: list = None,
                     ampfactor: float = 1., angonly: bool = False,
@@ -724,7 +723,7 @@ class PlotAstroData():
                 In put fits name. Stokes Q. Defaults to None.
             x (list, optional): 1D array. Defaults to None.
             y (list, optional): 1D array. Defaults to None.
-            skip (int, optional): Spatial pixel skip. Defaults to 1.
+            xskip, yskip (int, optional): Spatial pixel skip. Defaults to 1.
             v (list, optional): 1D array. Defaults to None.
             amp (list, optional): Length of segment. Defaults to None.
             ang (list, optional): North to east. Defaults to None.
@@ -760,7 +759,7 @@ class PlotAstroData():
                       fitsimage=[ampfits, angfits, Ufits, Qfits],
                       Tb=[False] * 4, sigma=[sigma] * 4,
                       center=center, restfrq=[None] * 4)
-        self.read(d, skip)
+        self.read(d, xskip, yskip)
         c, x, y, beam, rms = d.data, d.x, d.y, d.beam, d.rms
         amp, ang, stU, stQ = c
         rmsU, rmsQ = rms[2:]
@@ -782,7 +781,8 @@ class PlotAstroData():
             self.add_beam(*beam, beamcolor)
 
     def add_rgb(self, fitsimage: list = [None] * 3,
-                x: list = None, y: list = None, skip: int = 1,
+                x: list = None, y: list = None,
+                xskip: int = 1, yskip: int = 1,
                 v: list = None, c: list = [None] * 3,
                 center: str = 'common',
                 restfrq: list = [None] * 3,
@@ -804,7 +804,7 @@ class PlotAstroData():
             fitsimage (list, optional): Input fits name. Defaults to None.
             x (list, optional): 1D array. Defaults to None.
             y (list, optional): 1D array. Defaults to None.
-            skip (int, optional): Spatial pixel skip. Defaults to 1.
+            xskip, yskip (int, optional): Spatial pixel skip. Defaults to 1.
             v (list, optional): 1D array. Defaults to None.
             c (list, optional): 2D or 3D array. Defaults to None.
             center (str, optional):
@@ -832,7 +832,7 @@ class PlotAstroData():
                       beam=np.array([bmaj, bmin, bpa]).T,
                       fitsimage=fitsimage, Tb=Tb, sigma=sigma,
                       center=center, restfrq=restfrq)
-        self.read(d, skip)
+        self.read(d, xskip, yskip)
         c, x, y, beam, rms = d.data, d.x, d.y, d.beam, d.rms
         c = set_minmax(c, stretch, stretchscale, rms, kwargs)
         if not (np.shape(c[0]) == np.shape(c[1]) == np.shape(c[2])):
