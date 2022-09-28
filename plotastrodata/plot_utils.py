@@ -347,6 +347,13 @@ class PlotAstroData():
                         print('Inverted velocity.')
                     grid[0] = grid[0][::skip]
                     if not pv: grid[1] = grid[1][::skip]
+                    if np.ndim(d.data[i]) == 3:
+                        d.data[i] = d.data[i][:, ::skip, ::skip]
+                    else:
+                        if pv:
+                            d.data[i] = d.data[i][:, ::skip]
+                        else:
+                            d.data[i] = d.data[i][::skip, ::skip]
                     grid = grid[:3:2] if pv else grid[:2]
                     if swapxy:
                         grid = grid[::-1]
@@ -355,10 +362,7 @@ class PlotAstroData():
                     if quadrants is not None:
                         d.data[i], d.x, d.y \
                             = quadrantmean(d.data[i], d.x, d.y, quadrants)
-                    if np.ndim(d.data[i]) == 3:
-                        d.data[i] = d.data[i][:, ::skip, ::skip] * cfactor
-                    else:
-                        d.data[i] = d.data[i][::skip, ::skip] * cfactor
+                    d.data[i] = d.data[i] * cfactor
                     d.rms[i] = d.rms[i] * cfactor
             if len(d.data) == 1:
                 d.data = d.data[0]
