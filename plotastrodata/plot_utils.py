@@ -85,8 +85,8 @@ def set_minmax(data: np.ndarray, stretch: str, stretchscale: float,
         rms = [rms]
         stretch = [stretch]
         stretchscale = [stretchscale]
-        kw['vmin'] = [kw['vmin']]
-        kw['vmax'] = [kw['vmax']]
+        if 'vmin' in kw.keys(): kw['vmin'] = [kw['vmin']]
+        if 'vmax' in kw.keys(): kw['vmax'] = [kw['vmax']]
     z = (data, stretch, stretchscale, rms)
     for i, (c, st, stsc, r) in enumerate(zip(*z)):
         if stsc is None: stsc = r
