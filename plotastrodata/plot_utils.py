@@ -116,8 +116,8 @@ def set_minmax(data: np.ndarray, stretch: str, stretchscale: float,
         kw['vmin'] = kw['vmin'][0]
         kw['vmax'] = kw['vmax'][0]
     return data
-            
-            
+
+
 class PlotAstroData():
     """Make a figure from 2D/3D FITS files or 2D/3D arrays.
     
@@ -273,7 +273,6 @@ class PlotAstroData():
         self.bottomleft = nij2ch(np.arange(npages), nrows - 1, 0)
         self.pv = pv
         self.swapxy = swapxy
-        self.quadrants = quadrants
 
         def pos2xy(poslist: list = []) -> tuple:
             """Text or relative to absolute coordinates.
@@ -298,7 +297,7 @@ class PlotAstroData():
             return x, y
         self.pos2xy = pos2xy
 
-        def skipfill(c: list, skip: int = 1) -> list:
+        def vskipfill(c: list) -> list:
             """Skip and fill channels with nan.
 
             Args:
@@ -309,19 +308,26 @@ class PlotAstroData():
                 list: 3D arrays skipped and filled with nan.
             """
             if np.ndim(c) == 3:
-                d = c[::vskip, ::skip, ::skip]
+                d = c[::vskip]
             else:
-                d = c[::skip, ::skip]
-                d = np.full((nv, *np.shape(d)), d)
+                d = np.full((nv, *np.shape(c)), c)
             shape = (nchan - len(d), len(d[0]), len(d[0, 0]))
             dnan = np.full(shape, d[0] * np.nan)
             return np.concatenate((d, dnan), axis=0)
-        self.skipfill = skipfill
+        self.vskipfill = vskipfill
 
+        def read(d, skip: int, cfactor: float = 1):
+            """Get data, grid, rms, beam, and bunit from the input of
+               add_color, add_contour, add_segment, and add_rgb.
 
-        def read(d, skip, cfactor: float =1):
+            Args:
+                d (AstroData): Dataclass made of the add_* input.
+                skip (int): Spatial skip pixel number.
+                cfactor (float, optional): Data times cfactor. Defaults to 1.
+            """
             if d.center == 'common': d.center = self.center
             for i in range(n := len(d.data)):
+                grid = None
                 if d.data[i] is not None:
                     d.data[i], grid \
                         = trim(data=d.data[i], x=d.x, y=d.y, v=d.v,
@@ -335,25 +341,30 @@ class PlotAstroData():
                                     rmax=rmax, dist=dist,
                                     xoff=xoff, yoff=yoff,
                                     vsys=vsys, vmin=vmin, vmax=vmax, pv=pv)
-                if grid[2] is not None and grid[2][1] < grid[2][0]:
-                    d.data[i], grid[2] = d.data[i][::-1], grid[2][::-1]
-                    print('Inverted velocity.')
-                if swapxy: d.data[i] = np.moveaxis(d.data[i], 1, 0)
-            grid = grid[:3:2] if pv else grid[:2]
-            if swapxy: grid = grid[::-1]
-            d.x, d.y = grid
-            if self.quadrants is not None:
-                for i in range(n):
-                    d.data[i], d.x, d.y \
-                        = quadrantmean(d.data[i], d.x, d.y, self.quadrants)
+                if d.data[i] is not None:
+                    if grid[2] is not None and grid[2][1] < grid[2][0]:
+                        d.data[i], grid[2] = d.data[i][::-1], grid[2][::-1]
+                        print('Inverted velocity.')
+                    grid[0] = grid[0][::skip]
+                    if not pv: grid[1] = grid[1][::skip]
+                    grid = grid[:3:2] if pv else grid[:2]
+                    if swapxy:
+                        grid = grid[::-1]
+                        d.data[i] = np.moveaxis(d.data[i], 1, 0)
+                    d.x, d.y = grid
+                    if quadrants is not None:
+                        d.data[i], d.x, d.y \
+                            = quadrantmean(d.data[i], d.x, d.y, quadrants)
+                    if np.ndim(d.data[i]) == 3:
+                        d.data[i] = d.data[i][:, ::skip, ::skip] * cfactor
+                    else:
+                        d.data[i] = d.data[i][::skip, ::skip] * cfactor
+                    d.rms[i] = d.rms[i] * cfactor
             if len(d.data) == 1:
                 d.data = d.data[0]
                 d.beam = d.beam[0]
                 d.bunit = d.bunit[0]
                 d.rms = d.rms[0]
-            d.x, d.y = d.x[::skip], d.y[::skip]
-            d.data = d.data * cfactor
-            self.rms = d.rms = d.rms * cfactor
             self.beam = d.beam
         self.read = read
 
@@ -592,7 +603,7 @@ class PlotAstroData():
         self.read(d, skip, cfactor)
         c, x, y, beam, bunit, rms = d.data, d.x, d.y, d.beam, d.bunit, d.rms
         c = set_minmax(c, stretch, stretchscale, rms, kwargs)
-        c = self.skipfill(c, skip)
+        c = self.vskipfill(c)
         for axnow, cnow in zip(self.ax, c):
             p = axnow.pcolormesh(x, y, cnow, shading='nearest',
                                  **dict(kwargs0, **kwargs))
@@ -677,7 +688,7 @@ class PlotAstroData():
                       sigma=sigma, center=center, restfrq=restfrq)
         self.read(d, skip)
         c, x, y, beam, rms = d.data, d.x, d.y, d.beam, d.rms
-        c = self.skipfill(c, skip)
+        c = self.vskipfill(c)
         for axnow, cnow in zip(self.ax, c):
             axnow.contour(x, y, cnow, np.sort(levels) * rms,
                           **dict(kwargs0, **kwargs))
@@ -756,10 +767,10 @@ class PlotAstroData():
             amp = np.hypot(stU, stQ)
             amp[amp < cutoff * rms] = np.nan
         if amp is None or angonly: amp = np.ones_like(ang)
-        amp = self.skipfill(amp, skip)
-        ang = self.skipfill(ang, skip)
         u = ampfactor * amp * np.sin(np.radians(ang + rotation))
         v = ampfactor * amp * np.cos(np.radians(ang + rotation))
+        u = self.vskipfill(u)
+        v = self.vskipfill(v)
         kwargs0['scale'] = 1. / np.abs(x[1] - x[0])
         for axnow, unow, vnow in zip(self.ax, u, v):
             axnow.quiver(x, y, unow, vnow, **dict(kwargs0, **kwargs))
@@ -827,7 +838,7 @@ class PlotAstroData():
         for i in range(3):
             c[i] = (c[i] - kwargs['vmin'][i]) \
                    / (kwargs['vmax'][i] - kwargs['vmin'][i]) * 255
-            c[i] = self.skipfill(c[i], skip)
+            c[i] = self.vskipfill(c[i])
         size = np.shape(c[0][0])
         for axnow, red, green, blue in zip(self.ax, *c):
             im = Image.new('RGB', size[::-1], (128, 128, 128))

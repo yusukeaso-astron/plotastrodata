@@ -80,7 +80,7 @@ class FitsData:
     def get_beam(self, dist: float = 1.) -> tuple:
         if not hasattr(self, 'bmaj'):
             self.gen_beam(dist)
-        return self.bmaj, self.bmin, self.bpa
+        return [self.bmaj, self.bmin, self.bpa]
 
     def gen_data(self, Tb: bool = False, log: bool = False,
                  drop: bool = True, restfrq: float = None) -> None:
@@ -168,7 +168,7 @@ class FitsData:
         if not hasattr(self, 'x') or not hasattr(self, 'y'):
             self.gen_grid(center, rmax, xoff, yoff, dist,
                           restfrq, vsys, vmin, vmax, pv)
-        return self.x, self.y, self.v
+        return [self.x, self.y, self.v]
 
 
 def fits2data(fitsimage: str, Tb: bool = False, log: bool = False,
