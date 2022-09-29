@@ -207,6 +207,10 @@ class PlotAxes2D():
             self.xscale = 'log'
             self.yscale = 'log'
             self.samexy = True
+            if self.xlim is not None:
+                self.xlim[0] = self.xlim[1] / self.loglog
+            if self.ylim is not None:
+                self.ylim[0] = self.ylim[1] / self.loglog
         ax.set_xscale(self.xscale)
         ax.set_yscale(self.yscale)
         if self.samexy:
@@ -252,9 +256,6 @@ class PlotAxes2D():
             ax.set_xlim(*self.xlim)
         if self.ylim is not None:
             ax.set_ylim(*self.ylim)
-        if self.loglog is not None:
-            ax.set_xlim(self.xlim[1] / self.loglog, self.xlim[1])
-            ax.set_ylim(self.ylim[1] / self.loglog, self.ylim[1])
         if self.grid is not None:
             ax.grid(**({} if self.grid is True else self.grid))
 
