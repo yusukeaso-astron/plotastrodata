@@ -203,16 +203,16 @@ class PlotAxes2D():
     yticksminor: list or int = None
     grid: dict = None
     def set_xyaxes(self, ax):
-        if self.samexy:
-            ax.set_xticks(ax.get_yticks())
-            ax.set_yticks(ax.get_xticks())
-        if self.samexy or self.loglog is not None:
-            ax.set_aspect(1)
         if self.loglog is not None:
             self.xscale = 'log'
             self.yscale = 'log'
+            self.samexy = True
         ax.set_xscale(self.xscale)
         ax.set_yscale(self.yscale)
+        if self.samexy:
+            ax.set_xticks(ax.get_yticks())
+            ax.set_yticks(ax.get_xticks())
+            ax.set_aspect(1)
         if self.xticks is None:
             self.xticks = ax.get_xticks()
         ax.set_xticks(self.xticks)
