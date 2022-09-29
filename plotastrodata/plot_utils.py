@@ -108,26 +108,26 @@ class PlotFrame():
         self.vlim = vlim
         
     def pos2xy(self, poslist: list = []) -> tuple:
-            """Text or relative to absolute coordinates.
+        """Text or relative to absolute coordinates.
 
-            Args:
-                poslist (list, optional):
-                    Text coordinates or relative coordinates. Defaults to [].
+         Args:
+            poslist (list, optional):
+            Text coordinates or relative coordinates. Defaults to [].
 
-            Returns:
-                tuple: absolute coordinates.
-            """
-            if np.shape(poslist) == () \
-                or (np.shape(poslist) == (2,) 
-                    and type(poslist[0]) is not str):
-                poslist = [poslist]
-            x, y = [None] * len(poslist), [None] * len(poslist)
-            for i, p in enumerate(poslist):
-                if type(p) is str:
-                    x[i], y[i] = coord2xy(p, self.center) * 3600.
-                else:
-                    x[i], y[i] = rel2abs(*p, self.xlim, self.ylim)
-            return x, y
+         Returns:
+            tuple: absolute coordinates.
+         """
+        if np.shape(poslist) == () \
+            or (np.shape(poslist) == (2,) 
+                and type(poslist[0]) is not str):
+            poslist = [poslist]
+        x, y = [None] * len(poslist), [None] * len(poslist)
+        for i, p in enumerate(poslist):
+            if type(p) is str:
+                x[i], y[i] = coord2xy(p, self.center) * 3600.
+            else:
+                x[i], y[i] = rel2abs(*p, self.xlim, self.ylim)
+        return x, y
 
     def read(self, d, xskip: int = 1, yskip: int = 1, cfactor: float = 1):
         """Get data, grid, rms, beam, and bunit from AstroData,
@@ -184,6 +184,77 @@ class PlotFrame():
             d.bunit = d.bunit[0]
             d.rms = d.rms[0]
 
+
+@dataclass
+class PlotAxes2D():
+    samexy: bool = False
+    loglog: bool = False
+    xscale: str = 'linear'
+    yscale: str = 'linear'
+    xlim: list = None
+    ylim: list = None
+    xlabel: str = None
+    ylabel: str = None
+    xticks: list = None
+    yticks: list = None
+    xticklabels: list = None
+    yticklabels: list = None
+    xticksminor: list or int = None
+    yticksminor: list or int = None
+    grid: dict = None
+    def set_axes(self, ax):
+        if self.samexy:
+            ax.set_xticks(ax.get_yticks())
+            ax.set_yticks(ax.get_xticks())
+        if self.samexy or self.loglog is not None:
+            ax.set_aspect(1)
+        if self.loglog is not None:
+            self.xscale = 'log'
+            self.yscale = 'log'
+        ax.set_xscale(self.xscale)
+        ax.set_yscale(self.yscale)
+        if self.xticks is None: self.xticks = ax.get_xticks()
+        ax.set_xticks(self.xticks)
+        if self.yticks is None: self.yticks = ax.get_yticks()
+        ax.set_yticks(self.yticks)
+        if self.loglog is not None:
+            f = lambda x: [str(t if t < 1 else int(t)) for t in x]
+            self.xticklabels = f(self.xticks)
+            self.yticklabels = f(self.yticks)
+        if self.xticksminor is not None:
+            if type(self.xticksminor) is int:
+                t = ax.get_xticks()
+                dt = t[1] - t[0]
+                t = np.r_[t[0] - dt, t, t[-1] + dt]
+                num = self.xticksminor * (len(t) - 1) + 1
+                self.xticksminor = np.linspace(t[0], t[-1], num)
+            ax.set_xticks(self.xticksminor, minor=True)
+        if self.yticksminor is not None:
+            if type(self.yticksminor) is int:
+                t = ax.get_yticks()
+                dt = t[1] - t[0]
+                t = np.r_[t[0] - dt, t, t[-1] + dt]
+                num = self.yticksminor * (len(t) - 1) + 1
+                self.yticksminor = np.linspace(t[0], t[-1], num)
+            ax.set_yticks(self.yticksminor, minor=True)
+        if self.xticklabels is not None:
+            ax.set_xticklabels(self.xticklabels)
+        if self.yticklabels is not None:
+            ax.set_yticklabels(self.yticklabels)
+        if self.xlabel is not None:
+            ax.set_xlabel(self.xlabel)
+        if self.ylabel is not None:
+            ax.set_ylabel(self.ylabel)
+        if self.xlim is not None:
+            ax.set_xlim(*self.xlim)
+        if self.ylim is not None:
+            ax.set_ylim(*self.ylim)
+        if self.loglog is not None:
+            ax.set_xlim(self.xlim[1] / self.loglog, self.xlim[1])
+            ax.set_ylim(self.ylim[1] / self.loglog, self.ylim[1])
+        if self.grid is True: self.grid = {}
+        if self.grid is not None:
+            ax.grid(**self.grid)
 
 def set_minmax(data: np.ndarray, stretch: str, stretchscale: float,
                rms: float, kw: dict) -> np.ndarray:
@@ -917,55 +988,12 @@ class PlotAstroData(PlotFrame):
                 xlabel = declabel if self.swapxy else ralabel
             if ylabel is None:
                 ylabel = ralabel if self.swapxy else declabel
+        pa2 = PlotAxes2D(samexy, loglog, 'linear', 'linear',
+                         self.xlim, self.ylim, xlabel, ylabel,
+                         xticks, yticks, xticklabels, yticklabels,
+                         xticksminor, yticksminor, grid)
         for ch, axnow in enumerate(self.ax):
-            ##########################################
-            if samexy:
-                axnow.set_xticks(axnow.get_yticks())
-                axnow.set_yticks(axnow.get_xticks())
-            if samexy or loglog is not None:
-                axnow.set_aspect(1)
-            if loglog is not None:
-                axnow.set_xscale('log')
-                axnow.set_yscale('log')
-            if xticks is None: xticks = axnow.get_xticks()
-            axnow.set_xticks(xticks)
-            if yticks is None: yticks = axnow.get_yticks()
-            axnow.set_yticks(yticks)
-            if loglog is not None:
-                xticklabels = [str(t if t < 0 else int(t)) for t in xticks]
-                yticklabels = [str(t if t < 0 else int(t)) for t in yticks]
-            if xticksminor is not None:
-                if type(xticksminor) is int:
-                    t = axnow.get_xticks()
-                    dt = t[1] - t[0]
-                    t = np.r_[t[0] - dt, t, t[-1] + dt]
-                    num = xticksminor * (len(t) - 1) + 1
-                    xticksminor = np.linspace(t[0], t[-1], num)
-                axnow.set_xticks(xticksminor, minor=True)
-            if yticksminor is not None:
-                if type(yticksminor) is int:
-                    t = axnow.get_yticks()
-                    dt = t[1] - t[0]
-                    t = np.r_[t[0] - dt, t, t[-1] + dt]
-                    num = yticksminor*(len(t) - 1) + 1
-                    yticksminor = np.linspace(t[0], t[-1], num)
-                axnow.set_yticks(yticksminor, minor=True)
-            if xticklabels is not None:
-                axnow.set_xticklabels(xticklabels)
-            if yticklabels is not None:
-                axnow.set_yticklabels(yticklabels)
-            if xlabel is not None:
-                axnow.set_xlabel(xlabel)
-            if ylabel is not None:
-                axnow.set_ylabel(ylabel)
-            axnow.set_xlim(*self.xlim)
-            axnow.set_ylim(*self.ylim)
-            if loglog is not None:
-                axnow.set_xlim(self.xlim[1] / loglog, self.xlim[1])
-                axnow.set_ylim(self.ylim[1] / loglog, self.ylim[1])
-            if grid is not None:
-                axnow.grid(**({} if grid == True else grid))
-            ##########################################
+            pa2.set_axes(axnow)
             if not (ch in self.bottomleft):
                 plt.setp(axnow.get_xticklabels(), visible=False)
                 plt.setp(axnow.get_yticklabels(), visible=False)
@@ -1307,9 +1335,10 @@ def slice1d(rmax: float, dr: float = None, pa: float = 0,
             bmaj: float = 0, bmin: float = 0, bpa: float = 0, 
             txtfile: str = None, xlabel: str = None, ylabel: str = None,
             xticks: list = None, yticks: list = None,
-            xticklabels: list = None, yticklabels : list = None,
+            xticklabels: list = None, yticklabels: list = None,
+            xticksminor: list = None, yticksminor: list = None,
             xscale: str = 'linear', yscale: str = 'linear',
-            savefig: str or dict = None, show: bool = True,
+            grid: dict = None, savefig: str or dict = None, show: bool = True,
             **kwargs):
     """_summary_
 
@@ -1379,20 +1408,14 @@ def slice1d(rmax: float, dr: float = None, pa: float = 0,
     ax = fig.add_subplot(1, 1, 1)
     ax.plot(r, z, **dict(kwargs0, **kwargs))
     if rms > 0: ax.plot(r, r * 0 + 3 * rms, 'k--')
-    ax.set_xscale(xscale)
-    ax.set_yscale(yscale)
     if xlabel is None:
-        u = 'arcsec' if dist == 1 else 'au'
-        xlabel = f'Offset ({u})'
-    ax.set_xlabel(xlabel)
+        xlabel = 'Offset ('+('arcsec' if dist == 1 else 'au')+')'
     if ylabel is None:
         ylabel = f'Intensity ({bunit})'
-    ax.set_ylabel(ylabel)
-    ax.set_xlim(r.min(), r.max())
-    if xticks is not None: ax.set_xticks(xticks)
-    if yticks is not None: ax.set_yticks(yticks)
-    if xticklabels is not None: ax.set_xticklabels(xticklabels)
-    if yticklabels is not None: ax.set_yticklabels(yticklabels)
+    pa2 = PlotAxes2D(False, None, xscale, yscale, [r.min(), r.max()], None,
+                     xlabel, ylabel, xticks, yticks, xticklabels, yticklabels,
+                     xticksminor, yticksminor, grid)
+    pa2.set_axes(ax)
     fig.tight_layout()
     if savefig is not None:
         if type(savefig) is str: savefig = {'fname':savefig} 
