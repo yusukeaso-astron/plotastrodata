@@ -55,16 +55,16 @@ def quadrantmean(c: list, x: list, y: list, quadrants: str ='13') -> tuple:
 @dataclass
 class AstroData():
     """Data to be processed before plotting"""
-    data: np.ndarray
-    x: np.ndarray
-    y: np.ndarray
-    v: np.ndarray
-    beam: list
-    fitsimage: str
-    Tb: bool
-    sigma: str
-    center: str
-    restfrq: float
+    data: np.ndarray = None
+    x: np.ndarray = None
+    y: np.ndarray = None
+    v: np.ndarray = None
+    beam: list = None
+    fitsimage: str = None
+    Tb: bool = False
+    sigma: str = None
+    center: str = None
+    restfrq: float = None
     def __post_init__(self):
         if type(self.Tb) is bool:
             self.data = [self.data]
@@ -79,19 +79,19 @@ class AstroData():
 
 @dataclass
 class PlotFrame():
-    rmax: float
-    dist: float
-    center: str
-    xoff: float
-    yoff: float
-    vsys: float
-    vmin: float
-    vmax: float
-    xflip: bool
-    yflip: bool
-    swapxy: bool
-    pv: bool
-    quadrants: str
+    rmax: float = 1e10
+    dist: float = 1
+    center: str = None
+    xoff: float = 0
+    yoff: float = 0
+    vsys: float = 0
+    vmin: float = -1e10
+    vmax: float = 1e10
+    xflip: bool = True
+    yflip: bool = False
+    swapxy: bool = False
+    pv: bool = False
+    quadrants: str = None
     def __post_init__(self):
         self.xdir = xdir = -1 if self.xflip else 1
         self.ydir = ydir = -1 if self.yflip else 1
@@ -129,14 +129,14 @@ class PlotFrame():
                     x[i], y[i] = rel2abs(*p, self.xlim, self.ylim)
             return x, y
 
-    def read(self, d, xskip: int, yskip: int, cfactor: float = 1):
+    def read(self, d, xskip: int = 1, yskip: int = 1, cfactor: float = 1):
         """Get data, grid, rms, beam, and bunit from AstroData,
            which is a part of the input of
            add_color, add_contour, add_segment, and add_rgb.
 
         Args:
             d (AstroData): Dataclass for the add_* input.
-            xskip, yskip (int): Spatial pixel skip.
+            xskip, yskip (int): Spatial pixel skip. Defaults to 1.
             cfactor (float, optional): Data times cfactor. Defaults to 1.
         """
         if d.center == 'common': d.center = self.center
@@ -161,6 +161,7 @@ class PlotFrame():
                 if grid[2] is not None and grid[2][1] < grid[2][0]:
                     d.data[i], grid[2] = d.data[i][::-1], grid[2][::-1]
                     print('Inverted velocity.')
+                d.v = grid[2]
                 grid = grid[:3:2] if self.pv else grid[:2]
                 if self.swapxy:
                     grid = grid[::-1]
@@ -176,7 +177,7 @@ class PlotFrame():
                     d.data[i], d.x, d.y \
                         = quadrantmean(d.data[i], d.x, d.y, self.quadrants)
                 d.data[i] = d.data[i] * cfactor
-                d.rms[i] = d.rms[i] * cfactor
+                if d.rms[i] is not None: d.rms[i] = d.rms[i] * cfactor
         if n == 1:
             d.data = d.data[0]
             d.beam = d.beam[0]
@@ -1194,11 +1195,14 @@ def profile(fitsimage: str = '', Tb: bool = False,
     gauss_kwargs0 = {'drawstyle':'default', 'color':'g'}
     savefig0 = {'bbox_inches':'tight', 'transparent':True}
     if type(coords) is str: coords = [coords]
-    data, (x, y, v), (bmaj, bmin, _), bunit, _ \
-        = fits2data(fitsimage, Tb, False, dist, None, restfrq,
-                    vsys=vsys, vmin=xmin, vmax=xmax,
-                    center=coords[0])
-    xlist, ylist = coord2xy(coords, coords[0]) * 3600.
+    f = PlotFrame(dist=dist, vsys=vsys, vmin=xmin, vmax=xmax,
+                  center=coords[0])
+    d = AstroData(fitsimage=fitsimage, Tb=Tb,
+                  restfrq=restfrq, center='common')
+    f.read(d)
+    data, x, y, v, (bmaj, bmin, _), bunit, _ \
+        = d.data, d.x, d.y, d.v, d.beam, d.bunit, d.rms
+    xlist, ylist = f.pos2xy(coords)
     x, y = np.meshgrid(x, y)
     prof = np.empty(((nprof := len(coords)), len(v)))
     if 'radius' in kwargs.keys():
@@ -1308,21 +1312,17 @@ def slice1d(rmax: float, dr: float = None, pa: float = 0,
 
     kwargs0 = {'linestyle':'-', 'marker':'o'}
     savefig0 = {'bbox_inches':'tight', 'transparent':True}
-    set_rcparams()
-    fig = plt.figure()
-    ax = fig.add_subplot(1, 1, 1)
-    f = PlotAstroData(fig=fig, ax=ax, rmax=rmax, dist=dist,
-                      xoff=xoff, yoff=yoff, xflip=xflip, yflip=yflip)
-    fig, ax = f.get_figax()
+    f = PlotFrame(rmax=rmax, dist=dist, xoff=xoff, yoff=yoff,
+                  xflip=xflip, yflip=yflip, center=center)
     d = AstroData(data=c, x=x, y=y, v=[0], beam=(bmaj, bmin, bpa),
                   fitsimage=fitsimage, Tb=Tb, sigma=sigma,
-                  center=center, restfrq=restfrq)
-    f.read(d, 1, 1, cfactor)
+                  center='common', restfrq=restfrq)
+    f.read(d, cfactor=cfactor)
     if np.ndim(d.data) > 2:
         print('Only 2D map is supported.')
         return -1
 
-    c, x, y, beam, bunit, rms = d.data, d.x, d.y, d.beam, d.bunit, d.rms
+    c, x, y, _, bunit, rms = d.data, d.x, d.y, d.beam, d.bunit, d.rms
     if dr is None: dr = np.abs(x[1] - x[0])
     r = np.arange(-np.ceil(rmax / dr), np.ceil(rmax / dr), 1) * dr
     xg, yg = r * np.sin(np.radians(pa)), r * np.cos(np.radians(pa))
@@ -1335,6 +1335,9 @@ def slice1d(rmax: float, dr: float = None, pa: float = 0,
     if txtfile is not None:
         np.savetxt(txtfile, np.c_[r, z],
                    header=f'x, intensity; positive x is pa={pa:.2f} deg.')
+    set_rcparams()
+    fig = plt.figure()
+    ax = fig.add_subplot(1, 1, 1)
     ax.plot(r, z, **dict(kwargs0, **kwargs))
     if rms > 0: ax.plot(r, r * 0 + 3 * rms, 'k--')
     ax.set_xscale(xscale)
