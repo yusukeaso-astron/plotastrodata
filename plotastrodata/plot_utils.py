@@ -76,7 +76,114 @@ class AstroData():
         n = len(self.data)
         self.rms = [None] * n
         self.bunit = [''] * n
-      
+
+@dataclass
+class PlotFrame():
+    rmax: float
+    dist: float
+    center: str
+    xoff: float
+    yoff: float
+    vsys: float
+    vmin: float
+    vmax: float
+    xflip: bool
+    yflip: bool
+    swapxy: bool
+    pv: bool
+    quadrants: str
+    def __post_init__(self):
+        self.xdir = xdir = -1 if self.xflip else 1
+        self.ydir = ydir = -1 if self.yflip else 1
+        xlim = [self.xoff - xdir*self.rmax, self.xoff + xdir*self.rmax]
+        ylim = [self.yoff - ydir*self.rmax, self.yoff + ydir*self.rmax]
+        vlim = [self.vmin, self.vmax]
+        if self.quadrants is not None:
+            xlim = [0, self.rmax]
+            vlim = [0, min(self.vmax - self.vsys, self.vsys - self.vmin)]
+        if self.pv: xlim, ylim = np.sort(xlim), vlim
+        if self.swapxy: xlim, ylim = ylim, xlim
+        self.xlim = xlim
+        self.ylim = ylim
+        self.vlim = vlim
+        
+    def pos2xy(self, poslist: list = []) -> tuple:
+            """Text or relative to absolute coordinates.
+
+            Args:
+                poslist (list, optional):
+                    Text coordinates or relative coordinates. Defaults to [].
+
+            Returns:
+                tuple: absolute coordinates.
+            """
+            if np.shape(poslist) == () \
+                or (np.shape(poslist) == (2,) 
+                    and type(poslist[0]) is not str):
+                poslist = [poslist]
+            x, y = [None] * len(poslist), [None] * len(poslist)
+            for i, p in enumerate(poslist):
+                if type(p) is str:
+                    x[i], y[i] = coord2xy(p, self.center) * 3600.
+                else:
+                    x[i], y[i] = rel2abs(*p, self.xlim, self.ylim)
+            return x, y
+
+    def read(self, d, xskip: int, yskip: int, cfactor: float = 1):
+        """Get data, grid, rms, beam, and bunit from AstroData,
+           which is a part of the input of
+           add_color, add_contour, add_segment, and add_rgb.
+
+        Args:
+            d (AstroData): Dataclass for the add_* input.
+            xskip, yskip (int): Spatial pixel skip.
+            cfactor (float, optional): Data times cfactor. Defaults to 1.
+        """
+        if d.center == 'common': d.center = self.center
+        for i in range(n := len(d.data)):
+            grid = None
+            if d.data[i] is not None:
+                d.data[i], grid \
+                    = trim(data=d.data[i], x=d.x, y=d.y, v=d.v,
+                           xlim=self.xlim, ylim=self.ylim,
+                           vlim=self.vlim, pv=self.pv)
+                d.rms[i] = estimate_rms(d.data[i], d.sigma[i])
+            if d.fitsimage[i] is not None:
+                d.data[i], grid, d.beam[i], d.bunit[i], d.rms[i] \
+                    = fits2data(fitsimage=d.fitsimage[i], Tb=d.Tb[i],
+                                sigma=d.sigma[i], restfrq=d.restfrq[i],
+                                center=d.center, log=False,
+                                rmax=self.rmax, dist=self.dist,
+                                xoff=self.xoff, yoff=self.yoff,
+                                vsys=self.vsys, vmin=self.vmin,
+                                vmax=self.vmax, pv=self.pv)
+            if d.data[i] is not None:
+                if grid[2] is not None and grid[2][1] < grid[2][0]:
+                    d.data[i], grid[2] = d.data[i][::-1], grid[2][::-1]
+                    print('Inverted velocity.')
+                grid = grid[:3:2] if self.pv else grid[:2]
+                if self.swapxy:
+                    grid = grid[::-1]
+                    d.data[i] = np.moveaxis(d.data[i], 1, 0)
+                grid[0] = grid[0][::xskip]
+                grid[1] = grid[1][::yskip]
+                if np.ndim(d.data[i]) == 3:
+                    d.data[i] = d.data[i][:, ::yskip, ::xskip]
+                else:
+                    d.data[i] = d.data[i][::yskip, ::xskip]
+                d.x, d.y = grid
+                if self.quadrants is not None:
+                    d.data[i], d.x, d.y \
+                        = quadrantmean(d.data[i], d.x, d.y, self.quadrants)
+                d.data[i] = d.data[i] * cfactor
+                d.rms[i] = d.rms[i] * cfactor
+        if n == 1:
+            d.data = d.data[0]
+            d.beam = d.beam[0]
+            d.bunit = d.bunit[0]
+            d.rms = d.rms[0]
+
+
 def set_minmax(data: np.ndarray, stretch: str, stretchscale: float,
                rms: float, kw: dict) -> np.ndarray:
     """Set vmin and vmax for color pcolormesh) and RGB maps."""
@@ -118,7 +225,7 @@ def set_minmax(data: np.ndarray, stretch: str, stretchscale: float,
     return data
 
 
-class PlotAstroData():
+class PlotAstroData(PlotFrame):
     """Make a figure from 2D/3D FITS files or 2D/3D arrays.
     
     Basic rules --- For 3D data, a 1D velocity array or a FITS file
@@ -203,6 +310,8 @@ class PlotAstroData():
             fig (optional): External plt.figure(). Defaults to None.
             ax (optional): External fig.add_subplot(). Defaults to None.
         """
+        super().__init__(rmax, dist, center, xoff, yoff, vsys, vmin, vmax,
+                         xflip, yflip, swapxy, pv, quadrants)
         internalfig = fig is None
         internalax = ax is None
         if fitsimage is not None:
@@ -252,51 +361,10 @@ class PlotAstroData():
                             backgroundcolor='white', zorder=20)
         self.fig = None if internalfig else fig
         self.ax = ax
-        self.xdir = xdir = -1 if xflip else 1
-        self.ydir = ydir = -1 if yflip else 1
-        xlim = [xoff - xdir*rmax, xoff + xdir*rmax]
-        ylim = [yoff - ydir*rmax, yoff + ydir*rmax]
-        vlim = [vmin, vmax]
-        if quadrants is not None:
-            xlim = [0, rmax]
-            vlim = [0, min(vmax - vsys, vsys - vmin)]
-        if pv: xlim, ylim = np.sort(xlim), vlim
-        if swapxy: xlim, ylim = ylim, xlim
-        self.xlim = xlim
-        self.ylim = ylim
-        self.rmax = rmax
-        self.center = center
-        self.dist = dist
         self.rowcol = nrows * ncols
         self.npages = npages
         self.allchan = np.arange(nchan)
         self.bottomleft = nij2ch(np.arange(npages), nrows - 1, 0)
-        self.pv = pv
-        self.swapxy = swapxy
-
-        def pos2xy(poslist: list = []) -> tuple:
-            """Text or relative to absolute coordinates.
-
-            Args:
-                poslist (list, optional):
-                    Text coordinates or relative coordinates. Defaults to [].
-
-            Returns:
-                tuple: absolute coordinates.
-            """
-            if np.shape(poslist) == () \
-                or (np.shape(poslist) == (2,) 
-                    and type(poslist[0]) is not str):
-                poslist = [poslist]
-            x, y = [None] * len(poslist), [None] * len(poslist)
-            for i, p in enumerate(poslist):
-                if type(p) is str:
-                    x[i], y[i] = coord2xy(p, center) * 3600.
-                else:
-                    x[i], y[i] = rel2abs(*p, xlim, ylim)
-            return x, y
-        self.pos2xy = pos2xy
-
         def vskipfill(c: list) -> list:
             """Skip and fill channels with nan.
 
@@ -314,59 +382,6 @@ class PlotAstroData():
             dnan = np.full(shape, d[0] * np.nan)
             return np.concatenate((d, dnan), axis=0)
         self.vskipfill = vskipfill
-
-        def read(d, xskip: int, yskip: int, cfactor: float = 1):
-            """Get data, grid, rms, beam, and bunit from the input of
-               add_color, add_contour, add_segment, and add_rgb.
-
-            Args:
-                d (AstroData): Dataclass made of the add_* input.
-                xskip, yskip (int): Spatial pixel skip.
-                cfactor (float, optional): Data times cfactor. Defaults to 1.
-            """
-            if d.center == 'common': d.center = self.center
-            for i in range(n := len(d.data)):
-                grid = None
-                if d.data[i] is not None:
-                    d.data[i], grid \
-                        = trim(data=d.data[i], x=d.x, y=d.y, v=d.v,
-                               xlim=xlim, ylim=ylim, vlim=vlim, pv=pv)
-                    d.rms[i] = estimate_rms(d.data[i], d.sigma[i])
-                if d.fitsimage[i] is not None:
-                    d.data[i], grid, d.beam[i], d.bunit[i], d.rms[i] \
-                        = fits2data(fitsimage=d.fitsimage[i], Tb=d.Tb[i],
-                                    sigma=d.sigma[i], restfrq=d.restfrq[i],
-                                    center=d.center, log=False,
-                                    rmax=rmax, dist=dist,
-                                    xoff=xoff, yoff=yoff,
-                                    vsys=vsys, vmin=vmin, vmax=vmax, pv=pv)
-                if d.data[i] is not None:
-                    if grid[2] is not None and grid[2][1] < grid[2][0]:
-                        d.data[i], grid[2] = d.data[i][::-1], grid[2][::-1]
-                        print('Inverted velocity.')
-                    grid = grid[:3:2] if pv else grid[:2]
-                    if swapxy:
-                        grid = grid[::-1]
-                        d.data[i] = np.moveaxis(d.data[i], 1, 0)
-                    grid[0] = grid[0][::xskip]
-                    grid[1] = grid[1][::yskip]
-                    if np.ndim(d.data[i]) == 3:
-                        d.data[i] = d.data[i][:, ::yskip, ::xskip]
-                    else:
-                        d.data[i] = d.data[i][::yskip, ::xskip]
-                    d.x, d.y = grid
-                    if quadrants is not None:
-                        d.data[i], d.x, d.y \
-                            = quadrantmean(d.data[i], d.x, d.y, quadrants)
-                    d.data[i] = d.data[i] * cfactor
-                    d.rms[i] = d.rms[i] * cfactor
-            if len(d.data) == 1:
-                d.data = d.data[0]
-                d.beam = d.beam[0]
-                d.bunit = d.bunit[0]
-                d.rms = d.rms[0]
-            self.beam = d.beam
-        self.read = read
 
         
     def add_region(self, patch: str = 'ellipse', poslist: list = [],
