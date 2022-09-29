@@ -1274,3 +1274,71 @@ def profile(fitsimage: str = '', Tb: bool = False,
         fig.savefig(**dict(savefig0, **savefig))
     if show: plt.show()
     plt.close()    
+
+
+def slice1d(rmax: float, dr: float = None, pa: float = 0,
+            fitsimage: str = None, x: list = None, y: list = None,
+            c: list = None, center: str = None, restfrq: float = None,
+            Tb: bool = False, cfactor: float = 1,
+            sigma: float or str = 'out', dist: float = 1,
+            xoff: float = 0, yoff: float = 0,
+            xflip: bool = True, yflip: bool = False,
+            bmaj: float = 0, bmin: float = 0, bpa: float = 0, 
+            txtfile: str = None, xlabel: str = None, ylabel: str = None,
+            xticks: list = None, yticks: list = None,
+            xticklabels: list = None, yticklabels : list = None,
+            xscale: str = 'linear', yscale: str = 'linear',
+            savefig: str or dict = None, show: bool = True,
+            **kwargs):
+
+    kwargs0 = {'linestyle':'-', 'marker':'o'}
+    savefig0 = {'bbox_inches':'tight', 'transparent':True}
+    set_rcparams()
+    fig = plt.figure()
+    ax = fig.add_subplot(1, 1, 1)
+    f = PlotAstroData(fig=fig, ax=ax, rmax=rmax, dist=dist,
+                      xoff=xoff, yoff=yoff, xflip=xflip, yflip=yflip)
+    fig, ax = f.get_figax()
+    d = AstroData(data=c, x=x, y=y, v=[0], beam=(bmaj, bmin, bpa),
+                  fitsimage=fitsimage, Tb=Tb, sigma=sigma,
+                  center=center, restfrq=restfrq)
+    f.read(d, 1, 1, cfactor)
+    if np.ndim(d.data) > 2:
+        print('Only 2D map is supported.')
+        return -1
+
+    c, x, y, beam, bunit, rms = d.data, d.x, d.y, d.beam, d.bunit, d.rms
+    if dr is None: dr = np.abs(x[1] - x[0])
+    r = np.arange(-np.ceil(rmax / dr), np.ceil(rmax / dr), 1) * dr
+    xg, yg = r * np.sin(np.radians(pa)), r * np.cos(np.radians(pa))
+    xsort = x if x[1] > x[0] else x[::-1]
+    csort = c if x[1] > x[0] else c[:, ::-1]
+    ysort = y if y[1] > y[0] else y[::-1]
+    csort = csort if y[1] > y[0] else csort[::-1, :]
+    f = RBS(ysort, xsort, csort)
+    z = np.squeeze(list(map(f, yg, xg)))
+    if txtfile is not None:
+        np.savetxt(txtfile, np.c_[r, z],
+                   header=f'x, intensity; positive x is pa={pa:.2f} deg.')
+    ax.plot(r, z, **dict(kwargs0, **kwargs))
+    if rms > 0: ax.plot(r, r * 0 + 3 * rms, 'k--')
+    ax.set_xscale(xscale)
+    ax.set_yscale(yscale)
+    if xlabel is None:
+        u = 'arcsec' if dist == 1 else 'au'
+        xlabel = f'Offset ({u})'
+    ax.set_xlabel(xlabel)
+    if ylabel is None:
+        ylabel = f'Intensity ({bunit})'
+    ax.set_ylabel(ylabel)
+    ax.set_xlim(r.min(), r.max())
+    if xticks is not None: ax.set_xticks(xticks)
+    if yticks is not None: ax.set_yticks(yticks)
+    if xticklabels is not None: ax.set_xticklabels(xticklabels)
+    if yticklabels is not None: ax.set_yticklabels(yticklabels)
+    fig.tight_layout()
+    if savefig is not None:
+        if type(savefig) is str: savefig = {'fname':savefig} 
+        fig.savefig(**dict(savefig0, **savefig))
+    if show: plt.show()
+    plt.close()    
