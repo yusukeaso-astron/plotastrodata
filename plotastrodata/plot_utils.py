@@ -213,14 +213,17 @@ class PlotAxes2D():
             self.yscale = 'log'
         ax.set_xscale(self.xscale)
         ax.set_yscale(self.yscale)
-        if self.xticks is None: self.xticks = ax.get_xticks()
+        if self.xticks is None:
+            self.xticks = ax.get_xticks()
         ax.set_xticks(self.xticks)
-        if self.yticks is None: self.yticks = ax.get_yticks()
+        if self.yticks is None:
+            self.yticks = ax.get_yticks()
         ax.set_yticks(self.yticks)
-        if self.loglog is not None:
-            f = lambda x: [str(t if t < 1 else int(t)) for t in x]
-            self.xticklabels = f(self.xticks)
-            self.yticklabels = f(self.yticks)
+        niceticks = lambda x: [str(t if t < 1 else int(t)) for t in x]
+        if self.xscale == 'log':
+            self.xticklabels = niceticks(self.xticks)
+        if self.yscale == 'log':
+            self.yticklabels = niceticks(self.yticks)
         if self.xticksminor is not None:
             if type(self.xticksminor) is int:
                 t = ax.get_xticks()
