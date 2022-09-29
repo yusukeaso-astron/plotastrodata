@@ -629,7 +629,7 @@ class PlotAstroData():
                 if stretch == 'log':
                     cbticks = np.log10(cbticks)
                 elif stretch == 'asinh':
-                    cbticks = np.arcsinh(cbticks / stretchscale)
+                    cbticks = np.arcsinh(np.array(cbticks) / stretchscale)
                 cb.set_ticks(cbticks)
             if cbticklabels is not None:
                 cb.set_ticklabels(cbticklabels)
