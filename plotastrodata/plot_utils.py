@@ -249,12 +249,12 @@ class PlotAxes2D():
             ax.set_xlim(*self.xlim)
         if self.ylim is not None:
             ax.set_ylim(*self.ylim)
-        if self.loglog is not None:
+        if self.xscale == 'log':
             ax.set_xlim(self.xlim[1] / self.loglog, self.xlim[1])
+        if self.yscale == 'log':
             ax.set_ylim(self.ylim[1] / self.loglog, self.ylim[1])
-        if self.grid is True: self.grid = {}
         if self.grid is not None:
-            ax.grid(**self.grid)
+            ax.grid(**({} if self.grid is True else self.grid))
 
 def set_minmax(data: np.ndarray, stretch: str, stretchscale: float,
                rms: float, kw: dict) -> np.ndarray:
