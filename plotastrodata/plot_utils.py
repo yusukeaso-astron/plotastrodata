@@ -202,7 +202,7 @@ class PlotAxes2D():
     xticksminor: list or int = None
     yticksminor: list or int = None
     grid: dict = None
-    def set_axes(self, ax):
+    def set_xyaxes(self, ax):
         if self.samexy:
             ax.set_xticks(ax.get_yticks())
             ax.set_yticks(ax.get_xticks())
@@ -993,7 +993,7 @@ class PlotAstroData(PlotFrame):
                          xticks, yticks, xticklabels, yticklabels,
                          xticksminor, yticksminor, grid)
         for ch, axnow in enumerate(self.ax):
-            pa2.set_axes(axnow)
+            pa2.set_xyaxes(axnow)
             if not (ch in self.bottomleft):
                 plt.setp(axnow.get_xticklabels(), visible=False)
                 plt.setp(axnow.get_yticklabels(), visible=False)
@@ -1415,7 +1415,7 @@ def slice1d(rmax: float, dr: float = None, pa: float = 0,
     pa2 = PlotAxes2D(False, None, xscale, yscale, [r.min(), r.max()], None,
                      xlabel, ylabel, xticks, yticks, xticklabels, yticklabels,
                      xticksminor, yticksminor, grid)
-    pa2.set_axes(ax)
+    pa2.set_xyaxes(ax)
     fig.tight_layout()
     if savefig is not None:
         if type(savefig) is str: savefig = {'fname':savefig} 
