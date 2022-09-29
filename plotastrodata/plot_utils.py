@@ -918,6 +918,7 @@ class PlotAstroData(PlotFrame):
             if ylabel is None:
                 ylabel = ralabel if self.swapxy else declabel
         for ch, axnow in enumerate(self.ax):
+            ##########################################
             if samexy:
                 axnow.set_xticks(axnow.get_yticks())
                 axnow.set_yticks(axnow.get_xticks())
@@ -957,11 +958,6 @@ class PlotAstroData(PlotFrame):
                 axnow.set_xlabel(xlabel)
             if ylabel is not None:
                 axnow.set_ylabel(ylabel)
-            if not (ch in self.bottomleft):
-                plt.setp(axnow.get_xticklabels(), visible=False)
-                plt.setp(axnow.get_yticklabels(), visible=False)
-                axnow.set_xlabel('')
-                axnow.set_ylabel('')
             axnow.set_xlim(*self.xlim)
             axnow.set_ylim(*self.ylim)
             if loglog is not None:
@@ -969,6 +965,12 @@ class PlotAstroData(PlotFrame):
                 axnow.set_ylim(self.ylim[1] / loglog, self.ylim[1])
             if grid is not None:
                 axnow.grid(**({} if grid == True else grid))
+            ##########################################
+            if not (ch in self.bottomleft):
+                plt.setp(axnow.get_xticklabels(), visible=False)
+                plt.setp(axnow.get_yticklabels(), visible=False)
+                axnow.set_xlabel('')
+                axnow.set_ylabel('')
             if len(self.ax) == 1:
                 if self.fig is None:
                     plt.figure(0).tight_layout()
@@ -1309,7 +1311,44 @@ def slice1d(rmax: float, dr: float = None, pa: float = 0,
             xscale: str = 'linear', yscale: str = 'linear',
             savefig: str or dict = None, show: bool = True,
             **kwargs):
+    """_summary_
 
+    Args:
+        rmax (float): Slice 
+        dr (float, optional): _description_. Defaults to None.
+        pa (float, optional): _description_. Defaults to 0.
+        fitsimage (str, optional): _description_. Defaults to None.
+        x (list, optional): _description_. Defaults to None.
+        y (list, optional): _description_. Defaults to None.
+        c (list, optional): _description_. Defaults to None.
+        center (str, optional): _description_. Defaults to None.
+        restfrq (float, optional): _description_. Defaults to None.
+        Tb (bool, optional): _description_. Defaults to False.
+        cfactor (float, optional): _description_. Defaults to 1.
+        sigma (floatorstr, optional): _description_. Defaults to 'out'.
+        dist (float, optional): _description_. Defaults to 1.
+        xoff (float, optional): _description_. Defaults to 0.
+        yoff (float, optional): _description_. Defaults to 0.
+        xflip (bool, optional): _description_. Defaults to True.
+        yflip (bool, optional): _description_. Defaults to False.
+        bmaj (float, optional): _description_. Defaults to 0.
+        bmin (float, optional): _description_. Defaults to 0.
+        bpa (float, optional): _description_. Defaults to 0.
+        txtfile (str, optional): _description_. Defaults to None.
+        xlabel (str, optional): _description_. Defaults to None.
+        ylabel (str, optional): _description_. Defaults to None.
+        xticks (list, optional): _description_. Defaults to None.
+        yticks (list, optional): _description_. Defaults to None.
+        xticklabels (list, optional): _description_. Defaults to None.
+        yticklabels (list, optional): _description_. Defaults to None.
+        xscale (str, optional): _description_. Defaults to 'linear'.
+        yscale (str, optional): _description_. Defaults to 'linear'.
+        savefig (strordict, optional): _description_. Defaults to None.
+        show (bool, optional): _description_. Defaults to True.
+
+    Returns:
+        _type_: _description_
+    """
     kwargs0 = {'linestyle':'-', 'marker':'o'}
     savefig0 = {'bbox_inches':'tight', 'transparent':True}
     f = PlotFrame(rmax=rmax, dist=dist, xoff=xoff, yoff=yoff,
