@@ -606,12 +606,11 @@ class PlotAstroData():
         c = set_minmax(c, stretch, stretchscale, rms, kwargs)
         c = self.vskipfill(c)
         for axnow, cnow in zip(self.ax, c):
-            p = axnow.pcolormesh(x, y, cnow, shading='nearest',
-                                 **dict(kwargs0, **kwargs))
+            p = axnow.pcolormesh(x, y, cnow, **dict(kwargs0, **kwargs))
         for ch in self.bottomleft:
             if not show_cbar:
                 break
-            cblabel = bunit if cblabel is None else cblabel
+            if cblabel is None: cblabel = bunit
             if self.fig is None:
                 fig = plt.figure(ch // self.rowcol)
             else:
@@ -923,16 +922,16 @@ class PlotAstroData():
                     t = axnow.get_xticks()
                     dt = t[1] - t[0]
                     t = np.r_[t[0] - dt, t, t[-1] + dt]
-                    xticksminor = np.linspace(t[0], t[-1],
-                                              xticksminor*(len(t) - 1) + 1)
+                    num = xticksminor * (len(t) - 1) + 1
+                    xticksminor = np.linspace(t[0], t[-1], num)
                 axnow.set_xticks(xticksminor, minor=True)
             if yticksminor is not None:
                 if type(yticksminor) is int:
                     t = axnow.get_yticks()
                     dt = t[1] - t[0]
                     t = np.r_[t[0] - dt, t, t[-1] + dt]
-                    yticksminor = np.linspace(t[0], t[-1],
-                                              yticksminor*(len(t) - 1) + 1)
+                    num = yticksminor*(len(t) - 1) + 1
+                    yticksminor = np.linspace(t[0], t[-1], num)
                 axnow.set_yticks(yticksminor, minor=True)
             if xticklabels is not None:
                 axnow.set_xticklabels(xticklabels)
@@ -989,10 +988,10 @@ class PlotAstroData():
             print('WARNING: set_axis_radec() is not supported '
                   + 'with rmax>50 yet.')
         dec = np.radians(coord2xy(self.center)[1])
-        c_sec = lambda x, i: x.split(' ')[i].split('m')[1].strip('s')
-        c_deg = lambda x, i: x.split(' ')[i].split('m')[0]
-        ra_s = c_sec(self.center, 0)
-        dec_s = c_sec(self.center, 1)
+        get_sec = lambda x, i: x.split(' ')[i].split('m')[1].strip('s')
+        get_hmdm = lambda x, i: x.split(' ')[i].split('m')[0]
+        ra_s = get_sec(self.center, 0)
+        dec_s = get_sec(self.center, 1)
         log2r = np.log10(2. * self.rmax)
         n = np.array([-3, -2, -1, 0, 1, 2, 3])
         def makegrid(second, mode):
@@ -1022,15 +1021,15 @@ class PlotAstroData():
             else:
                 xy, i = [ticks * 0, ticks / 3600.], 1
             tickvalues = xy2coord(xy, self.center)
-            tickvalues = [float(c_sec(t, i)) for t in tickvalues]
+            tickvalues = [float(get_sec(t, i)) for t in tickvalues]
             tickvalues = np.divmod(tickvalues, 1)
             ticklabels = [f'{int(i):02d}{sec}' + f'{j:.{decimals:d}f}'[2:]
                           for i, j in zip(*tickvalues)]
             return ticks, ticksminor, ticklabels
         xticks, xticksminor, xticklabels = makegrid(ra_s, 'ra')
         yticks, yticksminor, yticklabels = makegrid(dec_s, 'dec')
-        ra_hm  = c_deg(xy2coord([xticks[3] / 3600., 0], self.center), 0)
-        dec_dm = c_deg(xy2coord([0, yticks[3] / 3600.], self.center), 1)
+        ra_hm  = get_hmdm(xy2coord([xticks[3] / 3600., 0], self.center), 0)
+        dec_dm = get_hmdm(xy2coord([0, yticks[3] / 3600.], self.center), 1)
         ra_hm  = ra_hm.replace('h', r'$^{\rm h}$') + r'$^{\rm m}$'
         dec_dm = dec_dm.replace('d', r'$^{\circ}$') + r'$^{\prime}$'
         xticklabels[3] = ra_hm + xticklabels[3]
