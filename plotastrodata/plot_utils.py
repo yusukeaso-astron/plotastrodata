@@ -2,7 +2,6 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse, Rectangle
-from scipy.optimize import curve_fit
 from dataclasses import dataclass
 from PIL import Image
 
