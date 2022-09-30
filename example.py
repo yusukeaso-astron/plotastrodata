@@ -1,5 +1,5 @@
 from plotastrodata.plot_utils import PlotAstroData as pad
-from plotastrodata.plot_utils import profile
+from plotastrodata.plot_utils import profile, plotslice
 
 pre = 'testFITS/'
 
@@ -59,6 +59,11 @@ f.savefig('testloglogPV.png', show=True)
 profile(fitsimage=pre+'test3D.fits', ellipse=[[0.2, 0.2, 0]] * 2, flux=True,
         coords=['04h04m43.045s 26d18m55.766s', '04h04m43.109s 26d18m56.704s'],
         gaussfit=True, savefig='testprofile.png', show=True, width=2)
+
+# Spatial slice
+plotslice(length=1.6, pa=270, fitsimage=pre+'test2D.fits',
+          center='04h04m43.07s 26d18m56.20s', sigma=5e-3,
+          savefig='testslice.png', show=True)
 
 # RGB case
 f = pad(rmax=0.8, center='04h04m43.07s 26d18m56.20s')

@@ -2,14 +2,13 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse, Rectangle
-from scipy.interpolate import RectBivariateSpline as RBS
 from scipy.optimize import curve_fit
 from dataclasses import dataclass
 from PIL import Image
 
-from plotastrodata.other_utils import (coord2xy, xy2coord, rel2abs,
-                                       estimate_rms, trim, listing)
-from plotastrodata.fits_utils import FitsData, fits2data
+from plotastrodata.other_utils import coord2xy, xy2coord, listing
+from plotastrodata.fits_utils import FitsData
+from plotastrodata.analysis_utils import AstroData, AstroFrame
 
 
     
@@ -33,156 +32,6 @@ def set_rcparams(fontsize: int = 18, nancolor: str ='w') -> None:
     plt.rcParams['ytick.major.width'] = 1.5
     plt.rcParams['xtick.minor.width'] = 1.5
     plt.rcParams['ytick.minor.width'] = 1.5
-
-
-def quadrantmean(c: list, x: list, y: list, quadrants: str ='13') -> tuple:
-    """Take mean between 1st and 3rd (or 2nd and 4th) quadrants.
-    """
-    dx, dy = x[1] - x[0], y[1] - y[0]
-    nx = int(np.floor(max(np.abs(x[0]), np.abs(x[-1])) / dx))
-    ny = int(np.floor(max(np.abs(y[0]), np.abs(y[-1])) / dy))
-    xnew = np.linspace(-nx * dx, nx * dx, 2 * nx + 1)
-    ynew = np.linspace(-ny * dy, ny * dy, 2 * ny + 1)
-    if quadrants == '13':
-        cnew = RBS(y, x, c)(ynew, xnew)
-    elif quadrants == '24':
-        cnew = RBS(y, -x, c)(ynew, xnew)
-    else:
-        print('quadrants must be \'13\' or \'24\'.')
-    cnew = (cnew + cnew[::-1, ::-1]) / 2.
-    return cnew[ny:, nx:], xnew[nx:], ynew[ny:]
-
-@dataclass
-class AstroData():
-    """Data to be processed before plotting"""
-    data: np.ndarray = None
-    x: np.ndarray = None
-    y: np.ndarray = None
-    v: np.ndarray = None
-    beam: list = None
-    fitsimage: str = None
-    Tb: bool = False
-    sigma: str = None
-    center: str = None
-    restfrq: float = None
-    def __post_init__(self):
-        if type(self.Tb) is bool:
-            self.data = [self.data]
-            self.beam = [self.beam]
-            self.fitsimage = [self.fitsimage]
-            self.Tb = [self.Tb]
-            self.sigma = [self.sigma]
-            self.restfrq = [self.restfrq]
-        n = len(self.data)
-        self.rms = [None] * n
-        self.bunit = [''] * n
-
-@dataclass
-class PlotFrame():
-    rmax: float = 1e10
-    dist: float = 1
-    center: str = None
-    xoff: float = 0
-    yoff: float = 0
-    vsys: float = 0
-    vmin: float = -1e10
-    vmax: float = 1e10
-    xflip: bool = True
-    yflip: bool = False
-    swapxy: bool = False
-    pv: bool = False
-    quadrants: str = None
-    def __post_init__(self):
-        self.xdir = xdir = -1 if self.xflip else 1
-        self.ydir = ydir = -1 if self.yflip else 1
-        xlim = [self.xoff - xdir*self.rmax, self.xoff + xdir*self.rmax]
-        ylim = [self.yoff - ydir*self.rmax, self.yoff + ydir*self.rmax]
-        vlim = [self.vmin, self.vmax]
-        if self.quadrants is not None:
-            xlim = [0, self.rmax]
-            vlim = [0, min(self.vmax - self.vsys, self.vsys - self.vmin)]
-        if self.pv: xlim, ylim = np.sort(xlim), vlim
-        if self.swapxy: xlim, ylim = ylim, xlim
-        self.xlim = xlim
-        self.ylim = ylim
-        self.vlim = vlim
-        
-    def pos2xy(self, poslist: list = []) -> tuple:
-        """Text or relative to absolute coordinates.
-
-         Args:
-            poslist (list, optional):
-            Text coordinates or relative coordinates. Defaults to [].
-
-         Returns:
-            tuple: absolute coordinates.
-         """
-        if np.shape(poslist) == () \
-            or (np.shape(poslist) == (2,) 
-                and type(poslist[0]) is not str):
-            poslist = [poslist]
-        x, y = [None] * len(poslist), [None] * len(poslist)
-        for i, p in enumerate(poslist):
-            if type(p) is str:
-                x[i], y[i] = coord2xy(p, self.center) * 3600.
-            else:
-                x[i], y[i] = rel2abs(*p, self.xlim, self.ylim)
-        return x, y
-
-    def read(self, d, xskip: int = 1, yskip: int = 1, cfactor: float = 1):
-        """Get data, grid, rms, beam, and bunit from AstroData,
-           which is a part of the input of
-           add_color, add_contour, add_segment, and add_rgb.
-
-        Args:
-            d (AstroData): Dataclass for the add_* input.
-            xskip, yskip (int): Spatial pixel skip. Defaults to 1.
-            cfactor (float, optional): Data times cfactor. Defaults to 1.
-        """
-        if d.center == 'common': d.center = self.center
-        for i in range(n := len(d.data)):
-            grid = None
-            if d.data[i] is not None:
-                d.data[i], grid \
-                    = trim(data=d.data[i], x=d.x, y=d.y, v=d.v,
-                           xlim=self.xlim, ylim=self.ylim,
-                           vlim=self.vlim, pv=self.pv)
-                d.rms[i] = estimate_rms(d.data[i], d.sigma[i])
-            if d.fitsimage[i] is not None:
-                d.data[i], grid, d.beam[i], d.bunit[i], d.rms[i] \
-                    = fits2data(fitsimage=d.fitsimage[i], Tb=d.Tb[i],
-                                sigma=d.sigma[i], restfrq=d.restfrq[i],
-                                center=d.center, log=False,
-                                rmax=self.rmax, dist=self.dist,
-                                xoff=self.xoff, yoff=self.yoff,
-                                vsys=self.vsys, vmin=self.vmin,
-                                vmax=self.vmax, pv=self.pv)
-            if d.data[i] is not None:
-                if grid[2] is not None and grid[2][1] < grid[2][0]:
-                    d.data[i], grid[2] = d.data[i][::-1], grid[2][::-1]
-                    print('Inverted velocity.')
-                d.v = grid[2]
-                grid = grid[:3:2] if self.pv else grid[:2]
-                if self.swapxy:
-                    grid = grid[::-1]
-                    d.data[i] = np.moveaxis(d.data[i], 1, 0)
-                grid[0] = grid[0][::xskip]
-                grid[1] = grid[1][::yskip]
-                if np.ndim(d.data[i]) == 3:
-                    d.data[i] = d.data[i][:, ::yskip, ::xskip]
-                else:
-                    d.data[i] = d.data[i][::yskip, ::xskip]
-                d.x, d.y = grid
-                if self.quadrants is not None:
-                    d.data[i], d.x, d.y \
-                        = quadrantmean(d.data[i], d.x, d.y, self.quadrants)
-                d.data[i] = d.data[i] * cfactor
-                if d.rms[i] is not None: d.rms[i] = d.rms[i] * cfactor
-        if n == 1:
-            d.data = d.data[0]
-            d.beam = d.beam[0]
-            d.bunit = d.bunit[0]
-            d.rms = d.rms[0]
 
 
 @dataclass
@@ -300,7 +149,7 @@ def set_minmax(data: np.ndarray, stretch: str, stretchscale: float,
     return data
 
 
-class PlotAstroData(PlotFrame):
+class PlotAstroData(AstroFrame):
     """Make a figure from 2D/3D FITS files or 2D/3D arrays.
     
     Basic rules --- For 3D data, a 1D velocity array or a FITS file
@@ -1153,73 +1002,37 @@ class PlotAstroData(PlotFrame):
         return self.fig, self.ax[0]
 
 
-def profile(fitsimage: str = '', Tb: bool = False,
-            flux: bool = False, dist: float = 1.,
-            restfrq: float = None, vsys: float = 0.,
-            coords: list = [], ellipse: list = None,
+def profile(coords: list = [], ellipse: list = None, flux: bool = False,
+            width: int = 1, yfactor: float = 1.,
+            gaussfit: bool = False, gauss_kwargs: dict = {},
+            title: list = None, text: list = None,
             xmin: float = -1e10, xmax: float = 1e10,
-            ymin: float = None, ymax: float = None, yfactor: float = 1.,
-            title: list = None, xticks: list = None, yticks: list = None,
+            ymin: float = None, ymax: float = None, 
+            fitsimage: str = '', Tb: bool = False, dist: float = 1.,
+            restfrq: float = None, vsys: float = 0.,
+            xticks: list = None, yticks: list = None,
             xticklabels: list = None, yticklabels: list = None,
             xticksminor: list = None, yticksminor: list = None,
             xlabel: str = r'Velocity (km s$^{-1}$)', ylabel: list = None,
-            nrows: int = 0, ncols: int = 1,
-            text: list = None,  savefig: dict = None, show: bool = True,
-            gaussfit: bool = False, width: int = 1,
-            getfigax: bool = False, gauss_kwargs: dict = {},
-            **kwargs) -> list:
-    """Use plot of matplotlib.
+            nrows: int = 0, ncols: int = 1, getfigax: bool = False,
+            savefig: dict = None, show: bool = True,
+            **kwargs) -> tuple:
+    """Use Axes.plot to plot line profiles at given coordinates.
 
     Args:
-        fitsimage (str, optional): Input fits name. Defaults to ''.
-        Tb (bool, optional):
-            True means line profiles of brightness T. Defaults to False.
-        flux (bool, optional):
-            True means line profiles in the unit of Jy. Defaults to False.
-        dist (float, optional):
-            Change x and y in arcsec to au. Defaults to 1..
-        restfrq (float, optional):
-            Used for velocity and brightness T. Defaults to None.
-        vsys (float, optional): x-axis is v - vsys. Defaults to 0..
-        coords (list, optional):
-            Text coordinates of centers to make line profiles. Defaults to [].
-        ellipse (list, optional): List of [major, minor, pa].
-            major=minor=0 means nearest pixel. Defaults to None.
-        xmin (float, optional): Minimum velocity. Defaults to -1e10.
-        xmax (float, optional): Maximum velocity. Defaults to 1e10.
-        ymin (float, optional): Mminimum intensity etc. Defaults to None.
-        ymax (float, optional): Maximum intensity etc. Defaults to None.
-        yfactor (float, optional):
-            Y-axis is yfactor times intensity etc. Defaults to 1..
-        title (list, optional):
-            List of input dictionary for ax.set_title().
-            List of title strings is also acceptable. Defaults to None.
-        xticks (list, optional): Defaults to None.
-        yticks (list, optional): Defaults to None.
-        xticklabels (list, optional): Defaults to None.
-        yticklabels (list, optional): Defaults to None.
-        xticksminor (list, optional): Defaults to None.
-        yticksminor (list, optional): Defaults to None.
-        xlabel (str, optional): Defaults to r'Velocity (km s$^{-1}$)'.
-        ylabel (list, optional): Defaults to None.
-        nrows (int, optional): Defaults to 0.
-        ncols (int, optional): Defaults to 1.
-        text (list, optional):
-            List of input dictionary for ax.text(). Defaults to None.
-        savefig (dict, optional):
-            List of input dictionary for fig.savefig().
-            A file name string is also acceptable. Defaults to None.
-        show (bool, optional): True means plt.show(). Defaults to True.
-        gaussfit (bool, optional):
-            True means doing Gaussian fitting. Defaults to False.
-        width (int, optional): To rebin with the width. Defaults to 1.
-        getfigax (bool, optional):
-            True means return (fig, ax), where ax is a list.
-            Defaults to False.
-        gauss_kwargs (dict, optional):
-            Input dictionary for ax.plot() to show the best Gaussian.
-            Defaults to {}.
-            
+        coords (list, optional): Coordinates. Defaults to [].
+        ellipse (list, optional): For average. Defaults to None.
+        flux (bool, optional): y axis is flux density. Defaults to False.
+        width (int, optional): Rebinning step along v. Defaults to 1.
+        yfactor (float, optional): y value times yfactor. Defaults to 1..
+        gaussfit (bool, optional): Fit the profiles. Defaults to False.
+        gauss_kwargs (dict, optional): Kwargs for Axes.plot. Defaults to {}.
+        title (list, optional): For each plot. Defaults to None.
+        text (list, optional): For each plot. Defaults to None.
+        xmin, xmax (float, optional): Velocity range. Defaults to -1e10, 1e10.
+        ymin, ymax (float, optional): Intensity range. Defaults to None.
+        fitsimage to show: same as in PlotAstroData.
+
     Returns:
         tuple: (fig, ax), where ax is a list, if getfigax=True.
                Otherwise, no return.
@@ -1228,48 +1041,13 @@ def profile(fitsimage: str = '', Tb: bool = False,
     gauss_kwargs0 = {'drawstyle':'default', 'color':'g'}
     savefig0 = {'bbox_inches':'tight', 'transparent':True}
     if type(coords) is str: coords = [coords]
-    f = PlotFrame(dist=dist, vsys=vsys, vmin=xmin, vmax=xmax,
-                  center=coords[0])
+    f = AstroFrame(dist=dist, vsys=vsys, vmin=xmin, vmax=xmax,
+                   center=coords[0])
     d = AstroData(fitsimage=fitsimage, Tb=Tb,
                   restfrq=restfrq, center='common')
-    f.read(d)
-    data, x, y, v, (bmaj, bmin, _), bunit, _ \
-        = d.data, d.x, d.y, d.v, d.beam, d.bunit, d.rms
-    xlist, ylist = f.pos2xy(coords)
-    x, y = np.meshgrid(x, y)
-    prof = np.empty(((nprof := len(coords)), len(v)))
-    if 'radius' in kwargs.keys():
-        ellipse = [[kwargs['radius'], kwargs['radius'], 0]] * nprof
-        del kwargs['radius']
-        print('WARNING: radius was replaced by ellipse.')
-    if ellipse is None: ellipse = [[0, 0, 0]] * nprof
-    for i, (xc, yc, e) in enumerate(zip(xlist, ylist, ellipse)):
-        major, minor, pa = e
-        z = ((y - yc) + 1j * (x - xc)) / np.exp(1j * np.radians(pa))
-        if major == 0 or minor == 0:
-            r = np.abs(z)
-            idx = np.unravel_index(np.argmin(r), np.shape(r))
-            prof[i] = [d[idx] for d in data]
-        else:
-            r = np.abs(np.real(z) / major + 1j *  (np.imag(z) / minor))
-            if flux:
-                prof[i] = [np.sum(d[r <= 1]) for d in data]
-            else:
-                prof[i] = [np.mean(d[r <= 1]) for d in data]
-    newlen = len(v) // (width := int(width))
-    w, q = np.zeros(newlen), np.zeros((nprof, newlen))
-    for i in range(width):
-        w += v[i:i + newlen*width:width]
-        q += prof[:, i:i + newlen*width:width]
-    v, prof = w / width, q / width
-    if Tb and flux:
-        flux = False
-        print('WARNING: ignore flux=True because Tb=True.')
-    if flux:
-        Omega = np.pi * bmaj * bmin / 4. / np.log(2.)
-        dxdy = np.abs((y[1, 0]-y[0, 0]) * (x[0, 1]-x[0, 0]))
-        prof *= dxdy / Omega
-    prof *= yfactor
+    f.read(d, 1, 1, yfactor)
+    v, prof, gfitres = d.profile(coords, ellipse, flux, width, gaussfit)
+    nprof = len(prof)
     xmin, xmax = np.min(v), np.max(v)
     if ymin is None: ymin = np.nanmin(prof) * 1.1
     if ymax is None: ymax = np.nanmax(prof) * 1.1
@@ -1279,45 +1057,33 @@ def profile(fitsimage: str = '', Tb: bool = False,
         elif flux:
             ylabel = 'Flux (Jy)'
         else:
-            ylabel = bunit
+            ylabel = d.bunit
     if type(ylabel) is str: ylabel = [ylabel] * nprof
-    if gaussfit:
-        bounds = [[ymin, xmin, v[1] - v[0]], [ymax, xmax, xmax - xmin]]
     def gauss(x, p, c, w):
         return p * np.exp(-4. * np.log(2.) * ((x - c) / w)**2)
     set_rcparams(20, 'w')
     if ncols == 1: nrows = nprof
     fig = plt.figure(figsize=(6 * ncols, 3 * nrows))
     ax = np.empty(nprof, dtype='object')
+    a = PlotAxes2D(False, None, 'linear', 'linear',
+                   [xmin, xmax], [ymin, ymax], xlabel, None, xticks, yticks,
+                   xticklabels, yticklabels, xticksminor, yticksminor, None)
     for i in range(nprof):
         sharex = None if i < nrows - 1 else ax[i - 1]
         ax[i] = fig.add_subplot(nrows, ncols, i + 1, sharex=sharex)
         if gaussfit:
-            popt, pcov = curve_fit(gauss, v, prof[i], bounds=bounds)
-            print('Gauss (peak, center, FWHM):', popt)
-            print('Gauss uncertainties:', np.sqrt(np.diag(pcov)))
-            ax[i].plot(v, gauss(v, *popt),
+            ax[i].plot(v, gauss(v, *gfitres['best'][i]),
                        **dict(gauss_kwargs0, **gauss_kwargs))
         ax[i].plot(v, prof[i], **dict(kwargs0, **kwargs))
-        if i > nprof - ncols - 1:
-            ax[i].set_xlabel(xlabel)
-            if xticks is not None: ax[i].set_xticks(xticks)
-            if xticklabels is not None: ax[i].set_xticklabels(xticklabels)
-            if xticksminor is not None:
-                ax[i].set_xticks(xticksminor, minor=True)
-        else:
-            plt.setp(ax[i].get_xticklabels(), visible=False)
+        ax[i].hlines([0], xmin, xmax, linestyle='dashed', color='k')
         ax[i].set_ylabel(ylabel[i])
-        ax[i].set_xlim(xmin, xmax)
-        ax[i].set_ylim(ymin, ymax)
+        a.set_xyaxes(ax[i])
         if text is not None: ax[i].text(**text[i])
-        if yticks is not None: ax[i].set_yticks(yticks)
-        if yticklabels is not None: ax[i].set_yticklabels(yticklabels)
-        if yticksminor is not None: ax[i].set_yticks(yticksminor, minor=True)
         if title is not None:
             if type(title[i]) is str: title[i] = {'label':title[i]}
             ax[i].set_title(**title[i])
-        ax[i].hlines([0], xmin, xmax, linestyle='dashed', color='k')
+        if i <= nprof - ncols - 1:
+            plt.setp(ax[i].get_xticklabels(), visible=False)
     if getfigax:
         return fig, ax
     fig.tight_layout()
@@ -1328,63 +1094,34 @@ def profile(fitsimage: str = '', Tb: bool = False,
     plt.close()    
 
 
-def slice1d(rmax: float, dr: float = None, pa: float = 0,
-            fitsimage: str = None, x: list = None, y: list = None,
-            c: list = None, center: str = None, restfrq: float = None,
-            Tb: bool = False, cfactor: float = 1,
-            sigma: float or str = 'out', dist: float = 1,
-            xoff: float = 0, yoff: float = 0,
-            xflip: bool = True, yflip: bool = False,
-            bmaj: float = 0, bmin: float = 0, bpa: float = 0, 
-            txtfile: str = None, xlabel: str = None, ylabel: str = None,
-            xticks: list = None, yticks: list = None,
-            xticklabels: list = None, yticklabels: list = None,
-            xticksminor: list = None, yticksminor: list = None,
-            xscale: str = 'linear', yscale: str = 'linear',
-            grid: dict = None, savefig: str or dict = None, show: bool = True,
-            **kwargs):
-    """_summary_
+def plotslice(length: float, dx: float = None, pa: float = 0,
+              fitsimage: str = None, x: list = None, y: list = None,
+              c: list = None, center: str = None, restfrq: float = None,
+              Tb: bool = False, cfactor: float = 1,
+              sigma: float or str = 'out', dist: float = 1,
+              xoff: float = 0, yoff: float = 0,
+              xflip: bool = True, yflip: bool = False,
+              bmaj: float = 0, bmin: float = 0, bpa: float = 0, 
+              txtfile: str = None, xlabel: str = None, ylabel: str = None,
+              xticks: list = None, yticks: list = None,
+              xticklabels: list = None, yticklabels: list = None,
+              xticksminor: list = None, yticksminor: list = None,
+              xscale: str = 'linear', yscale: str = 'linear',
+              grid: dict = None,
+              savefig: str or dict = None, show: bool = False,
+              **kwargs) -> None:
+    """Use Axes.plot to plot a 1D spatial slice in a 2D map.
 
     Args:
-        rmax (float): Slice 
-        dr (float, optional): _description_. Defaults to None.
-        pa (float, optional): _description_. Defaults to 0.
-        fitsimage (str, optional): _description_. Defaults to None.
-        x (list, optional): _description_. Defaults to None.
-        y (list, optional): _description_. Defaults to None.
-        c (list, optional): _description_. Defaults to None.
-        center (str, optional): _description_. Defaults to None.
-        restfrq (float, optional): _description_. Defaults to None.
-        Tb (bool, optional): _description_. Defaults to False.
-        cfactor (float, optional): _description_. Defaults to 1.
-        sigma (floatorstr, optional): _description_. Defaults to 'out'.
-        dist (float, optional): _description_. Defaults to 1.
-        xoff (float, optional): _description_. Defaults to 0.
-        yoff (float, optional): _description_. Defaults to 0.
-        xflip (bool, optional): _description_. Defaults to True.
-        yflip (bool, optional): _description_. Defaults to False.
-        bmaj (float, optional): _description_. Defaults to 0.
-        bmin (float, optional): _description_. Defaults to 0.
-        bpa (float, optional): _description_. Defaults to 0.
-        txtfile (str, optional): _description_. Defaults to None.
-        xlabel (str, optional): _description_. Defaults to None.
-        ylabel (str, optional): _description_. Defaults to None.
-        xticks (list, optional): _description_. Defaults to None.
-        yticks (list, optional): _description_. Defaults to None.
-        xticklabels (list, optional): _description_. Defaults to None.
-        yticklabels (list, optional): _description_. Defaults to None.
-        xscale (str, optional): _description_. Defaults to 'linear'.
-        yscale (str, optional): _description_. Defaults to 'linear'.
-        savefig (strordict, optional): _description_. Defaults to None.
-        show (bool, optional): _description_. Defaults to True.
-
-    Returns:
-        _type_: _description_
+        length (float): Slice length.
+        dx (float, optional): Grid increment. Defaults to None.
+        pa (float, optional): Degree. Position angle. Defaults to 0.
+        fitsimage to show: same as in PlotAstroData.
     """
     kwargs0 = {'linestyle':'-', 'marker':'o'}
     savefig0 = {'bbox_inches':'tight', 'transparent':True}
-    f = PlotFrame(rmax=rmax, dist=dist, xoff=xoff, yoff=yoff,
-                  xflip=xflip, yflip=yflip, center=center)
+    f = AstroFrame(rmax=length / 2, dist=dist, xoff=xoff, yoff=yoff,
+                   xflip=xflip, yflip=yflip, center=center)
     d = AstroData(data=c, x=x, y=y, v=[0], beam=(bmaj, bmin, bpa),
                   fitsimage=fitsimage, Tb=Tb, sigma=sigma,
                   center='common', restfrq=restfrq)
@@ -1393,32 +1130,27 @@ def slice1d(rmax: float, dr: float = None, pa: float = 0,
         print('Only 2D map is supported.')
         return -1
 
-    c, x, y, _, bunit, rms = d.data, d.x, d.y, d.beam, d.bunit, d.rms
-    if dr is None: dr = np.abs(x[1] - x[0])
-    r = np.arange(-np.ceil(rmax / dr), np.ceil(rmax / dr), 1) * dr
-    xg, yg = r * np.sin(np.radians(pa)), r * np.cos(np.radians(pa))
-    xsort = x if x[1] > x[0] else x[::-1]
-    csort = c if x[1] > x[0] else c[:, ::-1]
-    ysort = y if y[1] > y[0] else y[::-1]
-    csort = csort if y[1] > y[0] else csort[::-1, :]
-    f = RBS(ysort, xsort, csort)
-    z = np.squeeze(list(map(f, yg, xg)))
+    r, z = d.slice(length=length, pa=pa, dx=dx)
+    xunit = 'arcsec' if dist == 1 else 'au'
+    yunit = 'K' if Tb else d.bunit
+        
     if txtfile is not None:
         np.savetxt(txtfile, np.c_[r, z],
-                   header=f'x, intensity; positive x is pa={pa:.2f} deg.')
+                   header=f'x ({xunit}), intensity ({yunit}); '
+                   + 'positive x is pa={pa:.2f} deg.')
     set_rcparams()
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1)
     ax.plot(r, z, **dict(kwargs0, **kwargs))
-    if rms > 0: ax.plot(r, r * 0 + 3 * rms, 'k--')
+    if d.rms > 0: ax.plot(r, r * 0 + 3 * d.rms, 'k--')
     if xlabel is None:
-        xlabel = 'Offset ('+('arcsec' if dist == 1 else 'au')+')'
+        xlabel = f'Offset ({xunit})'
     if ylabel is None:
-        ylabel = f'Intensity ({bunit})'
-    pa2 = PlotAxes2D(False, None, xscale, yscale, [r.min(), r.max()], None,
-                     xlabel, ylabel, xticks, yticks, xticklabels, yticklabels,
-                     xticksminor, yticksminor, grid)
-    pa2.set_xyaxes(ax)
+        ylabel = f'Intensity ({yunit})'
+    a = PlotAxes2D(False, None, xscale, yscale, [r.min(), r.max()], None,
+                   xlabel, ylabel, xticks, yticks, xticklabels, yticklabels,
+                   xticksminor, yticksminor, grid)
+    a.set_xyaxes(ax)
     fig.tight_layout()
     if savefig is not None:
         if type(savefig) is str: savefig = {'fname':savefig} 
