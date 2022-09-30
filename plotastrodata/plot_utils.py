@@ -1014,7 +1014,8 @@ def profile(coords: list = [], ellipse: list = None, flux: bool = False,
             xticklabels: list = None, yticklabels: list = None,
             xticksminor: list = None, yticksminor: list = None,
             xlabel: str = r'Velocity (km s$^{-1}$)', ylabel: list = None,
-            nrows: int = 0, ncols: int = 1, getfigax: bool = False,
+            nrows: int = 0, ncols: int = 1, fig = None, ax = None,
+            getfigax: bool = False,
             savefig: dict = None, show: bool = True,
             **kwargs) -> tuple:
     """Use Axes.plot to plot line profiles at given coordinates.
@@ -1063,8 +1064,11 @@ def profile(coords: list = [], ellipse: list = None, flux: bool = False,
         return p * np.exp(-4. * np.log(2.) * ((x - c) / w)**2)
     set_rcparams(20, 'w')
     if ncols == 1: nrows = nprof
-    fig = plt.figure(figsize=(6 * ncols, 3 * nrows))
-    ax = np.empty(nprof, dtype='object')
+    if fig is None: fig = plt.figure(figsize=(6 * ncols, 3 * nrows))
+    if nprof > 1 and ax is not None:
+        print('External ax is supported only with len(coords)=1.')
+        ax = None
+    ax = np.empty(nprof, dtype='object') if ax is None else [ax]
     a = PlotAxes2D(False, None, 'linear', 'linear',
                    [xmin, xmax], [ymin, ymax], xlabel, None, xticks, yticks,
                    xticklabels, yticklabels, xticksminor, yticksminor, None)
@@ -1107,7 +1111,8 @@ def plotslice(length: float, dx: float = None, pa: float = 0,
               xticklabels: list = None, yticklabels: list = None,
               xticksminor: list = None, yticksminor: list = None,
               xscale: str = 'linear', yscale: str = 'linear',
-              grid: dict = None,
+              grid: dict = None, fig = None, ax = None,
+              getfigax: bool = False,
               savefig: str or dict = None, show: bool = False,
               **kwargs) -> None:
     """Use Axes.plot to plot a 1D spatial slice in a 2D map.
@@ -1139,8 +1144,8 @@ def plotslice(length: float, dx: float = None, pa: float = 0,
                    header=f'x ({xunit}), intensity ({yunit}); '
                    + 'positive x is pa={pa:.2f} deg.')
     set_rcparams()
-    fig = plt.figure()
-    ax = fig.add_subplot(1, 1, 1)
+    if fig is None: fig = plt.figure()
+    if ax is None: ax = fig.add_subplot(1, 1, 1)
     ax.plot(r, z, **dict(kwargs0, **kwargs))
     if d.rms > 0: ax.plot(r, r * 0 + 3 * d.rms, 'k--')
     if xlabel is None:
@@ -1151,6 +1156,8 @@ def plotslice(length: float, dx: float = None, pa: float = 0,
                    xlabel, ylabel, xticks, yticks, xticklabels, yticklabels,
                    xticksminor, yticksminor, grid)
     a.set_xyaxes(ax)
+    if getfigax:
+        return fig, ax
     fig.tight_layout()
     if savefig is not None:
         if type(savefig) is str: savefig = {'fname':savefig} 

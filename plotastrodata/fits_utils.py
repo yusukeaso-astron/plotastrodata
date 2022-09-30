@@ -80,7 +80,7 @@ class FitsData:
     def get_beam(self, dist: float = 1.) -> tuple:
         if not hasattr(self, 'bmaj'):
             self.gen_beam(dist)
-        return [self.bmaj, self.bmin, self.bpa]
+        return np.array([self.bmaj, self.bmin, self.bpa])
 
     def gen_data(self, Tb: bool = False, log: bool = False,
                  drop: bool = True, restfrq: float = None) -> None:
