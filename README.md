@@ -32,6 +32,7 @@ plotastrodata can do the following things.
 * Fill channel maps with a 2D image.
 * Add line, arrow, ellipse, rectangle, text, and marker in specified channels.
 * Use original arguments of matplotlib (pcolormesh, contour, quiver, plot, text, Ellipse, Rectangle).
+* Other functions for plotting line profiles and a spatial 1D slice.
  
 ## Requirement
 
