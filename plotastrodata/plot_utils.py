@@ -221,58 +221,28 @@ class PlotAstroData(AstroFrame):
     ['edge', 'neg', 'med', 'iter', 'out'] as well as a specific value.
     """
     def __init__(self, fitsimage: str = None,
-                 v: list = [0], vskip: int = 1,
-                 vmin: float = -1e10, vmax: float = 1e10,
-                 vsys: float = 0., veldigit: int = 2,
+                 v: list = [0], vskip: int = 1, veldigit: int = 2,
                  restfrq: float = None,
                  nrows: int = 4, ncols: int = 6,
-                 center: str = None, rmax: float = 1e10, dist: float = 1.,
-                 xoff: float = 0, yoff: float = 0,
-                 xflip: bool = True, yflip: bool = False,
-                 pv: bool = False, swapxy: bool = False,
-                 quadrants: str = None,
                  fontsize: int = None, nancolor: str = 'w',
-                 figsize: tuple = None, fig=None, ax=None) -> None:
+                 figsize: tuple = None, fig=None, ax=None, **kwargs) -> None:
         """Set up common parameters.
+           kwargs is the arguments of AstroFrame to define plotting ranges.
 
         Args:
             fitsimage (str, optional):
-                Used to set up channels. Defaults to None.
+                Used to set up the channels and center.
             v (list, optional):
                 Used to set up channels if fitsimage not given.
                 Defaults to [0].
             vskip (int, optional):
                 How many channels are skipped. Defaults to 1.
-            vmin (float, optional):
-                Velocity at the upper left. Defaults to -1e10.
-            vmax (float, optional):
-                Velocity at the lower bottom. Defaults to 1e10.
-            vsys (float, optional):
-                Each channel shows v-vsys. Defaults to 0..
             veldigit (int, optional):
                 How many digits after the decimal point. Defaults to 2.
             restfrq (float, optional):
                 Used for velocity and brightness T. Defaults to None.
             nrows (int, optional): Used for channel maps. Defaults to 4.
             ncols (int, optional): Used for channel maps. Defaults to 6.
-            center (str, optional):
-                Central coordinate like '12h34m56.7s 12d34m56.7s'.
-                Defaults to None.
-            rmax (float, optional):
-                Map size is 2rmax x 2rmax. Defaults to 1e10.
-            dist (float, optional):
-                Change x and y in arcsec to au. Defaults to 1..
-            xoff (float, optional):
-                Map center relative to the center. Defaults to 0.
-            yoff (float, optional):
-                Map center relative to the center. Defaults to 0.
-            xflip (bool, optional):
-                True means left is positive x. Defaults to True.
-            yflip (bool, optional):
-                True means bottom is positive y. Defaults to False.
-            pv (bool, optional): Mode for PV diagram. Defaults to False.
-            quadrants (str, optional): '13' or '24'. Quadrants to take mean.
-                None means not taking mean. Defaults to None.
             fontsize (int, optional): rc_Params['font.size'].
                 None means 18 (2D) or 12 (3D). Defaults to None.
             nancolor (str, optional):
@@ -281,22 +251,21 @@ class PlotAstroData(AstroFrame):
             fig (optional): External plt.figure(). Defaults to None.
             ax (optional): External fig.add_subplot(). Defaults to None.
         """
-        super().__init__(rmax, dist, center, xoff, yoff, vsys, vmin, vmax,
-                         xflip, yflip, swapxy, pv, quadrants)
+        super().__init__(**kwargs)
         internalfig = fig is None
         internalax = ax is None
         if fitsimage is not None:
             fd = FitsData(fitsimage)
-            _, _, v = fd.get_grid(restfrq=restfrq, vsys=vsys,
-                                  vmin=vmin, vmax=vmax)
-            if center is None and not pv:
+            _, _, v = fd.get_grid(restfrq=restfrq, vsys=self.vsys,
+                                  vmin=self.vmin, vmax=self.vmax)
+            if self.center is None and not self.pv:
                 ra_deg = fd.get_header('CRVAL1')
                 dec_deg = fd.get_header('CRVAL2')
-                center = xy2coord([ra_deg, dec_deg])
+                self.center = xy2coord([ra_deg, dec_deg])
             if v is not None and v[1] < v[0]:
                 v = v[::-1]
                 print('Inverted velocity.')
-        if pv or v is None or len(v) == 1:
+        if self.pv or v is None or len(v) == 1:
             nv = nrows = ncols = npages = nchan = 1
         else:
             nv = len(v := v[::vskip])
@@ -327,7 +296,7 @@ class PlotAstroData(AstroFrame):
                                          sharex=sharex, sharey=sharey)
             if nchan > 1:
                 fig.subplots_adjust(hspace=0, wspace=0, right=0.87, top=0.87)
-                ax[ch].text(0.9 * rmax, 0.7 * rmax,
+                ax[ch].text(0.9 * self.rmax, 0.7 * self.rmax,
                             rf'${v[ch]:.{veldigit:d}f}$', color='black',
                             backgroundcolor='white', zorder=20)
         self.fig = None if internalfig else fig
