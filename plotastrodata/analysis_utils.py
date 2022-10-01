@@ -31,21 +31,31 @@ class AstroData():
     x: np.ndarray = None
     y: np.ndarray = None
     v: np.ndarray = None
-    beam: list = None
+    beam: np.ndarray = np.array([None] * 3)
     fitsimage: str = None
     Tb: bool = False
-    sigma: str = None
-    center: str = None
+    sigma: str = 'out'
+    center: str = 'common'
     restfrq: float = None
+    cfactor: float = 1
     def __post_init__(self):
-        if type(self.Tb) is bool:
-            self.data = [self.data]
-            self.beam = [self.beam]
-            self.fitsimage = [self.fitsimage]
-            self.Tb = [self.Tb]
-            self.sigma = [self.sigma]
-            self.restfrq = [self.restfrq]
-        n = len(self.data)
+        if self.fitsimage is not None:
+            n = 1 if type(self.fitsimage) is str else len(self.fitsimage)
+            self.data = None
+        elif self.data is not None:
+            n = 1 if type(self.data) is not list else len(self.data)
+        else:
+            n = 0
+            print('Either data or fitsimage must be given.')
+        if type(self.fitsimage) is not list:
+            self.fitsimage = [self.fitsimage] * n
+        if type(self.data) is not list: self.data = [self.data] * n
+        if np.ndim(self.beam) == 1: self.beam = [self.beam] * n
+        if type(self.Tb) is not list: self.Tb = [self.Tb] * n
+        if type(self.sigma) is not list: self.sigma = [self.sigma] * n
+        if type(self.center) is not list: self.center = [self.center] * n
+        if type(self.restfrq) is not list: self.restfrq = [self.restfrq] * n
+        if type(self.cfactor) is not list: self.cfactor = [self.cfactor] * n
         self.rms = [None] * n
         self.bunit = [''] * n
         
@@ -182,7 +192,7 @@ class AstroFrame():
                 x[i], y[i] = rel2abs(*p, self.xlim, self.ylim)
         return x, y
 
-    def read(self, d, xskip: int = 1, yskip: int = 1, cfactor: float = 1):
+    def read(self, d, xskip: int = 1, yskip: int = 1):
         """Get data, grid, rms, beam, and bunit from AstroData,
            which is a part of the input of
            add_color, add_contour, add_segment, and add_rgb.
@@ -192,8 +202,8 @@ class AstroFrame():
             xskip, yskip (int): Spatial pixel skip. Defaults to 1.
             cfactor (float, optional): Data times cfactor. Defaults to 1.
         """
-        if d.center == 'common': d.center = self.center
-        for i in range(n := len(d.data)):
+        for i in range(n := len(d.fitsimage)):
+            if d.center[i] == 'common': d.center[i] = self.center
             grid = None
             if d.data[i] is not None:
                 d.data[i], grid \
@@ -205,7 +215,7 @@ class AstroFrame():
                 d.data[i], grid, d.beam[i], d.bunit[i], d.rms[i] \
                     = fits2data(fitsimage=d.fitsimage[i], Tb=d.Tb[i],
                                 sigma=d.sigma[i], restfrq=d.restfrq[i],
-                                center=d.center, log=False,
+                                center=d.center[i], log=False,
                                 rmax=self.rmax, dist=self.dist,
                                 xoff=self.xoff, yoff=self.yoff,
                                 vsys=self.vsys, vmin=self.vmin,
@@ -229,10 +239,16 @@ class AstroFrame():
                 if self.quadrants is not None:
                     d.data[i], d.x, d.y \
                         = quadrantmean(d.data[i], d.x, d.y, self.quadrants)
-                d.data[i] = d.data[i] * cfactor
-                if d.rms[i] is not None: d.rms[i] = d.rms[i] * cfactor
+                d.data[i] = d.data[i] * d.cfactor[i]
+                if d.rms[i] is not None: d.rms[i] = d.rms[i] * d.cfactor[i]
         if n == 1:
             d.data = d.data[0]
             d.beam = d.beam[0]
+            d.fitsimage = d.fitsimage[0]
+            d.Tb = d.Tb[0]
+            d.sigma = d.sigma[0]
+            d.center = d.center[0]
+            d.restfrq = d.restfrq[0]
+            d.cfactor = d.cfactor[0]
             d.bunit = d.bunit[0]
             d.rms = d.rms[0]

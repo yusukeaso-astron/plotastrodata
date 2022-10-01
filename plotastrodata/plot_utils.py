@@ -36,7 +36,7 @@ def set_rcparams(fontsize: int = 18, nancolor: str ='w') -> None:
 @dataclass
 class PlotAxes2D():
     samexy: bool = False
-    loglog: bool = False
+    loglog: bool = None
     xscale: str = 'linear'
     yscale: str = 'linear'
     xlim: list = None
@@ -147,6 +147,30 @@ def set_minmax(data: np.ndarray, stretch: str, stretchscale: float,
         kw['vmax'] = kw['vmax'][0]
     return data
 
+
+def kwargs2AstroData(kw: dict):
+    tmp = {}
+    d = AstroData(data=np.zeros((2, 2)))
+    for k in vars(d).keys():
+        if k in kw.keys():
+            tmp[k] = kw[k]
+            del kw[k]
+    if tmp == {}:
+        print('No argument given.')
+        return None
+    else:
+        d = AstroData(**tmp)
+        return d
+
+def kwargs2PlotAxes2D(kw: dict):
+    tmp = {}
+    d = PlotAxes2D()
+    for k in vars(d).keys():
+        if k in kw.keys():
+            tmp[k] = kw[k]
+            del kw[k]
+    d = PlotAxes2D(**tmp)
+    return d
 
 class PlotAstroData(AstroFrame):
     """Make a figure from 2D/3D FITS files or 2D/3D arrays.
@@ -480,46 +504,25 @@ class PlotAstroData(AstroFrame):
             axnow.plot([x[0] - length/2., x[0] + length/2.], [y[0], y[0]],
                        '-', linewidth=linewidth, color=color)
     
-    def add_color(self, fitsimage: str = None,
-                  x: list = None, y: list = None,
-                  xskip: int = 1, yskip: int = 1,
-                  v: list = None, c: list = None,
-                  center: str = 'common', restfrq: float = None,
-                  Tb: bool = False, stretch: str = 'linear',
-                  stretchscale: float = None,
-                  cfactor: float = 1, sigma: float or str = 'out',
+    def add_color(self, xskip: int = 1, yskip: int = 1,
+                  stretch: str = 'linear', stretchscale: float = None,
                   show_cbar: bool = True, cblabel: str = None,
                   cbformat: float = '%.1e', cbticks: list = None,
                   cbticklabels: list = None, cblocation: str = 'right',
                   show_beam: bool = True, beamcolor: str = 'gray',
-                  bmaj: float = 0., bmin: float = 0.,
-                  bpa: float = 0., **kwargs) -> None:
+                  **kwargs) -> None:
         """Use pcolormesh of matplotlib.
+           kwargs must include the arguments of AstroData to specify 
+           the data to be plotted.
 
         Args:
-            fitsimage (str, optional): Input fits name. Defaults to None.
-            x (list, optional): 1D array. Defaults to None.
-            y (list, optional): 1D array. Defaults to None.
             xskip, yskip (int, optional): Spatial pixel skip. Defaults to 1.
-            v (list, optional): 1D array. Defaults to None.
-            c (list, optional): 2D or 3D array. Defaults to None.
-            center (str, optional):
-                Text coordinates. 'common' means initialized value.
-                Defaults to 'common'.
-            restfrq (float, optional):
-                Used for velocity and brightness T. Defaults to None.
-            Tb (bool, optional):
-                True means the mapped data are brightness T. Defaults to False.
             stretch (str, optional):
                 'log' means the mapped data are logarithmic.
                 'asinh' means the mapped data are arc sin hyperbolic.
                 Defaults to 'linear'.
             stretchscale (float, optional):
                 color scale is asinh(data / stretchscale). Defaults to None.
-            cfactor (float, optional):
-                Output data times cfactor. Defaults to 1.
-            sigma (float or str, optional):
-                Noise level or method for measuring it. Defaults to 'out'.
             show_cbar (bool, optional): Show color bar. Defaults to True.
             cblabel (str, optional): Colorbar label. Defaults to None.
             cbformat (float, optional):
@@ -531,15 +534,10 @@ class PlotAstroData(AstroFrame):
                 Only for 2D images. Defaults to 'right'.
             show_beam (bool, optional): Defaults to True.
             beamcolor (str, optional): Matplotlib color. Defaults to 'gray'.
-            bmaj (float, optional): Beam major axis. Defaults to 0..
-            bmin (float, optional): Beam minor axis. Defaults to 0..
-            bpa (float, optional): Beam position angle. Defaults to 0..
         """
         kwargs0 = {'cmap':'cubehelix', 'alpha':1, 'zorder':1}
-        d = AstroData(data=c, x=x, y=y, v=v, beam=(bmaj, bmin, bpa),
-                      fitsimage=fitsimage, Tb=Tb,
-                      sigma=sigma, center=center, restfrq=restfrq)
-        self.read(d, xskip, yskip, cfactor)
+        d = kwargs2AstroData(kwargs)
+        self.read(d, xskip, yskip)
         c, x, y, beam, bunit, rms = d.data, d.x, d.y, d.beam, d.bunit, d.rms
         c = set_minmax(c, stretch, stretchscale, rms, kwargs)
         c = self.vskipfill(c)
@@ -583,48 +581,24 @@ class PlotAstroData(AstroFrame):
         if show_beam and not self.pv:
             self.add_beam(*beam, beamcolor)
 
-    def add_contour(self, fitsimage: str = None,
-                    x: list = None, y: list = None,
-                    xskip: int = 1, yskip: int = 1,
-                    v: list = None, c: list = None,
-                    center: str = 'common', restfrq: float = None,
-                    sigma: str or float = 'out',
+    def add_contour(self, xskip: int = 1, yskip: int = 1,
                     levels: list = [-12,-6,-3,3,6,12,24,48,96,192,384],
-                    Tb: bool = False,
                     show_beam: bool = True, beamcolor: str = 'gray',
-                    bmaj: float = 0., bmin: float = 0., bpa: float = 0.,
                     **kwargs) -> None:
         """Use contour of matplotlib.
+           kwargs must include the arguments of AstroData to specify 
+           the data to be plotted.
 
         Args:
-            fitsimage (str, optional): Input fits name. Defaults to None.
-            x (list, optional): 1D array. Defaults to None.
-            y (list, optional): 1D array. Defaults to None.
             xskip, yskip (int, optional): Spatial pixel skip. Defaults to 1.
-            v (list, optional): 1D array. Defaults to None.
-            c (list, optional): 1D array. Defaults to None.
-            center (str, optional):
-                Text coordinate. 'common' means initalized value.
-                Defaults to 'common'.
-            restfrq (float, optional):
-                Used for velocity and brightness T. Defaults to None.
-            sigma (strorfloat, optional):
-                Noise level or method for measuring it. Defaults to 'out'.
             levels (list, optional):
                 Contour levels in the unit of sigma.
                 Defaults to [-12,-6,-3,3,6,12,24,48,96,192,384].
-            Tb (bool, optional):
-                True means the mapped data are brightness T. Defaults to False.
             show_beam (bool, optional): Defaults to True.
             beamcolor (str, optional): Matplotlib color. Defaults to 'gray'.
-            bmaj (float, optional): Beam major axis. Defaults to 0..
-            bmin (float, optional): Beam minor axis. Defaults to 0..
-            bpa (float, optional): Beam position angle. Defaults to 0..
         """
         kwargs0 = {'colors':'gray', 'linewidths':1.0, 'zorder':2}
-        d = AstroData(data=c, x=x, y=y, v=v, beam=(bmaj, bmin, bpa),
-                      fitsimage=fitsimage, Tb=Tb,
-                      sigma=sigma, center=center, restfrq=restfrq)
+        d = kwargs2AstroData(kwargs)
         self.read(d, xskip, yskip)
         c, x, y, beam, rms = d.data, d.x, d.y, d.beam, d.rms
         c = self.vskipfill(c)
@@ -636,18 +610,19 @@ class PlotAstroData(AstroFrame):
             
     def add_segment(self, ampfits: str = None, angfits: str = None,
                     Ufits: str = None, Qfits: str = None,
-                    x: list = None, y: list = None,
                     xskip: int = 1, yskip: int = 1,
-                    v: list = None, amp: list = None, ang: list = None,
+                    amp: list = None, ang: list = None,
                     stU: list = None, stQ: list = None,
                     ampfactor: float = 1., angonly: bool = False,
                     rotation: float = 0.,
-                    cutoff: float = 3., sigma: str or float = 'out',
-                    center: str = 'common', restfrq: float = None,
+                    cutoff: float = 3., 
                     show_beam: bool = True, beamcolor: str = 'gray',
-                    bmaj: float = 0., bmin: float = 0., bpa: float = 0.,
                     **kwargs) -> None:
         """Use quiver of matplotlib.
+           kwargs must include the arguments of AstroData to specify 
+           the data to be plotted.
+           fitsimage = [ampfits, angfits, Ufits, Qfits]
+           data = [amp, ang, stU, stQ]
 
         Args:
             ampfits (str, optional):
@@ -658,10 +633,7 @@ class PlotAstroData(AstroFrame):
                 In put fits name. Stokes U. Defaults to None.
             Qfits (str, optional):
                 In put fits name. Stokes Q. Defaults to None.
-            x (list, optional): 1D array. Defaults to None.
-            y (list, optional): 1D array. Defaults to None.
             xskip, yskip (int, optional): Spatial pixel skip. Defaults to 1.
-            v (list, optional): 1D array. Defaults to None.
             amp (list, optional): Length of segment. Defaults to None.
             ang (list, optional): North to east. Defaults to None.
             stU (list, optional): Stokes U. Defaults to None.
@@ -677,25 +649,15 @@ class PlotAstroData(AstroFrame):
                 In the unit of sigma. Defaults to 3..
             sigma (str or float, optional):
                 Noise level or method for measuring it. Defaults to 'out'.
-            center (str, optional):
-                Text coordinate. 'common' means initialized value.
-                Defaults to 'common'.
-            restfrq (float, optional):
-                Used for velocity and brightness T. Defaults to None.
             show_beam (bool, optional): Defaults to True.
             beamcolor (str, optional): Matplotlib color. Defaults to 'gray'.
-            bmaj (float, optional): Beam major axis. Defaults to 0..
-            bmin (float, optional): Beam minor axis. Defaults to 0..
-            bpa (float, optional): Beam position angle. Defaults to 0..
         """
         kwargs0 = {'angles':'xy', 'scale_units':'xy', 'color':'gray',
                    'pivot':'mid', 'headwidth':0, 'headlength':0,
                    'headaxislength':0, 'width':0.007, 'zorder':3}
-        d = AstroData(data=[amp, ang, stU, stQ],
-                      x=x, y=y, v=v, beam=[(bmaj, bmin, bpa)] * 4,
-                      fitsimage=[ampfits, angfits, Ufits, Qfits],
-                      Tb=[False] * 4, sigma=[sigma] * 4,
-                      center=center, restfrq=[None] * 4)
+        kwargs['data'] = [amp, ang, stU, stQ]
+        kwargs['fitsimage'] = [ampfits, angfits, Ufits, Qfits]
+        d = kwargs2AstroData(kwargs)
         self.read(d, xskip, yskip)
         c, x, y, beam, rms = d.data, d.x, d.y, d.beam, d.rms
         amp, ang, stU, stQ = c
@@ -717,58 +679,33 @@ class PlotAstroData(AstroFrame):
         if show_beam and not self.pv:
             self.add_beam(*beam, beamcolor)
 
-    def add_rgb(self, fitsimage: list = [None] * 3,
-                x: list = None, y: list = None,
+    def add_rgb(self,
                 xskip: int = 1, yskip: int = 1,
-                v: list = None, c: list = [None] * 3,
-                center: str = 'common',
-                restfrq: list = [None] * 3,
-                Tb: list = [False] * 3,
                 stretch: list = ['linear'] * 3,
                 stretchscale: list = [None] * 3,
-                sigma: list = ['out'] * 3,
                 show_beam: bool = True,
                 beamcolor: list = ['red', 'green', 'blue'],
-                bmaj: list = [0] * 3, bmin: list = [0] * 3,
-                bpa: list = [0] * 3, **kwargs) -> None:
+                **kwargs) -> None:
         """Use PIL.Image and imshow of matplotlib.
+           kwargs must include the arguments of AstroData to specify 
+           the data to be plotted.
         
         A three-element array ([red, green, blue]) is supposed for
-        all arguments, except for skip and show_beam,
+        all arguments, except for xskip, yskip and show_beam,
         including vmax and vmin.
 
         Args:
-            fitsimage (list, optional): Input fits name. Defaults to None.
-            x (list, optional): 1D array. Defaults to None.
-            y (list, optional): 1D array. Defaults to None.
             xskip, yskip (int, optional): Spatial pixel skip. Defaults to 1.
-            v (list, optional): 1D array. Defaults to None.
-            c (list, optional): 2D or 3D array. Defaults to None.
-            center (str, optional):
-                Text coordinates. 'common' means initialized value.
-                Defaults to 'common'.
-            restfrq (float, optional):
-                Used for velocity and brightness T. Defaults to None.
-            Tb (bool, optional):
-                True means the mapped data are brightness T. Defaults to False.
             stretch (str, optional):
                 'log' means the mapped data are logarithmic.
                 'asinh' means the mapped data are arc sin hyperbolic.
                 Defaults to 'linear'.
             stretchscale (float, optional):
                 color scale is asinh(data / stretchscale). Defaults to None.
-            sigma (float or str, optional):
-                Noise level or method for measuring it. Defaults to 'out'.
             show_beam (bool, optional): Defaults to True.
             beamcolor (str, optional): Matplotlib color. Defaults to 'gray'.
-            bmaj (float, optional): Beam major axis. Defaults to 0..
-            bmin (float, optional): Beam minor axis. Defaults to 0..
-            bpa (float, optional): Beam position angle. Defaults to 0..
         """
-        d = AstroData(data=c, x=x, y=y, v=v,
-                      beam=np.array([bmaj, bmin, bpa]).T,
-                      fitsimage=fitsimage, Tb=Tb, sigma=sigma,
-                      center=center, restfrq=restfrq)
+        d = kwargs2AstroData(kwargs)
         self.read(d, xskip, yskip)
         c, x, y, beam, rms = d.data, d.x, d.y, d.beam, d.rms
         c = set_minmax(c, stretch, stretchscale, rms, kwargs)
@@ -1001,37 +938,29 @@ class PlotAstroData(AstroFrame):
         return self.fig, self.ax[0]
 
 
-def profile(coords: list = [], ellipse: list = None, flux: bool = False,
-            width: int = 1, yfactor: float = 1.,
+def profile(coords: list = [], ellipse: list = None,
+            flux: bool = False, width: int = 1,
             gaussfit: bool = False, gauss_kwargs: dict = {},
             title: list = None, text: list = None,
-            xmin: float = -1e10, xmax: float = 1e10,
-            ymin: float = None, ymax: float = None, 
-            fitsimage: str = '', Tb: bool = False, dist: float = 1.,
-            restfrq: float = None, vsys: float = 0.,
-            xticks: list = None, yticks: list = None,
-            xticklabels: list = None, yticklabels: list = None,
-            xticksminor: list = None, yticksminor: list = None,
-            xlabel: str = r'Velocity (km s$^{-1}$)', ylabel: list = None,
+            dist: float = 1., vsys: float = 0.,
             nrows: int = 0, ncols: int = 1, fig = None, ax = None,
             getfigax: bool = False,
             savefig: dict = None, show: bool = True,
             **kwargs) -> tuple:
     """Use Axes.plot to plot line profiles at given coordinates.
+       kwargs must include the arguments of AstroData to specify 
+       the data to be plotted.
+       kwargs can include the arguments of PlotAxes2D to adjust x and y axes.
 
     Args:
         coords (list, optional): Coordinates. Defaults to [].
         ellipse (list, optional): For average. Defaults to None.
         flux (bool, optional): y axis is flux density. Defaults to False.
         width (int, optional): Rebinning step along v. Defaults to 1.
-        yfactor (float, optional): y value times yfactor. Defaults to 1..
         gaussfit (bool, optional): Fit the profiles. Defaults to False.
         gauss_kwargs (dict, optional): Kwargs for Axes.plot. Defaults to {}.
         title (list, optional): For each plot. Defaults to None.
         text (list, optional): For each plot. Defaults to None.
-        xmin, xmax (float, optional): Velocity range. Defaults to -1e10, 1e10.
-        ymin, ymax (float, optional): Intensity range. Defaults to None.
-        fitsimage to show: same as in PlotAstroData.
 
     Returns:
         tuple: (fig, ax), where ax is a list, if getfigax=True.
@@ -1041,23 +970,20 @@ def profile(coords: list = [], ellipse: list = None, flux: bool = False,
     gauss_kwargs0 = {'drawstyle':'default', 'color':'g'}
     savefig0 = {'bbox_inches':'tight', 'transparent':True}
     if type(coords) is str: coords = [coords]
-    f = AstroFrame(dist=dist, vsys=vsys, vmin=xmin, vmax=xmax,
-                   center=coords[0])
-    d = AstroData(fitsimage=fitsimage, Tb=Tb,
-                  restfrq=restfrq, center='common')
-    f.read(d, 1, 1, yfactor)
+    vmin, vmax = kwargs['xlim'] if 'xlim' in kwargs else [-1e10, 1e10]
+    f = AstroFrame(dist=dist, vsys=vsys, center=coords[0], vmin=vmin, vmax=vmax)
+    d = kwargs2AstroData(kwargs)
+    f.read(d)
     v, prof, gfitres = d.profile(coords, ellipse, flux, width, gaussfit)
     nprof = len(prof)
-    xmin, xmax = np.min(v), np.max(v)
-    if ymin is None: ymin = np.nanmin(prof) * 1.1
-    if ymax is None: ymax = np.nanmax(prof) * 1.1
-    if ylabel is None:
-        if Tb:
-            ylabel = r'$T_b$ (K)'
-        elif flux:
-            ylabel = 'Flux (Jy)'
-        else:
-            ylabel = d.bunit
+    if 'ylabel' in kwargs:
+        ylabel = kwargs['ylabel']
+    elif d.Tb:
+        ylabel = r'$T_b$ (K)'
+    elif flux:
+        ylabel = 'Flux (Jy)'
+    else:
+        ylabel = d.bunit
     if type(ylabel) is str: ylabel = [ylabel] * nprof
     def gauss(x, p, c, w):
         return p * np.exp(-4. * np.log(2.) * ((x - c) / w)**2)
@@ -1065,12 +991,12 @@ def profile(coords: list = [], ellipse: list = None, flux: bool = False,
     if ncols == 1: nrows = nprof
     if fig is None: fig = plt.figure(figsize=(6 * ncols, 3 * nrows))
     if nprof > 1 and ax is not None:
-        print('External ax is supported only with len(coords)=1.')
+        print('External ax is supported only when len(coords)=1.')
         ax = None
     ax = np.empty(nprof, dtype='object') if ax is None else [ax]
-    a = PlotAxes2D(False, None, 'linear', 'linear',
-                   [xmin, xmax], [ymin, ymax], xlabel, None, xticks, yticks,
-                   xticklabels, yticklabels, xticksminor, yticksminor, None)
+    if not 'xlabel' in kwargs: kwargs['xlabel'] = 'Velocity (km s$^{-1}$)'
+    if not 'xlim' in kwargs: kwargs['xlim'] = [v.min(), v.max()]
+    a = kwargs2PlotAxes2D(kwargs)
     for i in range(nprof):
         sharex = None if i < nrows - 1 else ax[i - 1]
         ax[i] = fig.add_subplot(nrows, ncols, i + 1, sharex=sharex)
@@ -1078,7 +1004,7 @@ def profile(coords: list = [], ellipse: list = None, flux: bool = False,
             ax[i].plot(v, gauss(v, *gfitres['best'][i]),
                        **dict(gauss_kwargs0, **gauss_kwargs))
         ax[i].plot(v, prof[i], **dict(kwargs0, **kwargs))
-        ax[i].hlines([0], xmin, xmax, linestyle='dashed', color='k')
+        ax[i].hlines([0], v.min(), v.max(), linestyle='dashed', color='k')
         ax[i].set_ylabel(ylabel[i])
         a.set_xyaxes(ax[i])
         if text is not None: ax[i].text(**text[i])
@@ -1098,23 +1024,17 @@ def profile(coords: list = [], ellipse: list = None, flux: bool = False,
 
 
 def plotslice(length: float, dx: float = None, pa: float = 0,
-              fitsimage: str = None, x: list = None, y: list = None,
-              c: list = None, center: str = None, restfrq: float = None,
-              Tb: bool = False, cfactor: float = 1,
-              sigma: float or str = 'out', dist: float = 1,
-              xoff: float = 0, yoff: float = 0,
+              dist: float = 1, xoff: float = 0, yoff: float = 0,
               xflip: bool = True, yflip: bool = False,
-              bmaj: float = 0, bmin: float = 0, bpa: float = 0, 
-              txtfile: str = None, xlabel: str = None, ylabel: str = None,
-              xticks: list = None, yticks: list = None,
-              xticklabels: list = None, yticklabels: list = None,
-              xticksminor: list = None, yticksminor: list = None,
-              xscale: str = 'linear', yscale: str = 'linear',
-              grid: dict = None, fig = None, ax = None,
+              txtfile: str = None,
+              fig = None, ax = None,
               getfigax: bool = False,
               savefig: str or dict = None, show: bool = False,
               **kwargs) -> None:
     """Use Axes.plot to plot a 1D spatial slice in a 2D map.
+       kwargs must include the arguments of AstroData to specify 
+       the data to be plotted.
+       kwargs can include the arguments of PlotAxes2D to adjust x and y axes.
 
     Args:
         length (float): Slice length.
@@ -1124,19 +1044,18 @@ def plotslice(length: float, dx: float = None, pa: float = 0,
     """
     kwargs0 = {'linestyle':'-', 'marker':'o'}
     savefig0 = {'bbox_inches':'tight', 'transparent':True}
+    center = kwargs['center'] if 'center' in kwargs else None
     f = AstroFrame(rmax=length / 2, dist=dist, xoff=xoff, yoff=yoff,
                    xflip=xflip, yflip=yflip, center=center)
-    d = AstroData(data=c, x=x, y=y, v=[0], beam=(bmaj, bmin, bpa),
-                  fitsimage=fitsimage, Tb=Tb, sigma=sigma,
-                  center='common', restfrq=restfrq)
-    f.read(d, cfactor=cfactor)
+    d = kwargs2AstroData(kwargs)
+    f.read(d)
     if np.ndim(d.data) > 2:
         print('Only 2D map is supported.')
         return -1
 
     r, z = d.slice(length=length, pa=pa, dx=dx)
     xunit = 'arcsec' if dist == 1 else 'au'
-    yunit = 'K' if Tb else d.bunit
+    yunit = 'K' if d.Tb else d.bunit
         
     if txtfile is not None:
         np.savetxt(txtfile, np.c_[r, z],
@@ -1147,13 +1066,12 @@ def plotslice(length: float, dx: float = None, pa: float = 0,
     if ax is None: ax = fig.add_subplot(1, 1, 1)
     ax.plot(r, z, **dict(kwargs0, **kwargs))
     if d.rms > 0: ax.plot(r, r * 0 + 3 * d.rms, 'k--')
-    if xlabel is None:
-        xlabel = f'Offset ({xunit})'
-    if ylabel is None:
-        ylabel = f'Intensity ({yunit})'
-    a = PlotAxes2D(False, None, xscale, yscale, [r.min(), r.max()], None,
-                   xlabel, ylabel, xticks, yticks, xticklabels, yticklabels,
-                   xticksminor, yticksminor, grid)
+    if not 'xlabel' in kwargs:
+        kwargs['xlabel'] = f'Offset ({xunit})'
+    if not 'ylabel' in kwargs:
+        kwargs['ylabel'] = f'Intensity ({yunit})'
+    if not 'xlim' in kwargs: kwargs['xlim'] = [r.min(), r.max()]
+    a = kwargs2PlotAxes2D(kwargs)
     a.set_xyaxes(ax)
     if getfigax:
         return fig, ax
