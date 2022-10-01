@@ -26,7 +26,26 @@ def quadrantmean(c: list, x: list, y: list, quadrants: str ='13') -> tuple:
 
 @dataclass
 class AstroData():
-    """Data to be processed before plotting"""
+    """Data to be processed and parameters for processing the data.
+
+    data (list, optional): 2D or 3D array. Defaults to None.
+    x (list, optional): 1D array. Defaults to None.
+    y (list, optional): 1D array. Defaults to None.
+    v (list, optional): 1D array. Defaults to None.
+    beam (list, optional): [bmaj, bmin, bpa]. Defaults ot [None, None, None].
+    fitsimage (str, optional): Input fits name. Defaults to None.
+    Tb (bool, optional):
+        True means the mapped data are brightness T. Defaults to False.
+    sigma (float or str, optional):
+        Noise level or method for measuring it. Defaults to 'out'.
+    center (str, optional):
+        Text coordinates. 'common' means initialized value.
+        Defaults to 'common'.
+    restfrq (float, optional):
+        Used for velocity and brightness T. Defaults to None.
+    cfactor (float, optional):
+        Output data times cfactor. Defaults to 1.
+    """
     data: np.ndarray = None
     x: np.ndarray = None
     y: np.ndarray = None
