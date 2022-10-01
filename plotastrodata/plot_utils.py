@@ -35,6 +35,30 @@ def set_rcparams(fontsize: int = 18, nancolor: str ='w') -> None:
 
 @dataclass
 class PlotAxes2D():
+    """Use Axes.set_* to adjust x and y axes.
+
+    samexy (bool, optional):
+        True supports same ticks between x and y. Defaults to True.
+    loglog (float, optional):
+        If a float is given, plot on a log-log plane, and
+        xlim=(xmax / loglog, xmax) and so does ylim. Defaults to None.
+    xscale (str, optional): Defaults to None.
+    yscale (str, optional): Defaults to None.
+    xlim (list, optional): Defaults to None.
+    ylim (list, optional): Defaults to None.
+    xlabel (str, optional): Defaults to None.
+    ylabel (str, optional): Defaults to None.
+    xticks (list, optional): Defaults to None.
+    yticks (list, optional): Defaults to None.
+    xticklabels (list, optional): Defaults to None.
+    yticklabels (list, optional): Defaults to None.
+    xticksminor (list or int, optional):
+        If int, int times more than xticks. Defaults to None.
+    yticksminor (list ot int, optional): Defaults to None.
+        If int, int times more than xticks. Defaults to None.
+    grid (dict, optional):
+        True means merely grid(). Defaults to None.
+    """
     samexy: bool = False
     loglog: bool = None
     xscale: str = 'linear'
@@ -731,55 +755,34 @@ class PlotAstroData(AstroFrame):
             for i in range(3):
                 self.add_beam(*beam[i], beamcolor[i])
     
-    def set_axis(self, xticks: list = None, yticks: list = None,
-                 xticksminor: list = None, yticksminor: list = None,
-                 xticklabels: list = None, yticklabels: list= None,
-                 xlabel: str = None, ylabel: str = None,
-                 grid: dict = None, title: dict = None,
-                 samexy: bool = True, loglog: int = None) -> None:
-        """Use ax.set_* of matplotlib.
+    def set_axis(self, title: dict = None, **kwargs) -> None:
+        """Use Axes.set_* of matplotlib.
+           kwargs can include the arguments of PlotAxes2D
+           to adjust x and y axis.
 
         Args:
-            xticks (list, optional): Defaults to None.
-            yticks (list, optional): Defaults to None.
-            xticksminor (list or int, optional):
-                If int, int times more than xticks. Defaults to None.
-            yticksminor (list ot int, optional): Defaults to None.
-                If int, int times more than xticks. Defaults to None.
-            xticklabels (list, optional): Defaults to None.
-            yticklabels (list, optional): Defaults to None.
-            xlabel (str, optional): Defaults to None.
-            ylabel (str, optional): Defaults to None.
-            grid (dict, optional):
-                True means merely grid(). Defaults to None.
             title (dict, optional):
                 str means set_title(str) for 2D or fig.suptitle(str) for 3D.
                 Defaults to None.
-            samexy (bool, optional):
-                True supports same ticks between x and y. Defaults to True.
-            loglog (float, optional):
-                If a float is given, plot on a log-log plane, and
-                xlim=(xmax / loglog, xmax) and so does ylim. Defaults to None.
         """
         offunit = '(arcsec)' if self.dist == 1 else '(au)'
         if self.pv:
             offlabel = f'Offset {offunit}'
             vellabel = r'Velocity (km s$^{-1})$'
-            if xlabel is None:
-                xlabel = vellabel if self.swapxy else offlabel
-            if ylabel is None:
-                ylabel = offlabel if self.swapxy else vellabel
+            if not 'xlabel' in kwargs:
+                kwargs['xlabel'] = vellabel if self.swapxy else offlabel
+            if not 'ylabel' in kwargs:
+                kwargs['ylabel'] = offlabel if self.swapxy else vellabel
             samexy = False
         else:
             ralabel, declabel = f'R.A. {offunit}', f'Dec. {offunit}'
-            if xlabel is None:
-                xlabel = declabel if self.swapxy else ralabel
-            if ylabel is None:
-                ylabel = ralabel if self.swapxy else declabel
-        pa2 = PlotAxes2D(samexy, loglog, 'linear', 'linear',
-                         self.xlim, self.ylim, xlabel, ylabel,
-                         xticks, yticks, xticklabels, yticklabels,
-                         xticksminor, yticksminor, grid)
+            if 'xlabel' in kwargs:
+                kwargs['xlabel'] = declabel if self.swapxy else ralabel
+            if 'ylabel' in kwargs:
+                kwargs['ylabel'] = ralabel if self.swapxy else declabel
+        kwargs['xlim'] = self.xlim
+        kwargs['ylim'] = self.ylim
+        pa2 = kwargs2PlotAxes2D(kwargs)
         for ch, axnow in enumerate(self.ax):
             pa2.set_xyaxes(axnow)
             if not (ch in self.bottomleft):
