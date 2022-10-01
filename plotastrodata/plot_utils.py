@@ -386,7 +386,7 @@ class PlotAstroData(AstroFrame):
     
     def add_marker(self, poslist: list = [],
                    include_chan: list = None, **kwargs) -> None:
-        """Use plot of matplotlib.
+        """Use Axes.plot of matplotlib.
 
         Args:
             poslist (list, optional): Text or relative. Defaults to [].
@@ -403,7 +403,7 @@ class PlotAstroData(AstroFrame):
             
     def add_text(self, poslist: list = [], slist: list = [],
                   include_chan: list = None, **kwargs) -> None:
-        """Use text of matplotlib.
+        """Use Axes.text of matplotlib.
 
         Args:
             poslist (list, optional): Text or relative. Defaults to [].
@@ -422,7 +422,7 @@ class PlotAstroData(AstroFrame):
     def add_line(self, poslist: list = [], anglelist: list = [],
                  rlist: list = [], include_chan: list = None,
                  **kwargs) -> None:
-        """Use plot of matplotlib.
+        """Use Axes.plot of matplotlib.
 
         Args:
             poslist (list, optional): Text or relative. Defaults to [].
@@ -446,7 +446,7 @@ class PlotAstroData(AstroFrame):
     def add_arrow(self, poslist: list = [], anglelist: list = [],
                   rlist: list = [], include_chan: list = None,
                   **kwargs) -> None:
-        """Use quiver of matplotlib.
+        """Use Axes.quiver of matplotlib.
 
         Args:
             poslist (list, optional): Text or relative. Defaults to [].
@@ -470,7 +470,7 @@ class PlotAstroData(AstroFrame):
     def add_scalebar(self, length: float = 0, label: str = '',
                      color: str = 'gray', barpos: tuple = (0.8, 0.12),
                      fontsize: float = None, linewidth: float = 3) -> None:
-        """Use text and plot of matplotlib.
+        """Use Axes.text and Axes.plot of matplotlib.
 
         Args:
             length (float, optional): In the unit of arcsec. Defaults to 0.
@@ -504,7 +504,7 @@ class PlotAstroData(AstroFrame):
                   cbticklabels: list = None, cblocation: str = 'right',
                   show_beam: bool = True, beamcolor: str = 'gray',
                   **kwargs) -> None:
-        """Use pcolormesh of matplotlib.
+        """Use Axes.pcolormesh of matplotlib.
            kwargs must include the arguments of AstroData to specify 
            the data to be plotted.
 
@@ -578,7 +578,7 @@ class PlotAstroData(AstroFrame):
                     levels: list = [-12,-6,-3,3,6,12,24,48,96,192,384],
                     show_beam: bool = True, beamcolor: str = 'gray',
                     **kwargs) -> None:
-        """Use contour of matplotlib.
+        """Use Axes.contour of matplotlib.
            kwargs must include the arguments of AstroData to specify 
            the data to be plotted.
 
@@ -611,7 +611,7 @@ class PlotAstroData(AstroFrame):
                     cutoff: float = 3., 
                     show_beam: bool = True, beamcolor: str = 'gray',
                     **kwargs) -> None:
-        """Use quiver of matplotlib.
+        """Use Axes.quiver of matplotlib.
            kwargs must include the arguments of AstroData to specify 
            the data to be plotted.
            fitsimage = [ampfits, angfits, Ufits, Qfits]
@@ -919,7 +919,7 @@ def profile(coords: list = [], ellipse: list = None,
             getfigax: bool = False,
             savefig: dict = None, show: bool = True,
             **kwargs) -> tuple:
-    """Use Axes.plot to plot line profiles at given coordinates.
+    """Use Axes.plot of matplotlib to plot line profiles at given coordinates.
        kwargs must include the arguments of AstroData to specify 
        the data to be plotted.
        kwargs can include the arguments of PlotAxes2D to adjust x and y axes.
@@ -1003,7 +1003,7 @@ def plotslice(length: float, dx: float = None, pa: float = 0,
               getfigax: bool = False,
               savefig: str or dict = None, show: bool = False,
               **kwargs) -> None:
-    """Use Axes.plot to plot a 1D spatial slice in a 2D map.
+    """Use Axes.plot of matplotlib to plot a 1D spatial slice in a 2D map.
        kwargs must include the arguments of AstroData to specify 
        the data to be plotted.
        kwargs can include the arguments of PlotAxes2D to adjust x and y axes.

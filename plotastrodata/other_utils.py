@@ -79,9 +79,28 @@ def rel2abs(xrel: float, yrel: float, x: list, y: list) -> list:
     Returns:
         ndarray: [xabs, yabs]. Each has the input's shape.
     """
-    a = (1. - xrel)*x[0] + xrel*x[-1]
-    b = (1. - yrel)*y[0] + yrel*y[-1]
-    return np.array([a, b])
+    xabs = (1. - xrel)*x[0] + xrel*x[-1]
+    yabs = (1. - yrel)*y[0] + yrel*y[-1]
+    return np.array([xabs, yabs])
+
+
+def abs2rel(xabs: float, yabs: float, x: list, y: list) -> list:
+    """Transform absolute coordinates to relative ones.
+
+    Args:
+        xabs (float): In the same frame of x.
+        yabs (float): In the same frame of y.
+        x (list): [x0, x0+dx, x0+2dx, ...]
+        y (list): [y0, y0+dy, y0+2dy, ...]
+
+    Returns:
+        ndarray: [xrel, yrel]. Each has the input's shape.
+                 0 <= xrel, yrel <= 1.
+                 0 and 1 correspond to x[0] and x[-1], respectively.
+    """
+    xrel = (xabs - x[0]) / (x[-1] - x[0])
+    yrel = (yabs - y[0]) / (y[-1] - y[0])
+    return np.array([xrel, yrel])
 
 
 def estimate_rms(data: list, sigma: float or str) -> float:
