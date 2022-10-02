@@ -1,8 +1,16 @@
+import subprocess
+import shlex
 from astropy.coordinates import SkyCoord
 from astropy import units
 import numpy as np
 
 
+
+def terminal(cmd: str):
+    subprocess.run(shlex.split(cmd))
+
+def runpython(filename: str):
+    terminal(f'python {filename}')
 
 def listing(*args) -> list:
     """Output a list of the input when the input is string or number.
