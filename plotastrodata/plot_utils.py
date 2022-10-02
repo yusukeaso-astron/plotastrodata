@@ -33,6 +33,17 @@ def set_rcparams(fontsize: int = 18, nancolor: str ='w') -> None:
     plt.rcParams['ytick.minor.width'] = 1.5
 
 
+def logticks(ticks, lim):
+    order = int(np.floor((np.log10(lim[0]))))
+    a = (lim[0] // 10**order + 1) * 10**order
+    a = np.round(a, max(-order, 0))
+    order = int(np.floor((np.log10(lim[1]))))
+    b = (lim[1] // 10**order) * 10**order
+    b = np.round(b, max(-order, 0))
+    newticks = np.sort(np.r_[a, ticks, b])
+    newlabels = [str(t if t < 1 else int(t)) for t in newticks]
+    return newticks, newlabels
+
 @dataclass
 class PlotAxes2D():
     """Use Axes.set_* to adjust x and y axes.
@@ -91,15 +102,14 @@ class PlotAxes2D():
             ax.set_aspect(1)
         if self.xticks is None:
             self.xticks = ax.get_xticks()
-        ax.set_xticks(self.xticks)
         if self.yticks is None:
             self.yticks = ax.get_yticks()
-        ax.set_yticks(self.yticks)
-        niceticks = lambda x: [str(t if t < 1 else int(t)) for t in x]
         if self.xscale == 'log':
-            self.xticklabels = niceticks(self.xticks)
+            self.xticks, self.xticklabels = logticks(self.xticks, self.xlim)
         if self.yscale == 'log':
-            self.yticklabels = niceticks(self.yticks)
+            self.yticks, self.yticklabels = logticks(self.yticks, self.ylim)
+        ax.set_xticks(self.xticks)
+        ax.set_yticks(self.yticks)
         if self.xticksminor is not None:
             if type(self.xticksminor) is int:
                 t = ax.get_xticks()
