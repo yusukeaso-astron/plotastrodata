@@ -364,23 +364,18 @@ class PlotAstroData(AstroFrame):
                       angle=angle * self.xdir, **dict(kwargs0, **kwargs))
                 axnow.add_patch(p)
                 
-    def add_beam(self, bmaj: float = 0, bmin: float = 0,
-                 bpa: float = 0, beamcolor: str = 'gray',
+    def add_beam(self, beam: list = [0, 0, 0], beamcolor: str = 'gray',
                  poslist: list = None) -> None:
         """Use add_region().
 
         Args:
-            bmaj (float, optional): Beam major axis. Defaults to 0.
-            bmin (float, optional): Beam minor axis. Defaults to 0.
-            bpa (float, optional): Beam position angle. Defaults to 0.
+            beam (list, optional): [bmaj, bmin, bpa]. Defaults to [0, 0, 0].
             beamcolor (str, optional): matplotlib color. Defaults to 'gray'.
             poslist (list, optional): text or relative. Defaults to None.
         """
         if poslist is None:
-            bpos = max(0.35 * bmaj / self.rmax, 0.1)
-            poslist = [[bpos, bpos]]
-        self.add_region(patch='ellipse', poslist=poslist,
-                        majlist=[bmaj], minlist=[bmin], palist=[bpa],
+            poslist = [max(0.35 * beam[0] / self.rmax, 0.1)] * 2
+        self.add_region('ellipse', poslist, *beam,
                         include_chan=self.bottomleft,
                         facecolor=beamcolor, edgecolor=None)
     
@@ -572,7 +567,7 @@ class PlotAstroData(AstroFrame):
                     ticklin = np.sinh(t) * stretchscale
                 cb.set_ticklabels([f'{d:{cbformat[1:]}}' for d in ticklin])
         if show_beam and not self.pv:
-            self.add_beam(*beam, beamcolor)
+            self.add_beam(beam, beamcolor)
 
     def add_contour(self, xskip: int = 1, yskip: int = 1,
                     levels: list = [-12,-6,-3,3,6,12,24,48,96,192,384],
@@ -599,7 +594,7 @@ class PlotAstroData(AstroFrame):
             axnow.contour(x, y, cnow, np.sort(levels) * rms,
                           **dict(kwargs0, **kwargs))
         if show_beam and not self.pv:
-            self.add_beam(*beam, beamcolor)
+            self.add_beam(beam, beamcolor)
             
     def add_segment(self, ampfits: str = None, angfits: str = None,
                     Ufits: str = None, Qfits: str = None,
@@ -670,7 +665,7 @@ class PlotAstroData(AstroFrame):
         for axnow, unow, vnow in zip(self.ax, u, v):
             axnow.quiver(x, y, unow, vnow, **dict(kwargs0, **kwargs))
         if show_beam and not self.pv:
-            self.add_beam(*beam, beamcolor)
+            self.add_beam(beam, beamcolor)
 
     def add_rgb(self,
                 xskip: int = 1, yskip: int = 1,
@@ -722,7 +717,7 @@ class PlotAstroData(AstroFrame):
             axnow.set_aspect(np.abs((x[-1]-x[0]) / (y[-1]-y[0])))
         if show_beam and not self.pv:
             for i in range(3):
-                self.add_beam(*beam[i], beamcolor[i])
+                self.add_beam(beam[i], beamcolor[i])
     
     def set_axis(self, title: dict = None, **kwargs) -> None:
         """Use Axes.set_* of matplotlib.
