@@ -835,25 +835,16 @@ class PlotAstroData(AstroFrame):
         dec_dm = dec_dm.replace('d', r'$^{\circ}$') + r'$^{\prime}$'
         xticklabels[3] = ra_hm + xticklabels[3]
         yticklabels[3] = dec_dm + '\n' + yticklabels[3]
+        pa2 = PlotAxes2D(True, None, 'linear', 'linear', self.xlim, self.ylim,
+                         xlabel, ylabel, xticks, yticks, xticklabels,
+                         yticklabels, xticksminor, yticksminor, grid)
         for ch, axnow in enumerate(self.ax):
-            axnow.set_aspect(1)
-            axnow.set_xticks(xticks)
-            axnow.set_yticks(yticks)
-            axnow.set_xticks(xticksminor, minor=True)
-            axnow.set_yticks(yticksminor, minor=True)
-            axnow.set_xticklabels(xticklabels)
-            axnow.set_yticklabels(yticklabels)
-            axnow.set_xlabel(xlabel)
-            axnow.set_ylabel(ylabel)
+            pa2.set_xyaxes(axnow)
             if not (ch in self.bottomleft):
                 plt.setp(axnow.get_xticklabels(), visible=False)
                 plt.setp(axnow.get_yticklabels(), visible=False)
                 axnow.set_xlabel('')
                 axnow.set_ylabel('')
-            axnow.set_xlim(*self.xlim)
-            axnow.set_ylim(*self.ylim)
-            if grid is not None:
-                axnow.grid(**({} if grid == True else grid))
             if len(self.ax) == 1:
                 if self.fig is None:
                     plt.figure(0).tight_layout()
