@@ -93,10 +93,8 @@ class FitsData:
         if log == True: d = np.log10(d.clip(np.min(d[d > 0]), None))
         self.data = d
         
-    def get_data(self, Tb: bool = False, log: bool = False,
-                 drop: bool = True, restfrq: float = None) -> list:
-        if not hasattr(self, 'data'):
-            self.gen_data(Tb, log, drop, restfrq)
+    def get_data(self, **kwargs) -> list:
+        if not hasattr(self, 'data'): self.gen_data(**kwargs)
         return self.data
 
     def gen_grid(self, center: str = None, rmax: float = 1e10,
@@ -160,14 +158,9 @@ class FitsData:
                    ylim=[yoff - rmax, yoff + rmax],
                    vlim=[vmin, vmax], pv=pv)
                     
-    def get_grid(self, center: str = None, rmax: float = 1e10,
-                 xoff: float = 0., yoff: float = 0., dist: float = 1.,
-                 restfrq: float = None, vsys: float = 0.,
-                 vmin: float = -1e10, vmax: float = 1e10,
-                 pv: bool = False) -> tuple:
+    def get_grid(self, **kwargs) -> tuple:
         if not hasattr(self, 'x') or not hasattr(self, 'y'):
-            self.gen_grid(center, rmax, xoff, yoff, dist,
-                          restfrq, vsys, vmin, vmax, pv)
+            self.gen_grid(**kwargs)
         return [self.x, self.y, self.v]
 
 
