@@ -1033,7 +1033,8 @@ def plotslice(length: float, dx: float = None, pa: float = 0,
     if fig is None: fig = plt.figure()
     if ax is None: ax = fig.add_subplot(1, 1, 1)
     ax.plot(r, z, **dict(kwargs0, **kwargs))
-    if d.rms > 0: ax.plot(r, r * 0 + 3 * d.rms, 'k--')
+    if d.rms is not None and d.rms > 0:
+        ax.plot(r, r * 0 + 3 * d.rms, 'k--')
     if not 'xlabel' in kwargs:
         kwargs['xlabel'] = f'Offset ({xunit})'
     if not 'ylabel' in kwargs:
