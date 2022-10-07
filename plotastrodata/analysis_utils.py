@@ -118,8 +118,8 @@ class AstroData():
             ellipse (list, optional):
                 [major, minor, pa]. For average. Defaults to None.
             flux (bool, optional): Jy/beam to Jy. Defaults to False.
-            width (int, optional): Rebinning width. Defaults to 1.
-            gaussfit (bool, optional): Do the Gaussian fit. Defaults to False.
+            width (int, optional): Rebinning step along v. Defaults to 1.
+            gaussfit (bool, optional): Fit the profiles. Defaults to False.
 
         Returns:
             tuple: (v, list of profiles, result of Gaussian fit)
