@@ -106,16 +106,32 @@ class AstroData():
         z = np.squeeze(list(map(f, yg, xg)))
         return np.array([r, z])
     
-    def profile(self, coords: list = [], ellipse: list = None,
-                flux: bool = False, width: int = 1,
+    def profile(self, coords: list = [], xlist: list = [], ylist: list = [],
+                ellipse: list = None, flux: bool = False, width: int = 1,
                 gaussfit: bool = False) -> tuple:
+        """Get a list of line profiles at given spatial coordinates.
+
+        Args:
+            coords (list, optional): Text coordinates. Defaults to [].
+            xlist (list, optional): Offset from center. Defaults to [].
+            ylist (list, optional): Offset from center. Defaults to [].
+            ellipse (list, optional):
+                [major, minor, pa]. For average. Defaults to None.
+            flux (bool, optional): Jy/beam to Jy. Defaults to False.
+            width (int, optional): Rebinning width. Defaults to 1.
+            gaussfit (bool, optional): Do the Gaussian fit. Defaults to False.
+
+        Returns:
+            tuple: (v, list of profiles, result of Gaussian fit)
+        """
         if np.ndim(self.data) != 3:
             print('Data must be 3D.')
             return False
         
-        xlist, ylist = coord2xy(coords, self.center) * 3600.
+        if len(coords) > 0:
+            xlist, ylist = coord2xy(coords, self.center) * 3600.
         x, y = np.meshgrid(self.x, self.y)
-        prof = np.empty(((nprof := len(coords)), len(self.v)))
+        prof = np.empty(((nprof := len(xlist)), len(self.v)))
         if ellipse is None: ellipse = [[0, 0, 0]] * nprof
         for i, (xc, yc, e) in enumerate(zip(xlist, ylist, ellipse)):
             major, minor, pa = e
@@ -239,7 +255,7 @@ class AstroFrame():
                 x[i], y[i] = rel2abs(*p, self.xlim, self.ylim)
         return x, y
 
-    def read(self, d, xskip: int = 1, yskip: int = 1):
+    def read(self, d: AstroData, xskip: int = 1, yskip: int = 1):
         """Get data, grid, rms, beam, and bunit from AstroData,
            which is a part of the input of
            add_color, add_contour, add_segment, and add_rgb.

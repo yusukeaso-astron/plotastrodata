@@ -906,8 +906,8 @@ class PlotAstroData(AstroFrame):
         return self.fig, self.ax[0]
 
 
-def profile(coords: list = [], ellipse: list = None,
-            flux: bool = False, width: int = 1,
+def profile(coords: list = [], xlist: list = [], ylist: list = [],
+            ellipse: list = None, flux: bool = False, width: int = 1,
             gaussfit: bool = False, gauss_kwargs: dict = {},
             title: list = None, text: list = None,
             dist: float = 1., vsys: float = 0.,
@@ -922,7 +922,10 @@ def profile(coords: list = [], ellipse: list = None,
 
     Args:
         coords (list, optional): Coordinates. Defaults to [].
-        ellipse (list, optional): For average. Defaults to None.
+        xlist (list, optional): Offset from the center. Defaults to [].
+        ylist (list, optional): Offset from the center. Defaults to [].
+        ellipse (list, optional):
+            [major, minor, pa], For average. Defaults to None.
         flux (bool, optional): y axis is flux density. Defaults to False.
         width (int, optional): Rebinning step along v. Defaults to 1.
         gaussfit (bool, optional): Fit the profiles. Defaults to False.
@@ -942,7 +945,8 @@ def profile(coords: list = [], ellipse: list = None,
     f = AstroFrame(dist=dist, vsys=vsys, center=coords[0], vmin=vmin, vmax=vmax)
     d = kwargs2AstroData(kwargs)
     f.read(d)
-    v, prof, gfitres = d.profile(coords, ellipse, flux, width, gaussfit)
+    v, prof, gfitres = d.profile(coords, xlist, ylist, ellipse,
+                                 flux, width, gaussfit)
     nprof = len(prof)
     if 'ylabel' in kwargs:
         ylabel = kwargs['ylabel']
