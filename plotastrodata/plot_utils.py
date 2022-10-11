@@ -973,6 +973,7 @@ def profile(coords: list = [], xlist: list = [], ylist: list = [],
     ax = np.empty(nprof, dtype='object') if ax is None else [ax]
     if not 'xlabel' in kwargs: kwargs['xlabel'] = 'Velocity (km s$^{-1}$)'
     if not 'xlim' in kwargs: kwargs['xlim'] = [v.min(), v.max()]
+    kwargs['samexy'] = False
     a = kwargs2PlotAxes2D(kwargs)
     for i in range(nprof):
         sharex = None if i < nrows - 1 else ax[i - 1]
@@ -1049,6 +1050,7 @@ def plotslice(length: float, dx: float = None, pa: float = 0,
     if not 'ylabel' in kwargs:
         kwargs['ylabel'] = f'Intensity ({yunit})'
     if not 'xlim' in kwargs: kwargs['xlim'] = [r.min(), r.max()]
+    kwargs['samexy'] = False
     a = kwargs2PlotAxes2D(kwargs)
     a.set_xyaxes(ax)
     if getfigax:
