@@ -70,7 +70,7 @@ class PlotAxes2D():
     grid (dict, optional):
         True means merely grid(). Defaults to None.
     """
-    samexy: bool = False
+    samexy: bool = True
     loglog: bool = None
     xscale: str = 'linear'
     yscale: str = 'linear'
@@ -752,12 +752,12 @@ class PlotAstroData(AstroFrame):
                 kwargs['xlabel'] = vellabel if self.swapxy else offlabel
             if not 'ylabel' in kwargs:
                 kwargs['ylabel'] = offlabel if self.swapxy else vellabel
-            samexy = False
+            kwargs['samexy'] = False
         else:
             ralabel, declabel = f'R.A. {offunit}', f'Dec. {offunit}'
-            if 'xlabel' in kwargs:
+            if not 'xlabel' in kwargs:
                 kwargs['xlabel'] = declabel if self.swapxy else ralabel
-            if 'ylabel' in kwargs:
+            if not 'ylabel' in kwargs:
                 kwargs['ylabel'] = ralabel if self.swapxy else declabel
         kwargs['xlim'] = self.xlim
         kwargs['ylim'] = self.ylim
