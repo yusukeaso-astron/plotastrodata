@@ -332,7 +332,6 @@ class PlotAstroData(AstroFrame):
             dnan = np.full(shape, d[0] * np.nan)
             return np.concatenate((d, dnan), axis=0)
         self.vskipfill = vskipfill
-
         
     def add_region(self, patch: str = 'ellipse', poslist: list = [],
                    majlist: list = [], minlist: list = [], palist: list = [],
@@ -537,6 +536,8 @@ class PlotAstroData(AstroFrame):
         d = kwargs2AstroData(kwargs)
         self.read(d, xskip, yskip)
         c, x, y, beam, bunit, rms = d.data, d.x, d.y, d.beam, d.bunit, d.rms
+        self.beam = beam
+        self.rms = rms
         c = set_minmax(c, stretch, stretchscale, rms, kwargs)
         c = self.vskipfill(c)
         for axnow, cnow in zip(self.ax, c):
@@ -599,6 +600,8 @@ class PlotAstroData(AstroFrame):
         d = kwargs2AstroData(kwargs)
         self.read(d, xskip, yskip)
         c, x, y, beam, rms = d.data, d.x, d.y, d.beam, d.rms
+        self.beam = beam
+        self.rms = rms
         c = self.vskipfill(c)
         for axnow, cnow in zip(self.ax, c):
             axnow.contour(x, y, cnow, np.sort(levels) * rms,
@@ -706,6 +709,8 @@ class PlotAstroData(AstroFrame):
         d = kwargs2AstroData(kwargs)
         self.read(d, xskip, yskip)
         c, x, y, beam, rms = d.data, d.x, d.y, d.beam, d.rms
+        self.beam = beam
+        self.rms = rms
         c = set_minmax(c, stretch, stretchscale, rms, kwargs)
         if not (np.shape(c[0]) == np.shape(c[1]) == np.shape(c[2])):
             print('RGB shapes mismatch. Skip add_rgb.')
