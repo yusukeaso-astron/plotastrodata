@@ -129,6 +129,19 @@ class AstroData():
         z = np.squeeze(list(map(f, yg, xg)))
         return np.array([r, z])
     
+    def deproject(self, pa: float = 0, incl: float = 0):
+        if np.ndim(self.data) != 2:
+            print('Data must be 2D.')
+            return False
+        
+        x, y = np.meshgrid(self.x, self.y)
+        z = (y + 1j * x) / np.exp(1j * np.radians(pa))
+        y, x = np.real(z), np.imag(z) * np.cos(np.radians(incl))
+        f = sortRBS(self.y, self.x, self.data)
+        x, y = np.ravel(x), np.ravel(y)
+        d = np.reshape(np.squeeze(list(map(f, y, x))), np.shape(self.data))
+        self.data = d
+    
     def profile(self, coords: list = [], xlist: list = [], ylist: list = [],
                 ellipse: list = None, flux: bool = False, width: int = 1,
                 gaussfit: bool = False) -> tuple:
