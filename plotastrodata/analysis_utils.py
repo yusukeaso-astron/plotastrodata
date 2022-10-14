@@ -24,6 +24,32 @@ def quadrantmean(c: list, x: list, y: list, quadrants: str ='13') -> tuple:
     cnew = (cnew + cnew[::-1, ::-1]) / 2.
     return cnew[ny:, nx:], xnew[nx:], ynew[ny:]
 
+def sortRBS(y: list, x: list, data: list):
+    xsort = x if x[1] > x[0] else x[::-1]
+    csort = data if x[1] > x[0] else data[:, ::-1]
+    ysort = y if y[1] > y[0] else y[::-1]
+    csort = csort if y[1] > y[0] else csort[::-1, :]
+    return RBS(ysort, xsort, csort)
+
+def filled2d(data: list, x: list, y: list, n: list = 1) -> list:
+    if not np.ndim(data) in [2, 3]:
+        print('data must be 2D or 3D.')
+        return -1
+    
+    xf = np.linspace(x[0], x[-1], n * (len(x) - 1) + 1)
+    yf = np.linspace(y[0], y[-1], n * (len(y) - 1) + 1)
+    xsort = xf if xf[1] > xf[0] else xf[::-1]
+    ysort = yf if yf[1] > yf[0] else yf[::-1]
+    if np.ndim(data) == 2: data = [data]
+    df = [None] * len(data)
+    for i, d in enumerate(data):
+        d = np.squeeze(sortRBS(y, x, d)(ysort, xsort))
+        d = d if x[1] > x[0] else d[:, ::-1]
+        d = d if y[1] > y[0] else d[::-1, :]
+        df[i] = d
+    return np.squeeze(df), xf, yf
+    
+
 @dataclass
 class AstroData():
     """Data to be processed and parameters for processing the data.
@@ -98,11 +124,7 @@ class AstroData():
         n = int(np.ceil(length / 2 / dx))
         r = np.linspace(-n, n, 2 * n + 1) * dx
         xg, yg = r * np.sin(np.radians(pa)), r * np.cos(np.radians(pa))
-        xsort = self.x if self.x[1] > self.x[0] else self.x[::-1]
-        csort = self.data if self.x[1] > self.x[0] else self.data[:, ::-1]
-        ysort = self.y if self.y[1] > self.y[0] else self.y[::-1]
-        csort = csort if self.y[1] > self.y[0] else csort[::-1, :]
-        f = RBS(ysort, xsort, csort)
+        f = sortRBS(self.y, self.x, self.data)
         z = np.squeeze(list(map(f, yg, xg)))
         return np.array([r, z])
     
@@ -130,7 +152,8 @@ class AstroData():
         
         if len(coords) > 0:
             xlist, ylist = coord2xy(coords, self.center) * 3600.
-        x, y = np.meshgrid(self.x, self.y)
+        data, xf, yf = filled2d(self.data, self.x, self.y, 8)
+        x, y = np.meshgrid(xf, yf)
         prof = np.empty(((nprof := len(xlist)), len(self.v)))
         if ellipse is None: ellipse = [[0, 0, 0]] * nprof
         for i, (xc, yc, e) in enumerate(zip(xlist, ylist, ellipse)):
@@ -139,13 +162,13 @@ class AstroData():
             if major == 0 or minor == 0:
                 r = np.abs(z)
                 idx = np.unravel_index(np.argmin(r), np.shape(r))
-                prof[i] = [d[idx] for d in self.data]
+                prof[i] = [d[idx] for d in data]
             else:
                 r = np.abs(np.real(z) / major + 1j *  (np.imag(z) / minor))
                 if flux:
-                    prof[i] = [np.sum(d[r <= 1]) for d in self.data]
+                    prof[i] = [np.sum(d[r <= 1]) for d in data]
                 else:
-                    prof[i] = [np.mean(d[r <= 1]) for d in self.data]
+                    prof[i] = [np.mean(d[r <= 1]) for d in data]
         newlen = len(self.v) // (width := int(width))
         w, q = np.zeros(newlen), np.zeros((nprof, newlen))
         for i in range(width):
@@ -154,7 +177,7 @@ class AstroData():
         v, prof = w / width, q / width
         if flux:
             Omega = np.pi * self.beam[0] * self.beam[1] / 4. / np.log(2.)
-            dxdy = np.abs((self.y[1]-self.y[0]) * (self.x[1]-self.x[0]))
+            dxdy = np.abs((yf[1]-yf[0]) * (xf[1]-xf[0]))
             prof *= dxdy / Omega
         gfitres = {}
         if gaussfit:    

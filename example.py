@@ -1,5 +1,5 @@
 from plotastrodata.plot_utils import PlotAstroData as pad
-from plotastrodata.plot_utils import profile, plotslice
+from plotastrodata.plot_utils import plotprofile, plotslice
 
 pre = 'testFITS/'
 
@@ -56,9 +56,9 @@ f.set_axis(title='loglog PV diagram', loglog=20)
 f.savefig('testloglogPV.png', show=True)
 
 # Line profile
-profile(fitsimage=pre+'test3D.fits', ellipse=[[0.2, 0.2, 0]] * 2, flux=True,
-        coords=['04h04m43.045s 26d18m55.766s', '04h04m43.109s 26d18m56.704s'],
-        gaussfit=True, savefig='testprofile.png', show=True, width=2)
+plotprofile(fitsimage=pre+'test3D.fits', ellipse=[[0.2, 0.2, 0]] * 2, flux=True,
+            coords=['04h04m43.045s 26d18m55.766s', '04h04m43.109s 26d18m56.704s'],
+            gaussfit=True, savefig='testprofile.png', show=True, width=2)
 
 # Spatial slice
 plotslice(length=1.6, pa=270, fitsimage=pre+'test2D.fits',

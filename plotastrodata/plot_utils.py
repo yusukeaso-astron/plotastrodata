@@ -911,15 +911,15 @@ class PlotAstroData(AstroFrame):
         return self.fig, self.ax[0]
 
 
-def profile(coords: list = [], xlist: list = [], ylist: list = [],
-            ellipse: list = None, flux: bool = False, width: int = 1,
-            gaussfit: bool = False, gauss_kwargs: dict = {},
-            title: list = None, text: list = None,
-            dist: float = 1., vsys: float = 0.,
-            nrows: int = 0, ncols: int = 1, fig = None, ax = None,
-            getfigax: bool = False,
-            savefig: dict = None, show: bool = True,
-            **kwargs) -> tuple:
+def plotprofile(coords: list = [], xlist: list = [], ylist: list = [],
+                ellipse: list = None, flux: bool = False, width: int = 1,
+                gaussfit: bool = False, gauss_kwargs: dict = {},
+                title: list = None, text: list = None,
+                dist: float = 1., vsys: float = 0.,
+                nrows: int = 0, ncols: int = 1, fig = None, ax = None,
+                getfigax: bool = False,
+                savefig: dict = None, show: bool = True,
+                **kwargs) -> tuple:
     """Use Axes.plot of matplotlib to plot line profiles at given coordinates.
        kwargs must include the arguments of AstroData to specify 
        the data to be plotted.
