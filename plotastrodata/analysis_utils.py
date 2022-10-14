@@ -134,15 +134,31 @@ class AstroData():
             print('Data must be 2D.')
             return False
         
+        pa, ci = np.radians(pa), np.cos(np.radians(incl))
         x, y = np.meshgrid(self.x, self.y)
-        z = (y + 1j * x) / np.exp(1j * np.radians(pa))
-        y, x = np.real(z), np.imag(z) * np.cos(np.radians(incl))
-        z = (y + 1j * x) * np.exp(1j * np.radians(pa))
+        z = (y + 1j * x) / np.exp(1j * pa)
+        y, x = np.real(z), np.imag(z) * ci
+        z = (y + 1j * x) * np.exp(1j * pa)
         y, x = np.real(z), np.imag(z)
         f = sortRBS(self.y, self.x, self.data)
         x, y = np.ravel(x), np.ravel(y)
         d = np.reshape(np.squeeze(list(map(f, y, x))), np.shape(self.data))
         self.data = d
+        bmaj, bmin, bpa = self.beam[0], self.beam[1], np.radians(self.beam[2])
+        cd, sd = np.cos(pa), np.sin(pa)
+        cb, sb = np.cos(bpa), np.sin(bpa)
+        alpha = (cd*cb - sd*sb/ci)**2 / bmaj**2 \
+                + (sd*sb/ci + cd*sb)**2 / bmin**2
+        beta = (cd*cb - sd*sb/ci)*(sd*cb + cd*sb/ci) / bmaj**2 \
+               + (sd*cb/ci + cd*sb)*(cd*cb/ci - sd*sb) / bmin**2
+        gamma = (sd*cb + cd*sb/ci)**2 / bmaj**2 \
+                + (cd*cb/ci - sd*sb)**2 / bmin**2
+        bpa_new = np.arctan2(2 * beta, alpha - gamma) / 2
+        Det = 4 * beta**2 + (alpha - gamma)**2
+        maj2inv = (alpha + gamma - np.sqrt(Det)) / 2
+        min2inv = (alpha + gamma + np.sqrt(Det)) / 2
+        bmaj_new, bmin_new = 1 / np.sqrt(maj2inv), 1 / np.sqrt(min2inv)
+        self.beam = np.array([bmaj_new, bmin_new, np.degrees(bpa_new)])
     
     def profile(self, coords: list = [], xlist: list = [], ylist: list = [],
                 ellipse: list = None, flux: bool = False, width: int = 1,
