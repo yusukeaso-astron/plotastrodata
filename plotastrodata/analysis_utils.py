@@ -157,6 +157,7 @@ class AstroData():
         Det = 4 * beta**2 + (alpha - gamma)**2
         maj2inv = (alpha + gamma - np.sqrt(Det)) / 2
         min2inv = (alpha + gamma + np.sqrt(Det)) / 2
+        print(maj2inv, min2inv)
         bmaj_new, bmin_new = 1 / np.sqrt(maj2inv), 1 / np.sqrt(min2inv)
         self.beam = np.array([bmaj_new, bmin_new, np.degrees(bpa_new)])
     
