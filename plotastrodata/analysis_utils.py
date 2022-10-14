@@ -8,8 +8,7 @@ from plotastrodata.fits_utils import fits2data
 
 
 def quadrantmean(c: list, x: list, y: list, quadrants: str ='13') -> tuple:
-    """Take mean between 1st and 3rd (or 2nd and 4th) quadrants.
-    """
+    """Take mean between 1st and 3rd (or 2nd and 4th) quadrants."""
     dx, dy = x[1] - x[0], y[1] - y[0]
     nx = int(np.floor(max(np.abs(x[0]), np.abs(x[-1])) / dx))
     ny = int(np.floor(max(np.abs(y[0]), np.abs(y[-1])) / dy))
@@ -25,6 +24,7 @@ def quadrantmean(c: list, x: list, y: list, quadrants: str ='13') -> tuple:
     return cnew[ny:, nx:], xnew[nx:], ynew[ny:]
 
 def sortRBS(y: list, x: list, data: list):
+    """RBS but input x and y can be decreasing."""
     xsort = x if x[1] > x[0] else x[::-1]
     csort = data if x[1] > x[0] else data[:, ::-1]
     ysort = y if y[1] > y[0] else y[::-1]
@@ -32,6 +32,7 @@ def sortRBS(y: list, x: list, data: list):
     return RBS(ysort, xsort, csort)
 
 def filled2d(data: list, x: list, y: list, n: list = 1) -> list:
+    """Fill 2D data, 1D x, and 1D y by a factor of n using RBS."""
     if not np.ndim(data) in [2, 3]:
         print('data must be 2D or 3D.')
         return -1
