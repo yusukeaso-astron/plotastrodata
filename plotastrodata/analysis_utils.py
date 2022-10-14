@@ -153,7 +153,7 @@ class AstroData():
                + (sd*cb/ci + cd*sb)*(cd*cb/ci - sd*sb) / bmin**2
         gamma = (sd*cb + cd*sb/ci)**2 / bmaj**2 \
                 + (cd*cb/ci - sd*sb)**2 / bmin**2
-        bpa_new = np.arctan2(2 * beta, alpha - gamma) / 2
+        bpa_new = np.arctan(2 * beta / (alpha - gamma)) / 2
         Det = 4 * beta**2 + (alpha - gamma)**2
         maj2inv = (alpha + gamma - np.sqrt(Det)) / 2
         min2inv = (alpha + gamma + np.sqrt(Det)) / 2
