@@ -148,7 +148,7 @@ class AstroData():
         cd, sd = np.cos(pa), np.sin(pa)
         cb, sb = np.cos(bpa - pa), np.sin(bpa - pa)
         alpha = (cd*cb - sd*sb/ci)**2 / bmaj**2 \
-                + (sd*sb/ci + cd*sb)**2 / bmin**2
+                + (sd*cb/ci + cd*sb)**2 / bmin**2
         beta = (cd*cb - sd*sb/ci)*(sd*cb + cd*sb/ci) / bmaj**2 \
                + (sd*cb/ci + cd*sb)*(cd*cb/ci - sd*sb) / bmin**2
         gamma = (sd*cb + cd*sb/ci)**2 / bmaj**2 \
