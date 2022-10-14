@@ -146,7 +146,7 @@ class AstroData():
         self.data = d
         bmaj, bmin, bpa = self.beam[0], self.beam[1], np.radians(self.beam[2])
         cd, sd = np.cos(pa), np.sin(pa)
-        cb, sb = np.cos(bpa), np.sin(bpa)
+        cb, sb = np.cos(bpa - pa), np.sin(bpa - pa)
         alpha = (cd*cb - sd*sb/ci)**2 / bmaj**2 \
                 + (sd*sb/ci + cd*sb)**2 / bmin**2
         beta = (cd*cb - sd*sb/ci)*(sd*cb + cd*sb/ci) / bmaj**2 \
