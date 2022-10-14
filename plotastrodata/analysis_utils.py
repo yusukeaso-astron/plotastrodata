@@ -137,6 +137,8 @@ class AstroData():
         x, y = np.meshgrid(self.x, self.y)
         z = (y + 1j * x) / np.exp(1j * np.radians(pa))
         y, x = np.real(z), np.imag(z) * np.cos(np.radians(incl))
+        z = (y + 1j * x) * np.exp(1j * np.radians(pa))
+        y, x = np.real(z), np.imag(z)
         f = sortRBS(self.y, self.x, self.data)
         x, y = np.ravel(x), np.ravel(y)
         d = np.reshape(np.squeeze(list(map(f, y, x))), np.shape(self.data))
