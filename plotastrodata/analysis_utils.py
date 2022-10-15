@@ -3,8 +3,9 @@ from dataclasses import dataclass
 from scipy.interpolate import RectBivariateSpline as RBS
 from scipy.optimize import curve_fit
 
-from plotastrodata.other_utils import coord2xy, rel2abs, estimate_rms, trim
-from plotastrodata.fits_utils import fits2data
+from plotastrodata.other_utils import (coord2xy, xy2coord, rel2abs,
+                                       estimate_rms, trim)
+from plotastrodata.fits_utils import FitsData, fits2data
 
 
 def quadrantmean(c: list, x: list, y: list, quadrants: str ='13') -> tuple:
@@ -178,7 +179,7 @@ class AstroData():
         if np.ndim(self.data) != 3:
             print('Data must be 3D.')
             return False
-        
+
         if len(coords) > 0:
             xlist, ylist = coord2xy(coords, self.center) * 3600.
         data, xf, yf = filled2d(self.data, self.x, self.y, 8)
@@ -327,6 +328,11 @@ class AstroFrame():
                            vlim=self.vlim, pv=self.pv)
                 d.rms[i] = estimate_rms(d.data[i], d.sigma[i])
             if d.fitsimage[i] is not None:
+                if d.center[i] is None and not self.pv:
+                    fd = FitsData(d.fitsimage[i])
+                    ra_deg = fd.get_header('CRVAL1')
+                    dec_deg = fd.get_header('CRVAL2')
+                    d.center[i] = xy2coord([ra_deg, dec_deg])
                 d.data[i], grid, d.beam[i], d.bunit[i], d.rms[i] \
                     = fits2data(fitsimage=d.fitsimage[i], Tb=d.Tb[i],
                                 sigma=d.sigma[i], restfrq=d.restfrq[i],

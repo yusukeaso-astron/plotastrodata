@@ -947,7 +947,7 @@ def plotprofile(coords: list = [], xlist: list = [], ylist: list = [],
     savefig0 = {'bbox_inches':'tight', 'transparent':True}
     if type(coords) is str: coords = [coords]
     vmin, vmax = kwargs['xlim'] if 'xlim' in kwargs else [-1e10, 1e10]
-    f = AstroFrame(dist=dist, vsys=vsys, center=coords[0], vmin=vmin, vmax=vmax)
+    f = AstroFrame(dist=dist, vsys=vsys, vmin=vmin, vmax=vmax)
     d = kwargs2AstroData(kwargs)
     f.read(d)
     v, prof, gfitres = d.profile(coords, xlist, ylist, ellipse,
