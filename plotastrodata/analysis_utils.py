@@ -156,7 +156,6 @@ class AstroData():
         Det = np.sqrt(beta**2 + gamma**2)
         bmaj_new, bmin_new = 1 / np.sqrt(alpha - Det), 1 / np.sqrt(alpha + Det)
         self.beam = np.array([bmaj_new, bmin_new, bpa_new])
-        print(self.beam)
     
     def profile(self, coords: list = [], xlist: list = [], ylist: list = [],
                 ellipse: list = None, flux: bool = False, width: int = 1,
