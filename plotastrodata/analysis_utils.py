@@ -320,7 +320,7 @@ class AstroFrame():
         """
         for i in range(n := len(d.fitsimage)):
             if d.center[i] == 'common': d.center[i] = self.center
-            grid = None
+            grid = [d.x, d.y, d.v]
             if d.fitsimage[i] is not None:
                 fd = FitsData(d.fitsimage[i])
                 if d.center[i] is None and not self.pv:
