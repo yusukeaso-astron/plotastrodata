@@ -266,6 +266,7 @@ class PlotAstroData(AstroFrame):
         if fitsimage is not None:
             self.read(d := AstroData(fitsimage=fitsimage))
             v = d.v
+            if self.center is None: self.center = d.center
         if self.pv or v is None or len(v) == 1:
             nv = nrows = ncols = npages = nchan = 1
         else:
