@@ -97,13 +97,10 @@ class FitsData:
         if not hasattr(self, 'data'): self.gen_data(**kwargs)
         return self.data
 
-    def gen_grid(self, center: str = None, rmax: float = 1e10,
-                 xoff: float = 0., yoff: float = 0., dist: float = 1.,
+    def gen_grid(self, center: str = None, dist: float = 1.,
                  restfrq: float = None, vsys: float = 0.,
-                 vmin: float = -1e10, vmax: float = 1e10,
                  pv: bool = False) -> None:
-        if not hasattr(self, 'header'):
-            self.gen_header()
+        if not hasattr(self, 'header'): self.gen_header()
         h = self.header
         # spatial center
         if center is not None:
@@ -151,17 +148,24 @@ class FitsData:
         if h['NAXIS'] > 2:
             if h['NAXIS3'] > 1:
                 gen_v(get_list(3, True))
-        if not hasattr(self, 'data'): self.data = None
-        self.data, (self.x, self.y, self.v) \
-            = trim(data=self.data, x=self.x, y=self.y, v=self.v,
-                   xlim=[xoff - rmax, xoff + rmax],
-                   ylim=[yoff - rmax, yoff + rmax],
-                   vlim=[vmin, vmax], pv=pv)
                     
     def get_grid(self, **kwargs) -> tuple:
         if not hasattr(self, 'x') or not hasattr(self, 'y'):
             self.gen_grid(**kwargs)
         return [self.x, self.y, self.v]
+
+    def trim(self, rmax: float = 1e10, xoff: float = 0., yoff: float = 0.,
+             vmin: float = -1e10, vmax: float = 1e10,
+             pv: bool = False) -> None:
+        data = self.data if hasattr(self, 'data') else None
+        x = self.x if hasattr(self, 'x') else None
+        y = self.y if hasattr(self, 'y') else None
+        v = self.v if hasattr(self, 'v') else None
+        self.data, grid = trim(data=data, x=x, y=y, v=v,
+                               xlim=[xoff - rmax, xoff + rmax],
+                               ylim=[yoff - rmax, yoff + rmax],
+                               vlim=[vmin, vmax], pv=pv)
+        self.x, self.y, self.v = grid
 
 
 def fits2data(fitsimage: str, Tb: bool = False, log: bool = False,

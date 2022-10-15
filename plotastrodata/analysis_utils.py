@@ -321,29 +321,24 @@ class AstroFrame():
         for i in range(n := len(d.fitsimage)):
             if d.center[i] == 'common': d.center[i] = self.center
             grid = None
-            if d.data[i] is not None:
-                d.rms[i] = estimate_rms(d.data[i], d.sigma[i])
-                d.data[i], grid \
-                    = trim(data=d.data[i], x=d.x, y=d.y, v=d.v,
-                           xlim=self.xlim, ylim=self.ylim,
-                           vlim=self.vlim, pv=self.pv)
             if d.fitsimage[i] is not None:
                 fd = FitsData(d.fitsimage[i])
                 if d.center[i] is None and not self.pv:
                     ra_deg = fd.get_header('CRVAL1')
                     dec_deg = fd.get_header('CRVAL2')
                     d.center[i] = xy2coord([ra_deg, dec_deg])
-                fd.gen_data(Tb=d.Tb[i], restfrq=d.restfrq[i])
-                d.rms[i] = estimate_rms(fd.data, d.sigma[i])
-                grid = fd.get_grid(center=d.center[i], rmax=self.rmax, 
-                                   xoff=self.xoff, yoff=self.yoff,
-                                   dist=self.dist, restfrq=d.restfrq[i],
-                                   vsys=self.vsys, vmin=self.vmin,
-                                   vmax=self.vmax, pv=self.pv)
-                d.data[i] = fd.data
+                d.data[i] = fd.get_data(Tb=d.Tb[i], restfrq=d.restfrq[i])
+                grid = fd.get_grid(center=d.center[i], dist=self.dist,
+                                   restfrq=d.restfrq[i], vsys=self.vsys,
+                                   pv=self.pv)
                 d.beam[i] = fd.get_beam(dist=self.dist)
                 d.bunit[i] = fd.get_header('BUNIT')
             if d.data[i] is not None:
+                d.rms[i] = estimate_rms(d.data[i], d.sigma[i])
+                d.data[i], grid = trim(data=d.data[i],
+                                       x=grid[0], y=grid[1], v=grid[2],
+                                       xlim=self.xlim, ylim=self.ylim,
+                                       vlim=self.vlim, pv=self.pv)
                 if grid[2] is not None and grid[2][1] < grid[2][0]:
                     d.data[i], grid[2] = d.data[i][::-1], grid[2][::-1]
                     print('Inverted velocity.')
