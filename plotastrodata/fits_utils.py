@@ -188,7 +188,7 @@ def fits2data(fitsimage: str, Tb: bool = False, log: bool = False,
     """
     fd = FitsData(fitsimage)
     fd.gen_data(Tb=Tb, log=log, drop=True, restfrq=restfrq)
-    rms = None if sigma is None else estimate_rms(fd.data, sigma)
+    rms = estimate_rms(fd.data, sigma)
     grid = fd.get_grid(dist=dist, restfrq=restfrq, **kwargs)
     beam = fd.get_beam(dist=dist)
     bunit = fd.get_header('BUNIT')

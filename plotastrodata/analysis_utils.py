@@ -5,7 +5,7 @@ from scipy.optimize import curve_fit
 
 from plotastrodata.other_utils import (coord2xy, xy2coord, rel2abs,
                                        estimate_rms, trim)
-from plotastrodata.fits_utils import FitsData, fits2data
+from plotastrodata.fits_utils import FitsData
 
 
 def quadrantmean(c: list, x: list, y: list, quadrants: str ='13') -> tuple:
@@ -322,25 +322,27 @@ class AstroFrame():
             if d.center[i] == 'common': d.center[i] = self.center
             grid = None
             if d.data[i] is not None:
+                d.rms[i] = estimate_rms(d.data[i], d.sigma[i])
                 d.data[i], grid \
                     = trim(data=d.data[i], x=d.x, y=d.y, v=d.v,
                            xlim=self.xlim, ylim=self.ylim,
                            vlim=self.vlim, pv=self.pv)
-                d.rms[i] = estimate_rms(d.data[i], d.sigma[i])
             if d.fitsimage[i] is not None:
+                fd = FitsData(d.fitsimage[i])
                 if d.center[i] is None and not self.pv:
-                    fd = FitsData(d.fitsimage[i])
                     ra_deg = fd.get_header('CRVAL1')
                     dec_deg = fd.get_header('CRVAL2')
                     d.center[i] = xy2coord([ra_deg, dec_deg])
-                d.data[i], grid, d.beam[i], d.bunit[i], d.rms[i] \
-                    = fits2data(fitsimage=d.fitsimage[i], Tb=d.Tb[i],
-                                sigma=d.sigma[i], restfrq=d.restfrq[i],
-                                center=d.center[i], log=False,
-                                rmax=self.rmax, dist=self.dist,
-                                xoff=self.xoff, yoff=self.yoff,
-                                vsys=self.vsys, vmin=self.vmin,
-                                vmax=self.vmax, pv=self.pv)
+                fd.gen_data(Tb=d.Tb[i], restfrq=d.restfrq[i])
+                d.rms[i] = estimate_rms(fd.data, d.sigma[i])
+                grid = fd.get_grid(center=d.center[i], rmax=self.rmax, 
+                                   xoff=self.xoff, yoff=self.yoff,
+                                   dist=self.dist, restfrq=d.restfrq[i],
+                                   vsys=self.vsys, vmin=self.vmin,
+                                   vmax=self.vmax, pv=self.pv)
+                d.data[i] = fd.data
+                d.beam[i] = fd.get_beam(dist=self.dist)
+                d.bunit[i] = fd.get_header('BUNIT')
             if d.data[i] is not None:
                 if grid[2] is not None and grid[2][1] < grid[2][0]:
                     d.data[i], grid[2] = d.data[i][::-1], grid[2][::-1]

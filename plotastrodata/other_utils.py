@@ -111,13 +111,13 @@ def abs2rel(xabs: float, yabs: float, x: list, y: list) -> list:
     return np.array([xrel, yrel])
 
 
-def estimate_rms(data: list, sigma: float or str) -> float:
+def estimate_rms(data: list, sigma: float or str = 'out') -> float:
     """Estimate a noise level of a N-D array.
 
     Args:
         data (list): N-D array.
         sigma (float or str): One of the following methods.
-                              When a float number is given,
+                              When a float number or None is given,
                               this function just outputs it.
         methods --- 'edge': use data[0] and data[-1].
                     'neg': use only negative values.
@@ -128,6 +128,9 @@ def estimate_rms(data: list, sigma: float or str) -> float:
     Returns:
         float: the estimated room mean square of noise.
     """
+    if sigma is None:
+        return None
+
     nums = [float, int, np.float64, np.int64, np.float32, np.int32]
     if type(sigma) in nums: noise = sigma
     elif sigma == 'edge': noise = np.nanstd(data[::len(data) - 1])
