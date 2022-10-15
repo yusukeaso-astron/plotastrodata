@@ -775,13 +775,15 @@ class PlotAstroData(AstroFrame):
                 if type(title) is str: title = {'label':title}
                 axnow.set_title(**title)
             
-    def set_axis_radec(self, xlabel: str = 'R.A. (ICRS)',
+    def set_axis_radec(self, center: str = None, 
+                       xlabel: str = 'R.A. (ICRS)',
                        ylabel: str = 'Dec. (ICRS)',
                        nticksminor: int = 2,
                        grid: dict = None, title: dict = None) -> None:
         """Use ax.set_* of matplotlib.
 
         Args:
+            center (str, optional): Defaults to None, initial one.
             xlabel (str, optional): Defaults to 'R.A. (ICRS)'.
             ylabel (str, optional): Defaults to 'Dec. (ICRS)'.
             nticksminor (int, optional):
@@ -795,11 +797,13 @@ class PlotAstroData(AstroFrame):
         if self.rmax > 50.:
             print('WARNING: set_axis_radec() is not supported '
                   + 'with rmax>50 yet.')
-        dec = np.radians(coord2xy(self.center)[1])
+        if center is None: center = self.center
+        if center is None: center = '00h00m00s 00d00m00s'
+        dec = np.radians(coord2xy(center)[1])
         get_sec = lambda x, i: x.split(' ')[i].split('m')[1].strip('s')
         get_hmdm = lambda x, i: x.split(' ')[i].split('m')[0]
-        ra_s = get_sec(self.center, 0)
-        dec_s = get_sec(self.center, 1)
+        ra_s = get_sec(center, 0)
+        dec_s = get_sec(center, 1)
         log2r = np.log10(2. * self.rmax)
         n = np.array([-3, -2, -1, 0, 1, 2, 3])
         def makegrid(second, mode):
@@ -828,7 +832,7 @@ class PlotAstroData(AstroFrame):
                 xy, i = [ticks / 3600., ticks * 0], 0
             else:
                 xy, i = [ticks * 0, ticks / 3600.], 1
-            tickvalues = xy2coord(xy, self.center)
+            tickvalues = xy2coord(xy, center)
             tickvalues = [float(get_sec(t, i)) for t in tickvalues]
             tickvalues = np.divmod(tickvalues, 1)
             ticklabels = [f'{int(i):02d}{sec}' + f'{j:.{decimals:d}f}'[2:]
@@ -836,8 +840,8 @@ class PlotAstroData(AstroFrame):
             return ticks, ticksminor, ticklabels
         xticks, xticksminor, xticklabels = makegrid(ra_s, 'ra')
         yticks, yticksminor, yticklabels = makegrid(dec_s, 'dec')
-        ra_hm  = get_hmdm(xy2coord([xticks[3] / 3600., 0], self.center), 0)
-        dec_dm = get_hmdm(xy2coord([0, yticks[3] / 3600.], self.center), 1)
+        ra_hm  = get_hmdm(xy2coord([xticks[3] / 3600., 0], center), 0)
+        dec_dm = get_hmdm(xy2coord([0, yticks[3] / 3600.], center), 1)
         ra_hm  = ra_hm.replace('h', r'$^{\rm h}$') + r'$^{\rm m}$'
         dec_dm = dec_dm.replace('d', r'$^{\circ}$') + r'$^{\prime}$'
         xticklabels[3] = ra_hm + xticklabels[3]
