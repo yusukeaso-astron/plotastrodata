@@ -6,7 +6,6 @@ from dataclasses import dataclass
 from PIL import Image
 
 from plotastrodata.other_utils import coord2xy, xy2coord, listing
-from plotastrodata.fits_utils import FitsData
 from plotastrodata.analysis_utils import AstroData, AstroFrame
 
 
@@ -265,16 +264,8 @@ class PlotAstroData(AstroFrame):
         internalfig = fig is None
         internalax = ax is None
         if fitsimage is not None:
-            fd = FitsData(fitsimage)
-            _, _, v = fd.get_grid(restfrq=restfrq, vsys=self.vsys,
-                                  vmin=self.vmin, vmax=self.vmax)
-            if self.center is None and not self.pv:
-                ra_deg = fd.get_header('CRVAL1')
-                dec_deg = fd.get_header('CRVAL2')
-                self.center = xy2coord([ra_deg, dec_deg])
-            if v is not None and v[1] < v[0]:
-                v = v[::-1]
-                print('Inverted velocity.')
+            self.read(d := AstroData(fitsimage=fitsimage))
+            v = d.v
         if self.pv or v is None or len(v) == 1:
             nv = nrows = ncols = npages = nchan = 1
         else:
