@@ -144,21 +144,19 @@ class AstroData():
         x, y = np.ravel(x), np.ravel(y)
         d = np.reshape(np.squeeze(list(map(f, y, x))), np.shape(self.data))
         self.data = d
+        F = lambda f0, f1: np.array([[f0, 0], [0, f1]])
+        R = lambda p: np.array([[np.cos(p), -np.sin(p)],
+                                [np.sin(p),  np.cos(p)]])
         bmaj, bmin, bpa = self.beam[0], self.beam[1], np.radians(self.beam[2])
-        cd, sd = np.cos(pa), np.sin(pa)
-        cb, sb = np.cos(bpa - pa), np.sin(bpa - pa)
-        #alpha = (cd*cb - sd*sb/ci)**2 / bmaj**2 \
-        #        + (sd*cb/ci + cd*sb)**2 / bmin**2
-        #beta = (cd*cb - sd*sb/ci)*(sd*cb + cd*sb/ci) / bmaj**2 \
-        #       + (sd*cb/ci + cd*sb)*(cd*cb/ci - sd*sb) / bmin**2
-        #gamma = (sd*cb + cd*sb/ci)**2 / bmaj**2 \
-        #        + (cd*cb/ci - sd*sb)**2 / bmin**2
-        #bpa_new = np.arctan2(2 * beta, alpha - gamma) / 2
-        #Det = 4 * beta**2 + (alpha - gamma)**2
-        #maj2inv = (alpha + gamma - np.sqrt(Det)) / 2
-        #min2inv = (alpha + gamma + np.sqrt(Det)) / 2
-        #bmaj_new, bmin_new = 1 / np.sqrt(maj2inv), 1 / np.sqrt(min2inv)
-        #self.beam = np.array([bmaj_new, bmin_new, np.degrees(bpa_new)])
+        A = np.linalg.multi_dot([F(1/bmaj,1/bmin), R(pa-bpa), F(1,ci), R(-pa)])
+        alpha = (A[0, 0]**2 + A[1, 0]**2 + A[0, 1]**2 + A[1, 1]**2) / 2
+        beta = A[0, 0]*A[0, 1] + A[1, 0]*A[1, 1]
+        gamma = (A[0, 0]**2 + A[1, 0]**2 - A[0, 1]**2 - A[1, 1]**2) / 2
+        bpa_new = np.arctan(beta / gamma) / 2 * np.degrees(1)
+        Det = np.sqrt(beta**2 + gamma**2)
+        bmaj_new, bmin_new = 1 / np.sqrt(alpha - Det), 1 / np.sqrt(alpha + Det)
+        self.beam = np.array([bmaj_new, bmin_new, bpa_new])
+        print(self.beam)
     
     def profile(self, coords: list = [], xlist: list = [], ylist: list = [],
                 ellipse: list = None, flux: bool = False, width: int = 1,
