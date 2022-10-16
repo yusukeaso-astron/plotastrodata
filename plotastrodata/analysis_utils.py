@@ -240,7 +240,7 @@ class AstroFrame():
     center (str, optional):
         Central coordinate like '12h34m56.7s 12d34m56.7s'.
         Defaults to None.
-    fitsimage (str, optional): Fits to overwrite center. Defaults to None.
+    fitsimage (str, optional): Fits to get center. Defaults to None.
     rmax (float, optional):
         Map size is 2rmax x 2rmax. Defaults to 1e10.
     dist (float, optional):
