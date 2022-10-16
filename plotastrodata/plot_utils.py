@@ -229,8 +229,7 @@ class PlotAstroData(AstroFrame):
     The parameter sigma can be one of the methods of
     ['edge', 'neg', 'med', 'iter', 'out'] as well as a specific value.
     """
-    def __init__(self, fitsimage: str = None,
-                 v: list = [0], vskip: int = 1, veldigit: int = 2,
+    def __init__(self, v: list = [0], vskip: int = 1, veldigit: int = 2,
                  restfrq: float = None,
                  nrows: int = 4, ncols: int = 6,
                  fontsize: int = None, nancolor: str = 'w',
@@ -239,8 +238,6 @@ class PlotAstroData(AstroFrame):
            kwargs is the arguments of AstroFrame to define plotting ranges.
 
         Args:
-            fitsimage (str, optional):
-                Used to set up the channels and center.
             v (list, optional):
                 Used to set up channels if fitsimage not given.
                 Defaults to [0].
@@ -263,10 +260,9 @@ class PlotAstroData(AstroFrame):
         super().__init__(**kwargs)
         internalfig = fig is None
         internalax = ax is None
-        if fitsimage is not None:
-            self.read(d := AstroData(fitsimage=fitsimage))
+        if self.fitsimage is not None:
+            self.read(d := AstroData(fitsimage=self.fitsimage))
             v = d.v
-            if self.center is None: self.center = d.center
         if self.pv or v is None or len(v) == 1:
             nv = nrows = ncols = npages = nchan = 1
         else:

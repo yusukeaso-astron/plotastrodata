@@ -240,6 +240,7 @@ class AstroFrame():
     center (str, optional):
         Central coordinate like '12h34m56.7s 12d34m56.7s'.
         Defaults to None.
+    fitsimage (str, optional): Fits to overwrite center. Defaults to None.
     rmax (float, optional):
         Map size is 2rmax x 2rmax. Defaults to 1e10.
     dist (float, optional):
@@ -261,6 +262,7 @@ class AstroFrame():
     rmax: float = 1e10
     dist: float = 1
     center: str = None
+    fitsimage: str = None
     xoff: float = 0
     yoff: float = 0
     vsys: float = 0
@@ -285,6 +287,9 @@ class AstroFrame():
         self.xlim = xlim
         self.ylim = ylim
         self.vlim = vlim
+        if self.fitsimage is not None and self.center is None:
+            self.read(d := AstroData(fitsimage=self.fitsimage))
+            self.center = d.center
         
     def pos2xy(self, poslist: list = []) -> tuple:
         """Text or relative to absolute coordinates.
