@@ -205,28 +205,27 @@ def fits2data(fitsimage: str, Tb: bool = False, log: bool = False,
     return fd.data, (fd.x, fd.y, fd.v), beam, bunit, rms
 
     
-def data2fits(d: list = None, h: dict = {}, crpix: list = None,
-              crval: list = None, cdelt: list = None, ctype: str = None,
+def data2fits(d: list = None, h: dict = {}, templatefits: str = None,
               fitsimage: str = 'test') -> None:
     """Make a fits file from a N-D array.
 
     Args:
         d (list, optional): N-D array. Defaults to None.
         h (dict, optional): Fits header. Defaults to {}.
-        crpix (list, optional): Defaults to None.
-        crval (list, optional): Defaults to None.
-        cdelt (list, optional): Defaults to None.
-        ctype (str, optional): Defaults to None.
+        templatefits (str, optional): Fits file to copy header.
+                                     Defaults to None.
         fitsimage (str, optional): Output name. Defaults to 'test'.
     """
     ctype0 = ["RA---SIN", "DEC--SIN", "VELOCITY"]
     naxis = np.ndim(d)
     w = wcs.WCS(naxis=naxis)
+    if templatefits is not None:
+        h = FitsData(templatefits).get_header()
     if h == {}:
-        w.wcs.crpix = [0] * naxis if crpix is None else crpix
-        w.wcs.crval = [0] * naxis if crval is None else crval
-        w.wcs.cdelt = [1] * naxis if cdelt is None else cdelt
-        w.wcs.ctype = ctype0[:naxis] if ctype is None else ctype
+        w.wcs.crpix = [0] * naxis
+        w.wcs.crval = [0] * naxis
+        w.wcs.cdelt = [1] * naxis
+        w.wcs.ctype = ctype0[:naxis]
     header = w.to_header()
     hdu = fits.PrimaryHDU(d, header=header)
     for k in h.keys():
