@@ -100,8 +100,7 @@ class FitsData:
     def gen_grid(self, center: str = None, dist: float = 1.,
                  restfrq: float = None, vsys: float = 0.,
                  pv: bool = False) -> None:
-        if not hasattr(self, 'header'): self.gen_header()
-        h = self.header
+        h = self.get_header()
         # spatial center
         if center is not None:
             c0 = xy2coord([h['CRVAL1'], h['CRVAL2']])
@@ -122,12 +121,12 @@ class FitsData:
             return s
         def gen_x(s: list) -> None:
             s = (s - cx) * dist
-            if h['CUNIT1'].strip() in ['deg', 'DEG', 'degree']:
+            if h['CUNIT1'].strip() in ['deg', 'DEG', 'degree', 'DEGREE']:
                 s *= 3600.
             self.x, self.dx = s, s[1] - s[0]
         def gen_y(s: list) -> None:
             s = (s - cy) * dist
-            if h['CUNIT2'].strip() in ['deg', 'DEG', 'degree']:
+            if h['CUNIT2'].strip() in ['deg', 'DEG', 'degree', 'DEGREE']:
                 s *= 3600. 
             self.y, self.dy = s, s[1] - s[0]
         def gen_v(s: list) -> None:
@@ -136,17 +135,13 @@ class FitsData:
                 print('restfrq is assumed to be the center.')            
             else:
                 freq = restfrq
-            s = (freq-s) / freq
-            s = s * constants.c.to('km*s**(-1)').value - vsys
+            s = (1 - s / freq) * constants.c.to('km*s**(-1)').value - vsys
             self.v, self.dv = s, s[1] - s[0]
-        if h['NAXIS'] > 0:
-            if h['NAXIS1'] > 1:
+        if h['NAXIS'] > 0 and h['NAXIS1'] > 1:
                 gen_x(get_list(1))
-        if h['NAXIS'] > 1:
-            if h['NAXIS2'] > 1:
+        if h['NAXIS'] > 1 and h['NAXIS2'] > 1:
                 gen_v(get_list(2, True)) if pv else gen_y(get_list(2))
-        if h['NAXIS'] > 2:
-            if h['NAXIS3'] > 1:
+        if h['NAXIS'] > 2 and h['NAXIS3'] > 1:
                 gen_v(get_list(3, True))
                     
     def get_grid(self, **kwargs) -> tuple:
