@@ -170,8 +170,10 @@ class FitsData:
 
 def fits2data(fitsimage: str, Tb: bool = False, log: bool = False,
               dist: float = 1., sigma: str = None,
-              restfrq: float = None, **kwargs) -> tuple:
+              restfrq: float = None, center: str = None,
+              vsys: float = 0., pv: bool = False, **kwargs) -> tuple:
     """Extract data from a fits file.
+       kwargs are arguments of FitsData.trim().
 
     Args:
         fitsimage (str): Input fits name.
@@ -186,6 +188,9 @@ def fits2data(fitsimage: str, Tb: bool = False, log: bool = False,
             Noise level or method for measuring it. Defaults to None.
         restfrq (float, optional):
             Used for velocity and brightness temperature. Defaults to None.
+        center (str, optional): Text coordinates. Defaults to None.
+        vsys (float, optional): In the unit of km/s. Defaults to 0.
+        pv (bool, optional): True means PV fits file. Defaults to False.
 
     Returns:
         tuple: (data, (x, y, v), (bmaj, bmin, bpa), bunit, rms)
@@ -193,10 +198,11 @@ def fits2data(fitsimage: str, Tb: bool = False, log: bool = False,
     fd = FitsData(fitsimage)
     fd.gen_data(Tb=Tb, log=log, drop=True, restfrq=restfrq)
     rms = estimate_rms(fd.data, sigma)
-    grid = fd.get_grid(dist=dist, restfrq=restfrq, **kwargs)
+    fd.gen_grid(center=center, dist=dist, restfrq=restfrq, vsys=vsys, pv=pv)
+    fd.trim(pv=pv, **kwargs)
     beam = fd.get_beam(dist=dist)
     bunit = fd.get_header('BUNIT')
-    return fd.data, grid, beam, bunit, rms
+    return fd.data, (fd.x, fd.y, fd.v), beam, bunit, rms
 
     
 def data2fits(d: list = None, h: dict = {}, crpix: list = None,
