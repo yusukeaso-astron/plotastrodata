@@ -288,10 +288,9 @@ class AstroFrame():
         self.ylim = ylim
         self.vlim = vlim
         if self.fitsimage is not None and self.center is None:
-            self.read(d := AstroData(fitsimage=self.fitsimage))
-            self.center = d.center
+            self.center = FitsData(self.fitsimage).get_center()
         
-    def pos2xy(self, poslist: list = []) -> tuple:
+    def pos2xy(self, poslist: list = []) -> list:
         """Text or relative to absolute coordinates.
 
          Args:
@@ -299,7 +298,7 @@ class AstroFrame():
             Text coordinates or relative coordinates. Defaults to [].
 
          Returns:
-            tuple: absolute coordinates.
+            list: absolute coordinates.
          """
         if np.shape(poslist) == () \
             or (np.shape(poslist) == (2,) 
@@ -311,7 +310,7 @@ class AstroFrame():
                 x[i], y[i] = coord2xy(p, self.center) * 3600.
             else:
                 x[i], y[i] = rel2abs(*p, self.xlim, self.ylim)
-        return x, y
+        return np.array([x, y])
 
     def read(self, d: AstroData, xskip: int = 1, yskip: int = 1):
         """Get data, grid, rms, beam, and bunit from AstroData,
@@ -329,9 +328,7 @@ class AstroFrame():
             if d.fitsimage[i] is not None:
                 fd = FitsData(d.fitsimage[i])
                 if d.center[i] is None and not self.pv:
-                    ra_deg = fd.get_header('CRVAL1')
-                    dec_deg = fd.get_header('CRVAL2')
-                    d.center[i] = xy2coord([ra_deg, dec_deg])
+                    d.center[i] = fd.get_center()
                 d.data[i] = fd.get_data(Tb=d.Tb[i], restfrq=d.restfrq[i])
                 grid = fd.get_grid(center=d.center[i], dist=self.dist,
                                    restfrq=d.restfrq[i], vsys=self.vsys,

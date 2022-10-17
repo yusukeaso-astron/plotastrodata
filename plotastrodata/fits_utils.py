@@ -82,6 +82,11 @@ class FitsData:
             self.gen_beam(dist)
         return np.array([self.bmaj, self.bmin, self.bpa])
 
+    def get_center(self) -> None:
+        ra_deg = self.get_header('CRVAL1')
+        dec_deg = self.get_header('CRVAL2')
+        return xy2coord([ra_deg, dec_deg])
+
     def gen_data(self, Tb: bool = False, log: bool = False,
                  drop: bool = True, restfrq: float = None) -> None:
         self.data = None
