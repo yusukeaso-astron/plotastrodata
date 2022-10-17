@@ -9,8 +9,10 @@ import numpy as np
 def terminal(cmd: str):
     subprocess.run(shlex.split(cmd))
 
+
 def runpython(filename: str):
     terminal(f'python {filename}')
+
 
 def listing(*args) -> list:
     """Output a list of the input when the input is string or number.
@@ -25,6 +27,7 @@ def listing(*args) -> list:
         b[i] = [a] if type(a) in (nums + [str]) else a
     if len(args) == 1: b = b[0]
     return b
+
 
 def coord2xy(coords: str, coordorg: str = '00h00m00s 00d00m00s',
              frame: str = 'icrs', frameorg: str = 'icrs') -> list:

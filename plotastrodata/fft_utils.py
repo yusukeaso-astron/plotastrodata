@@ -1,6 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from astropy import constants
 
 from plotastrodata.fits_utils import fits2data
 from plotastrodata.plot_utils import set_rcparams

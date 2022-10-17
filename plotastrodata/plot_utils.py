@@ -43,6 +43,7 @@ def logticks(ticks, lim):
     newlabels = [str(t if t < 1 else int(t)) for t in newticks]
     return newticks, newlabels
 
+
 @dataclass
 class PlotAxes2D():
     """Use Axes.set_* to adjust x and y axes.
@@ -140,6 +141,7 @@ class PlotAxes2D():
         if self.grid is not None:
             ax.grid(**({} if self.grid is True else self.grid))
 
+
 def set_minmax(data: np.ndarray, stretch: str, stretchscale: float,
                rms: float, kw: dict) -> np.ndarray:
     """Set vmin and vmax for color pcolormesh) and RGB maps."""
@@ -195,6 +197,7 @@ def kwargs2AstroData(kw: dict):
         d = AstroData(**tmp)
         return d
 
+
 def kwargs2PlotAxes2D(kw: dict):
     tmp = {}
     d = PlotAxes2D()
@@ -204,6 +207,7 @@ def kwargs2PlotAxes2D(kw: dict):
             del kw[k]
     d = PlotAxes2D(**tmp)
     return d
+
 
 class PlotAstroData(AstroFrame):
     """Make a figure from 2D/3D FITS files or 2D/3D arrays.
@@ -668,8 +672,7 @@ class PlotAstroData(AstroFrame):
         if show_beam and not self.pv:
             self.add_beam(beam, beamcolor)
 
-    def add_rgb(self,
-                xskip: int = 1, yskip: int = 1,
+    def add_rgb(self, xskip: int = 1, yskip: int = 1,
                 stretch: list = ['linear'] * 3,
                 stretchscale: list = [None] * 3,
                 show_beam: bool = True,
@@ -997,8 +1000,7 @@ def plotslice(length: float, dx: float = None, pa: float = 0,
               dist: float = 1, xoff: float = 0, yoff: float = 0,
               xflip: bool = True, yflip: bool = False,
               txtfile: str = None,
-              fig = None, ax = None,
-              getfigax: bool = False,
+              fig = None, ax = None, getfigax: bool = False,
               savefig: str or dict = None, show: bool = False,
               **kwargs) -> None:
     """Use Axes.plot of matplotlib to plot a 1D spatial slice in a 2D map.

@@ -3,9 +3,9 @@ from dataclasses import dataclass
 from scipy.interpolate import RectBivariateSpline as RBS
 from scipy.optimize import curve_fit
 
-from plotastrodata.other_utils import (coord2xy, xy2coord, rel2abs,
-                                       estimate_rms, trim)
+from plotastrodata.other_utils import coord2xy, rel2abs, estimate_rms, trim
 from plotastrodata.fits_utils import FitsData
+
 
 
 def quadrantmean(c: list, x: list, y: list, quadrants: str ='13') -> tuple:
@@ -24,6 +24,7 @@ def quadrantmean(c: list, x: list, y: list, quadrants: str ='13') -> tuple:
     cnew = (cnew + cnew[::-1, ::-1]) / 2.
     return cnew[ny:, nx:], xnew[nx:], ynew[ny:]
 
+
 def sortRBS(y: list, x: list, data: list,
             ynew: list = None, xnew: list = None):
     """RBS but input x and y can be decreasing."""
@@ -37,6 +38,7 @@ def sortRBS(y: list, x: list, data: list,
     x1d, y1d = np.ravel(xnew), np.ravel(ynew)
     d = np.reshape(np.squeeze(list(map(f, y1d, x1d))), np.shape(xnew))
     return d
+
 
 def filled2d(data: list, x: list, y: list, n: list = 1) -> list:
     """Fill 2D data, 1D x, and 1D y by a factor of n using RBS."""
