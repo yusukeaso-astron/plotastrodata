@@ -24,13 +24,19 @@ def quadrantmean(c: list, x: list, y: list, quadrants: str ='13') -> tuple:
     cnew = (cnew + cnew[::-1, ::-1]) / 2.
     return cnew[ny:, nx:], xnew[nx:], ynew[ny:]
 
-def sortRBS(y: list, x: list, data: list):
+def sortRBS(y: list, x: list, data: list,
+            ynew: list = None, xnew: list = None):
     """RBS but input x and y can be decreasing."""
     xsort = x if x[1] > x[0] else x[::-1]
     csort = data if x[1] > x[0] else data[:, ::-1]
     ysort = y if y[1] > y[0] else y[::-1]
     csort = csort if y[1] > y[0] else csort[::-1, :]
-    return RBS(ysort, xsort, csort)
+    f = RBS(ysort, xsort, csort)
+    if ynew is None or xnew is None:
+        return f
+    x1d, y1d = np.ravel(xnew), np.ravel(ynew)
+    d = np.reshape(np.squeeze(list(map(f, y1d, x1d))), np.shape(xnew))
+    return d
 
 def filled2d(data: list, x: list, y: list, n: list = 1) -> list:
     """Fill 2D data, 1D x, and 1D y by a factor of n using RBS."""
@@ -141,10 +147,7 @@ class AstroData():
         y, x = np.real(z), np.imag(z) * ci
         z = (y + 1j * x) * np.exp(1j * pa)
         y, x = np.real(z), np.imag(z)
-        f = sortRBS(self.y, self.x, self.data)
-        x, y = np.ravel(x), np.ravel(y)
-        d = np.reshape(np.squeeze(list(map(f, y, x))), np.shape(self.data))
-        self.data = d
+        self.data = sortRBS(self.y, self.x, self.data, y, x)
         F = lambda f0, f1: np.array([[f0, 0], [0, f1]])
         R = lambda p: np.array([[np.cos(p), -np.sin(p)],
                                 [np.sin(p),  np.cos(p)]])
