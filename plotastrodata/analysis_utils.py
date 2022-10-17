@@ -132,8 +132,7 @@ class AstroData():
         n = int(np.ceil(length / 2 / dx))
         r = np.linspace(-n, n, 2 * n + 1) * dx
         xg, yg = r * np.sin(np.radians(pa)), r * np.cos(np.radians(pa))
-        f = sortRBS(self.y, self.x, self.data)
-        z = np.squeeze(list(map(f, yg, xg)))
+        z = sortRBS(self.y, self.x, self.data, yg, xg)
         return np.array([r, z])
     
     def deproject(self, pa: float = 0, incl: float = 0):
