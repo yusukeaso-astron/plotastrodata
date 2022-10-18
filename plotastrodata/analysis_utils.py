@@ -137,18 +137,23 @@ class AstroData():
         z = sortRBS(self.y, self.x, self.data, yg, xg)
         return np.array([r, z])
     
+    def centering(self):
+        X = self.x - self.x[np.argmin(np.abs(self.x))]
+        Y = self.y - self.y[np.argmin(np.abs(self.y))]
+        x, y = np.meshgrid(X, Y)
+        d = [self.data] if np.ndim(self.data) == 2 else self.data
+        self.data = np.squeeze([sortRBS(self.y, self.x, c, y, x) for c in d])
+        self.y, self.x = Y, X
+
     def deproject(self, pa: float = 0, incl: float = 0):
-        if np.ndim(self.data) != 2:
-            print('Data must be 2D.')
-            return False
-        
         pa, ci = np.radians(pa), np.cos(np.radians(incl))
         x, y = np.meshgrid(self.x, self.y)
         z = (y + 1j * x) / np.exp(1j * pa)
         y, x = np.real(z), np.imag(z) * ci
         z = (y + 1j * x) * np.exp(1j * pa)
         y, x = np.real(z), np.imag(z)
-        self.data = sortRBS(self.y, self.x, self.data, y, x)
+        d = [self.data] if np.ndim(self.data) == 2 else self.data
+        self.data = np.squeeze([sortRBS(self.y, self.x, c, y, x) for c in d])
         F = lambda f0, f1: np.array([[f0, 0], [0, f1]])
         R = lambda p: np.array([[np.cos(p), -np.sin(p)],
                                 [np.sin(p),  np.cos(p)]])
@@ -165,10 +170,10 @@ class AstroData():
         self.beam = np.array([bmaj_new, bmin_new, bpa_new])
 
     def rotate(self, pa: float = 0):
-        d = [self.data] if np.ndim(self.data) == 2 else self.data
         x, y = np.meshgrid(self.x, self.y)
         z = (y + 1j * x) / np.exp(1j * np.radians(pa))
         y, x = np.real(z), np.imag(z)
+        d = [self.data] if np.ndim(self.data) == 2 else self.data
         self.data = np.squeeze([sortRBS(self.y, self.x, c, y, x) for c in d])
         self.beam[2] = self.beam[2] + pa
     
