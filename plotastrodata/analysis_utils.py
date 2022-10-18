@@ -158,9 +158,19 @@ class AstroData():
         beta = A[0, 0]*A[0, 1] + A[1, 0]*A[1, 1]
         gamma = (A[0, 0]**2 + A[1, 0]**2 - A[0, 1]**2 - A[1, 1]**2) / 2
         bpa_new = np.arctan(beta / gamma) / 2 * np.degrees(1)
+        if beta * bpa_new > 0: bpa_new += 90
         Det = np.sqrt(beta**2 + gamma**2)
-        bmaj_new, bmin_new = 1 / np.sqrt(alpha - Det), 1 / np.sqrt(alpha + Det)
+        bmaj_new = 1 / np.sqrt(alpha - Det)
+        bmin_new = 1 / np.sqrt(alpha + Det)
         self.beam = np.array([bmaj_new, bmin_new, bpa_new])
+
+    def rotate(self, pa: float = 0):
+        d = [self.data] if np.ndim(self.data) == 2 else self.data
+        x, y = np.meshgrid(self.x, self.y)
+        z = (y + 1j * x) / np.exp(1j * np.radians(pa))
+        y, x = np.real(z), np.imag(z)
+        self.data = np.squeeze([sortRBS(self.y, self.x, c, y, x) for c in d])
+        self.beam[2] = self.beam[2] + pa
     
     def profile(self, coords: list = [], xlist: list = [], ylist: list = [],
                 ellipse: list = None, flux: bool = False, width: int = 1,
