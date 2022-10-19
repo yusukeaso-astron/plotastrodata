@@ -220,7 +220,7 @@ def data2fits(d: list = None, h: dict = {}, templatefits: str = None,
     naxis = np.ndim(d)
     w = wcs.WCS(naxis=naxis)
     if templatefits is not None:
-        h = FitsData(templatefits).get_header()
+        h = dict(FitsData(templatefits).get_header(), **h)
     if h == {}:
         w.wcs.crpix = [0] * naxis
         w.wcs.crval = [0] * naxis
