@@ -250,7 +250,7 @@ class AstroData():
         return [r, z]    
    
     def writetofits(self, fitsimage: str = 'out.fits', header: dict = {}):
-        cx, cy = 0, 0 if self.center is None else coord2xy(self.center)
+        cx, cy = (0, 0) if self.center is None else coord2xy(self.center)
         #header['NAXIS'] = np.ndim(self.data)
         header['NAXIS1'] = len(self.x)
         header['CRVAL1'] = cx
