@@ -4,7 +4,7 @@ from scipy.interpolate import RectBivariateSpline as RBS
 from scipy.optimize import curve_fit
 
 from plotastrodata.other_utils import coord2xy, rel2abs, estimate_rms, trim
-from plotastrodata.fits_utils import FitsData
+from plotastrodata.fits_utils import FitsData, data2fits
 
 
 
@@ -112,27 +112,7 @@ class AstroData():
         if type(self.cfactor) is not list: self.cfactor = [self.cfactor] * n
         self.rms = [None] * n
         self.bunit = [''] * n
-        
-    def slice(self, length: float = 0, pa: float = 0,
-              dx: float = None) -> list:
-        """Get 1D slice with given a length and a position-angle.
-
-        Args:
-            length (float, optional): Slice line length. Defaults to 0.
-            pa (float, optional): Degree. Position angle. Defaults to 0.
-            dx (float, optional): Grid increment. Defaults to None.
-
-        Returns:
-            list: [x, data]. If self.data is 3D, the output data are in
-                 the shape of (len(v), len(x)).
-        """
-        if dx is None: dx = np.abs(self.x[1] - self.x[0])
-        n = int(np.ceil(length / 2 / dx))
-        r = np.linspace(-n, n, 2 * n + 1) * dx
-        xg, yg = r * np.sin(np.radians(pa)), r * np.cos(np.radians(pa))
-        z = sortRBS(self.y, self.x, self.data, yg, xg)
-        return [r, z]
-    
+            
     def centering(self):
         """Spatial regridding to set the center at (x,y)=(0,0)."""
         X = self.x - self.x[np.argmin(np.abs(self.x))]
@@ -171,15 +151,6 @@ class AstroData():
         bmin_new = 1 / np.sqrt(alpha + Det)
         self.beam = np.array([bmaj_new, bmin_new, bpa_new])
 
-    def rotate(self, pa: float = 0):
-        """Counter clockwise rotation with respect to the center."""
-        x, y = np.meshgrid(self.x, self.y)
-        z = (y + 1j * x) / np.exp(1j * np.radians(pa))
-        y, x = np.real(z), np.imag(z)
-        d = [self.data] if np.ndim(self.data) == 2 else self.data
-        self.data = sortRBS(self.y, self.x, d, y, x)
-        self.beam[2] = self.beam[2] + pa
-    
     def profile(self, coords: list = [], xlist: list = [], ylist: list = [],
                 ellipse: list = None, flux: bool = False, width: int = 1,
                 gaussfit: bool = False) -> tuple:
@@ -248,7 +219,53 @@ class AstroData():
                 best[i], error[i] = popt, e
             gfitres = {'best':best, 'error':error}
         return v, prof, gfitres
+    
+    def rotate(self, pa: float = 0):
+        """Counter clockwise rotation with respect to the center."""
+        x, y = np.meshgrid(self.x, self.y)
+        z = (y + 1j * x) / np.exp(1j * np.radians(pa))
+        y, x = np.real(z), np.imag(z)
+        d = [self.data] if np.ndim(self.data) == 2 else self.data
+        self.data = sortRBS(self.y, self.x, d, y, x)
+        self.beam[2] = self.beam[2] + pa
+    
+    def slice(self, length: float = 0, pa: float = 0,
+              dx: float = None) -> list:
+        """Get 1D slice with given a length and a position-angle.
+
+        Args:
+            length (float, optional): Slice line length. Defaults to 0.
+            pa (float, optional): Degree. Position angle. Defaults to 0.
+            dx (float, optional): Grid increment. Defaults to None.
+
+        Returns:
+            list: [x, data]. If self.data is 3D, the output data are in
+                 the shape of (len(v), len(x)).
+        """
+        if dx is None: dx = np.abs(self.x[1] - self.x[0])
+        n = int(np.ceil(length / 2 / dx))
+        r = np.linspace(-n, n, 2 * n + 1) * dx
+        xg, yg = r * np.sin(np.radians(pa)), r * np.cos(np.radians(pa))
+        z = sortRBS(self.y, self.x, self.data, yg, xg)
+        return [r, z]    
    
+    def writetofits(self, header: dict = {}, fitsimage: str = 'out.fits'):
+        cx, cy = 0, 0 if self.center is None else coord2xy(self.center)
+        #header['NAXIS'] = np.ndim(self.data)
+        header['NAXIS1'] = len(self.x)
+        header['CRVAL1'] = cx
+        header['CRPIX1'] = np.argmin(np.abs(self.x)) + 1
+        header['CDELT1'] = (self.x[1] - self.x[0]) / 3600
+        header['NAXIS2'] = len(self.y)
+        header['CRVAL2'] = cy
+        header['CRPIX2'] = np.argmin(np.abs(self.y)) + 1
+        header['CDELT2'] = (self.y[1] - self.y[0]) / 3600
+        header['BMAJ'] = self.beam[0] / 3600
+        header['BMIN'] = self.beam[1] / 3600
+        header['BPA'] = self.beam[2]
+        data2fits(d=self.data, h=header, templatefits=self.fitsimage,
+                  fitsimage=fitsimage)
+        
 
 @dataclass
 class AstroFrame():
