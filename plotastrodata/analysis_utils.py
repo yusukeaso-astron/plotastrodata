@@ -251,9 +251,11 @@ class AstroData():
         return [r, z]    
    
     def writetofits(self, fitsimage: str = 'out.fits', header: dict = {}):
+        if np.abs(len(self.x) - len(self.y)) > 2:
+            print('writetofits does not support PV diagram yet.')
+            return False
         self.centering()
         cx, cy = (0, 0) if self.center is None else coord2xy(self.center)
-        #header['NAXIS'] = np.ndim(self.data)
         header['NAXIS1'] = len(self.x)
         header['CRPIX1'] = np.argmin(np.abs(self.x)) + 1
         header['CRVAL1'] = cx
@@ -262,11 +264,12 @@ class AstroData():
         header['CRPIX2'] = np.argmin(np.abs(self.y)) + 1
         header['CRVAL2'] = cy
         header['CDELT2'] = (self.y[1] - self.y[0]) / 3600
-        header['NAXIS3'] = len(self.v)
-        clight = constants.c.si.value
-        header['CRPIX3'] = i = np.argmin(np.abs(self.v)) + 1
-        header['CRVAL3'] = (1 - self.v[i]*1e3/clight) * self.restfrq
-        header['CDELT3'] = (self.v[0]-self.v[1]) * 1e3/clight*self.restfrq
+        if self.v is not None:
+            clight = constants.c.to('km*s**(-1)').value
+            header['NAXIS3'] = len(self.v)
+            header['CRPIX3'] = i = np.argmin(np.abs(self.v)) + 1
+            header['CRVAL3'] = (1 - self.v[i]/clight) * self.restfrq
+            header['CDELT3'] = (self.v[0]-self.v[1]) /clight*self.restfrq
         header['BMAJ'] = self.beam[0] / 3600
         header['BMIN'] = self.beam[1] / 3600
         header['BPA'] = self.beam[2]
