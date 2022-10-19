@@ -28,15 +28,17 @@ def quadrantmean(c: list, x: list, y: list, quadrants: str ='13') -> tuple:
 def sortRBS(y: list, x: list, data: list,
             ynew: list = None, xnew: list = None):
     """RBS but input x and y can be decreasing."""
+    d = [data] if np.ndim(data) == 2 else data
     xsort = x if x[1] > x[0] else x[::-1]
-    csort = data if x[1] > x[0] else data[:, ::-1]
+    csort = [c if x[1] > x[0] else c[:, ::-1] for c in d]
     ysort = y if y[1] > y[0] else y[::-1]
-    csort = csort if y[1] > y[0] else csort[::-1, :]
-    f = RBS(ysort, xsort, csort)
+    csort = [c if y[1] > y[0] else c[::-1, :] for c in csort]
+    f = [RBS(ysort, xsort, c) for c in csort]
     if ynew is None or xnew is None:
-        return f
+        return f[0] if len(f) == 1 else f
     x1d, y1d = np.ravel(xnew), np.ravel(ynew)
-    d = np.reshape(np.squeeze(list(map(f, y1d, x1d))), np.shape(xnew))
+    c = [np.squeeze(list(map(g, y1d, x1d))) for g in f]
+    d = np.squeeze(np.reshape(c, (len(f), *np.shape(xnew))))
     return d
 
 
@@ -50,14 +52,11 @@ def filled2d(data: list, x: list, y: list, n: list = 1) -> list:
     yf = np.linspace(y[0], y[-1], n * (len(y) - 1) + 1)
     xsort = xf if xf[1] > xf[0] else xf[::-1]
     ysort = yf if yf[1] > yf[0] else yf[::-1]
-    if np.ndim(data) == 2: data = [data]
-    df = [None] * len(data)
-    for i, d in enumerate(data):
-        d = np.squeeze(sortRBS(y, x, d)(ysort, xsort))
-        d = d if x[1] > x[0] else d[:, ::-1]
-        d = d if y[1] > y[0] else d[::-1, :]
-        df[i] = d
-    return np.squeeze(df), xf, yf
+    d = [data] if np.ndim(data) == 2 else data
+    d = np.array([np.squeeze(f(ysort, xsort)) for f in sortRBS(y, x, d)])
+    d = d if x[1] > x[0] else d[:, :, ::-1]
+    d = d if y[1] > y[0] else d[:, ::-1, :]
+    return np.squeeze(d), xf, yf
     
 
 @dataclass
@@ -124,28 +123,29 @@ class AstroData():
             dx (float, optional): Grid increment. Defaults to None.
 
         Returns:
-            list: [x, y], where x is the grid and the y is the intensity.
+            list: [x, data]. If self.data is 3D, the output data are in
+                 the shape of (len(v), len(x)).
         """
-        if np.ndim(self.data) != 2:
-            print('Data must be 2D.')
-            return False
-        
         if dx is None: dx = np.abs(self.x[1] - self.x[0])
         n = int(np.ceil(length / 2 / dx))
         r = np.linspace(-n, n, 2 * n + 1) * dx
         xg, yg = r * np.sin(np.radians(pa)), r * np.cos(np.radians(pa))
         z = sortRBS(self.y, self.x, self.data, yg, xg)
-        return np.array([r, z])
+        return [r, z]
     
     def centering(self):
+        """Spatial regridding to set the center at (x,y)=(0,0)."""
         X = self.x - self.x[np.argmin(np.abs(self.x))]
         Y = self.y - self.y[np.argmin(np.abs(self.y))]
         x, y = np.meshgrid(X, Y)
         d = [self.data] if np.ndim(self.data) == 2 else self.data
-        self.data = np.squeeze([sortRBS(self.y, self.x, c, y, x) for c in d])
+        self.data = sortRBS(self.y, self.x, d, y, x)
         self.y, self.x = Y, X
 
     def deproject(self, pa: float = 0, incl: float = 0):
+        """Exapnd by a factor of 1/cos(incl)
+           in the direction of pa+90 deg.
+        """
         pa, ci = np.radians(pa), np.cos(np.radians(incl))
         x, y = np.meshgrid(self.x, self.y)
         z = (y + 1j * x) / np.exp(1j * pa)
@@ -153,12 +153,14 @@ class AstroData():
         z = (y + 1j * x) * np.exp(1j * pa)
         y, x = np.real(z), np.imag(z)
         d = [self.data] if np.ndim(self.data) == 2 else self.data
-        self.data = np.squeeze([sortRBS(self.y, self.x, c, y, x) for c in d])
+        self.data = sortRBS(self.y, self.x, d, y, x)
         F = lambda f0, f1: np.array([[f0, 0], [0, f1]])
         R = lambda p: np.array([[np.cos(p), -np.sin(p)],
                                 [np.sin(p),  np.cos(p)]])
-        bmaj, bmin, bpa = self.beam[0], self.beam[1], np.radians(self.beam[2])
-        A = np.linalg.multi_dot([F(1/bmaj,1/bmin), R(pa-bpa), F(1,ci), R(-pa)])
+        bmaj, bmin = self.beam[0], self.beam[1]
+        bpa = np.radians(self.beam[2])
+        A = np.linalg.multi_dot([F(1/bmaj, 1/bmin), R(pa - bpa),
+                                 F(1, ci), R(-pa)])
         alpha = (A[0, 0]**2 + A[1, 0]**2 + A[0, 1]**2 + A[1, 1]**2) / 2
         beta = A[0, 0]*A[0, 1] + A[1, 0]*A[1, 1]
         gamma = (A[0, 0]**2 + A[1, 0]**2 - A[0, 1]**2 - A[1, 1]**2) / 2
@@ -170,11 +172,12 @@ class AstroData():
         self.beam = np.array([bmaj_new, bmin_new, bpa_new])
 
     def rotate(self, pa: float = 0):
+        """Counter clockwise rotation with respect to the center."""
         x, y = np.meshgrid(self.x, self.y)
         z = (y + 1j * x) / np.exp(1j * np.radians(pa))
         y, x = np.real(z), np.imag(z)
         d = [self.data] if np.ndim(self.data) == 2 else self.data
-        self.data = np.squeeze([sortRBS(self.y, self.x, c, y, x) for c in d])
+        self.data = sortRBS(self.y, self.x, d, y, x)
         self.beam[2] = self.beam[2] + pa
     
     def profile(self, coords: list = [], xlist: list = [], ylist: list = [],
