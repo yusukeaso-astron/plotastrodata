@@ -2,6 +2,7 @@ import numpy as np
 from dataclasses import dataclass
 from scipy.interpolate import RectBivariateSpline as RBS
 from scipy.optimize import curve_fit
+from astropy import constants
 
 from plotastrodata.other_utils import coord2xy, rel2abs, estimate_rms, trim
 from plotastrodata.fits_utils import FitsData, data2fits
@@ -250,16 +251,22 @@ class AstroData():
         return [r, z]    
    
     def writetofits(self, fitsimage: str = 'out.fits', header: dict = {}):
+        self.centering()
         cx, cy = (0, 0) if self.center is None else coord2xy(self.center)
         #header['NAXIS'] = np.ndim(self.data)
         header['NAXIS1'] = len(self.x)
-        header['CRVAL1'] = cx
         header['CRPIX1'] = np.argmin(np.abs(self.x)) + 1
+        header['CRVAL1'] = cx
         header['CDELT1'] = (self.x[1] - self.x[0]) / 3600
         header['NAXIS2'] = len(self.y)
-        header['CRVAL2'] = cy
         header['CRPIX2'] = np.argmin(np.abs(self.y)) + 1
+        header['CRVAL2'] = cy
         header['CDELT2'] = (self.y[1] - self.y[0]) / 3600
+        header['NAXIS3'] = len(self.v)
+        clight = constants.c.si.value
+        header['CRPIX3'] = i = np.argmin(np.abs(self.v)) + 1
+        header['CRVAL3'] = (1 - self.v[i]*1e3/clight) * self.restfrq
+        header['CDELT3'] = (self.v[0]-self.v[1]) * 1e3/clight*self.restfrq
         header['BMAJ'] = self.beam[0] / 3600
         header['BMIN'] = self.beam[1] / 3600
         header['BPA'] = self.beam[2]
@@ -368,6 +375,10 @@ class AstroFrame():
                 fd = FitsData(d.fitsimage[i])
                 if d.center[i] is None and not self.pv:
                     d.center[i] = fd.get_center()
+                if d.restfrq[i] is None:
+                    h = fd.get_header()
+                    if 'RESTFRQ' in h: d.restfrq[i] = h['RESTFRQ']
+                    if 'RESTFREQ' in h: d.restfrq[i] = h['RESTFREQ']
                 d.data[i] = fd.get_data(Tb=d.Tb[i], restfrq=d.restfrq[i])
                 grid = fd.get_grid(center=d.center[i], dist=self.dist,
                                    restfrq=d.restfrq[i], vsys=self.vsys,

@@ -113,10 +113,9 @@ class FitsData:
         else:
             cx, cy = 0, 0
         # rest frequency
-        if 'RESTFRQ' in h.keys():
-            restfrq = h['RESTFRQ']
-        elif 'RESTFREQ' in h.keys():
-            restfrq = h['RESTFREQ']
+        if restfrq is None:
+            if 'RESTFRQ' in h.keys(): restfrq = h['RESTFRQ']
+            if 'RESTFREQ' in h.keys(): restfrq = h['RESTFREQ']
         self.x, self.y, self.v = None, None, None
         self.dx, self.dy, self.dv = None, None, None
         def get_list(i: int, crval=False) -> list:
