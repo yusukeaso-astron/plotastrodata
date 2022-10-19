@@ -249,7 +249,7 @@ class AstroData():
         z = sortRBS(self.y, self.x, self.data, yg, xg)
         return [r, z]    
    
-    def writetofits(self, header: dict = {}, fitsimage: str = 'out.fits'):
+    def writetofits(self, fitsimage: str = 'out.fits', header: dict = {}):
         cx, cy = 0, 0 if self.center is None else coord2xy(self.center)
         #header['NAXIS'] = np.ndim(self.data)
         header['NAXIS1'] = len(self.x)
