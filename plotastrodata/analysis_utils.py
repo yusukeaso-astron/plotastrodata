@@ -2,6 +2,7 @@ import numpy as np
 from dataclasses import dataclass
 from scipy.interpolate import RectBivariateSpline as RBS
 from scipy.optimize import curve_fit
+from scipy.signal import convolve
 from astropy import constants
 
 from plotastrodata.other_utils import (coord2xy, rel2abs, estimate_rms, trim,
@@ -123,6 +124,21 @@ class AstroData():
         self.data = sortRBS(self.y, self.x, self.data, y, x)
         self.y, self.x = Y, X
 
+    def circularbeam(self):
+        bmaj, bmin, bpa = self.beam
+        self.rotate(-bpa)
+        nx = len(self.x) if len(self.x) % 2 == 1 else len(self.x) - 1
+        ny = len(self.y) if len(self.y) % 2 == 1 else len(self.y) - 1
+        y = np.linspace(-(ny-1) / 2, (ny-1) / 2, ny) * (self.y[1]-self.y[0])
+        g1 = np.exp(-4*np.log(2) * y**2 / (bmaj**2 - bmin**2))
+        g1 /= np.sqrt(np.pi/4/np.log(2) * bmin * np.sqrt(1 - bmin**2/bmaj**2))
+        g = np.zeros((ny, nx))
+        g[:, (nx - 1) // 2] = g1
+        d = [self.data] if np.ndim(self.data) == 2 else self.data
+        self.data = np.squeeze([convolve(c, g, mode='same') for c in d])
+        self.rotate(bpa)
+        self.beam[1] = self.beam[0]
+        
     def deproject(self, pa: float = 0, incl: float = 0):
         """Exapnd by a factor of 1/cos(incl)
            in the direction of pa+90 deg.
