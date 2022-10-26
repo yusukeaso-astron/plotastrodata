@@ -1,7 +1,7 @@
 import subprocess
 import shlex
 from astropy.coordinates import SkyCoord
-from astropy import units
+from astropy import units, constants
 import numpy as np
 
 
@@ -205,3 +205,31 @@ def trim(data: list = None, x: list = None, y: list = None, v: list = None,
         else:
             dataout = d[k0:k1+1, j0:j1+1, i0:i1+1]
     return dataout, [xout, yout, vout]
+
+
+def Mfac(f0: float = 1, f1: float = 1):
+    return np.array([[f0, 0], [0, f1]])
+
+
+def Mrot(pa: float = 0):
+    p = np.radians(pa)
+    return np.array([[np.cos(p), -np.sin(p)], [np.sin(p),  np.cos(p)]])
+
+
+def dot2d(M: list = [[1, 0], [0, 1]], a: list = [0]):
+    x = M[0, 0] * np.array(a[0]) + M[0, 1] * np.array(a[1])
+    y = M[1, 0] * np.array(a[0]) + M[1, 1] * np.array(a[1])
+    return np.array([x, y])
+
+
+def BnuT(T: float = 30, nu: float = 230e9):
+    hh = constants.h.si.value
+    cc = constants.c.si.value
+    k_B = constants.k_B.si.value
+    return 2 * hh * nu**3 / cc**2 / (np.exp(hh * nu / k_B / T) - 1)
+
+
+def JnuT(T: float = 30, nu: float = 230e9):
+    hh = constants.h.si.value
+    k_B = constants.k_B.si.value
+    return hh * nu / k_B / (np.exp(hh * nu / k_B / T) - 1)

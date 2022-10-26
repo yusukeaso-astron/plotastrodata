@@ -4,7 +4,8 @@ from scipy.interpolate import RectBivariateSpline as RBS
 from scipy.optimize import curve_fit
 from astropy import constants
 
-from plotastrodata.other_utils import coord2xy, rel2abs, estimate_rms, trim
+from plotastrodata.other_utils import (coord2xy, rel2abs, estimate_rms, trim,
+                                       Mfac, Mrot, dot2d)
 from plotastrodata.fits_utils import FitsData, data2fits
 
 
@@ -119,32 +120,23 @@ class AstroData():
         X = self.x - self.x[np.argmin(np.abs(self.x))]
         Y = self.y - self.y[np.argmin(np.abs(self.y))]
         x, y = np.meshgrid(X, Y)
-        d = [self.data] if np.ndim(self.data) == 2 else self.data
-        self.data = sortRBS(self.y, self.x, d, y, x)
+        self.data = sortRBS(self.y, self.x, self.data, y, x)
         self.y, self.x = Y, X
 
     def deproject(self, pa: float = 0, incl: float = 0):
         """Exapnd by a factor of 1/cos(incl)
            in the direction of pa+90 deg.
         """
-        pa, ci = np.radians(pa), np.cos(np.radians(incl))
-        x, y = np.meshgrid(self.x, self.y)
-        z = (y + 1j * x) / np.exp(1j * pa)
-        y, x = np.real(z), np.imag(z) * ci
-        z = (y + 1j * x) * np.exp(1j * pa)
-        y, x = np.real(z), np.imag(z)
-        d = [self.data] if np.ndim(self.data) == 2 else self.data
-        self.data = sortRBS(self.y, self.x, d, y, x)
-        F = lambda f0, f1: np.array([[f0, 0], [0, f1]])
-        R = lambda p: np.array([[np.cos(p), -np.sin(p)],
-                                [np.sin(p),  np.cos(p)]])
-        bmaj, bmin = self.beam[0], self.beam[1]
-        bpa = np.radians(self.beam[2])
-        A = np.linalg.multi_dot([F(1/bmaj, 1/bmin), R(pa - bpa),
-                                 F(1, ci), R(-pa)])
-        alpha = (A[0, 0]**2 + A[1, 0]**2 + A[0, 1]**2 + A[1, 1]**2) / 2
-        beta = A[0, 0]*A[0, 1] + A[1, 0]*A[1, 1]
-        gamma = (A[0, 0]**2 + A[1, 0]**2 - A[0, 1]**2 - A[1, 1]**2) / 2
+        ci = np.cos(np.radians(incl))
+        A = np.linalg.multi_dot([Mrot(pa), Mfac(1, ci), Mrot(-pa)])
+        y, x = dot2d(A, np.meshgrid(self.x, self.y)[::-1])
+        self.data = sortRBS(self.y, self.x, self.data, y, x)
+        bmaj, bmin, bpa = self.beam
+        a, b = np.linalg.multi_dot([Mfac(1/bmaj, 1/bmin), Mrot(pa - bpa),
+                                    Mfac(1, ci), Mrot(-pa)]).T
+        alpha = (np.dot(a, a) + np.dot(b, b)) / 2
+        beta = np.dot(a, b)
+        gamma = (np.dot(a, a) - np.dot(b, b)) / 2
         bpa_new = np.arctan(beta / gamma) / 2 * np.degrees(1)
         if beta * bpa_new > 0: bpa_new += 90
         Det = np.sqrt(beta**2 + gamma**2)
@@ -182,13 +174,13 @@ class AstroData():
         if ellipse is None: ellipse = [[0, 0, 0]] * nprof
         for i, (xc, yc, e) in enumerate(zip(xlist, ylist, ellipse)):
             major, minor, pa = e
-            z = ((y - yc) + 1j * (x - xc)) / np.exp(1j * np.radians(pa))
+            z = dot2d(Mrot(-pa), [y - yc, x - xc])
             if major == 0 or minor == 0:
-                r = np.abs(z)
+                r = np.hypot(*z)
                 idx = np.unravel_index(np.argmin(r), np.shape(r))
                 prof[i] = [d[idx] for d in data]
             else:
-                r = np.abs(np.real(z) / major + 1j *  (np.imag(z) / minor))
+                r = np.hypot(*dot2d(Mfac(1/major, 1/minor), z))
                 if flux:
                     prof[i] = [np.sum(d[r <= 1]) for d in data]
                 else:
@@ -223,11 +215,8 @@ class AstroData():
     
     def rotate(self, pa: float = 0):
         """Counter clockwise rotation with respect to the center."""
-        x, y = np.meshgrid(self.x, self.y)
-        z = (y + 1j * x) / np.exp(1j * np.radians(pa))
-        y, x = np.real(z), np.imag(z)
-        d = [self.data] if np.ndim(self.data) == 2 else self.data
-        self.data = sortRBS(self.y, self.x, d, y, x)
+        y, x = dot2d(Mrot(-pa), *np.meshgrid(self.x, self.y))
+        self.data = sortRBS(self.y, self.x, self.data, y, x)
         self.beam[2] = self.beam[2] + pa
     
     def slice(self, length: float = 0, pa: float = 0,
