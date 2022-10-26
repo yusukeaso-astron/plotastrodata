@@ -215,7 +215,7 @@ class AstroData():
     
     def rotate(self, pa: float = 0):
         """Counter clockwise rotation with respect to the center."""
-        y, x = dot2d(Mrot(-pa), *np.meshgrid(self.x, self.y))
+        y, x = dot2d(Mrot(-pa), np.meshgrid(self.x, self.y))
         self.data = sortRBS(self.y, self.x, self.data, y, x)
         self.beam[2] = self.beam[2] + pa
     
