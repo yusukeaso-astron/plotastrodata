@@ -125,6 +125,7 @@ class AstroData():
         self.y, self.x = Y, X
 
     def circularbeam(self):
+        """Make the beam circular by convolving with 1D Gaussian"""
         bmaj, bmin, bpa = self.beam
         self.rotate(-bpa)
         nx = len(self.x) if len(self.x) % 2 == 1 else len(self.x) - 1
