@@ -138,6 +138,7 @@ class AstroData():
         self.data = np.squeeze([convolve(c, g, mode='same') for c in d])
         self.rotate(bpa)
         self.beam[1] = self.beam[0]
+        self.beam[2] = 0
         
     def deproject(self, pa: float = 0, incl: float = 0):
         """Exapnd by a factor of 1/cos(incl)
