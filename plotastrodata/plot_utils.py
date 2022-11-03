@@ -152,8 +152,6 @@ def set_minmax(data: np.ndarray, stretch: str, stretchscale: float,
         stretchscale = [stretchscale]
         if 'vmin' in kw.keys(): kw['vmin'] = [kw['vmin']]
         if 'vmax' in kw.keys(): kw['vmax'] = [kw['vmax']]
-    for i in range(len(stretchscale)):
-        if stretchscale[i] is None: stretchscale[i] = rms[i]
     z = (data, stretch, stretchscale, rms)
     for i, (c, st, stsc, r) in enumerate(zip(*z)):
         if stsc is None: stsc = r
@@ -532,6 +530,7 @@ class PlotAstroData(AstroFrame):
         c, x, y, beam, bunit, rms = d.data, d.x, d.y, d.beam, d.bunit, d.rms
         self.beam = beam
         self.rms = rms
+        if stretchscale is None: stretchscale = rms
         c = set_minmax(c, stretch, stretchscale, rms, kwargs)
         c = self.vskipfill(c)
         for axnow, cnow in zip(self.ax, c):
