@@ -703,6 +703,8 @@ class PlotAstroData(AstroFrame):
         c, x, y, beam, rms = d.data, d.x, d.y, d.beam, d.rms
         self.beam = beam
         self.rms = rms
+        for i in range(len(stretchscale)):
+            if stretchscale[i] is None: stretchscale[i] = rms[i]
         c = set_minmax(c, stretch, stretchscale, rms, kwargs)
         if not (np.shape(c[0]) == np.shape(c[1]) == np.shape(c[2])):
             print('RGB shapes mismatch. Skip add_rgb.')
