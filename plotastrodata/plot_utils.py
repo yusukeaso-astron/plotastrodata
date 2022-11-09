@@ -234,7 +234,7 @@ class PlotAstroData(AstroFrame):
     ['edge', 'neg', 'med', 'iter', 'out'] as well as a specific value.
     """
     def __init__(self, v: list = [0], vskip: int = 1, veldigit: int = 2,
-                 restfrq: float = None,
+                 restfrq: float = None, channelnumber: int = None,
                  nrows: int = 4, ncols: int = 6,
                  fontsize: int = None, nancolor: str = 'w',
                  figsize: tuple = None, fig=None, ax=None, **kwargs) -> None:
@@ -264,8 +264,9 @@ class PlotAstroData(AstroFrame):
         super().__init__(**kwargs)
         internalfig = fig is None
         internalax = ax is None
+        if type(channelnumber) is int: nrows = ncols = 1
         if self.fitsimage is not None:
-            self.read(d := AstroData(fitsimage=self.fitsimage))
+            self.read(d := AstroData(fitsimage=self.fitsimage, restfrq=restfrq))
             v = d.v
         if self.pv or v is None or len(v) == 1:
             nv = nrows = ncols = npages = nchan = 1
@@ -274,6 +275,7 @@ class PlotAstroData(AstroFrame):
             npages = int(np.ceil(nv / nrows / ncols))
             nchan = npages * nrows * ncols
             v = np.r_[v, v[-1] + (np.arange(nchan-nv)+1) * (v[1] - v[0])]
+            if type(channelnumber) is int: nchan = npages = 1
         def nij2ch(n: int, i: int, j: int):
             return n*nrows*ncols + i*ncols + j
         def ch2nij(ch: int) -> list:
@@ -282,7 +284,7 @@ class PlotAstroData(AstroFrame):
             j = ch % ncols
             return n, i, j
         if fontsize is None:
-            fontsize=18 if nv == 1 else 12
+            fontsize=18 if nchan == 1 else 12
         set_rcparams(fontsize=fontsize, nancolor=nancolor)
         ax = np.empty(nchan, dtype='object') if internalax else [ax]
         for ch in range(nchan):
@@ -296,17 +298,19 @@ class PlotAstroData(AstroFrame):
             if internalax:
                 ax[ch] = fig.add_subplot(nrows, ncols, i*ncols + j + 1,
                                          sharex=sharex, sharey=sharey)
-            if nchan > 1:
+            if nchan > 1 or type(channelnumber) is int:
                 fig.subplots_adjust(hspace=0, wspace=0, right=0.87, top=0.87)
+                vellabel = v[ch] if channelnumber is None else v[channelnumber]
                 ax[ch].text(0.9 * self.rmax, 0.7 * self.rmax,
-                            rf'${v[ch]:.{veldigit:d}f}$', color='black',
+                            rf'${vellabel:.{veldigit:d}f}$', color='black',
                             backgroundcolor='white', zorder=20)
         self.fig = None if internalfig else fig
         self.ax = ax
         self.rowcol = nrows * ncols
         self.npages = npages
-        self.allchan = np.arange(nchan)
+        self.allchan = np.arange(nchan if channelnumber is None else nv)
         self.bottomleft = nij2ch(np.arange(npages), nrows - 1, 0)
+        self.channelnumber = channelnumber
         def vskipfill(c: list) -> list:
             """Skip and fill channels with nan.
 
@@ -320,7 +324,8 @@ class PlotAstroData(AstroFrame):
                 d = c[::vskip]
             else:
                 d = np.full((nv, *np.shape(c)), c)
-            shape = (nchan - len(d), len(d[0]), len(d[0, 0]))
+            n = nchan if channelnumber is None else nv
+            shape = (n - len(d), len(d[0]), len(d[0, 0]))
             dnan = np.full(shape, d[0] * np.nan)
             return np.concatenate((d, dnan), axis=0)
         self.vskipfill = vskipfill
@@ -349,6 +354,7 @@ class PlotAstroData(AstroFrame):
         for x, y, width, height, angle\
             in zip(*self.pos2xy(poslist), *listing(minlist, majlist, palist)):
             for ch, axnow in enumerate(self.ax):
+                if type(self.channelnumber) is int: ch = self.channelnumber
                 if not (ch in include_chan):
                     continue
                 if self.fig is None:
@@ -376,8 +382,9 @@ class PlotAstroData(AstroFrame):
         """
         if poslist is None:
             poslist = [max(0.35 * beam[0] / self.rmax, 0.1)] * 2
+        include_chan = self.bottomleft if self.channelnumber is None else self.allchan
         self.add_region('ellipse', poslist, *beam,
-                        include_chan=self.bottomleft,
+                        include_chan=include_chan,
                         facecolor=beamcolor, edgecolor=None)
     
     def add_marker(self, poslist: list = [],
@@ -392,6 +399,7 @@ class PlotAstroData(AstroFrame):
                     'mec':'gray', 'mew':2, 'alpha':1}
         if include_chan is None: include_chan = self.allchan
         for ch, axnow in enumerate(self.ax):
+            if type(self.channelnumber) is int: ch = self.channelnumber
             if not (ch in include_chan):
                 continue
             for x, y in zip(*self.pos2xy(poslist)):
@@ -410,6 +418,7 @@ class PlotAstroData(AstroFrame):
                    'va':'center', 'zorder':10}
         if include_chan is None: include_chan = self.allchan
         for ch, axnow in enumerate(self.ax):
+            if type(self.channelnumber) is int: ch = self.channelnumber
             if not (ch in include_chan):
                 continue
             for x, y, s in zip(*self.pos2xy(poslist), listing(slist)):
@@ -430,6 +439,7 @@ class PlotAstroData(AstroFrame):
                    'linestyle':'-', 'zorder':10}
         if include_chan is None: include_chan = self.allchan
         for ch, axnow in enumerate(self.ax):
+            if type(self.channelnumber) is int: ch = self.channelnumber
             if not (ch in include_chan):
                 continue
             alist = np.radians(anglelist)
@@ -454,6 +464,7 @@ class PlotAstroData(AstroFrame):
                    'headwidth':5, 'headlength':5, 'zorder':10}
         if include_chan is None: include_chan = self.allchan
         for ch, axnow in enumerate(self.ax):
+            if type(self.channelnumber) is int: ch = self.channelnumber
             if not (ch in include_chan):
                 continue
             alist = np.radians(anglelist)
@@ -533,6 +544,7 @@ class PlotAstroData(AstroFrame):
         if stretchscale is None: stretchscale = rms
         c = set_minmax(c, stretch, stretchscale, rms, kwargs)
         c = self.vskipfill(c)
+        if type(self.channelnumber) is int: c = [c[self.channelnumber]]
         for axnow, cnow in zip(self.ax, c):
             p = axnow.pcolormesh(x, y, cnow, **dict(kwargs0, **kwargs))
         for ch in self.bottomleft:
@@ -596,6 +608,7 @@ class PlotAstroData(AstroFrame):
         self.beam = beam
         self.rms = rms
         c = self.vskipfill(c)
+        if type(self.channelnumber) is int: c = [c[self.channelnumber]]
         for axnow, cnow in zip(self.ax, c):
             axnow.contour(x, y, cnow, np.sort(levels) * rms,
                           **dict(kwargs0, **kwargs))
@@ -667,6 +680,9 @@ class PlotAstroData(AstroFrame):
         v = ampfactor * amp * np.cos(np.radians(ang + rotation))
         u = self.vskipfill(u)
         v = self.vskipfill(v)
+        if type(self.channelnumber) is int:
+            u = [u[self.channelnumber]]
+            v = [v[self.channelnumber]]
         kwargs0['scale'] = 1. / np.abs(x[1] - x[0])
         for axnow, unow, vnow in zip(self.ax, u, v):
             axnow.quiver(x, y, unow, vnow, **dict(kwargs0, **kwargs))
