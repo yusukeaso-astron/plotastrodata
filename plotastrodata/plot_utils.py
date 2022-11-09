@@ -251,6 +251,8 @@ class PlotAstroData(AstroFrame):
                 How many digits after the decimal point. Defaults to 2.
             restfrq (float, optional):
                 Used for velocity and brightness T. Defaults to None.
+            channelnumber (int, optional): 
+                Specify a channel number to make 2D maps. Defaults to None.
             nrows (int, optional): Used for channel maps. Defaults to 4.
             ncols (int, optional): Used for channel maps. Defaults to 6.
             fontsize (int, optional): rc_Params['font.size'].
