@@ -35,7 +35,8 @@ def sortRBS(y: list, x: list, data: list,
     xsort = x if x[1] > x[0] else x[::-1]
     csort = [c if x[1] > x[0] else c[:, ::-1] for c in d]
     ysort = y if y[1] > y[0] else y[::-1]
-    csort = [c if y[1] > y[0] else c[::-1, :] for c in csort]
+    csort = np.array([c if y[1] > y[0] else c[::-1, :] for c in csort])
+    csort[np.isnan(csort)] = 0
     f = [RBS(ysort, xsort, c) for c in csort]
     if ynew is None or xnew is None:
         return f[0] if len(f) == 1 else f
