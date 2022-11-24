@@ -40,8 +40,9 @@ f.set_axis(grid={}, title='3D channel maps')
 f.savefig('test3D.png', show=True)
 
 # PV case
-f = pad(rmax=0.8, pv=True, swapxy=True, vmin=-5, vmax=5)
-f.add_color(fitsimage=pre+'testPV.fits', Tb=True, cblabel='Tb (K)')
+f = pad(rmax=0.8, pv=True, swapxy=True, vmin=-5, vmax=5, figsize=(6, 7))
+f.add_color(fitsimage=pre+'testPV.fits', Tb=True, cblabel='Tb (K)',
+            cblocation='top')
 f.add_contour(fitsimage=pre+'testPV.fits', colors='r', sigma=5e-3)
 f.add_text([0.3, 0.3], slist='text')
 f.add_marker([[0.5, 0.5]])
