@@ -671,7 +671,8 @@ class PlotAstroData(AstroFrame):
         c, x, y, beam, rms = d.data, d.x, d.y, d.beam, d.rms
         amp, ang, stU, stQ = c
         rmsU, rmsQ = rms[2:]
-        self.beam = beam = beam[0]
+        self.beam = beam
+        beam = [beam[i] for i in range(4) if beam[i][0] is not None][0]
         if stU is not None and stQ is not None:
             self.rms = rms = (rmsU + rmsQ) / 2.
             ang = np.degrees(np.arctan2(stU, stQ) / 2.)
