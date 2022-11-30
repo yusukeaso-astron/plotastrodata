@@ -139,7 +139,8 @@ class FitsData:
                 print('restfrq is assumed to be the center.')            
             else:
                 freq = restfrq
-            s = (1 - s / freq) * constants.c.to('km*s**(-1)').value - vsys
+            if freq != 0:
+                s = (1 - s / freq) * constants.c.to('km*s**(-1)').value - vsys
             self.v, self.dv = s, s[1] - s[0]
         if h['NAXIS'] > 0 and h['NAXIS1'] > 1:
                 gen_x(get_list(1))

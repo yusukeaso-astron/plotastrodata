@@ -316,15 +316,15 @@ class AstroFrame():
     quadrants (str, optional): '13' or '24'. Quadrants to take mean.
         None means not taking mean. Defaults to None.
     """
-    rmax: float = 1e10
+    rmax: float = 1e100
     dist: float = 1
     center: str = None
     fitsimage: str = None
     xoff: float = 0
     yoff: float = 0
     vsys: float = 0
-    vmin: float = -1e10
-    vmax: float = 1e10
+    vmin: float = -1e100
+    vmax: float = 1e100
     xflip: bool = True
     yflip: bool = False
     swapxy: bool = False
