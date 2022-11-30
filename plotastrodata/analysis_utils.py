@@ -316,7 +316,7 @@ class AstroFrame():
     quadrants (str, optional): '13' or '24'. Quadrants to take mean.
         None means not taking mean. Defaults to None.
     """
-    rmax: float = 1e100
+    rmax: float = 1e10
     dist: float = 1
     center: str = None
     fitsimage: str = None
