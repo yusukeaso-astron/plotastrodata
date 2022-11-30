@@ -187,9 +187,17 @@ class AstroData():
 
         if len(coords) > 0:
             xlist, ylist = coord2xy(coords, self.center) * 3600.
-        data, xf, yf = filled2d(self.data, self.x, self.y, 8)
+        nprof = len(xlist)
+        newlen = len(self.v) // (width := int(width))
+        v = np.zeros(newlen)
+        data = np.zeros((newlen, len(self.y), len(self.x)))
+        for i in range(width):
+            v += self.v[i:i + newlen*width:width]
+            data += self.data[i:i + newlen*width:width]
+        v, data = v / width, data / width
+        data, xf, yf = filled2d(data, self.x, self.y, 8)
         x, y = np.meshgrid(xf, yf)
-        prof = np.empty(((nprof := len(xlist)), len(self.v)))
+        prof = np.empty((nprof, len(v)))
         if ellipse is None: ellipse = [[0, 0, 0]] * nprof
         for i, (xc, yc, e) in enumerate(zip(xlist, ylist, ellipse)):
             major, minor, pa = e
@@ -204,12 +212,6 @@ class AstroData():
                     prof[i] = [np.sum(d[r <= 1]) for d in data]
                 else:
                     prof[i] = [np.mean(d[r <= 1]) for d in data]
-        newlen = len(self.v) // (width := int(width))
-        w, q = np.zeros(newlen), np.zeros((nprof, newlen))
-        for i in range(width):
-            w += self.v[i:i + newlen*width:width]
-            q += prof[:, i:i + newlen*width:width]
-        v, prof = w / width, q / width
         if flux:
             Omega = np.pi * self.beam[0] * self.beam[1] / 4. / np.log(2.)
             dxdy = np.abs((yf[1]-yf[0]) * (xf[1]-xf[0]))
