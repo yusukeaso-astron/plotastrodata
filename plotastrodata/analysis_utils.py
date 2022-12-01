@@ -379,7 +379,6 @@ class AstroFrame():
         Args:
             d (AstroData): Dataclass for the add_* input.
             xskip, yskip (int): Spatial pixel skip. Defaults to 1.
-            cfactor (float, optional): Data times cfactor. Defaults to 1.
         """
         for i in range(n := len(d.fitsimage)):
             if d.center[i] == 'common': d.center[i] = self.center
