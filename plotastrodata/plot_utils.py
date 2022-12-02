@@ -971,6 +971,7 @@ def plotprofile(coords: list = [], xlist: list = [], ylist: list = [],
     f = AstroFrame(dist=dist, vsys=vsys, vmin=vmin, vmax=vmax)
     d = kwargs2AstroData(kwargs)
     f.read(d)
+    d.binning([width, 1, 1])
     v, prof, gfitres = d.profile(coords, xlist, ylist, ellipse,
                                  flux, width, gaussfit)
     nprof = len(prof)

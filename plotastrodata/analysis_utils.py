@@ -185,7 +185,7 @@ class AstroData():
         self.beam = np.array([bmaj_new, bmin_new, bpa_new])
 
     def profile(self, coords: list = [], xlist: list = [], ylist: list = [],
-                ellipse: list = None, flux: bool = False, width: int = 1,
+                ellipse: list = None, flux: bool = False,
                 gaussfit: bool = False) -> tuple:
         """Get a list of line profiles at given spatial coordinates.
 
@@ -196,7 +196,6 @@ class AstroData():
             ellipse (list, optional):
                 [major, minor, pa]. For average. Defaults to None.
             flux (bool, optional): Jy/beam to Jy. Defaults to False.
-            width (int, optional): Rebinning step along v. Defaults to 1.
             gaussfit (bool, optional): Fit the profiles. Defaults to False.
 
         Returns:
@@ -209,14 +208,6 @@ class AstroData():
         if len(coords) > 0:
             xlist, ylist = coord2xy(coords, self.center) * 3600.
         nprof = len(xlist)
-        #newlen = len(self.v) // (width := int(width))
-        #v = np.zeros(newlen)
-        #data = np.zeros((newlen, len(self.y), len(self.x)))
-        #for i in range(width):
-        #    v += self.v[i:i + newlen*width:width]
-        #    data += self.data[i:i + newlen*width:width]
-        #v, data = v / width, data / width
-        self.binning([width, 1, 1])
         v = self.v
         data, xf, yf = filled2d(self.data, self.x, self.y, 8)
         x, y = np.meshgrid(xf, yf)
