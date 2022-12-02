@@ -116,6 +116,27 @@ class AstroData():
         if type(self.cfactor) is not list: self.cfactor = [self.cfactor] * n
         self.rms = [None] * n
         self.bunit = [''] * n
+
+    def binning(self, width: list = [1, 1, 1]):
+        """Binning up neighboring pixels in the v, y, and x domain."""
+        if len(width) == 2: width = [1] + width
+        self.data = [self.data] if np.ndim(self.data) == 2 else self.data
+        size = np.array([len(self.v), len(self.y), len(self.x)])
+        newsize = size // np.array(width, dtype=int)
+        grid = [self.v, self.y, self.x]
+        for n in range(3):
+            if width[n] == 1:
+                continue
+            size[n] = newsize[n]
+            olddata = np.moveaxis(self.data, n, 0)
+            data = np.moveaxis(np.zeros(size), n, 0)
+            t = np.zeros(newsize[n])
+            for i in range(width[n]):
+                t += grid[n][i:i + newsize[n]*width[n]:width[n]]
+                data += olddata[i:i + newsize[n]*width[n]:width[n]]
+            grid[n] = t / width[n]
+            self.data = np.moveaxis(data, 0, n) / width[n]
+        self.v, self.y, self.x = grid
             
     def centering(self):
         """Spatial regridding to set the center at (x,y)=(0,0)."""
@@ -188,14 +209,16 @@ class AstroData():
         if len(coords) > 0:
             xlist, ylist = coord2xy(coords, self.center) * 3600.
         nprof = len(xlist)
-        newlen = len(self.v) // (width := int(width))
-        v = np.zeros(newlen)
-        data = np.zeros((newlen, len(self.y), len(self.x)))
-        for i in range(width):
-            v += self.v[i:i + newlen*width:width]
-            data += self.data[i:i + newlen*width:width]
-        v, data = v / width, data / width
-        data, xf, yf = filled2d(data, self.x, self.y, 8)
+        #newlen = len(self.v) // (width := int(width))
+        #v = np.zeros(newlen)
+        #data = np.zeros((newlen, len(self.y), len(self.x)))
+        #for i in range(width):
+        #    v += self.v[i:i + newlen*width:width]
+        #    data += self.data[i:i + newlen*width:width]
+        #v, data = v / width, data / width
+        self.binning([width, 1, 1])
+        v = self.v
+        data, xf, yf = filled2d(self.data, self.x, self.y, 8)
         x, y = np.meshgrid(xf, yf)
         prof = np.empty((nprof, len(v)))
         if ellipse is None: ellipse = [[0, 0, 0]] * nprof
