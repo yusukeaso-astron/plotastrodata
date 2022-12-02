@@ -972,8 +972,7 @@ def plotprofile(coords: list = [], xlist: list = [], ylist: list = [],
     d = kwargs2AstroData(kwargs)
     f.read(d)
     d.binning([width, 1, 1])
-    v, prof, gfitres = d.profile(coords, xlist, ylist, ellipse,
-                                 flux, width, gaussfit)
+    v, prof, gfitres = d.profile(coords, xlist, ylist, ellipse, flux, gaussfit)
     nprof = len(prof)
     if 'ylabel' in kwargs:
         ylabel = kwargs['ylabel']
