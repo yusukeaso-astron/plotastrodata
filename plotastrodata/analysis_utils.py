@@ -98,12 +98,22 @@ class AstroData():
     cfactor: float = 1
     def __post_init__(self):
         if self.fitsimage is not None:
-            n = 1 if type(self.fitsimage) is str else len(self.fitsimage)
-            self.data = None
-        elif self.data is not None:
-            n = 1 if type(self.data) is not list else len(self.data)
-        else:
-            n = 0
+            if type(self.fitsimage) is not list:
+                n = 1
+            elif any(a is not None for a in self.fitsimage):
+                n = len(self.fitsimage)
+            else:
+                n = 0
+            if n > 0:
+                self.data = None
+        if self.data is not None:
+            if type(self.data) is not list:
+                n = 1
+            elif any(a is not None for a in self.data):
+                n = len(self.data)
+            else:
+                n = 0
+        if n == 0:
             print('Either data or fitsimage must be given.')
         if type(self.fitsimage) is not list:
             self.fitsimage = [self.fitsimage] * n
@@ -183,6 +193,23 @@ class AstroData():
         bmaj_new = 1 / np.sqrt(alpha - Det)
         bmin_new = 1 / np.sqrt(alpha + Det)
         self.beam = np.array([bmaj_new, bmin_new, bpa_new])
+
+    def mask(self, dataformask, includepix: list = [],
+             excludepix: list = []):
+        """Mask self.data using an AstroData of dataformask."""
+        if np.ndim(self.data) ==3 and np.ndim(dataformask.data) == 2:
+            print('The 2D mask is broadcasted to 3D.')
+            mask = np.array([dataformask.data] * len(self.data))
+        else:
+            mask = dataformask.data
+        if np.ndim(self.data) != np.ndim(mask):
+            print('The dataformask.data has a different data shape.')
+            return False
+
+        if len(includepix) == 2:
+            self.data[(mask < includepix[0]) + (includepix[1] < mask)] = np.nan
+        if len(excludepix) == 2:
+            self.data[(excludepix[0] < mask) * (mask < excludepix[1])] = np.nan
 
     def profile(self, coords: list = [], xlist: list = [], ylist: list = [],
                 ellipse: list = None, flux: bool = False,
