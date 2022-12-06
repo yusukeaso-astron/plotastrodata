@@ -248,7 +248,7 @@ class AstroData():
                 idx = np.unravel_index(np.argmin(r), np.shape(r))
                 prof[i] = [d[idx] for d in data]
             else:
-                r = np.hypot(*dot2d(Mfac(1/major, 1/minor), z))
+                r = np.hypot(*dot2d(Mfac(2/major, 2/minor), z))
                 if flux:
                     prof[i] = [np.sum(d[r <= 1]) for d in data]
                 else:
