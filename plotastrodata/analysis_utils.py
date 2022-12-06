@@ -366,8 +366,8 @@ class AstroFrame():
     xoff: float = 0
     yoff: float = 0
     vsys: float = 0
-    vmin: float = -1e100
-    vmax: float = 1e100
+    vmin: float = -1e20
+    vmax: float = 1e20
     xflip: bool = True
     yflip: bool = False
     swapxy: bool = False
