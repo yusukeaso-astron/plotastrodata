@@ -382,11 +382,16 @@ class AstroFrame():
         if self.quadrants is not None:
             xlim = [0, self.rmax]
             vlim = [0, min(self.vmax - self.vsys, self.vsys - self.vmin)]
-        if self.pv: xlim, ylim = np.sort(xlim), vlim
-        if self.swapxy: xlim, ylim = ylim, xlim
+        if self.pv: xlim = np.sort(xlim)
         self.xlim = xlim
         self.ylim = ylim
         self.vlim = vlim
+        if self.pv:
+            self.Xlim = vlim if self.swapxy else xlim
+            self.Ylim = xlim if self.swapxy else vlim
+        else:
+            self.Xlim = ylim if self.swapxy else xlim
+            self.Ylim = xlim if self.swapxy else ylim
         if self.fitsimage is not None and self.center is None:
             self.center = FitsData(self.fitsimage).get_center()
         
@@ -409,7 +414,7 @@ class AstroFrame():
             if type(p) is str:
                 x[i], y[i] = coord2xy(p, self.center) * 3600.
             else:
-                x[i], y[i] = rel2abs(*p, self.xlim, self.ylim)
+                x[i], y[i] = rel2abs(*p, self.Xlim, self.Ylim)
         return np.array([x, y])
 
     def read(self, d: AstroData, xskip: int = 1, yskip: int = 1):
@@ -450,7 +455,7 @@ class AstroFrame():
                 d.v = grid[2]
                 grid = grid[:3:2] if self.pv else grid[:2]
                 if self.swapxy:
-                    grid = grid[::-1]
+                    grid = [grid[1], grid[0]]
                     d.data[i] = np.moveaxis(d.data[i], 1, 0)
                 grid[0] = grid[0][::xskip]
                 grid[1] = grid[1][::yskip]

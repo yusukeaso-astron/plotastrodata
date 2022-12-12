@@ -776,8 +776,8 @@ class PlotAstroData(AstroFrame):
                 kwargs['xlabel'] = declabel if self.swapxy else ralabel
             if not 'ylabel' in kwargs:
                 kwargs['ylabel'] = ralabel if self.swapxy else declabel
-        kwargs['xlim'] = self.xlim
-        kwargs['ylim'] = self.ylim
+        kwargs['xlim'] = self.Xlim
+        kwargs['ylim'] = self.Ylim
         pa2 = kwargs2PlotAxes2D(kwargs)
         for ch, axnow in enumerate(self.ax):
             pa2.set_xyaxes(axnow)
@@ -871,7 +871,7 @@ class PlotAstroData(AstroFrame):
         dec_dm = dec_dm.replace('d', r'$^{\circ}$') + r'$^{\prime}$'
         xticklabels[3] = ra_hm + xticklabels[3]
         yticklabels[3] = dec_dm + '\n' + yticklabels[3]
-        pa2 = PlotAxes2D(True, None, 'linear', 'linear', self.xlim, self.ylim,
+        pa2 = PlotAxes2D(True, None, 'linear', 'linear', self.Xlim, self.Ylim,
                          xlabel, ylabel, xticks, yticks, xticklabels,
                          yticklabels, xticksminor, yticksminor, grid)
         for ch, axnow in enumerate(self.ax):
@@ -907,8 +907,8 @@ class PlotAstroData(AstroFrame):
         """
         kwargs0 = {'transparent': True, 'bbox_inches': 'tight'}
         for axnow in self.ax:
-            axnow.set_xlim(*self.xlim)
-            axnow.set_ylim(*self.ylim)
+            axnow.set_xlim(*self.Xlim)
+            axnow.set_ylim(*self.Ylim)
         ext = filename.split('.')[-1]
         for i in range(self.npages):
             ver = '' if self.npages == 1 else f'_{i:d}'
