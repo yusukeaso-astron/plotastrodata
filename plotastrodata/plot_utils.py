@@ -1062,17 +1062,17 @@ def plotslice(length: float, dx: float = None, pa: float = 0,
     set_rcparams()
     if fig is None: fig = plt.figure()
     if ax is None: ax = fig.add_subplot(1, 1, 1)
-    ax.plot(r, z, **dict(kwargs0, **kwargs))
-    if d.rms is not None and d.rms > 0:
-        ax.plot(r, r * 0 + 3 * d.rms, 'k--')
     if not 'xlabel' in kwargs:
         kwargs['xlabel'] = f'Offset ({xunit})'
     if not 'ylabel' in kwargs:
         kwargs['ylabel'] = f'Intensity ({yunit})'
     if not 'xlim' in kwargs: kwargs['xlim'] = [r.min(), r.max()]
     kwargs['samexy'] = False
-    a = kwargs2PlotAxes2D(kwargs)
-    a.set_xyaxes(ax)
+    pa2d = kwargs2PlotAxes2D(kwargs)
+    ax.plot(r, z, **dict(kwargs0, **kwargs))
+    if d.rms is not None and d.rms > 0:
+        ax.plot(r, r * 0 + 3 * d.rms, 'k--')
+    pa2d.set_xyaxes(ax)
     if getfigax:
         return fig, ax
     fig.tight_layout()
