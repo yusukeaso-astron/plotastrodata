@@ -996,7 +996,7 @@ def plotprofile(coords: list = [], xlist: list = [], ylist: list = [],
     if not 'xlabel' in kwargs: kwargs['xlabel'] = 'Velocity (km s$^{-1}$)'
     if not 'xlim' in kwargs: kwargs['xlim'] = [v.min(), v.max()]
     kwargs['samexy'] = False
-    a = kwargs2PlotAxes2D(kwargs)
+    pa2d = kwargs2PlotAxes2D(kwargs)
     for i in range(nprof):
         sharex = None if i < nrows - 1 else ax[i - 1]
         ax[i] = fig.add_subplot(nrows, ncols, i + 1, sharex=sharex)
@@ -1006,7 +1006,7 @@ def plotprofile(coords: list = [], xlist: list = [], ylist: list = [],
         ax[i].plot(v, prof[i], **dict(kwargs0, **kwargs))
         ax[i].hlines([0], v.min(), v.max(), linestyle='dashed', color='k')
         ax[i].set_ylabel(ylabel[i])
-        a.set_xyaxes(ax[i])
+        pa2d.set_xyaxes(ax[i])
         if text is not None: ax[i].text(**text[i])
         if title is not None:
             if type(title[i]) is str: title[i] = {'label':title[i]}
