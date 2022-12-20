@@ -483,7 +483,7 @@ class PlotAstroData(AstroFrame):
     def add_scalebar(self, length: float = 0, label: str = '',
                      color: str = 'gray', barpos: tuple = (0.8, 0.12),
                      fontsize: float = None, linewidth: float = 3,
-                     bbox: dict = {}) -> None:
+                     bbox: dict = {'alpha':0}) -> None:
         """Use Axes.text and Axes.plot of matplotlib.
 
         Args:
