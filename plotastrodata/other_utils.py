@@ -2,7 +2,7 @@ import subprocess
 import shlex
 from astropy.coordinates import SkyCoord
 from astropy import units, constants
-import numpy as np
+from scipy.optimize import curve_fit
 
 
 
@@ -124,9 +124,10 @@ def estimate_rms(data: list, sigma: float or str = 'out') -> float:
                               this function just outputs it.
         methods --- 'edge': use data[0] and data[-1].
                     'neg': use only negative values.
-                    'med': use the median of data^2.
+                    'med': use the median of data^2 assuming Gaussian.
                     'iter': exclude outliers.
                     'out': exclude inner 60% about axes=-2 and -1.
+                    'hist': fit histgram with Gaussian.
 
     Returns:
         float: the estimated room mean square of noise.
@@ -156,6 +157,14 @@ def estimate_rms(data: list, sigma: float or str = 'out') -> float:
             noise = np.sqrt(np.nanmean(data[data < 0]**2))
         else:
             noise = np.nanstd(n)
+    elif sigma = 'hist':
+        s0 = np.nanstd(data)
+        hist = np.histogram(data, bins=100, density=True,
+                            range=(-s0 * 5, s0 * 5))
+        hist, hbin = hist[0], (hist[1][:-1] + hist[1][1:]) / 2
+        g = lambda x, a, b: np.exp(-((x-b)/a)**2 / 2) / np.sqrt(2*np.pi)
+        popt, pcov = curve_fit(g, hbin, hist, p0=[s0, 0])
+        noise = popt[0]
     print(f'sigma = {noise:.2e}')
     return noise
 
