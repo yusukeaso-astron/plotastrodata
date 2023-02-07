@@ -161,9 +161,9 @@ def estimate_rms(data: list, sigma: float or str = 'hist') -> float:
             noise = np.nanstd(n)
     elif sigma == 'hist':
         s0 = np.nanstd(data)
-        hist = np.histogram(data, bins=100, density=True,
-                            range=(-s0 * 5, s0 * 5))
-        hist, hbin = hist[0], (hist[1][:-1] + hist[1][1:]) / 2
+        hist, hbin = np.histogram(data, bins=100, density=True,
+                                  range=(-s0 * 5, s0 * 5))
+        hbin = (hbin[:-1] + hbin[1:]) / 2
         g = lambda x, a, b: np.exp(-((x-b)/a)**2 / 2) / np.sqrt(2*np.pi) / a
         popt, _ = curve_fit(g, hbin / s0, hist * s0, p0=[1, 0])
         noise = popt[0] * s0
