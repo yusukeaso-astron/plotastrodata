@@ -76,7 +76,7 @@ class AstroData():
     Tb (bool, optional):
         True means the mapped data are brightness T. Defaults to False.
     sigma (float or str, optional):
-        Noise level or method for measuring it. Defaults to 'out'.
+        Noise level or method for measuring it. Defaults to 'hist'.
     center (str, optional):
         Text coordinates. 'common' means initialized value.
         Defaults to 'common'.
@@ -92,7 +92,7 @@ class AstroData():
     beam: np.ndarray = np.array([None] * 3)
     fitsimage: str = None
     Tb: bool = False
-    sigma: str = 'out'
+    sigma: str = 'hist'
     center: str = 'common'
     restfrq: float = None
     cfactor: float = 1

@@ -121,6 +121,7 @@ def estimate_rms(data: list, sigma: float or str = 'hist') -> float:
     Args:
         data (list): N-D array.
         sigma (float or str): One of the following methods.
+                              Defaults to 'hist'.
                               When a float number or None is given,
                               this function just outputs it.
         methods --- 'edge': use data[0] and data[-1].
