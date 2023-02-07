@@ -194,9 +194,9 @@ class AstroData():
         bmin_new = 1 / np.sqrt(alpha + Det)
         self.beam = np.array([bmaj_new, bmin_new, bpa_new])
 
-    def histogram(self, *args):
+    def histogram(self, *kwargs):
         """Output histogram of self.data using numpy.histogram"""
-        hist = np.histogram(self.data, *args)
+        hist = np.histogram(self.data, **kwargs)
         hist, hbin = hist[0], (hist[1][:-1] + hist[1][1:]) / 2
         return hbin, hist
 
