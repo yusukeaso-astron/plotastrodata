@@ -143,7 +143,7 @@ def estimate_rms(data: list, sigma: float or str = 'out') -> float:
     elif sigma == 'med': noise = np.sqrt(np.nanmedian(data**2) / 0.454936)
     elif sigma == 'iter':
         n = data.copy()
-        for _ in range(20):
+        for _ in range(5):
             ave, sig = np.nanmean(n), np.nanstd(n)
             n = n - ave
             n = n[np.abs(n) < 3.5 * sig]
