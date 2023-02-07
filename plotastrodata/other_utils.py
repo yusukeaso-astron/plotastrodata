@@ -1,5 +1,6 @@
 import subprocess
 import shlex
+import numpy as np
 from astropy.coordinates import SkyCoord
 from astropy import units, constants
 from scipy.optimize import curve_fit
@@ -157,7 +158,7 @@ def estimate_rms(data: list, sigma: float or str = 'out') -> float:
             noise = np.sqrt(np.nanmean(data[data < 0]**2))
         else:
             noise = np.nanstd(n)
-    elif sigma = 'hist':
+    elif sigma == 'hist':
         s0 = np.nanstd(data)
         hist = np.histogram(data, bins=100, density=True,
                             range=(-s0 * 5, s0 * 5))
