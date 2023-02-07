@@ -115,7 +115,7 @@ def abs2rel(xabs: float, yabs: float, x: list, y: list) -> list:
     return np.array([xrel, yrel])
 
 
-def estimate_rms(data: list, sigma: float or str = 'out') -> float:
+def estimate_rms(data: list, sigma: float or str = 'hist') -> float:
     """Estimate a noise level of a N-D array.
 
     Args:
