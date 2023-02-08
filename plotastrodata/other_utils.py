@@ -168,7 +168,7 @@ def estimate_rms(data: list, sigma: float or str = 'hist') -> float:
         #g = lambda x, a, b: np.exp(-((x-b)/a)**2 / 2) / np.sqrt(2*np.pi) / a
         def g(x, s, c, R):
             xn = (x - c) / np.sqrt(2) / s
-            return (erf(xn) - erf(xn * 2**(-R**2))) \
+            return (erf(xn) - erf(xn * np.exp2**(-R**2))) \
                    / (2 * np.log(2) * R**2 * (x - c))
         popt, _ = curve_fit(g, hbin / s0, hist * s0, p0=[1, 0, 1])
         noise = popt[0] * s0
