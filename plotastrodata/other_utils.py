@@ -131,6 +131,8 @@ def estimate_rms(data: list, sigma: float or str = 'hist') -> float:
                     'iter': exclude outliers.
                     'out': exclude inner 60% about axes=-2 and -1.
                     'hist': fit histgram with Gaussian.
+                    'hist-pbcor': fit histgram with
+                                  PB-corrected Gaussian.
 
     Returns:
         float: the estimated room mean square of noise.
@@ -160,17 +162,19 @@ def estimate_rms(data: list, sigma: float or str = 'hist') -> float:
             noise = np.sqrt(np.nanmean(data[data < 0]**2))
         else:
             noise = np.nanstd(n)
-    elif sigma == 'hist':
-        s0 = np.nanstd(data)
+    elif sigma[:4] == 'hist':
+        m0, s0 = np.nanmean(data), np.nanstd(data)
         hist, hbin = np.histogram(data, bins=100, density=True,
-                                  range=(-s0 * 5, s0 * 5))
-        hbin = (hbin[:-1] + hbin[1:]) / 2
-        def g(x, s, c, R):
-            return np.exp(-((x-c)/s)**2 / 2) / np.sqrt(2*np.pi) / s
-        #    xn = (x - c) / np.sqrt(2) / s
-        #    return (erf(xn) - erf(xn * np.exp2**(-R**2))) \
-        #           / (2 * np.log(2) * R**2 * (x - c))
-        popt, _ = curve_fit(g, hbin / s0, hist * s0, p0=[1, 0, 1])
+                                  range=(m0 - s0 * 5, m0 + s0 * 5))
+        hist, hbin = hist * s0, (hbin[:-1] + hbin[1:]) / 2 / s0
+        if sigma[4:] == '-pbcor':
+            def g(x, s, c, R):
+                xn = (x - c) / np.sqrt(2) / s
+                return (erf(xn) - erf(xn * np.exp(-R**2))) / (2 * (x-c) * R**2)
+        else:
+            def g(x, s, c, R):
+                return np.exp(-((x-c)/s)**2 / 2) / np.sqrt(2*np.pi) / s
+        popt, _ = curve_fit(g, hbin, hist, p0=[1, 0, 1])
         noise = popt[0] * s0
     print(f'sigma = {noise:.2e}')
     return noise
