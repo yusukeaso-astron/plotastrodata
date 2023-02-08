@@ -170,7 +170,7 @@ def estimate_rms(data: list, sigma: float or str = 'hist') -> float:
             return (erf(xn) - erf(xn * np.exp(-R**2))) / (2 * R**2 * (x - c))
         popt, _ = curve_fit(g, hbin / s0, hist * s0, p0=[1, 0, 0.1])
         pbcor = ''
-        if popt[2] * np.sqrt(np.log(2)) < 1:
+        if np.abs(popt[2]) * np.sqrt(np.log(2)) < 1:
             g = lambda x, s, c: \
                 np.exp(-((x-c)/s)**2 / 2) / np.sqrt(2*np.pi) / s
             popt, _ = curve_fit(g, hbin / s0, hist * s0, p0=[1, 0])
