@@ -168,12 +168,14 @@ def estimate_rms(data: list, sigma: float or str = 'hist') -> float:
         def g(x, s, c, R):
             xn = (x - c) / np.sqrt(2) / s
             return (erf(xn) - erf(xn * np.exp(-R**2))) / (2 * R**2 * (x - c))
-        popt, _ = curve_fit(g, hbin / s0, hist * s0, p0=[1, 0, 0.1])
+        popt, _ = curve_fit(g, hbin / s0, hist * s0, p0=[1, 0, 1],
+                            bounds=[[0, -5, 0],[5, 5, 5]])
         pbcor = ''
         if np.abs(popt[2]) * np.sqrt(np.log(2)) < 1:
             g = lambda x, s, c: \
                 np.exp(-((x-c)/s)**2 / 2) / np.sqrt(2*np.pi) / s
-            popt, _ = curve_fit(g, hbin / s0, hist * s0, p0=[1, 0])
+            popt, _ = curve_fit(g, hbin / s0, hist * s0, p0=[1, 0],
+                                bounds=[[0, -5], [5, 5]])
         else:
             pbcor = '(pbcor detected)'
         noise = popt[0] * s0
