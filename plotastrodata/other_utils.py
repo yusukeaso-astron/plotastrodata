@@ -131,6 +131,8 @@ def estimate_rms(data: list, sigma: float or str = 'hist') -> float:
                     'iter': exclude outliers.
                     'out': exclude inner 60% about axes=-2 and -1.
                     'hist': fit histgram with Gaussian.
+                    'hist-pbcor': fit histgram with
+                                  PB-corrected Gaussian.
 
     Returns:
         float: the estimated room mean square of noise.
