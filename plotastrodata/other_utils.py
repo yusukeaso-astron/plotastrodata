@@ -166,10 +166,10 @@ def estimate_rms(data: list, sigma: float or str = 'hist') -> float:
                                   range=(-s0 * 5, s0 * 5))
         hbin = (hbin[:-1] + hbin[1:]) / 2
         def g(x, s, c, R):
-            return np.exp(-((x-c)/s)**2 / 2) / np.sqrt(2*np.pi) / s
-        #    xn = (x - c) / np.sqrt(2) / s
-        #    return (erf(xn) - erf(xn * np.exp2**(-R**2))) \
-        #           / (2 * np.log(2) * R**2 * (x - c))
+        #    return np.exp(-((x-c)/s)**2 / 2) / np.sqrt(2*np.pi) / s
+            xn = (x - c) / np.sqrt(2) / s
+            return (erf(xn) - erf(xn * np.exp2(-R**2))) \
+                   / (2 * np.log(2) * R**2 * (x - c))
         popt, _ = curve_fit(g, hbin / s0, hist * s0, p0=[1, 0, 1])
         noise = popt[0] * s0
     print(f'sigma = {noise:.2e}')
