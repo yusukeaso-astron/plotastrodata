@@ -165,9 +165,9 @@ def estimate_rms(data: list, sigma: float or str = 'hist') -> float:
         hist, hbin = np.histogram(data, bins=100, density=True,
                                   range=(-s0 * 5, s0 * 5))
         hbin = (hbin[:-1] + hbin[1:]) / 2
-        def g(x, s, c, R2):
+        def g(x, s, c, R):
             xn = (x - c) / np.sqrt(2) / s
-            return (erf(xn) - erf(xn * np.exp(-R2))) / (2 * R2 * (x - c))
+            return (erf(xn) - erf(xn * np.exp(-R**2))) / (2 * R**2 * (x - c))
         popt, _ = curve_fit(g, hbin / s0, hist * s0, p0=[1, 0, 0.1])
         pbcor = ''
         if np.sqrt(popt[2] * np.log(2)) < 1:
