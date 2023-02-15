@@ -2,7 +2,7 @@ from plotastrodata.plot_utils import PlotAstroData as pad
 from plotastrodata.plot_utils import plotprofile, plotslice
 
 pre = 'testFITS/'
-
+'''
 # 2D case
 f = pad(rmax=0.8, center='04h04m43.07s 26d18m56.20s')
 f.add_color(fitsimage=pre+'test2D.fits', Tb=True, cblabel='Tb (K)')
@@ -81,3 +81,7 @@ f.add_arrow([0.4, 0.4], anglelist=150, rlist=0.5)
 f.add_region('ellipse', [0.2, 0.8], majlist=0.4, minlist=0.2, palist=45)
 f.set_axis_radec(nticksminor=5, title={'label':'2D RGB', 'loc':'right'})
 f.savefig('test2Drgb.png', show=True)
+'''
+# Rotatable 3D cube
+from plotastrodata.html_utils import plot3d
+plot3d(rmax=0.8, vmin=-5, vmax=5, fitsimage=pre+'test3D.fits', outname='test3D')

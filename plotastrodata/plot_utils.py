@@ -201,6 +201,15 @@ def kwargs2AstroData(kw: dict):
         d = AstroData(**tmp)
         return d
 
+def kwargs2AstroFrame(kw: dict):
+    tmp = {}
+    f = AstroFrame()
+    for k in vars(f).keys():
+        if k in kw.keys():
+            tmp[k] = kw[k]
+            #del kw[k]
+    f = AstroFrame(**tmp)
+    return f
 
 def kwargs2PlotAxes2D(kw: dict):
     tmp = {}
