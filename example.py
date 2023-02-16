@@ -84,4 +84,4 @@ f.savefig('test2Drgb.png', show=True)
 '''
 # Rotatable 3D cube
 from plotastrodata.html_utils import plot3d
-plot3d(rmax=0.8, vmin=-5, vmax=5, fitsimage=pre+'test3D.fits', outname='test3D')
+plot3d(rmax=0.8, vmin=-5, vmax=5, fitsimage=pre+'test3D.fits', outname='test3D', show=True)
