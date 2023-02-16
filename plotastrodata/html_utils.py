@@ -7,6 +7,9 @@ from plotastrodata.plot_utils import kwargs2AstroData, kwargs2AstroFrame
 
 
 def plot3d(levels: list = [3,6,12], cmap: str = 'Jet',
+           xlabel: str = 'R.A. (arcsec)',
+           ylabel: str = 'Dec. (arcsec)',
+           zlabel: str = 'Velocity (km/s)',
            xskip: int = 1, yskip: int = 1,
            eye_p: float = 0, eye_i: float = 180,
            outname: str = 'plot3d', show: bool = False, **kwargs):
@@ -27,6 +30,9 @@ def plot3d(levels: list = [3,6,12], cmap: str = 'Jet',
     margin=dict(l=0, r=0, b=0, t=0)
     camera = dict(eye=dict(x=xeye, y=yeye, z=zeye), up=dict(x=0, y=1, z=0))
     xaxis, yaxis, zaxis = [dict(range=[t[0], t[-1]]) for t in s]
+    xaxis['title'] = xlabel
+    yaxis['title'] = ylabel
+    zaxis['title'] = zlabel
     scene = dict(aspectmode='cube', camera=camera,
                  xaxis=xaxis, yaxis=yaxis, zaxis=zaxis)
     layout = go.Layout(margin=margin, scene=scene, showlegend=False)
