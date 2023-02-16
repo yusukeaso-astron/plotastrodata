@@ -6,7 +6,7 @@ from skimage import measure
 from plotastrodata.plot_utils import kwargs2AstroData, kwargs2AstroFrame
 
 
-def plot3d(levels: list = [3,6,12],
+def plot3d(levels: list = [3,6,12], cmap: str = 'Jet',
            xskip: int = 1, yskip: int = 1,
            eye_p: float = 0, eye_i: float = 180,
            outname: str = 'plot3d', show: bool = False, **kwargs):
@@ -40,15 +40,15 @@ def plot3d(levels: list = [3,6,12],
         i, j, k = simplices.T
         mesh = dict(type='mesh3d', x=Xg, y=Yg, z=Zg, i=i, j=j, k=k,
                     intensity=Zg * 0 + lev,
-                    colorscale='Jet', reversescale=False,
+                    colorscale=cmap, reversescale=False,
                     cmin=np.min(levels), cmax=np.max(levels),
                     opacity=0.08, name='', showscale=False)
         data.append(mesh)
         Xe, Ye, Ze = [], [], []
-        for T in vertices[simplices]:
-            Xe += [x[0] + dx * T[k % 3][2] for k in range(4)] + [None]
-            Ye += [y[0] + dy * T[k % 3][1] for k in range(4)] + [None]
-            Ze += [v[0] + dv * T[k % 3][0] for k in range(4)] + [None]
+        for t in vertices[simplices]:
+            Xe += [x[0] + dx * t[k % 3][2] for k in range(4)] + [None]
+            Ye += [y[0] + dy * t[k % 3][1] for k in range(4)] + [None]
+            Ze += [v[0] + dv * t[k % 3][0] for k in range(4)] + [None]
         lines=dict(type='scatter3d', x=Xe, y=Ye, z=Ze,
                    mode='lines', opacity=0.04, visible=True,
                    name='', line=dict(color='rgb(0,0,0)', width=1))
