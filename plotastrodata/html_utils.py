@@ -13,6 +13,25 @@ def plot3d(levels: list = [3,6,12], cmap: str = 'Jet',
            xskip: int = 1, yskip: int = 1,
            eye_p: float = 0, eye_i: float = 180,
            outname: str = 'plot3d', show: bool = False, **kwargs):
+    """Use Plotly.
+           kwargs must include the arguments of AstroData to specify 
+           the data to be plotted.
+           kwargs must include the arguments of AstroFrame to specify
+           the ranges and so on for plotting.
+
+    Args:
+        levels (list, optional): _description_. Defaults to [3,6,12].
+        cmap (str, optional): _description_. Defaults to 'Jet'.
+        xlabel (str, optional): _description_. Defaults to 'R.A. (arcsec)'.
+        ylabel (str, optional): _description_. Defaults to 'Dec. (arcsec)'.
+        zlabel (str, optional): _description_. Defaults to 'Velocity (km/s)'.
+        xskip (int, optional): _description_. Defaults to 1.
+        yskip (int, optional): _description_. Defaults to 1.
+        eye_p (float, optional): _description_. Defaults to 0.
+        eye_i (float, optional): _description_. Defaults to 180.
+        outname (str, optional): _description_. Defaults to 'plot3d'.
+        show (bool, optional): _description_. Defaults to False.
+    """
     f = kwargs2AstroFrame(kwargs)
     d = kwargs2AstroData(kwargs)
     f.read(d, xskip, yskip)
@@ -29,10 +48,9 @@ def plot3d(levels: list = [3,6,12], cmap: str = 'Jet',
     zeye = np.cos(eye_i * deg)
     margin=dict(l=0, r=0, b=0, t=0)
     camera = dict(eye=dict(x=xeye, y=yeye, z=zeye), up=dict(x=0, y=1, z=0))
-    xaxis, yaxis, zaxis = [dict(range=[t[0], t[-1]]) for t in s]
-    xaxis['title'] = xlabel
-    yaxis['title'] = ylabel
-    zaxis['title'] = zlabel
+    xaxis = dict(range=[x[0], x[-1]], title=xlabel)
+    yaxis = dict(range=[y[0], y[-1]], title=ylabel)
+    zaxis = dict(range=[v[0], v[-1]], title=zlabel)
     scene = dict(aspectmode='cube', camera=camera,
                  xaxis=xaxis, yaxis=yaxis, zaxis=zaxis)
     layout = go.Layout(margin=margin, scene=scene, showlegend=False)
