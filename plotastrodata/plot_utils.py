@@ -272,7 +272,8 @@ class PlotAstroData(AstroFrame):
         internalax = ax is None
         if type(channelnumber) is int: nrows = ncols = 1
         if self.fitsimage is not None:
-            self.read(d := AstroData(fitsimage=self.fitsimage, restfrq=restfrq))
+            self.read(d := AstroData(fitsimage=self.fitsimage,
+                                     restfrq=restfrq, sigma=None))
             v = d.v
         if self.pv or v is None or len(v) == 1:
             nv = nrows = ncols = npages = nchan = 1
