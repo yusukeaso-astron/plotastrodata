@@ -906,27 +906,28 @@ class PlotAstroData(AstroFrame):
                 if type(title) is str: title = {'label':title}
                 axnow.set_title(**title)
             
-    def savefig(self, filename: str = 'plotastrodata.png',
+    def savefig(self, filename: str = None,
                 show: bool = False, **kwargs) -> None:
         """Use savefig of matplotlib.
 
         Args:
             filename (str, optional):
-                Output image file name. Defaults to 'plotastrodata.png'.
+                Output image file name. Defaults to None.
             show (bool, optional):
                 True means doing plt.show(). Defaults to False.
         """
-        kwargs0 = {'transparent': True, 'bbox_inches': 'tight'}
+        kwargs0 = {'transparent':True, 'bbox_inches':'tight'}
         for axnow in self.ax:
             axnow.set_xlim(*self.Xlim)
             axnow.set_ylim(*self.Ylim)
         ext = filename.split('.')[-1]
-        for i in range(self.npages):
-            ver = '' if self.npages == 1 else f'_{i:d}'
-            fig = plt.figure(i)
-            fig.patch.set_alpha(0)
-            fig.savefig(filename.replace('.' + ext, ver + '.' + ext),
-                        **dict(kwargs0, **kwargs))
+        if type(filename) is not str:
+            for i in range(self.npages):
+                ver = '' if self.npages == 1 else f'_{i:d}'
+                fig = plt.figure(i)
+                fig.patch.set_alpha(0)
+                fig.savefig(filename.replace('.' + ext, ver + '.' + ext),
+                            **dict(kwargs0, **kwargs))
         if show:
             plt.show()
         plt.close()
