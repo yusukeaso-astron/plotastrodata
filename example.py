@@ -1,8 +1,8 @@
 from plotastrodata.plot_utils import PlotAstroData as pad
-from plotastrodata.plot_utils import plotprofile, plotslice
+from plotastrodata.plot_utils import plotprofile, plotslice, plot3d
 
 pre = 'testFITS/'
-'''
+
 # 2D case
 f = pad(rmax=0.8, center='04h04m43.07s 26d18m56.20s')
 f.add_color(fitsimage=pre+'test2D.fits', Tb=True, cblabel='Tb (K)')
@@ -56,16 +56,6 @@ f.add_contour(fitsimage=pre+'testPV.fits', colors='r', sigma=5e-3)
 f.set_axis(title='loglog PV diagram', loglog=20)
 f.savefig('testloglogPV.png', show=True)
 
-# Line profile
-plotprofile(fitsimage=pre+'test3D.fits', ellipse=[[0.2, 0.2, 0]] * 2, flux=True,
-            coords=['04h04m43.045s 26d18m55.766s', '04h04m43.109s 26d18m56.704s'],
-            gaussfit=True, savefig='testprofile.png', show=True, width=2)
-
-# Spatial slice
-plotslice(length=1.6, pa=270, fitsimage=pre+'test2D.fits',
-          center='04h04m43.07s 26d18m56.20s', sigma=5e-3,
-          savefig='testslice.png', show=True)
-
 # RGB case
 f = pad(rmax=0.8, center='04h04m43.07s 26d18m56.20s')
 f.add_rgb(fitsimage=[pre+'test'+c+'.fits' for c in ['R', 'G', 'B']])
@@ -81,7 +71,17 @@ f.add_arrow([0.4, 0.4], anglelist=150, rlist=0.5)
 f.add_region('ellipse', [0.2, 0.8], majlist=0.4, minlist=0.2, palist=45)
 f.set_axis_radec(nticksminor=5, title={'label':'2D RGB', 'loc':'right'})
 f.savefig('test2Drgb.png', show=True)
-'''
-# Rotatable 3D cube
-from plotastrodata.html_utils import plot3d
-plot3d(rmax=0.8, vmin=-5, vmax=5, fitsimage=pre+'test3D.fits', outname='test3D', show=True)
+
+# Line profile
+plotprofile(fitsimage=pre+'test3D.fits', ellipse=[[0.2, 0.2, 0]] * 2, flux=True,
+            coords=['04h04m43.045s 26d18m55.766s', '04h04m43.109s 26d18m56.704s'],
+            gaussfit=True, savefig='testprofile.png', show=True, width=2)
+
+# Spatial slice
+plotslice(length=1.6, pa=270, fitsimage=pre+'test2D.fits',
+          center='04h04m43.07s 26d18m56.20s', sigma=5e-3,
+          savefig='testslice.png', show=True)
+
+# Rotatable 3D cube in html
+plot3d(rmax=0.8, vmin=-5, vmax=5, fitsimage=pre+'test3D.fits',
+       outname='test3D', show=True)
