@@ -922,7 +922,7 @@ class PlotAstroData(AstroFrame):
             axnow.set_xlim(*self.Xlim)
             axnow.set_ylim(*self.Ylim)
         ext = filename.split('.')[-1]
-        if type(filename) is not str:
+        if type(filename) is str:
             for i in range(self.npages):
                 ver = '' if self.npages == 1 else f'_{i:d}'
                 fig = plt.figure(i)
