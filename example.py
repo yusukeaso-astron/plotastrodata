@@ -84,4 +84,4 @@ plotslice(length=1.6, pa=270, fitsimage=pre+'test2D.fits',
 
 # Rotatable 3D cube in html
 plot3d(rmax=0.8, vmin=-5, vmax=5, fitsimage=pre+'test3D.fits',
-       outname='test3D', levels=[3,6,9], show=True)
+       outname='test3D', levels=[3,6,9], show=False)
