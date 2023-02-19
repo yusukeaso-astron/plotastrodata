@@ -127,18 +127,13 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
-test_chan.png
-test_image.png
-.gitignore
-test_mom01.png
-test_prof.png
-test_pv.png
-.DS_Store
-.DS_Store
-plotastro3D_0.png
-plotastro3D_1.png
-.gitignore
 .DS_Store
 test3D.html
 testprofile.png
 testslice.png
+test2D.png
+test2Drgb.png
+testPV.png
+testloglogPV.png
+test3D_1.png
+test3D_0.png
