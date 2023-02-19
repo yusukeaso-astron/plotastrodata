@@ -41,6 +41,8 @@ plotastrodata can do the following things.
 * matplotlib
 * numpy
 * PIL (only for RGB figures)
+* plotly (only for html cube)
+* skimage (only for html cube)
 * re
 * scipy
 * warnings
