@@ -1140,7 +1140,7 @@ def plot3d(levels: list = [3,6,12], cmap: str = 'Jet',
     xeye = -np.sin(eye_i * deg) * np.sin(eye_p * deg)
     yeye = -np.sin(eye_i * deg) * np.cos(eye_p * deg)
     zeye = np.cos(eye_i * deg)
-    margin=dict(l=0, r=0, b=0, t=0)
+    margin = dict(l=0, r=0, b=0, t=0)
     camera = dict(eye=dict(x=xeye, y=yeye, z=zeye), up=dict(x=0, y=1, z=0))
     xaxis = dict(range=[x[0], x[-1]], title=xlabel)
     yaxis = dict(range=[y[0], y[-1]], title=ylabel)
