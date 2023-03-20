@@ -27,8 +27,7 @@ def shiftphase2(F: list, u: list, v: list = None,
     Args:
         F (list): 2D FFT.
         u (list): 1D or 2D array. The first frequency coordinate.
-        v (list): 1D or 2D array. The second frequency coordinate.
-                  Defaults to None.
+        v (list): 1D or 2D array. The second frequency coordinate. Defaults to None.
         xoff (float): From old to new center. Defaults to 0.
         yoff (float): From old to new center. Defaults to 0.
 
@@ -48,8 +47,7 @@ def fftcentering(f: list, x: list = None, xcenter: float = 0) -> list:
         xcenter (float, optional): x of phase reference. Defaults to 0.
 
     Returns:
-        list: [F, u]. F is FFT of f.
-              u is a 1D array of the frequency coordinate.
+        list: [F, u]. F is FFT of f. u is a 1D array of the frequency coordinate.
     """
     nx = np.shape(f)[0]
     if x is None: x = np.arange(nx)
@@ -67,16 +65,13 @@ def fftcentering2(f: list, x: list = None, y: list = None,
 
     Args:
         f (list): 2D array for FFT.
-        x (list, optional): 1D or 2D array. The first spatial coordinate.
-                            Defaults to None.
-        y (list, optional): 1D or 2D array. The second spatial coordinate.
-                            Defaults to None.
+        x (list, optional): 1D or 2D array. The first spatial coordinate. Defaults to None.
+        y (list, optional): 1D or 2D array. The second spatial coordinate. Defaults to None.
         xcenter (float, optional): x of phase reference. Defaults to 0.
         ycenter (float, optional): y of phase reference. Defaults to 0.
 
     Returns:
-        list: [F, u, v]. F is FFT of f.
-              u and v are 1D arrays of the frequency coordinates.
+        list: [F, u, v]. F is FFT of f. u and v are 1D arrays of the frequency coordinates.
     """
     ny, nx = np.shape(f)
     if x is None: x = np.arange(nx)
@@ -97,17 +92,13 @@ def ifftcentering(F: list, u: list = None, xcenter: float = 0,
 
     Args:
         F (list): 1D array. A result of FFT.
-        u (list, optional): 1D array. The frequency coordinate.
-                            Defaults to None.
-        xcenter (float, optional): x of phase reference (used in fftcentering).
-                                   Defaults to 0.
+        u (list, optional): 1D array. The frequency coordinate. Defaults to None.
+        xcenter (float, optional): x of phase reference (used in fftcentering). Defaults to 0.
         x0 (float, optional): spatial coordinate of x[0]. Defaults to None.
-        outreal (bool, optional): whether output only the real part.
-                                  Defaults to True.
+        outreal (bool, optional): whether output only the real part. Defaults to True.
 
     Returns:
-        list: [f, x]. f is iFFT of F.
-              x is a 1D array of the spatial coordinate.
+        list: [f, x]. f is iFFT of F. x is a 1D array of the spatial coordinate.
     """
     nx = np.shape(F)[0]
     if u is None: u = np.fft.fftshift(np.fft.fftfreq(nx, d=1))
@@ -128,24 +119,16 @@ def ifftcentering2(F: list, u: list = None, v: list = None,
 
     Args:
         F (list): 2D array. A result of FFT.
-        u (list, optional): 1D or 2D array. The first frequency coordinate.
-                            Defaults to None.
-        v (list, optional): 1D or 2D array. The second frequency cooridnate.
-                            Defaults to None.
-        xcenter (float, optional): x of phase reference (used in fftcentering2).
-                                   Defaults to 0.
-        ycenter (float, optional): y of phase reference (used in fftcentering2).
-                                   Defaults to 0.
-        x0 (float, optional): spatial coordinate of x[0].
-                              Defaults to None.
-        y0 (float, optional): spatial coordinate of y[0].
-                              Defaults to None.
-        outreal (bool, optional): whether output only the real part.
-                                  Defaults to True.
+        u (list, optional): 1D or 2D array. The first frequency coordinate. Defaults to None.
+        v (list, optional): 1D or 2D array. The second frequency cooridnate. Defaults to None.
+        xcenter (float, optional): x of phase reference (used in fftcentering2). Defaults to 0.
+        ycenter (float, optional): y of phase reference (used in fftcentering2). Defaults to 0.
+        x0 (float, optional): spatial coordinate of x[0]. Defaults to None.
+        y0 (float, optional): spatial coordinate of y[0]. Defaults to None.
+        outreal (bool, optional): whether output only the real part. Defaults to True.
 
     Returns:
-        list: [f, x, y]. f is iFFT of F.
-              x and y are 1D arrays of the spatial coordinates.
+        list: [f, x, y]. f is iFFT of F. x and y are 1D arrays of the spatial coordinates.
     """
     ny, nx = np.shape(F)
     if u is None: u = np.fft.fftshift(np.fft.fftfreq(nx, d=1))
@@ -172,8 +155,7 @@ def zeropadding(f: list, x: list, y: list, xlim: list, ylim: list) -> list:
         ylim (list): range of y after the zero padding.
 
     Returns:
-        list: [fnew, xnew, ynew]. fnew is an 2D array 
-              and xnew and ynew are 1D arrays after the zero padding.
+        list: [fnew, xnew, ynew]. fnew is an 2D array and xnew and ynew are 1D arrays after the zero padding.
     """
     nx, ny = len(x), len(y)
     dx, dy = x[1] - x[0], y[1] - y[0]
@@ -206,9 +188,7 @@ def fftfits(fitsimage: str, center: str = None, lam: float = 1,
         plot (bool, optional): Check F through images.
 
     Returns:
-        list: [F, u, v]. F is FFT of f in the unit of Jy.
-              u and v are 1D arrays in the unit of lambda
-              or meter if lam it not unity.
+        list: [F, u, v]. F is FFT of f in the unit of Jy. u and v are 1D arrays in the unit of lambda or meter if lam it not unity.
     """
     f, (x, y, v), _, _, _ = fits2data(fitsimage, center=center)
     if xlim is not None and ylim is not None:
@@ -244,6 +224,17 @@ def fftfits(fitsimage: str, center: str = None, lam: float = 1,
 
 def findindex(u: list = None, v: list = None,
               uobs: list = None, vobs: list = None) -> list:
+    """Find indicies of the observed visibility points.
+
+    Args:
+        u (list, optional): 1D array. The first frequency coordinate. Defaults to None.
+        v (list, optional): 1D array. The second frequency cooridnate. Defaults to None.
+        uobs (list, optional): 1D array. Observed u. Defaults to None.
+        vobs (list, optional): 1D array. Observed v. Defaults to None.
+
+    Returns:
+        list: Indicies or a list of indicies.
+    """
     if u is not None: Nu, du = len(u), u[1] - u[0]
     if v is not None: Nv, dv = len(v), v[1] - v[0]
     idx_u, idx_v = None, None
@@ -260,6 +251,22 @@ def fftfitssample(fitsimage: str, center: str = None,
                   xlim: list = None, ylim: list = None,
                   getindex: bool = False,
                   u_sample: list = None, v_sample: list = None) -> list:
+    """Find indicies or the visibilities on them from an image fits file.
+
+    Args:
+        fitsimage (str): Input fits name in the unit of Jy/pixel.
+        center (str, optional): Text coordinate. Defaults to None.
+        index_u (list, optional): Indicies. Output from the getindex mode. Defaults to None.
+        index_v (list, optional): Indicies. Output from the getindex mode. Defaults to None.
+        xlim (list, optional): Range of x for zero padding in arcsec.
+        ylim (list, optional): Range of y for zero padding in arcsec.
+        getindex (bool, optional): True outputs [index_u, index_v]. Defaults to False.
+        u_sample (list, optional): 1D array. Observed u. Defaults to None.
+        v_sample (list, optional): 1D array. Observed u. Defaults to None.
+
+    Returns:
+        list: _description_
+    """
     F, u, v = fftfits(fitsimage=fitsimage, center=center, xlim=xlim, ylim=ylim)
     if getindex:
         index_u, index_v = findindex(u, v, u_sample, v_sample)

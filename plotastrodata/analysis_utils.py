@@ -73,17 +73,11 @@ class AstroData():
     v (list, optional): 1D array. Defaults to None.
     beam (list, optional): [bmaj, bmin, bpa]. Defaults ot [None, None, None].
     fitsimage (str, optional): Input fits name. Defaults to None.
-    Tb (bool, optional):
-        True means the mapped data are brightness T. Defaults to False.
-    sigma (float or str, optional):
-        Noise level or method for measuring it. Defaults to 'hist'.
-    center (str, optional):
-        Text coordinates. 'common' means initialized value.
-        Defaults to 'common'.
-    restfrq (float, optional):
-        Used for velocity and brightness T. Defaults to None.
-    cfactor (float, optional):
-        Output data times cfactor. Defaults to 1.
+    Tb (bool, optional): True means the mapped data are brightness T. Defaults to False.
+    sigma (float or str, optional): Noise level or method for measuring it. Defaults to 'hist'.
+    center (str, optional): Text coordinates. 'common' means initialized value. Defaults to 'common'.
+    restfrq (float, optional): Used for velocity and brightness T. Defaults to None.
+    cfactor (float, optional): Output data times cfactor. Defaults to 1.
     """
     data: np.ndarray = None
     x: np.ndarray = None
@@ -174,8 +168,7 @@ class AstroData():
         self.beam[2] = 0
         
     def deproject(self, pa: float = 0, incl: float = 0):
-        """Exapnd by a factor of 1/cos(incl)
-           in the direction of pa+90 deg.
+        """Exapnd by a factor of 1/cos(incl) in the direction of pa+90 deg.
         """
         ci = np.cos(np.radians(incl))
         A = np.linalg.multi_dot([Mrot(pa), Mfac(1, ci), Mrot(-pa)])
@@ -226,8 +219,7 @@ class AstroData():
             coords (list, optional): Text coordinates. Defaults to [].
             xlist (list, optional): Offset from center. Defaults to [].
             ylist (list, optional): Offset from center. Defaults to [].
-            ellipse (list, optional):
-                [major, minor, pa]. For average. Defaults to None.
+            ellipse (list, optional): [major, minor, pa]. For average. Defaults to None.
             flux (bool, optional): Jy/beam to Jy. Defaults to False.
             gaussfit (bool, optional): Fit the profiles. Defaults to False.
 
@@ -297,8 +289,7 @@ class AstroData():
             dx (float, optional): Grid increment. Defaults to None.
 
         Returns:
-            list: [x, data]. If self.data is 3D, the output data are in
-                 the shape of (len(v), len(x)).
+            list: [x, data]. If self.data is 3D, the output data are in the shape of (len(v), len(x)).
         """
         if dx is None: dx = np.abs(self.x[1] - self.x[0])
         n = int(np.ceil(length / 2 / dx))
@@ -337,33 +328,20 @@ class AstroData():
 @dataclass
 class AstroFrame():
     """
-    vmin (float, optional):
-        Velocity at the upper left. Defaults to -1e10.
-    vmax (float, optional):
-        Velocity at the lower bottom. Defaults to 1e10.
-    vsys (float, optional):
-        Each channel shows v-vsys. Defaults to 0..
-    center (str, optional):
-        Central coordinate like '12h34m56.7s 12d34m56.7s'.
-        Defaults to None.
+    vmin (float, optional): Velocity at the upper left. Defaults to -1e10.
+    vmax (float, optional): Velocity at the lower bottom. Defaults to 1e10.
+    vsys (float, optional): Each channel shows v-vsys. Defaults to 0..
+    center (str, optional): Central coordinate like '12h34m56.7s 12d34m56.7s'. Defaults to None.
     fitsimage (str, optional): Fits to get center. Defaults to None.
-    rmax (float, optional):
-        Map size is 2rmax x 2rmax. Defaults to 1e10.
-    dist (float, optional):
-        Change x and y in arcsec to au. Defaults to 1..
-    xoff (float, optional):
-        Map center relative to the center. Defaults to 0.
-    yoff (float, optional):
-        Map center relative to the center. Defaults to 0.
-    xflip (bool, optional):
-        True means left is positive x. Defaults to True.
-    yflip (bool, optional):
-        True means bottom is positive y. Defaults to False.
-    swapxy (bool, optional):
-        True means x and y are swapped. Defaults to False.
+    rmax (float, optional): Map size is 2rmax x 2rmax. Defaults to 1e10.
+    dist (float, optional): Change x and y in arcsec to au. Defaults to 1..
+    xoff (float, optional): Map center relative to the center. Defaults to 0.
+    yoff (float, optional): Map center relative to the center. Defaults to 0.
+    xflip (bool, optional): True means left is positive x. Defaults to True.
+    yflip (bool, optional): True means bottom is positive y. Defaults to False.
+    swapxy (bool, optional): True means x and y are swapped. Defaults to False.
     pv (bool, optional): Mode for PV diagram. Defaults to False.
-    quadrants (str, optional): '13' or '24'. Quadrants to take mean.
-        None means not taking mean. Defaults to None.
+    quadrants (str, optional): '13' or '24'. Quadrants to take mean. None means not taking mean. Defaults to None.
     """
     rmax: float = 1e10
     dist: float = 1
@@ -405,8 +383,7 @@ class AstroFrame():
         """Text or relative to absolute coordinates.
 
          Args:
-            poslist (list, optional):
-            Text coordinates or relative coordinates. Defaults to [].
+            poslist (list, optional): Text coordinates or relative coordinates. Defaults to [].
 
          Returns:
             list: absolute coordinates.
@@ -424,13 +401,10 @@ class AstroFrame():
         return np.array([x, y])
 
     def read(self, d: AstroData, xskip: int = 1, yskip: int = 1):
-        """Get data, grid, rms, beam, and bunit from AstroData,
-           which is a part of the input of
-           add_color, add_contour, add_segment, and add_rgb.
+        """Get data, grid, rms, beam, and bunit from AstroData, which is a part of the input of add_color, add_contour, add_segment, and add_rgb.
 
         Args:
-            d (AstroData): Dataclass for the add_* input.
-            xskip, yskip (int): Spatial pixel skip. Defaults to 1.
+            d (AstroData): Dataclass for the add_* input. xskip, yskip (int): Spatial pixel skip. Defaults to 1.
         """
         for i in range(n := len(d.fitsimage)):
             if d.center[i] == 'common': d.center[i] = self.center

@@ -11,8 +11,7 @@ def Jy2K(header = None, bmaj: float = None, bmin: float = None,
     """Calculate a conversion factor in the unit of K/Jy.
 
     Args:
-        header (optional): astropy.io.fits.open('a.fits')[0].header
-                           Defaults to None.
+        header (optional): astropy.io.fits.open('a.fits')[0].header. Defaults to None.
         bmaj (float, optional): beam major axis in degree. Defaults to None.
         bmin (float, optional): beam minor axis in degree. Defaults to None.
         freq (float, optional): rest frequency in Hz. Defaults to None.
@@ -179,17 +178,11 @@ def fits2data(fitsimage: str, Tb: bool = False, log: bool = False,
 
     Args:
         fitsimage (str): Input fits name.
-        Tb (bool, optional):
-            True means ouput data are brightness temperature.
-            Defaults to False.
-        log (bool, optional):
-            True means output data are logarhismic. Defaults to False.
-        dist (float, optional):
-            Change x and y in arcsec to au. Defaults to 1..
-        sigma (str, optional):
-            Noise level or method for measuring it. Defaults to None.
-        restfrq (float, optional):
-            Used for velocity and brightness temperature. Defaults to None.
+        Tb (bool, optional): True means ouput data are brightness temperature. Defaults to False.
+        log (bool, optional): True means output data are logarhismic. Defaults to False.
+        dist (float, optional): Change x and y in arcsec to au. Defaults to 1..
+        sigma (str, optional): Noise level or method for measuring it. Defaults to None.
+        restfrq (float, optional): Used for velocity and brightness temperature. Defaults to None.
         center (str, optional): Text coordinates. Defaults to None.
         vsys (float, optional): In the unit of km/s. Defaults to 0.
         pv (bool, optional): True means PV fits file. Defaults to False.
@@ -214,8 +207,7 @@ def data2fits(d: list = None, h: dict = {}, templatefits: str = None,
     Args:
         d (list, optional): N-D array. Defaults to None.
         h (dict, optional): Fits header. Defaults to {}.
-        templatefits (str, optional): Fits file to copy header.
-                                     Defaults to None.
+        templatefits (str, optional): Fits file to copy header. Defaults to None.
         fitsimage (str, optional): Output name. Defaults to 'test'.
     """
     ctype0 = ["RA---SIN", "DEC--SIN", "VELOCITY"]
