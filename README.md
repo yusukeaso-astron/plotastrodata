@@ -18,6 +18,7 @@ Also, setting the path in .bashrc (or .zshrc etc.) will be useful.
 ```bash
 export PYTHONPATH=${PYTHONPATH}:/YOUR_PATH_TO/plotastrodata
 ```
+The Sphix html manual is in docs/build/index.html.
  
 ## Features
  
