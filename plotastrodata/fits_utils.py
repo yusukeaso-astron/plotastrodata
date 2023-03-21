@@ -207,7 +207,7 @@ class FitsData:
                 gen_v(get_list(3, True))
                     
     def get_grid(self, **kwargs) -> list:
-        """Output the grids, [x, y, v]
+        """Output the grids, [x, y, v]. This method can take the arguments of gen_grid().
 
         Returns:
             list: [x, y, v].
