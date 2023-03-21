@@ -66,7 +66,6 @@ git clone https://github.com/yusukeaso-astron/plotastrodata
 * Each element of poslist supposes a text coordinate like '01h23m45.6s 01d23m45.6s' or a list of relative x and y like [0.2, 0.3] (0 is left or bottom, 1 is right or top).
 * Parameters for original methods in matplotlib.axes.Axes can be used as kwargs; see the default kwargs0 for reference.
 * Position-velocity diagrams (pv=True) does not yet suppot region, line, arrow, and segment because the units of abscissa and ordinate are different.
-* The parameter sigma can be one of the methods of ['edge', 'neg', 'med', 'iter', 'out'] as well as a specific value.
  
 ## Author
  
