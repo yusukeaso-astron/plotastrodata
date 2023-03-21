@@ -29,8 +29,19 @@ def quadrantmean(c: list, x: list, y: list, quadrants: str ='13') -> tuple:
 
 
 def sortRBS(y: list, x: list, data: list,
-            ynew: list = None, xnew: list = None):
-    """RBS but input x and y can be decreasing."""
+            ynew: list = None, xnew: list = None) -> np.ndarray:
+    """RBS but input x and y can be decreasing.
+
+    Args:
+        y (list): 1D array.
+        x (list): 1D array.
+        data (list): 2D or 3D array.
+        ynew (list, optional): 1D array. Defaults to None.
+        xnew (list, optional): 1D array. Defaults to None.
+
+    Returns:
+        np.ndarray: The RBS function or the interpolated array.
+    """
     d = [data] if np.ndim(data) == 2 else data
     xsort = x if x[1] > x[0] else x[::-1]
     csort = [c if x[1] > x[0] else c[:, ::-1] for c in d]
@@ -46,8 +57,18 @@ def sortRBS(y: list, x: list, data: list,
     return d
 
 
-def filled2d(data: list, x: list, y: list, n: list = 1) -> list:
-    """Fill 2D data, 1D x, and 1D y by a factor of n using RBS."""
+def filled2d(data: list, x: list, y: list, n: list = 1) -> tuple:
+    """Fill 2D data, 1D x, and 1D y by a factor of n using RBS.
+
+    Args:
+        data (list): 2D or 3D array.
+        x (list): 1D array.
+        y (list): 1D array.
+        n (list, optional): How many times more the new grid is. Defaults to 1.
+
+    Returns:
+        tuple: The interpolated (data, x, y).
+    """
     if not np.ndim(data) in [2, 3]:
         print('data must be 2D or 3D.')
         return -1
@@ -67,23 +88,18 @@ def filled2d(data: list, x: list, y: list, n: list = 1) -> list:
 class AstroData():
     """Data to be processed and parameters for processing the data.
 
-    data (list, optional): 2D or 3D array. Defaults to None.
-    x (list, optional): 1D array. Defaults to None.
-    y (list, optional): 1D array. Defaults to None.
-    v (list, optional): 1D array. Defaults to None.
-    beam (list, optional): [bmaj, bmin, bpa]. Defaults ot [None, None, None].
-    fitsimage (str, optional): Input fits name. Defaults to None.
-    Tb (bool, optional):
-        True means the mapped data are brightness T. Defaults to False.
-    sigma (float or str, optional):
-        Noise level or method for measuring it. Defaults to 'hist'.
-    center (str, optional):
-        Text coordinates. 'common' means initialized value.
-        Defaults to 'common'.
-    restfrq (float, optional):
-        Used for velocity and brightness T. Defaults to None.
-    cfactor (float, optional):
-        Output data times cfactor. Defaults to 1.
+    Args:
+        data (list, optional): 2D or 3D array. Defaults to None.
+        x (list, optional): 1D array. Defaults to None.
+        y (list, optional): 1D array. Defaults to None.
+        v (list, optional): 1D array. Defaults to None.
+        beam (list, optional): [bmaj, bmin, bpa]. Defaults ot [None, None, None].
+        fitsimage (str, optional): Input fits name. Defaults to None.
+        Tb (bool, optional): True means the mapped data are brightness T. Defaults to False.
+        sigma (float or str, optional): Noise level or method for measuring it. Defaults to 'hist'.
+        center (str, optional): Text coordinates. 'common' means initialized value. Defaults to 'common'.
+        restfrq (float, optional): Used for velocity and brightness T. Defaults to None.
+        cfactor (float, optional): Output data times cfactor. Defaults to 1.
     """
     data: np.ndarray = None
     x: np.ndarray = None
@@ -128,7 +144,11 @@ class AstroData():
         self.bunit = [''] * n
 
     def binning(self, width: list = [1, 1, 1]):
-        """Binning up neighboring pixels in the v, y, and x domain."""
+        """Binning up neighboring pixels in the v, y, and x domain.
+
+        Args:
+            width (list, optional): Number of channels, x-pixels, and y-pixels for binning. Defaults to [1, 1, 1].
+        """
         if len(width) == 2: width = [1] + width
         self.data = [self.data] if np.ndim(self.data) == 2 else self.data
         size = np.array([len(self.v), len(self.y), len(self.x)])
@@ -149,7 +169,8 @@ class AstroData():
         self.v, self.y, self.x = grid
             
     def centering(self):
-        """Spatial regridding to set the center at (x,y)=(0,0)."""
+        """Spatial regridding to set the center at (x,y)=(0,0).
+        """
         X = self.x - self.x[np.argmin(np.abs(self.x))]
         Y = self.y - self.y[np.argmin(np.abs(self.y))]
         x, y = np.meshgrid(X, Y)
@@ -157,7 +178,8 @@ class AstroData():
         self.y, self.x = Y, X
 
     def circularbeam(self):
-        """Make the beam circular by convolving with 1D Gaussian"""
+        """Make the beam circular by convolving with 1D Gaussian
+        """
         bmaj, bmin, bpa = self.beam
         self.rotate(-bpa)
         nx = len(self.x) if len(self.x) % 2 == 1 else len(self.x) - 1
@@ -174,8 +196,11 @@ class AstroData():
         self.beam[2] = 0
         
     def deproject(self, pa: float = 0, incl: float = 0):
-        """Exapnd by a factor of 1/cos(incl)
-           in the direction of pa+90 deg.
+        """Exapnd by a factor of 1/cos(incl) in the direction of pa+90 deg.
+
+        Args:
+            pa (float, optional): Position angle in the unit of degree. Defaults to 0.
+            incl (float, optional): Inclination angle in the unit of degree. Defaults to 0.
         """
         ci = np.cos(np.radians(incl))
         A = np.linalg.multi_dot([Mrot(pa), Mfac(1, ci), Mrot(-pa)])
@@ -194,15 +219,25 @@ class AstroData():
         bmin_new = 1 / np.sqrt(alpha + Det)
         self.beam = np.array([bmaj_new, bmin_new, bpa_new])
 
-    def histogram(self, **kwargs):
-        """Output histogram of self.data using numpy.histogram"""
+    def histogram(self, **kwargs) -> tuple:
+        """Output histogram of self.data using numpy.histogram. This method can take the arguments of numpy.histogram.
+
+        Returns:
+            tuple: (bins, histogram)
+        """
         hist, hbin = np.histogram(self.data, **kwargs)
         hbin = (hbin[:-1] + hbin[1:]) / 2
         return hbin, hist
 
     def mask(self, dataformask, includepix: list = [],
              excludepix: list = []):
-        """Mask self.data using an AstroData of dataformask."""
+        """Mask self.data using an AstroData of dataformask.
+
+        Args:
+            dataformask (AstroData): dataformask.data is used for specifying the mask.
+            includepix (list, optional): Data in this range survivies. Defaults to [].
+            excludepix (list, optional): Data in this range is masked. Defaults to [].
+        """
         if np.ndim(self.data) ==3 and np.ndim(dataformask.data) == 2:
             print('The 2D mask is broadcasted to 3D.')
             mask = np.array([dataformask.data] * len(self.data))
@@ -226,8 +261,7 @@ class AstroData():
             coords (list, optional): Text coordinates. Defaults to [].
             xlist (list, optional): Offset from center. Defaults to [].
             ylist (list, optional): Offset from center. Defaults to [].
-            ellipse (list, optional):
-                [major, minor, pa]. For average. Defaults to None.
+            ellipse (list, optional): [major, minor, pa]. For average. Defaults to None.
             flux (bool, optional): Jy/beam to Jy. Defaults to False.
             gaussfit (bool, optional): Fit the profiles. Defaults to False.
 
@@ -282,32 +316,41 @@ class AstroData():
         return v, prof, gfitres
     
     def rotate(self, pa: float = 0):
-        """Counter clockwise rotation with respect to the center."""
+        """Counter clockwise rotation with respect to the center.
+
+        Args:
+            pa (float, optional): Position angle in the unit of degree. Defaults to 0.
+        """
         y, x = dot2d(Mrot(-pa), np.meshgrid(self.x, self.y)[::-1])
         self.data = sortRBS(self.y, self.x, self.data, y, x)
         self.beam[2] = self.beam[2] + pa
     
     def slice(self, length: float = 0, pa: float = 0,
-              dx: float = None) -> list:
+              dx: float = None) -> np.ndarray:
         """Get 1D slice with given a length and a position-angle.
 
         Args:
             length (float, optional): Slice line length. Defaults to 0.
-            pa (float, optional): Degree. Position angle. Defaults to 0.
+            pa (float, optional): Position angle in the unit of degree. Defaults to 0.
             dx (float, optional): Grid increment. Defaults to None.
 
         Returns:
-            list: [x, data]. If self.data is 3D, the output data are in
-                 the shape of (len(v), len(x)).
+            np.ndarray: [x, data]. If self.data is 3D, the output data are in the shape of (len(v), len(x)).
         """
         if dx is None: dx = np.abs(self.x[1] - self.x[0])
         n = int(np.ceil(length / 2 / dx))
         r = np.linspace(-n, n, 2 * n + 1) * dx
         xg, yg = r * np.sin(np.radians(pa)), r * np.cos(np.radians(pa))
         z = sortRBS(self.y, self.x, self.data, yg, xg)
-        return [r, z]    
+        return np.array([r, z])
    
     def writetofits(self, fitsimage: str = 'out.fits', header: dict = {}):
+        """Write out the AstroData to a FITS file.
+
+        Args:
+            fitsimage (str, optional): Output FITS file name. Defaults to 'out.fits'.
+            header (dict, optional): Header dictionary. Defaults to {}.
+        """
         if np.abs(len(self.x) - len(self.y)) > 2:
             print('writetofits does not support PV diagram yet.')
             return False
@@ -336,34 +379,23 @@ class AstroData():
 
 @dataclass
 class AstroFrame():
-    """
-    vmin (float, optional):
-        Velocity at the upper left. Defaults to -1e10.
-    vmax (float, optional):
-        Velocity at the lower bottom. Defaults to 1e10.
-    vsys (float, optional):
-        Each channel shows v-vsys. Defaults to 0..
-    center (str, optional):
-        Central coordinate like '12h34m56.7s 12d34m56.7s'.
-        Defaults to None.
-    fitsimage (str, optional): Fits to get center. Defaults to None.
-    rmax (float, optional):
-        Map size is 2rmax x 2rmax. Defaults to 1e10.
-    dist (float, optional):
-        Change x and y in arcsec to au. Defaults to 1..
-    xoff (float, optional):
-        Map center relative to the center. Defaults to 0.
-    yoff (float, optional):
-        Map center relative to the center. Defaults to 0.
-    xflip (bool, optional):
-        True means left is positive x. Defaults to True.
-    yflip (bool, optional):
-        True means bottom is positive y. Defaults to False.
-    swapxy (bool, optional):
-        True means x and y are swapped. Defaults to False.
-    pv (bool, optional): Mode for PV diagram. Defaults to False.
-    quadrants (str, optional): '13' or '24'. Quadrants to take mean.
-        None means not taking mean. Defaults to None.
+    """Parameter set to limit and reshape the data in the AstroData format.
+    
+    Args:
+        vmin (float, optional): Velocity at the upper left. Defaults to -1e10.
+        vmax (float, optional): Velocity at the lower bottom. Defaults to 1e10.
+        vsys (float, optional): Each channel shows v-vsys. Defaults to 0..
+        center (str, optional): Central coordinate like '12h34m56.7s 12d34m56.7s'. Defaults to None.
+        fitsimage (str, optional): Fits to get center. Defaults to None.
+        rmax (float, optional): Map size is 2rmax x 2rmax. Defaults to 1e10.
+        dist (float, optional): Change x and y in arcsec to au. Defaults to 1..
+        xoff (float, optional): Map center relative to the center. Defaults to 0.
+        yoff (float, optional): Map center relative to the center. Defaults to 0.
+        xflip (bool, optional): True means left is positive x. Defaults to True.
+        yflip (bool, optional): True means bottom is positive y. Defaults to False.
+        swapxy (bool, optional): True means x and y are swapped. Defaults to False.
+        pv (bool, optional): Mode for PV diagram. Defaults to False.
+        quadrants (str, optional): '13' or '24'. Quadrants to take mean. None means not taking mean. Defaults to None.
     """
     rmax: float = 1e10
     dist: float = 1
@@ -401,15 +433,14 @@ class AstroFrame():
         if self.fitsimage is not None and self.center is None:
             self.center = FitsData(self.fitsimage).get_center()
         
-    def pos2xy(self, poslist: list = []) -> list:
+    def pos2xy(self, poslist: list = []) -> np.ndarray:
         """Text or relative to absolute coordinates.
 
          Args:
-            poslist (list, optional):
-            Text coordinates or relative coordinates. Defaults to [].
+            poslist (list, optional): Text coordinates or relative coordinates. Defaults to [].
 
          Returns:
-            list: absolute coordinates.
+            np.ndarray: absolute coordinates.
          """
         if np.shape(poslist) == () \
             or (np.shape(poslist) == (2,) 
@@ -424,13 +455,10 @@ class AstroFrame():
         return np.array([x, y])
 
     def read(self, d: AstroData, xskip: int = 1, yskip: int = 1):
-        """Get data, grid, rms, beam, and bunit from AstroData,
-           which is a part of the input of
-           add_color, add_contour, add_segment, and add_rgb.
+        """Get data, grid, rms, beam, and bunit from AstroData, which is a part of the input of add_color, add_contour, add_segment, and add_rgb.
 
         Args:
-            d (AstroData): Dataclass for the add_* input.
-            xskip, yskip (int): Spatial pixel skip. Defaults to 1.
+            d (AstroData): Dataclass for the add_* input. xskip, yskip (int): Spatial pixel skip. Defaults to 1.
         """
         for i in range(n := len(d.fitsimage)):
             if d.center[i] == 'common': d.center[i] = self.center

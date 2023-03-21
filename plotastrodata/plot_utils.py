@@ -12,6 +12,12 @@ from plotastrodata.analysis_utils import AstroData, AstroFrame
 plt.ioff()  # force to turn off interactive mode
 
 def set_rcparams(fontsize: int = 18, nancolor: str ='w') -> None:
+    """Nice rcParams for figures.
+
+    Args:
+        fontsize (int, optional): plt.rcParams['font.size']. Defaults to 18.
+        nancolor (str, optional): plt.rcParams['axes.facecolor']. Defaults to 'w'.
+    """
     #plt.rcParams['font.family'] = 'arial'
     plt.rcParams['axes.facecolor'] = nancolor
     plt.rcParams['font.size'] = fontsize
@@ -31,7 +37,16 @@ def set_rcparams(fontsize: int = 18, nancolor: str ='w') -> None:
     plt.rcParams['ytick.minor.width'] = 1.5
 
 
-def logticks(ticks, lim):
+def logticks(ticks: list, lim: list) -> tuple:
+    """Make nice ticks for a log axis.
+
+    Args:
+        ticks (list): List of ticks.
+        lim (list): [min, max].
+
+    Returns:
+        tuple: (new ticks, new labels).
+    """
     order = int(np.floor((np.log10(lim[0]))))
     a = (lim[0] // 10**order + 1) * 10**order
     a = np.round(a, max(-order, 0))
@@ -46,29 +61,24 @@ def logticks(ticks, lim):
 @dataclass
 class PlotAxes2D():
     """Use Axes.set_* to adjust x and y axes.
-
-    samexy (bool, optional):
-        True supports same ticks between x and y. Defaults to True.
-    loglog (float, optional):
-        If a float is given, plot on a log-log plane, and
-        xlim=(xmax / loglog, xmax) and so does ylim. Defaults to None.
-    xscale (str, optional): Defaults to None.
-    yscale (str, optional): Defaults to None.
-    xlim (list, optional): Defaults to None.
-    ylim (list, optional): Defaults to None.
-    xlabel (str, optional): Defaults to None.
-    ylabel (str, optional): Defaults to None.
-    xticks (list, optional): Defaults to None.
-    yticks (list, optional): Defaults to None.
-    xticklabels (list, optional): Defaults to None.
-    yticklabels (list, optional): Defaults to None.
-    xticksminor (list or int, optional):
-        If int, int times more than xticks. Defaults to None.
-    yticksminor (list ot int, optional): Defaults to None.
-        If int, int times more than xticks. Defaults to None.
-    grid (dict, optional):
-        True means merely grid(). Defaults to None.
-    aspect (float, optional): Defaults to None.
+    
+    Args:
+        samexy (bool, optional): True supports same ticks between x and y. Defaults to True.
+        loglog (float, optional): If a float is given, plot on a log-log plane, and xim=(xmax / loglog, xmax) and so does ylim. Defaults to None.
+        xscale (str, optional): Defaults to None.
+        yscale (str, optional): Defaults to None.
+        xlim (list, optional): Defaults to None.
+        ylim (list, optional): Defaults to None.
+        xlabel (str, optional): Defaults to None.
+        ylabel (str, optional): Defaults to None.
+        xticks (list, optional): Defaults to None.
+        yticks (list, optional): Defaults to None.
+        xticklabels (list, optional): Defaults to None.
+        yticklabels (list, optional): Defaults to None.
+        xticksminor (list or int, optional): If int, int times more than xticks. Defaults to None.
+        yticksminor (list ot int, optional): Defaults to None. If int, int times more than xticks. Defaults to None.
+        grid (dict, optional): True means merely grid(). Defaults to None.
+        aspect (float, optional): Defaults to None.
     """
     samexy: bool = True
     loglog: bool = None
@@ -147,7 +157,18 @@ class PlotAxes2D():
 
 def set_minmax(data: np.ndarray, stretch: str, stretchscale: float,
                rms: float, kw: dict) -> np.ndarray:
-    """Set vmin and vmax for color pcolormesh) and RGB maps."""
+    """Set vmin and vmax for color pcolormesh and RGB maps.
+
+    Args:
+        data (np.ndarray): Plotted data.
+        stretch (str): 'log', 'asinh'. Any other means linear.
+        stretchscale (float): For the arcsinh strech.
+        rms (float): RMS noise level.
+        kw (dict): Probably like {'vmin':0, 'vmax':1}.
+
+    Returns:
+        np.ndarray: Data clipped with the vmin and vmax.
+    """
     if type(stretch) is str:
         data = [data]
         rms = [rms]
@@ -186,7 +207,15 @@ def set_minmax(data: np.ndarray, stretch: str, stretchscale: float,
     return data
 
 
-def kwargs2AstroData(kw: dict):
+def kwargs2AstroData(kw: dict) -> AstroData:
+    """Get AstroData and remove its arguments from kwargs.
+
+    Args:
+        kw (dict): Parameters to make AstroData.
+
+    Returns:
+        AstroData: AstroData made from the parameters in kwargs.
+    """
     tmp = {}
     d = AstroData(data=np.zeros((2, 2)))
     for k in vars(d).keys():
@@ -200,7 +229,15 @@ def kwargs2AstroData(kw: dict):
         d = AstroData(**tmp)
         return d
 
-def kwargs2AstroFrame(kw: dict):
+def kwargs2AstroFrame(kw: dict) -> AstroFrame:
+    """Get AstroFrame from kwargs.
+
+    Args:
+        kw (dict): Parameters to make AstroFrame.
+
+    Returns:
+        AstroFrame: AstroFrame made from the parameters in kwargs.
+    """
     tmp = {}
     f = AstroFrame()
     for k in vars(f).keys():
@@ -210,7 +247,15 @@ def kwargs2AstroFrame(kw: dict):
     f = AstroFrame(**tmp)
     return f
 
-def kwargs2PlotAxes2D(kw: dict):
+def kwargs2PlotAxes2D(kw: dict) -> PlotAxes2D:
+    """Get PlotAxes2D and remove its arguments from kwargs.
+
+    Args:
+        kw (dict): Parameters to make PlotAxes2D.
+
+    Returns:
+        PlotAxes2D: PlotAxes2D made from the parameters in kwargs.
+    """
     tmp = {}
     d = PlotAxes2D()
     for k in vars(d).keys():
@@ -242,39 +287,28 @@ class PlotAstroData(AstroFrame):
     Position-velocity diagrams (pv=True) does not yet suppot region, line,
     arrow, and segment because the units of abscissa and ordinate
     are different.
-    The parameter sigma can be one of the methods of
-    ['edge', 'neg', 'med', 'iter', 'out'] as well as a specific value.
+    
+    kwargs is the arguments of AstroFrame to define plotting ranges.
+
+    Args:
+        v (list, optional): Used to set up channels if fitsimage not given. Defaults to [0].
+        vskip (int, optional): How many channels are skipped. Defaults to 1.
+        veldigit (int, optional): How many digits after the decimal point. Defaults to 2.
+        restfrq (float, optional): Used for velocity and brightness T. Defaults to None.
+        channelnumber (int, optional): Specify a channel number to make 2D maps. Defaults to None.
+        nrows (int, optional): Used for channel maps. Defaults to 4.
+        ncols (int, optional): Used for channel maps. Defaults to 6.
+        fontsize (int, optional): rc_Params['font.size']. None means 18 (2D) or 12 (3D). Defaults to None.
+        nancolor (str, optional): Color for masked regions. Defaults to white.
+        figsize (tuple, optional): Defaults to None.
+        fig (optional): External plt.figure(). Defaults to None.
+        ax (optional): External fig.add_subplot(). Defaults to None.
     """
     def __init__(self, v: list = [0], vskip: int = 1, veldigit: int = 2,
                  restfrq: float = None, channelnumber: int = None,
                  nrows: int = 4, ncols: int = 6,
                  fontsize: int = None, nancolor: str = 'w',
                  figsize: tuple = None, fig=None, ax=None, **kwargs) -> None:
-        """Set up common parameters.
-           kwargs is the arguments of AstroFrame to define plotting ranges.
-
-        Args:
-            v (list, optional):
-                Used to set up channels if fitsimage not given.
-                Defaults to [0].
-            vskip (int, optional):
-                How many channels are skipped. Defaults to 1.
-            veldigit (int, optional):
-                How many digits after the decimal point. Defaults to 2.
-            restfrq (float, optional):
-                Used for velocity and brightness T. Defaults to None.
-            channelnumber (int, optional): 
-                Specify a channel number to make 2D maps. Defaults to None.
-            nrows (int, optional): Used for channel maps. Defaults to 4.
-            ncols (int, optional): Used for channel maps. Defaults to 6.
-            fontsize (int, optional): rc_Params['font.size'].
-                None means 18 (2D) or 12 (3D). Defaults to None.
-            nancolor (str, optional):
-                Color for masked regions. Defaults to white.
-            figsize (tuple, optional): Defaults to None.
-            fig (optional): External plt.figure(). Defaults to None.
-            ax (optional): External fig.add_subplot(). Defaults to None.
-        """
         super().__init__(**kwargs)
         internalfig = fig is None
         internalax = ax is None
@@ -351,13 +385,11 @@ class PlotAstroData(AstroFrame):
         """Use add_patch() and Rectangle or Ellipse of matplotlib.
 
         Args:
-            patch (str, optional):
-                'ellipse' or 'rectangle'. Defaults to 'ellipse'.
+            patch (str, optional): 'ellipse' or 'rectangle'. Defaults to 'ellipse'.
             poslist (list, optional): Text or relative center. Defaults to [].
             majlist (list, optional): Ellipse major axis. Defaults to [].
             minlist (list, optional): Ellipse minor axis. Defaults to [].
-            palist (list, optional):
-                Position angle (north to east). Defaults to [].
+            palist (list, optional): Position angle (north to east). Defaults to [].
             include_chan (list, optional): None means all. Defaults to None.
         """
         kwargs0 = {'facecolor':'none', 'edgecolor':'gray',
@@ -499,10 +531,8 @@ class PlotAstroData(AstroFrame):
             length (float, optional): In the unit of arcsec. Defaults to 0.
             label (str, optional): Text like '100 au'. Defaults to ''.
             color (str, optional): Same for bar and label. Defaults to 'gray'.
-            barpos (tuple, optional):
-                Relative position. Defaults to (0.8, 0.12).
-            fontsize (float, optional):
-                None means 15 if one channel else 20. Defaults to None.
+            barpos (tuple, optional): Relative position. Defaults to (0.8, 0.12).
+            fontsize (float, optional): None means 15 if one channel else 20. Defaults to None.
             linewidth (float, optional): Width of the bar. Defaults to 3.
         """
         if length == 0 or label == '':
@@ -527,27 +557,18 @@ class PlotAstroData(AstroFrame):
                   cbticklabels: list = None, cblocation: str = 'right',
                   show_beam: bool = True, beamcolor: str = 'gray',
                   **kwargs) -> None:
-        """Use Axes.pcolormesh of matplotlib.
-           kwargs must include the arguments of AstroData to specify 
-           the data to be plotted.
+        """Use Axes.pcolormesh of matplotlib. kwargs must include the arguments of AstroData to specify the data to be plotted.
 
         Args:
             xskip, yskip (int, optional): Spatial pixel skip. Defaults to 1.
-            stretch (str, optional):
-                'log' means the mapped data are logarithmic.
-                'asinh' means the mapped data are arc sin hyperbolic.
-                Defaults to 'linear'.
-            stretchscale (float, optional):
-                color scale is asinh(data / stretchscale). Defaults to None.
+            stretch (str, optional): 'log' means the mapped data are logarithmic. 'asinh' means the mapped data are arc sin hyperbolic. Defaults to 'linear'.
+            stretchscale (float, optional): color scale is asinh(data / stretchscale). Defaults to None.
             show_cbar (bool, optional): Show color bar. Defaults to True.
             cblabel (str, optional): Colorbar label. Defaults to None.
-            cbformat (float, optional):
-                Format for ticklabels of colorbar. Defaults to '%.1e'.
+            cbformat (float, optional): Format for ticklabels of colorbar. Defaults to '%.1e'.
             cbticks (list, optional): Ticks of colorbar. Defaults to None.
-            cbticklabels (list, optional):
-                Ticklabels of colorbar. Defaults to None.
-            cblocation (str, optional): 'left', 'top', 'left', 'right'.
-                Only for 2D images. Defaults to 'right'.
+            cbticklabels (list, optional): Ticklabels of colorbar. Defaults to None.
+            cblocation (str, optional): 'left', 'top', 'left', 'right'. Only for 2D images. Defaults to 'right'.
             show_beam (bool, optional): Defaults to True.
             beamcolor (str, optional): Matplotlib color. Defaults to 'gray'.
         """
@@ -605,15 +626,11 @@ class PlotAstroData(AstroFrame):
                     levels: list = [-12,-6,-3,3,6,12,24,48,96,192,384],
                     show_beam: bool = True, beamcolor: str = 'gray',
                     **kwargs) -> None:
-        """Use Axes.contour of matplotlib.
-           kwargs must include the arguments of AstroData to specify 
-           the data to be plotted.
+        """Use Axes.contour of matplotlib. kwargs must include the arguments of AstroData to specify the data to be plotted.
 
         Args:
             xskip, yskip (int, optional): Spatial pixel skip. Defaults to 1.
-            levels (list, optional):
-                Contour levels in the unit of sigma.
-                Defaults to [-12,-6,-3,3,6,12,24,48,96,192,384].
+            levels (list, optional): Contour levels in the unit of sigma. Defaults to [-12,-6,-3,3,6,12,24,48,96,192,384].
             show_beam (bool, optional): Defaults to True.
             beamcolor (str, optional): Matplotlib color. Defaults to 'gray'.
         """
@@ -641,37 +658,23 @@ class PlotAstroData(AstroFrame):
                     cutoff: float = 3., 
                     show_beam: bool = True, beamcolor: str = 'gray',
                     **kwargs) -> None:
-        """Use Axes.quiver of matplotlib.
-           kwargs must include the arguments of AstroData to specify 
-           the data to be plotted.
-           fitsimage = [ampfits, angfits, Ufits, Qfits]
-           data = [amp, ang, stU, stQ]
+        """Use Axes.quiver of matplotlib. kwargs must include the arguments of AstroData to specify the data to be plotted. fitsimage = [ampfits, angfits, Ufits, Qfits]. data = [amp, ang, stU, stQ].
 
         Args:
-            ampfits (str, optional):
-                In put fits name. Length of segment. Defaults to None.
-            angfits (str, optional):
-                In put fits name. North to east. Defaults to None.
-            Ufits (str, optional):
-                In put fits name. Stokes U. Defaults to None.
-            Qfits (str, optional):
-                In put fits name. Stokes Q. Defaults to None.
+            ampfits (str, optional): In put fits name. Length of segment. Defaults to None.
+            angfits (str, optional): In put fits name. North to east. Defaults to None.
+            Ufits (str, optional): In put fits name. Stokes U. Defaults to None.
+            Qfits (str, optional): In put fits name. Stokes Q. Defaults to None.
             xskip, yskip (int, optional): Spatial pixel skip. Defaults to 1.
             amp (list, optional): Length of segment. Defaults to None.
             ang (list, optional): North to east. Defaults to None.
             stU (list, optional): Stokes U. Defaults to None.
             stQ (list, optional): Stokes Q. Defaults to None.
-            ampfactor (float, optional):
-                Length of segment is amp times ampfactor. Defaults to 1..
-            angonly (bool, optional):
-                True means amp=1 for all. Defaults to False.
-            rotation (float, optional):
-                Segment angle is ang + rotation. Defaults to 0..
-            cutoff (float, optional):
-                Used when amp and ang are calculated from Stokes U and Q.
-                In the unit of sigma. Defaults to 3..
-            sigma (str or float, optional):
-                Noise level or method for measuring it. Defaults to 'out'.
+            ampfactor (float, optional): Length of segment is amp times ampfactor. Defaults to 1..
+            angonly (bool, optional): True means amp=1 for all. Defaults to False.
+            rotation (float, optional): Segment angle is ang + rotation. Defaults to 0..
+            cutoff (float, optional): Used when amp and ang are calculated from Stokes U and Q. In the unit of sigma. Defaults to 3..
+            sigma (str or float, optional): Noise level or method for measuring it. Defaults to 'out'.
             show_beam (bool, optional): Defaults to True.
             beamcolor (str, optional): Matplotlib color. Defaults to 'gray'.
         """
@@ -712,22 +715,12 @@ class PlotAstroData(AstroFrame):
                 show_beam: bool = True,
                 beamcolor: list = ['red', 'green', 'blue'],
                 **kwargs) -> None:
-        """Use PIL.Image and imshow of matplotlib.
-           kwargs must include the arguments of AstroData to specify 
-           the data to be plotted.
-        
-        A three-element array ([red, green, blue]) is supposed for
-        all arguments, except for xskip, yskip and show_beam,
-        including vmax and vmin.
+        """Use PIL.Image and imshow of matplotlib. kwargs must include the arguments of AstroData to specify the data to be plotted. A three-element array ([red, green, blue]) is supposed for all arguments, except for xskip, yskip and show_beam, including vmax and vmin.
 
         Args:
             xskip, yskip (int, optional): Spatial pixel skip. Defaults to 1.
-            stretch (str, optional):
-                'log' means the mapped data are logarithmic.
-                'asinh' means the mapped data are arc sin hyperbolic.
-                Defaults to 'linear'.
-            stretchscale (float, optional):
-                color scale is asinh(data / stretchscale). Defaults to None.
+            stretch (str, optional): 'log' means the mapped data are logarithmic. 'asinh' means the mapped data are arc sin hyperbolic. Defaults to 'linear'.
+            stretchscale (float, optional): color scale is asinh(data / stretchscale). Defaults to None.
             show_beam (bool, optional): Defaults to True.
             beamcolor (str, optional): Matplotlib color. Defaults to 'gray'.
         """
@@ -764,14 +757,10 @@ class PlotAstroData(AstroFrame):
                 self.add_beam(beam[i], beamcolor[i])
     
     def set_axis(self, title: dict = None, **kwargs) -> None:
-        """Use Axes.set_* of matplotlib.
-           kwargs can include the arguments of PlotAxes2D
-           to adjust x and y axis.
+        """Use Axes.set_* of matplotlib. kwargs can include the arguments of PlotAxes2D to adjust x and y axis.
 
         Args:
-            title (dict, optional):
-                str means set_title(str) for 2D or fig.suptitle(str) for 3D.
-                Defaults to None.
+            title (dict, optional): str means set_title(str) for 2D or fig.suptitle(str) for 3D. Defaults to None.
         """
         offunit = '(arcsec)' if self.dist == 1 else '(au)'
         if self.pv:
@@ -823,13 +812,9 @@ class PlotAstroData(AstroFrame):
             center (str, optional): Defaults to None, initial one.
             xlabel (str, optional): Defaults to 'R.A. (ICRS)'.
             ylabel (str, optional): Defaults to 'Dec. (ICRS)'.
-            nticksminor (int, optional):
-                Interval ratio of major and minor ticks. Defaults to 2.
-            grid (dict, optional):
-                True means merely grid(). Defaults to None.
-            title (dict, optional):
-                str means set_title(str) for 2D or fig.suptitle(str) for 3D.
-                Defaults to None.
+            nticksminor (int, optional): Interval ratio of major and minor ticks. Defaults to 2.
+            grid (dict, optional): True means merely grid(). Defaults to None.
+            title (dict, optional): str means set_title(str) for 2D or fig.suptitle(str) for 3D. Defaults to None.
         """
         if self.rmax > 50.:
             print('WARNING: set_axis_radec() is not supported '
@@ -912,10 +897,8 @@ class PlotAstroData(AstroFrame):
         """Use savefig of matplotlib.
 
         Args:
-            filename (str, optional):
-                Output image file name. Defaults to None.
-            show (bool, optional):
-                True means doing plt.show(). Defaults to False.
+            filename (str, optional): Output image file name. Defaults to None.
+            show (bool, optional): True means doing plt.show(). Defaults to False.
         """
         kwargs0 = {'transparent':True, 'bbox_inches':'tight'}
         for axnow in self.ax:
@@ -954,17 +937,13 @@ def plotprofile(coords: list = [], xlist: list = [], ylist: list = [],
                 getfigax: bool = False,
                 savefig: dict = None, show: bool = True,
                 **kwargs) -> tuple:
-    """Use Axes.plot of matplotlib to plot line profiles at given coordinates.
-       kwargs must include the arguments of AstroData to specify 
-       the data to be plotted.
-       kwargs can include the arguments of PlotAxes2D to adjust x and y axes.
+    """Use Axes.plot of matplotlib to plot line profiles at given coordinates. kwargs must include the arguments of AstroData to specify the data to be plotted. kwargs can include the arguments of PlotAxes2D to adjust x and y axes.
 
     Args:
         coords (list, optional): Coordinates. Defaults to [].
         xlist (list, optional): Offset from the center. Defaults to [].
         ylist (list, optional): Offset from the center. Defaults to [].
-        ellipse (list, optional):
-            [major, minor, pa], For average. Defaults to None.
+        ellipse (list, optional): [major, minor, pa], For average. Defaults to None.
         flux (bool, optional): y axis is flux density. Defaults to False.
         width (int, optional): Rebinning step along v. Defaults to 1.
         gaussfit (bool, optional): Fit the profiles. Defaults to False.
@@ -973,8 +952,7 @@ def plotprofile(coords: list = [], xlist: list = [], ylist: list = [],
         text (list, optional): For each plot. Defaults to None.
 
     Returns:
-        tuple: (fig, ax), where ax is a list, if getfigax=True.
-               Otherwise, no return.
+        tuple: (fig, ax), where ax is a list, if getfigax=True. Otherwise, no return.
     """
     kwargs0 = {'drawstyle':'steps-mid', 'color':'k'}
     gauss_kwargs0 = {'drawstyle':'default', 'color':'g'}
@@ -1042,10 +1020,7 @@ def plotslice(length: float, dx: float = None, pa: float = 0,
               fig = None, ax = None, getfigax: bool = False,
               savefig: str or dict = None, show: bool = False,
               **kwargs) -> None:
-    """Use Axes.plot of matplotlib to plot a 1D spatial slice in a 2D map.
-       kwargs must include the arguments of AstroData to specify 
-       the data to be plotted.
-       kwargs can include the arguments of PlotAxes2D to adjust x and y axes.
+    """Use Axes.plot of matplotlib to plot a 1D spatial slice in a 2D map. kwargs must include the arguments of AstroData to specify the data to be plotted. kwargs can include the arguments of PlotAxes2D to adjust x and y axes.
 
     Args:
         length (float): Slice length.
@@ -1103,11 +1078,7 @@ def plot3d(levels: list = [3,6,12], cmap: str = 'Jet',
            xskip: int = 1, yskip: int = 1,
            eye_p: float = 0, eye_i: float = 180,
            outname: str = 'plot3d', show: bool = False, **kwargs):
-    """Use Plotly.
-           kwargs must include the arguments of AstroData to specify 
-           the data to be plotted.
-           kwargs must include the arguments of AstroFrame to specify
-           the ranges and so on for plotting.
+    """Use Plotly. kwargs must include the arguments of AstroData to specify the data to be plotted. kwargs must include the arguments of AstroFrame to specify the ranges and so on for plotting.
 
     Args:
         levels (list, optional): Contour levels. Defaults to [3,6,12].

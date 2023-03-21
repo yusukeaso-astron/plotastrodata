@@ -11,8 +11,7 @@ def Jy2K(header = None, bmaj: float = None, bmin: float = None,
     """Calculate a conversion factor in the unit of K/Jy.
 
     Args:
-        header (optional): astropy.io.fits.open('a.fits')[0].header
-                           Defaults to None.
+        header (optional): astropy.io.fits.open('a.fits')[0].header. Defaults to None.
         bmaj (float, optional): beam major axis in degree. Defaults to None.
         bmin (float, optional): beam minor axis in degree. Defaults to None.
         freq (float, optional): rest frequency in Hz. Defaults to None.
@@ -36,11 +35,17 @@ def Jy2K(header = None, bmaj: float = None, bmin: float = None,
 
 
 class FitsData:
-    """For practical treatment of data in a FITS file."""
+    """For practical treatment of data in a FITS file.
+    
+    Args:
+        fitsimage (str): Input FITS file name.
+    """
     def __init__(self, fitsimage: str):
         self.fitsimage = fitsimage
 
     def gen_hdu(self):
+        """Generate self.hdu. fits.open()[0].
+        """
         hdu = fits.open(self.fitsimage)
         self.hdu = hdu[0]
         if 'BEAMS' in hdu:
@@ -51,11 +56,21 @@ class FitsData:
             self.hdubeam = b['BMAJ'][imed], b['BMIN'][imed], b['BPA'][imed]
         
     def gen_header(self) -> None:
+        """Generate self.header. fits.open()[0].header.
+        """
         if not hasattr(self, 'hdu'):
             self.gen_hdu()
         self.header = self.hdu.header
 
     def get_header(self, key: str = None) -> dict or float:
+        """Output the entire header or a value when a key is given.
+
+        Args:
+            key (str, optional): Key name of the FITS header. Defaults to None.
+
+        Returns:
+            dict or float: The entire header or a value.
+        """
         if not hasattr(self, 'header'):
             self.gen_header()
         if key is None:
@@ -66,6 +81,11 @@ class FitsData:
         return None
 
     def gen_beam(self, dist: float = 1.) -> None:
+        """Generate sef.bmaj, self.bmin, self.bpa from header['BMAJ'], etc.
+
+        Args:
+            dist (float, optional): bmaj and bmin are multiplied by dist. Defaults to 1..
+        """
         if hasattr(self, 'hdubeam'):
             bmaj, bmin, bpa = self.hdubeam
         else:
@@ -77,18 +97,39 @@ class FitsData:
             bpa = 0 if bpa is None else bpa
         self.bmaj, self.bmin, self.bpa = bmaj * dist, bmin * dist, bpa
 
-    def get_beam(self, dist: float = 1.) -> tuple:
+    def get_beam(self, dist: float = 1.) -> np.array:
+        """Output the beam array of [bmaj, bmin, bpa].
+
+        Args:
+            dist (float, optional): bmaj and bmin are multiplied by dist. Defaults to 1..
+
+        Returns:
+            np.array: [bmaj, bmin, bpa].
+        """
         if not hasattr(self, 'bmaj'):
             self.gen_beam(dist)
         return np.array([self.bmaj, self.bmin, self.bpa])
 
-    def get_center(self) -> None:
+    def get_center(self) -> str:
+        """Output the central coordinates as text.
+
+        Returns:
+            str: The central coordinates.
+        """
         ra_deg = self.get_header('CRVAL1')
         dec_deg = self.get_header('CRVAL2')
         return xy2coord([ra_deg, dec_deg])
 
     def gen_data(self, Tb: bool = False, log: bool = False,
                  drop: bool = True, restfrq: float = None) -> None:
+        """Generate data, which may be brightness temperature.
+
+        Args:
+            Tb (bool, optional): True means the data are brightness temperatures. Defaults to False.
+            log (bool, optional): True means the data are after taking the logarithm to the base 10. Defaults to False.
+            drop (bool, optional): True means the data are after using np.squeeze. Defaults to True.
+            restfrq (float, optional): Rest frequency for calculating the brightness temperature. Defaults to None.
+        """
         self.data = None
         if not hasattr(self, 'hdu'):
             self.gen_hdu()
@@ -98,13 +139,27 @@ class FitsData:
         if log == True: d = np.log10(d.clip(np.min(d[d > 0]), None))
         self.data = d
         
-    def get_data(self, **kwargs) -> list:
+    def get_data(self, **kwargs) -> np.array:
+        """Output data. This method can take the arguments of gen_data().
+
+        Returns:
+            np.array: data in the format of np.array.
+        """
         if not hasattr(self, 'data'): self.gen_data(**kwargs)
         return self.data
 
     def gen_grid(self, center: str = None, dist: float = 1.,
                  restfrq: float = None, vsys: float = 0.,
                  pv: bool = False) -> None:
+        """Generate grids relative to the center and vsys.
+
+        Args:
+            center (str, optional): Center for the spatial grids. Defaults to None.
+            dist (float, optional): The spatial grids are multiplied by dist. Defaults to 1..
+            restfrq (float, optional): Rest frequency for converting the frequencies to velocities. Defaults to None.
+            vsys (float, optional): The velocity is relative to vsys. Defaults to 0..
+            pv (bool, optional): Mode for position-velocity diagram. Defaults to False.
+        """
         h = self.get_header()
         # spatial center
         if center is not None:
@@ -151,7 +206,12 @@ class FitsData:
         if h['NAXIS'] > 2 and h['NAXIS3'] > 1:
                 gen_v(get_list(3, True))
                     
-    def get_grid(self, **kwargs) -> tuple:
+    def get_grid(self, **kwargs) -> list:
+        """Output the grids, [x, y, v]. This method can take the arguments of gen_grid().
+
+        Returns:
+            list: [x, y, v].
+        """
         if not hasattr(self, 'x') or not hasattr(self, 'y'):
             self.gen_grid(**kwargs)
         return [self.x, self.y, self.v]
@@ -159,6 +219,16 @@ class FitsData:
     def trim(self, rmax: float = 1e10, xoff: float = 0., yoff: float = 0.,
              vmin: float = -1e10, vmax: float = 1e10,
              pv: bool = False) -> None:
+        """Trim the data and grids. The data range will be from xoff - rmax, yoff - rmax, vmin to xoff + rmax, yoff + rmax, vmax.
+
+        Args:
+            rmax (float, optional): Defaults to 1e10.
+            xoff (float, optional): Defaults to 0..
+            yoff (float, optional): Defaults to 0..
+            vmin (float, optional): Defaults to -1e10.
+            vmax (float, optional): Defaults to 1e10.
+            pv (bool, optional): Mode for position-velocity diagram. Defaults to False.
+        """
         data = self.data if hasattr(self, 'data') else None
         x = self.x if hasattr(self, 'x') else None
         y = self.y if hasattr(self, 'y') else None
@@ -174,22 +244,15 @@ def fits2data(fitsimage: str, Tb: bool = False, log: bool = False,
               dist: float = 1., sigma: str = None,
               restfrq: float = None, center: str = None,
               vsys: float = 0., pv: bool = False, **kwargs) -> tuple:
-    """Extract data from a fits file.
-       kwargs are arguments of FitsData.trim().
+    """Extract data from a fits file. kwargs are arguments of FitsData.trim().
 
     Args:
         fitsimage (str): Input fits name.
-        Tb (bool, optional):
-            True means ouput data are brightness temperature.
-            Defaults to False.
-        log (bool, optional):
-            True means output data are logarhismic. Defaults to False.
-        dist (float, optional):
-            Change x and y in arcsec to au. Defaults to 1..
-        sigma (str, optional):
-            Noise level or method for measuring it. Defaults to None.
-        restfrq (float, optional):
-            Used for velocity and brightness temperature. Defaults to None.
+        Tb (bool, optional): True means ouput data are brightness temperature. Defaults to False.
+        log (bool, optional): True means output data are logarhismic. Defaults to False.
+        dist (float, optional): Change x and y in arcsec to au. Defaults to 1..
+        sigma (str, optional): Noise level or method for measuring it. Defaults to None.
+        restfrq (float, optional): Used for velocity and brightness temperature. Defaults to None.
         center (str, optional): Text coordinates. Defaults to None.
         vsys (float, optional): In the unit of km/s. Defaults to 0.
         pv (bool, optional): True means PV fits file. Defaults to False.
@@ -214,8 +277,7 @@ def data2fits(d: list = None, h: dict = {}, templatefits: str = None,
     Args:
         d (list, optional): N-D array. Defaults to None.
         h (dict, optional): Fits header. Defaults to {}.
-        templatefits (str, optional): Fits file to copy header.
-                                     Defaults to None.
+        templatefits (str, optional): Fits file to copy header. Defaults to None.
         fitsimage (str, optional): Output name. Defaults to 'test'.
     """
     ctype0 = ["RA---SIN", "DEC--SIN", "VELOCITY"]
