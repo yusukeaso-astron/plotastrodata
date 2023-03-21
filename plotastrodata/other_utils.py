@@ -9,10 +9,20 @@ from scipy.special import erf
 
 
 def terminal(cmd: str):
+    """Run a terminal command through subprocess.run.
+
+    Args:
+        cmd (str): Terminal command.
+    """
     subprocess.run(shlex.split(cmd))
 
 
 def runpython(filename: str):
+    """Run a python file.
+
+    Args:
+        filename (str): Python file name.
+    """
     terminal(f'python {filename}')
 
 
@@ -105,20 +115,20 @@ def abs2rel(xabs: float, yabs: float, x: list, y: list) -> list:
 def estimate_rms(data: list, sigma: float or str = 'hist') -> float:
     """Estimate a noise level of a N-D array.
        When a float number or None is given, this function just outputs it.
-        methods --- 'edge': use data[0] and data[-1].
-                    'neg': use only negative values.
-                    'med': use the median of data^2 assuming Gaussian.
-                    'iter': exclude outliers.
-                    'out': exclude inner 60% about axes=-2 and -1.
-                    'hist': fit histgram with Gaussian.
-                    'hist-pbcor': fit histgram with PB-corrected Gaussian.
+       methods --- 'edge': use data[0] and data[-1].
+                   'neg': use only negative values.
+                   'med': use the median of data^2 assuming Gaussian.
+                   'iter': exclude outliers.
+                   'out': exclude inner 60% about axes=-2 and -1.
+                   'hist': fit histgram with Gaussian.
+                   'hist-pbcor': fit histgram with PB-corrected Gaussian.
 
     Args:
         data (list): N-D array.
-        sigma (float or str): One of the following methods. Defaults to 'hist'.
+        sigma (float or str): One of the methods above. Defaults to 'hist'.
         
     Returns:
-        float: the estimated room mean square of noise.
+        float: the estimated root mean square of noise.
     """
     if sigma is None:
         return None
@@ -210,34 +220,73 @@ def trim(data: list = None, x: list = None, y: list = None, v: list = None,
     return dataout, [xout, yout, vout]
 
 
-def Mfac(f0: float = 1, f1: float = 1):
-    """2 x 2 matrix for (x,y) --> (f0 * x, f1 * y). """
+def Mfac(f0: float = 1, f1: float = 1) -> np.array:
+    """2 x 2 matrix for (x,y) --> (f0 * x, f1 * y).
+
+    Args:
+        f0 (float, optional): Defaults to 1.
+        f1 (float, optional): Defaults to 1.
+
+    Returns:
+        np.array: Matrix for the multiplication.
+    """
     return np.array([[f0, 0], [0, f1]])
 
 
-def Mrot(pa: float = 0):
-    """2 x 2 matrix for rotation."""
+def Mrot(pa: float = 0) -> np.array:
+    """2 x 2 matrix for rotation.
+
+    Args:
+        pa (float, optional): How many degrees are the image rotated by. Defaults to 0.
+
+    Returns:
+        np.array: Matrix for the rotation.
+    """
     p = np.radians(pa)
     return np.array([[np.cos(p), -np.sin(p)], [np.sin(p),  np.cos(p)]])
 
 
-def dot2d(M: list = [[1, 0], [0, 1]], a: list = [0]):
-    """To maltiply a 2 x 2 matrix to (x,y) with lists of x and y."""
+def dot2d(M: list = [[1, 0], [0, 1]], a: list = [0]) -> np.array:
+    """To maltiply a 2 x 2 matrix to (x,y) with lists of x and y.
+
+    Args:
+        M (list, optional): 2 x 2 matrix. Defaults to [[1, 0], [0, 1]].
+        a (list, optional): 2D vector (of 1D arrays). Defaults to [0].
+
+    Returns:
+        np.array: The 2D vector after the matrix multiplied.
+    """
     x = M[0, 0] * np.array(a[0]) + M[0, 1] * np.array(a[1])
     y = M[1, 0] * np.array(a[0]) + M[1, 1] * np.array(a[1])
     return np.array([x, y])
 
 
-def BnuT(T: float = 30, nu: float = 230e9):
-    """Planck function"""
+def BnuT(T: float = 30, nu: float = 230e9) -> float:
+    """Planck function.
+
+    Args:
+        T (float, optional): Temperature in the unit of K. Defaults to 30.
+        nu (float, optional): Frequency in the unit of Hz. Defaults to 230e9.
+
+    Returns:
+        float: Planck function in the SI units.
+    """
     hh = constants.h.si.value
     cc = constants.c.si.value
     k_B = constants.k_B.si.value
     return 2 * hh * nu**3 / cc**2 / (np.exp(hh * nu / k_B / T) - 1)
 
 
-def JnuT(T: float = 30, nu: float = 230e9):
-    """Brightness templerature from the Planck function."""
+def JnuT(T: float = 30, nu: float = 230e9) -> float:
+    """Brightness templerature from the Planck function.
+
+    Args:
+        T (float, optional): Temperature in the unit of K. Defaults to 30.
+        nu (float, optional): Frequency in the unit of Hz. Defaults to 230e9.
+
+    Returns:
+        float: Brightness temperature of Planck function in the unit of K.
+    """
     hh = constants.h.si.value
     k_B = constants.k_B.si.value
     return hh * nu / k_B / (np.exp(hh * nu / k_B / T) - 1)
