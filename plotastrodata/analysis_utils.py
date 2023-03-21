@@ -122,7 +122,11 @@ class AstroData():
         self.bunit = [''] * n
 
     def binning(self, width: list = [1, 1, 1]):
-        """Binning up neighboring pixels in the v, y, and x domain."""
+        """Binning up neighboring pixels in the v, y, and x domain.
+
+        Args:
+            width (list, optional): Number of channels, x-pixels, and y-pixels for binning. Defaults to [1, 1, 1].
+        """
         if len(width) == 2: width = [1] + width
         self.data = [self.data] if np.ndim(self.data) == 2 else self.data
         size = np.array([len(self.v), len(self.y), len(self.x)])
@@ -143,7 +147,8 @@ class AstroData():
         self.v, self.y, self.x = grid
             
     def centering(self):
-        """Spatial regridding to set the center at (x,y)=(0,0)."""
+        """Spatial regridding to set the center at (x,y)=(0,0).
+        """
         X = self.x - self.x[np.argmin(np.abs(self.x))]
         Y = self.y - self.y[np.argmin(np.abs(self.y))]
         x, y = np.meshgrid(X, Y)
@@ -151,7 +156,8 @@ class AstroData():
         self.y, self.x = Y, X
 
     def circularbeam(self):
-        """Make the beam circular by convolving with 1D Gaussian"""
+        """Make the beam circular by convolving with 1D Gaussian
+        """
         bmaj, bmin, bpa = self.beam
         self.rotate(-bpa)
         nx = len(self.x) if len(self.x) % 2 == 1 else len(self.x) - 1
@@ -169,6 +175,10 @@ class AstroData():
         
     def deproject(self, pa: float = 0, incl: float = 0):
         """Exapnd by a factor of 1/cos(incl) in the direction of pa+90 deg.
+
+        Args:
+            pa (float, optional): Position angle in the unit of degree. Defaults to 0.
+            incl (float, optional): Inclination angle in the unit of degree. Defaults to 0.
         """
         ci = np.cos(np.radians(incl))
         A = np.linalg.multi_dot([Mrot(pa), Mfac(1, ci), Mrot(-pa)])
@@ -187,15 +197,25 @@ class AstroData():
         bmin_new = 1 / np.sqrt(alpha + Det)
         self.beam = np.array([bmaj_new, bmin_new, bpa_new])
 
-    def histogram(self, **kwargs):
-        """Output histogram of self.data using numpy.histogram"""
+    def histogram(self, **kwargs) -> tuple:
+        """Output histogram of self.data using numpy.histogram. This method can take the arguments of numpy.histogram.
+
+        Returns:
+            tuple: (bins, histogram)
+        """
         hist, hbin = np.histogram(self.data, **kwargs)
         hbin = (hbin[:-1] + hbin[1:]) / 2
         return hbin, hist
 
     def mask(self, dataformask, includepix: list = [],
              excludepix: list = []):
-        """Mask self.data using an AstroData of dataformask."""
+        """Mask self.data using an AstroData of dataformask.
+
+        Args:
+            dataformask (AstroData): dataformask.data is used for specifying the mask.
+            includepix (list, optional): Data in this range survivies. Defaults to [].
+            excludepix (list, optional): Data in this range is masked. Defaults to [].
+        """
         if np.ndim(self.data) ==3 and np.ndim(dataformask.data) == 2:
             print('The 2D mask is broadcasted to 3D.')
             mask = np.array([dataformask.data] * len(self.data))
@@ -274,31 +294,41 @@ class AstroData():
         return v, prof, gfitres
     
     def rotate(self, pa: float = 0):
-        """Counter clockwise rotation with respect to the center."""
+        """Counter clockwise rotation with respect to the center.
+
+        Args:
+            pa (float, optional): Position angle in the unit of degree. Defaults to 0.
+        """
         y, x = dot2d(Mrot(-pa), np.meshgrid(self.x, self.y)[::-1])
         self.data = sortRBS(self.y, self.x, self.data, y, x)
         self.beam[2] = self.beam[2] + pa
     
     def slice(self, length: float = 0, pa: float = 0,
-              dx: float = None) -> list:
+              dx: float = None) -> np.array:
         """Get 1D slice with given a length and a position-angle.
 
         Args:
             length (float, optional): Slice line length. Defaults to 0.
-            pa (float, optional): Degree. Position angle. Defaults to 0.
+            pa (float, optional): Position angle in the unit of degree. Defaults to 0.
             dx (float, optional): Grid increment. Defaults to None.
 
         Returns:
-            list: [x, data]. If self.data is 3D, the output data are in the shape of (len(v), len(x)).
+            np.array: [x, data]. If self.data is 3D, the output data are in the shape of (len(v), len(x)).
         """
         if dx is None: dx = np.abs(self.x[1] - self.x[0])
         n = int(np.ceil(length / 2 / dx))
         r = np.linspace(-n, n, 2 * n + 1) * dx
         xg, yg = r * np.sin(np.radians(pa)), r * np.cos(np.radians(pa))
         z = sortRBS(self.y, self.x, self.data, yg, xg)
-        return [r, z]    
+        return np.array([r, z])
    
     def writetofits(self, fitsimage: str = 'out.fits', header: dict = {}):
+        """Write out the AstroData to a FITS file.
+
+        Args:
+            fitsimage (str, optional): Output FITS file name. Defaults to 'out.fits'.
+            header (dict, optional): Header dictionary. Defaults to {}.
+        """
         if np.abs(len(self.x) - len(self.y)) > 2:
             print('writetofits does not support PV diagram yet.')
             return False
