@@ -12,6 +12,12 @@ from plotastrodata.analysis_utils import AstroData, AstroFrame
 plt.ioff()  # force to turn off interactive mode
 
 def set_rcparams(fontsize: int = 18, nancolor: str ='w') -> None:
+    """Nice rcParams for figures.
+
+    Args:
+        fontsize (int, optional): plt.rcParams['font.size']. Defaults to 18.
+        nancolor (str, optional): plt.rcParams['axes.facecolor']. Defaults to 'w'.
+    """
     #plt.rcParams['font.family'] = 'arial'
     plt.rcParams['axes.facecolor'] = nancolor
     plt.rcParams['font.size'] = fontsize
@@ -31,8 +37,16 @@ def set_rcparams(fontsize: int = 18, nancolor: str ='w') -> None:
     plt.rcParams['ytick.minor.width'] = 1.5
 
 
-def logticks(ticks, lim):
-    """Make nice ticks for log-log figures."""
+def logticks(ticks: list, lim: list) -> tuple:
+    """Make nice ticks for a log axis.
+
+    Args:
+        ticks (list): List of ticks.
+        lim (list): [min, max].
+
+    Returns:
+        tuple: (new ticks, new labels).
+    """
     order = int(np.floor((np.log10(lim[0]))))
     a = (lim[0] // 10**order + 1) * 10**order
     a = np.round(a, max(-order, 0))
@@ -47,23 +61,24 @@ def logticks(ticks, lim):
 @dataclass
 class PlotAxes2D():
     """Use Axes.set_* to adjust x and y axes.
-
-    samexy (bool, optional): True supports same ticks between x and y. Defaults to True.
-    loglog (float, optional): If a float is given, plot on a log-log plane, and xim=(xmax / loglog, xmax) and so does ylim. Defaults to None.
-    xscale (str, optional): Defaults to None.
-    yscale (str, optional): Defaults to None.
-    xlim (list, optional): Defaults to None.
-    ylim (list, optional): Defaults to None.
-    xlabel (str, optional): Defaults to None.
-    ylabel (str, optional): Defaults to None.
-    xticks (list, optional): Defaults to None.
-    yticks (list, optional): Defaults to None.
-    xticklabels (list, optional): Defaults to None.
-    yticklabels (list, optional): Defaults to None.
-    xticksminor (list or int, optional): If int, int times more than xticks. Defaults to None.
-    yticksminor (list ot int, optional): Defaults to None. If int, int times more than xticks. Defaults to None.
-    grid (dict, optional): True means merely grid(). Defaults to None.
-    aspect (float, optional): Defaults to None.
+    
+    Args:
+        samexy (bool, optional): True supports same ticks between x and y. Defaults to True.
+        loglog (float, optional): If a float is given, plot on a log-log plane, and xim=(xmax / loglog, xmax) and so does ylim. Defaults to None.
+        xscale (str, optional): Defaults to None.
+        yscale (str, optional): Defaults to None.
+        xlim (list, optional): Defaults to None.
+        ylim (list, optional): Defaults to None.
+        xlabel (str, optional): Defaults to None.
+        ylabel (str, optional): Defaults to None.
+        xticks (list, optional): Defaults to None.
+        yticks (list, optional): Defaults to None.
+        xticklabels (list, optional): Defaults to None.
+        yticklabels (list, optional): Defaults to None.
+        xticksminor (list or int, optional): If int, int times more than xticks. Defaults to None.
+        yticksminor (list ot int, optional): Defaults to None. If int, int times more than xticks. Defaults to None.
+        grid (dict, optional): True means merely grid(). Defaults to None.
+        aspect (float, optional): Defaults to None.
     """
     samexy: bool = True
     loglog: bool = None
@@ -142,7 +157,18 @@ class PlotAxes2D():
 
 def set_minmax(data: np.ndarray, stretch: str, stretchscale: float,
                rms: float, kw: dict) -> np.ndarray:
-    """Set vmin and vmax for color pcolormesh) and RGB maps."""
+    """Set vmin and vmax for color pcolormesh and RGB maps.
+
+    Args:
+        data (np.ndarray): Plotted data.
+        stretch (str): 'log', 'asinh'. Any other means linear.
+        stretchscale (float): For the arcsinh strech.
+        rms (float): RMS noise level.
+        kw (dict): Probably like {'vmin':0, 'vmax':1}.
+
+    Returns:
+        np.ndarray: Data clipped with the vmin and vmax.
+    """
     if type(stretch) is str:
         data = [data]
         rms = [rms]
@@ -181,8 +207,15 @@ def set_minmax(data: np.ndarray, stretch: str, stretchscale: float,
     return data
 
 
-def kwargs2AstroData(kw: dict):
-    """Get AstroData and remove its arguments from kwargs."""
+def kwargs2AstroData(kw: dict) -> AstroData:
+    """Get AstroData and remove its arguments from kwargs.
+
+    Args:
+        kw (dict): Parameters to make AstroData.
+
+    Returns:
+        AstroData: AstroData made from the parameters in kwargs.
+    """
     tmp = {}
     d = AstroData(data=np.zeros((2, 2)))
     for k in vars(d).keys():
@@ -196,8 +229,15 @@ def kwargs2AstroData(kw: dict):
         d = AstroData(**tmp)
         return d
 
-def kwargs2AstroFrame(kw: dict):
-    """Get AstroFrame from kwargs."""
+def kwargs2AstroFrame(kw: dict) -> AstroFrame:
+    """Get AstroFrame from kwargs.
+
+    Args:
+        kw (dict): Parameters to make AstroFrame.
+
+    Returns:
+        AstroFrame: AstroFrame made from the parameters in kwargs.
+    """
     tmp = {}
     f = AstroFrame()
     for k in vars(f).keys():
@@ -207,8 +247,15 @@ def kwargs2AstroFrame(kw: dict):
     f = AstroFrame(**tmp)
     return f
 
-def kwargs2PlotAxes2D(kw: dict):
-    """Get PlotAxes2D and remove its arguments from kwargs."""
+def kwargs2PlotAxes2D(kw: dict) -> PlotAxes2D:
+    """Get PlotAxes2D and remove its arguments from kwargs.
+
+    Args:
+        kw (dict): Parameters to make PlotAxes2D.
+
+    Returns:
+        PlotAxes2D: PlotAxes2D made from the parameters in kwargs.
+    """
     tmp = {}
     d = PlotAxes2D()
     for k in vars(d).keys():
@@ -240,30 +287,28 @@ class PlotAstroData(AstroFrame):
     Position-velocity diagrams (pv=True) does not yet suppot region, line,
     arrow, and segment because the units of abscissa and ordinate
     are different.
-    The parameter sigma can be one of the methods of
-    ['edge', 'neg', 'med', 'iter', 'out'] as well as a specific value.
+    
+    kwargs is the arguments of AstroFrame to define plotting ranges.
+
+    Args:
+        v (list, optional): Used to set up channels if fitsimage not given. Defaults to [0].
+        vskip (int, optional): How many channels are skipped. Defaults to 1.
+        veldigit (int, optional): How many digits after the decimal point. Defaults to 2.
+        restfrq (float, optional): Used for velocity and brightness T. Defaults to None.
+        channelnumber (int, optional): Specify a channel number to make 2D maps. Defaults to None.
+        nrows (int, optional): Used for channel maps. Defaults to 4.
+        ncols (int, optional): Used for channel maps. Defaults to 6.
+        fontsize (int, optional): rc_Params['font.size']. None means 18 (2D) or 12 (3D). Defaults to None.
+        nancolor (str, optional): Color for masked regions. Defaults to white.
+        figsize (tuple, optional): Defaults to None.
+        fig (optional): External plt.figure(). Defaults to None.
+        ax (optional): External fig.add_subplot(). Defaults to None.
     """
     def __init__(self, v: list = [0], vskip: int = 1, veldigit: int = 2,
                  restfrq: float = None, channelnumber: int = None,
                  nrows: int = 4, ncols: int = 6,
                  fontsize: int = None, nancolor: str = 'w',
                  figsize: tuple = None, fig=None, ax=None, **kwargs) -> None:
-        """Set up common parameters. kwargs is the arguments of AstroFrame to define plotting ranges.
-
-        Args:
-            v (list, optional): Used to set up channels if fitsimage not given. Defaults to [0].
-            vskip (int, optional): How many channels are skipped. Defaults to 1.
-            veldigit (int, optional): How many digits after the decimal point. Defaults to 2.
-            restfrq (float, optional): Used for velocity and brightness T. Defaults to None.
-            channelnumber (int, optional): Specify a channel number to make 2D maps. Defaults to None.
-            nrows (int, optional): Used for channel maps. Defaults to 4.
-            ncols (int, optional): Used for channel maps. Defaults to 6.
-            fontsize (int, optional): rc_Params['font.size']. None means 18 (2D) or 12 (3D). Defaults to None.
-            nancolor (str, optional): Color for masked regions. Defaults to white.
-            figsize (tuple, optional): Defaults to None.
-            fig (optional): External plt.figure(). Defaults to None.
-            ax (optional): External fig.add_subplot(). Defaults to None.
-        """
         super().__init__(**kwargs)
         internalfig = fig is None
         internalax = ax is None
@@ -613,11 +658,7 @@ class PlotAstroData(AstroFrame):
                     cutoff: float = 3., 
                     show_beam: bool = True, beamcolor: str = 'gray',
                     **kwargs) -> None:
-        """Use Axes.quiver of matplotlib.
-           kwargs must include the arguments of AstroData to specify 
-           the data to be plotted.
-           fitsimage = [ampfits, angfits, Ufits, Qfits]
-           data = [amp, ang, stU, stQ]
+        """Use Axes.quiver of matplotlib. kwargs must include the arguments of AstroData to specify the data to be plotted. fitsimage = [ampfits, angfits, Ufits, Qfits]. data = [amp, ang, stU, stQ].
 
         Args:
             ampfits (str, optional): In put fits name. Length of segment. Defaults to None.
@@ -674,13 +715,7 @@ class PlotAstroData(AstroFrame):
                 show_beam: bool = True,
                 beamcolor: list = ['red', 'green', 'blue'],
                 **kwargs) -> None:
-        """Use PIL.Image and imshow of matplotlib.
-           kwargs must include the arguments of AstroData to specify 
-           the data to be plotted.
-        
-        A three-element array ([red, green, blue]) is supposed for
-        all arguments, except for xskip, yskip and show_beam,
-        including vmax and vmin.
+        """Use PIL.Image and imshow of matplotlib. kwargs must include the arguments of AstroData to specify the data to be plotted. A three-element array ([red, green, blue]) is supposed for all arguments, except for xskip, yskip and show_beam, including vmax and vmin.
 
         Args:
             xskip, yskip (int, optional): Spatial pixel skip. Defaults to 1.
@@ -722,9 +757,7 @@ class PlotAstroData(AstroFrame):
                 self.add_beam(beam[i], beamcolor[i])
     
     def set_axis(self, title: dict = None, **kwargs) -> None:
-        """Use Axes.set_* of matplotlib.
-           kwargs can include the arguments of PlotAxes2D
-           to adjust x and y axis.
+        """Use Axes.set_* of matplotlib. kwargs can include the arguments of PlotAxes2D to adjust x and y axis.
 
         Args:
             title (dict, optional): str means set_title(str) for 2D or fig.suptitle(str) for 3D. Defaults to None.
@@ -904,10 +937,7 @@ def plotprofile(coords: list = [], xlist: list = [], ylist: list = [],
                 getfigax: bool = False,
                 savefig: dict = None, show: bool = True,
                 **kwargs) -> tuple:
-    """Use Axes.plot of matplotlib to plot line profiles at given coordinates.
-       kwargs must include the arguments of AstroData to specify 
-       the data to be plotted.
-       kwargs can include the arguments of PlotAxes2D to adjust x and y axes.
+    """Use Axes.plot of matplotlib to plot line profiles at given coordinates. kwargs must include the arguments of AstroData to specify the data to be plotted. kwargs can include the arguments of PlotAxes2D to adjust x and y axes.
 
     Args:
         coords (list, optional): Coordinates. Defaults to [].
@@ -990,10 +1020,7 @@ def plotslice(length: float, dx: float = None, pa: float = 0,
               fig = None, ax = None, getfigax: bool = False,
               savefig: str or dict = None, show: bool = False,
               **kwargs) -> None:
-    """Use Axes.plot of matplotlib to plot a 1D spatial slice in a 2D map.
-       kwargs must include the arguments of AstroData to specify 
-       the data to be plotted.
-       kwargs can include the arguments of PlotAxes2D to adjust x and y axes.
+    """Use Axes.plot of matplotlib to plot a 1D spatial slice in a 2D map. kwargs must include the arguments of AstroData to specify the data to be plotted. kwargs can include the arguments of PlotAxes2D to adjust x and y axes.
 
     Args:
         length (float): Slice length.
@@ -1051,11 +1078,7 @@ def plot3d(levels: list = [3,6,12], cmap: str = 'Jet',
            xskip: int = 1, yskip: int = 1,
            eye_p: float = 0, eye_i: float = 180,
            outname: str = 'plot3d', show: bool = False, **kwargs):
-    """Use Plotly.
-           kwargs must include the arguments of AstroData to specify 
-           the data to be plotted.
-           kwargs must include the arguments of AstroFrame to specify
-           the ranges and so on for plotting.
+    """Use Plotly. kwargs must include the arguments of AstroData to specify the data to be plotted. kwargs must include the arguments of AstroFrame to specify the ranges and so on for plotting.
 
     Args:
         levels (list, optional): Contour levels. Defaults to [3,6,12].

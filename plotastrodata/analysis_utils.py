@@ -29,8 +29,19 @@ def quadrantmean(c: list, x: list, y: list, quadrants: str ='13') -> tuple:
 
 
 def sortRBS(y: list, x: list, data: list,
-            ynew: list = None, xnew: list = None):
-    """RBS but input x and y can be decreasing."""
+            ynew: list = None, xnew: list = None) -> np.ndarray:
+    """RBS but input x and y can be decreasing.
+
+    Args:
+        y (list): 1D array.
+        x (list): 1D array.
+        data (list): 2D or 3D array.
+        ynew (list, optional): 1D array. Defaults to None.
+        xnew (list, optional): 1D array. Defaults to None.
+
+    Returns:
+        np.ndarray: The RBS function or the interpolated array.
+    """
     d = [data] if np.ndim(data) == 2 else data
     xsort = x if x[1] > x[0] else x[::-1]
     csort = [c if x[1] > x[0] else c[:, ::-1] for c in d]
@@ -46,8 +57,18 @@ def sortRBS(y: list, x: list, data: list,
     return d
 
 
-def filled2d(data: list, x: list, y: list, n: list = 1) -> list:
-    """Fill 2D data, 1D x, and 1D y by a factor of n using RBS."""
+def filled2d(data: list, x: list, y: list, n: list = 1) -> tuple:
+    """Fill 2D data, 1D x, and 1D y by a factor of n using RBS.
+
+    Args:
+        data (list): 2D or 3D array.
+        x (list): 1D array.
+        y (list): 1D array.
+        n (list, optional): How many times more the new grid is. Defaults to 1.
+
+    Returns:
+        tuple: The interpolated (data, x, y).
+    """
     if not np.ndim(data) in [2, 3]:
         print('data must be 2D or 3D.')
         return -1
@@ -305,7 +326,7 @@ class AstroData():
         self.beam[2] = self.beam[2] + pa
     
     def slice(self, length: float = 0, pa: float = 0,
-              dx: float = None) -> np.array:
+              dx: float = None) -> np.ndarray:
         """Get 1D slice with given a length and a position-angle.
 
         Args:
@@ -314,7 +335,7 @@ class AstroData():
             dx (float, optional): Grid increment. Defaults to None.
 
         Returns:
-            np.array: [x, data]. If self.data is 3D, the output data are in the shape of (len(v), len(x)).
+            np.ndarray: [x, data]. If self.data is 3D, the output data are in the shape of (len(v), len(x)).
         """
         if dx is None: dx = np.abs(self.x[1] - self.x[0])
         n = int(np.ceil(length / 2 / dx))
@@ -412,14 +433,14 @@ class AstroFrame():
         if self.fitsimage is not None and self.center is None:
             self.center = FitsData(self.fitsimage).get_center()
         
-    def pos2xy(self, poslist: list = []) -> list:
+    def pos2xy(self, poslist: list = []) -> np.ndarray:
         """Text or relative to absolute coordinates.
 
          Args:
             poslist (list, optional): Text coordinates or relative coordinates. Defaults to [].
 
          Returns:
-            list: absolute coordinates.
+            np.ndarray: absolute coordinates.
          """
         if np.shape(poslist) == () \
             or (np.shape(poslist) == (2,) 
