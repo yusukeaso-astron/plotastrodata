@@ -115,7 +115,7 @@ def abs2rel(xabs: float, yabs: float, x: list, y: list) -> list:
 def estimate_rms(data: list, sigma: float or str = 'hist') -> float:
     """Estimate a noise level of a N-D array.
        When a float number or None is given, this function just outputs it.
-       Acceptable method names are following.
+       Following methos are acceptable.
        'edge': use data[0] and data[-1].
        'neg': use only negative values.
        'med': use the median of data^2 assuming Gaussian.
