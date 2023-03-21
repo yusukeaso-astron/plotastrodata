@@ -67,17 +67,18 @@ def filled2d(data: list, x: list, y: list, n: list = 1) -> list:
 class AstroData():
     """Data to be processed and parameters for processing the data.
 
-    data (list, optional): 2D or 3D array. Defaults to None.
-    x (list, optional): 1D array. Defaults to None.
-    y (list, optional): 1D array. Defaults to None.
-    v (list, optional): 1D array. Defaults to None.
-    beam (list, optional): [bmaj, bmin, bpa]. Defaults ot [None, None, None].
-    fitsimage (str, optional): Input fits name. Defaults to None.
-    Tb (bool, optional): True means the mapped data are brightness T. Defaults to False.
-    sigma (float or str, optional): Noise level or method for measuring it. Defaults to 'hist'.
-    center (str, optional): Text coordinates. 'common' means initialized value. Defaults to 'common'.
-    restfrq (float, optional): Used for velocity and brightness T. Defaults to None.
-    cfactor (float, optional): Output data times cfactor. Defaults to 1.
+    Args:
+        data (list, optional): 2D or 3D array. Defaults to None.
+        x (list, optional): 1D array. Defaults to None.
+        y (list, optional): 1D array. Defaults to None.
+        v (list, optional): 1D array. Defaults to None.
+        beam (list, optional): [bmaj, bmin, bpa]. Defaults ot [None, None, None].
+        fitsimage (str, optional): Input fits name. Defaults to None.
+        Tb (bool, optional): True means the mapped data are brightness T. Defaults to False.
+        sigma (float or str, optional): Noise level or method for measuring it. Defaults to 'hist'.
+        center (str, optional): Text coordinates. 'common' means initialized value. Defaults to 'common'.
+        restfrq (float, optional): Used for velocity and brightness T. Defaults to None.
+        cfactor (float, optional): Output data times cfactor. Defaults to 1.
     """
     data: np.ndarray = None
     x: np.ndarray = None
@@ -357,21 +358,23 @@ class AstroData():
 
 @dataclass
 class AstroFrame():
-    """
-    vmin (float, optional): Velocity at the upper left. Defaults to -1e10.
-    vmax (float, optional): Velocity at the lower bottom. Defaults to 1e10.
-    vsys (float, optional): Each channel shows v-vsys. Defaults to 0..
-    center (str, optional): Central coordinate like '12h34m56.7s 12d34m56.7s'. Defaults to None.
-    fitsimage (str, optional): Fits to get center. Defaults to None.
-    rmax (float, optional): Map size is 2rmax x 2rmax. Defaults to 1e10.
-    dist (float, optional): Change x and y in arcsec to au. Defaults to 1..
-    xoff (float, optional): Map center relative to the center. Defaults to 0.
-    yoff (float, optional): Map center relative to the center. Defaults to 0.
-    xflip (bool, optional): True means left is positive x. Defaults to True.
-    yflip (bool, optional): True means bottom is positive y. Defaults to False.
-    swapxy (bool, optional): True means x and y are swapped. Defaults to False.
-    pv (bool, optional): Mode for PV diagram. Defaults to False.
-    quadrants (str, optional): '13' or '24'. Quadrants to take mean. None means not taking mean. Defaults to None.
+    """Parameter set to limit and reshape the data in the AstroData format.
+    
+    Args:
+        vmin (float, optional): Velocity at the upper left. Defaults to -1e10.
+        vmax (float, optional): Velocity at the lower bottom. Defaults to 1e10.
+        vsys (float, optional): Each channel shows v-vsys. Defaults to 0..
+        center (str, optional): Central coordinate like '12h34m56.7s 12d34m56.7s'. Defaults to None.
+        fitsimage (str, optional): Fits to get center. Defaults to None.
+        rmax (float, optional): Map size is 2rmax x 2rmax. Defaults to 1e10.
+        dist (float, optional): Change x and y in arcsec to au. Defaults to 1..
+        xoff (float, optional): Map center relative to the center. Defaults to 0.
+        yoff (float, optional): Map center relative to the center. Defaults to 0.
+        xflip (bool, optional): True means left is positive x. Defaults to True.
+        yflip (bool, optional): True means bottom is positive y. Defaults to False.
+        swapxy (bool, optional): True means x and y are swapped. Defaults to False.
+        pv (bool, optional): Mode for PV diagram. Defaults to False.
+        quadrants (str, optional): '13' or '24'. Quadrants to take mean. None means not taking mean. Defaults to None.
     """
     rmax: float = 1e10
     dist: float = 1
