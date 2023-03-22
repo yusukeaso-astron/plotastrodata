@@ -171,14 +171,14 @@
             <span class="n">bpa</span> <span class="o">=</span> <span class="mi">0</span> <span class="k">if</span> <span class="n">bpa</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">bpa</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">bmaj</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">bmin</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">bpa</span> <span class="o">=</span> <span class="n">bmaj</span> <span class="o">*</span> <span class="n">dist</span><span class="p">,</span> <span class="n">bmin</span> <span class="o">*</span> <span class="n">dist</span><span class="p">,</span> <span class="n">bpa</span></div>
 
-<div class="viewcode-block" id="FitsData.get_beam"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.fits_utils.FitsData.get_beam">[docs]</a>    <span class="k">def</span> <span class="nf">get_beam</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dist</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">:</span>
+<div class="viewcode-block" id="FitsData.get_beam"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.fits_utils.FitsData.get_beam">[docs]</a>    <span class="k">def</span> <span class="nf">get_beam</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dist</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Output the beam array of [bmaj, bmin, bpa].</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            dist (float, optional): bmaj and bmin are multiplied by dist. Defaults to 1..</span>
 
 <span class="sd">        Returns:</span>
-<span class="sd">            np.array: [bmaj, bmin, bpa].</span>
+<span class="sd">            np.ndarray: [bmaj, bmin, bpa].</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;bmaj&#39;</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">gen_beam</span><span class="p">(</span><span class="n">dist</span><span class="p">)</span>
@@ -213,11 +213,11 @@
         <span class="k">if</span> <span class="n">log</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span> <span class="n">d</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="n">d</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">]),</span> <span class="kc">None</span><span class="p">))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">d</span></div>
         
-<div class="viewcode-block" id="FitsData.get_data"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.fits_utils.FitsData.get_data">[docs]</a>    <span class="k">def</span> <span class="nf">get_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">:</span>
+<div class="viewcode-block" id="FitsData.get_data"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.fits_utils.FitsData.get_data">[docs]</a>    <span class="k">def</span> <span class="nf">get_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Output data. This method can take the arguments of gen_data().</span>
 
 <span class="sd">        Returns:</span>
-<span class="sd">            np.array: data in the format of np.array.</span>
+<span class="sd">            np.ndarray: data in the format of np.ndarray.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;data&#39;</span><span class="p">):</span> <span class="bp">self</span><span class="o">.</span><span class="n">gen_data</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span></div>

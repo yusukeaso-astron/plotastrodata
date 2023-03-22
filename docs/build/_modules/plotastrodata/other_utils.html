@@ -298,7 +298,7 @@
     <span class="k">return</span> <span class="n">dataout</span><span class="p">,</span> <span class="p">[</span><span class="n">xout</span><span class="p">,</span> <span class="n">yout</span><span class="p">,</span> <span class="n">vout</span><span class="p">]</span></div>
 
 
-<div class="viewcode-block" id="Mfac"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.other_utils.Mfac">[docs]</a><span class="k">def</span> <span class="nf">Mfac</span><span class="p">(</span><span class="n">f0</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">f1</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">:</span>
+<div class="viewcode-block" id="Mfac"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.other_utils.Mfac">[docs]</a><span class="k">def</span> <span class="nf">Mfac</span><span class="p">(</span><span class="n">f0</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">f1</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;2 x 2 matrix for (x,y) --&gt; (f0 * x, f1 * y).</span>
 
 <span class="sd">    Args:</span>
@@ -306,19 +306,19 @@
 <span class="sd">        f1 (float, optional): Defaults to 1.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        np.array: Matrix for the multiplication.</span>
+<span class="sd">        np.ndarray: Matrix for the multiplication.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="n">f0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">f1</span><span class="p">]])</span></div>
 
 
-<div class="viewcode-block" id="Mrot"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.other_utils.Mrot">[docs]</a><span class="k">def</span> <span class="nf">Mrot</span><span class="p">(</span><span class="n">pa</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">:</span>
+<div class="viewcode-block" id="Mrot"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.other_utils.Mrot">[docs]</a><span class="k">def</span> <span class="nf">Mrot</span><span class="p">(</span><span class="n">pa</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;2 x 2 matrix for rotation.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        pa (float, optional): How many degrees are the image rotated by. Defaults to 0.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        np.array: Matrix for the rotation.</span>
+<span class="sd">        np.ndarray: Matrix for the rotation.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">p</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">pa</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">p</span><span class="p">),</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">p</span><span class="p">)],</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">p</span><span class="p">),</span>  <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">p</span><span class="p">)]])</span></div>
