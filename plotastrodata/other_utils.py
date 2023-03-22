@@ -41,7 +41,7 @@ def listing(*args) -> list:
 
 
 def coord2xy(coords: str, coordorg: str = '00h00m00s 00d00m00s',
-             frame: str = 'icrs', frameorg: str = 'icrs') -> list:
+             frame: str = 'icrs', frameorg: str = 'icrs') -> np.ndarray:
     """Transform R.A.-Dec. to relative (deg, deg).
 
     Args:
@@ -51,7 +51,7 @@ def coord2xy(coords: str, coordorg: str = '00h00m00s 00d00m00s',
         frameorg (str): coordinate frame of the origin. Defaults to 'icrs'.
 
     Returns:
-        ndarray: [(array of) alphas, (array of) deltas] in degree. The shape of alphas and deltas is the input shape. With a single input, the output is [alpha0, delta0].
+        np.ndarray: [(array of) alphas, (array of) deltas] in degree. The shape of alphas and deltas is the input shape. With a single input, the output is [alpha0, delta0].
     """
     clist = SkyCoord(coords, frame=frame)
     c0 = SkyCoord(coordorg, frame=frameorg)
@@ -78,31 +78,33 @@ def xy2coord(xy: list, coordorg: str = '00h00m00s 00d00m00s',
     return coords.to_string('hmsdms')
 
 
-def rel2abs(xrel: float, yrel: float, x: list, y: list) -> list:
+def rel2abs(xrel: float, yrel: float,
+            x: np.ndarray, y: np.ndarray) -> np.ndarray:
     """Transform relative coordinates to absolute ones.
 
     Args:
         xrel (float): 0 <= xrel <= 1. 0 and 1 correspond to x[0] and x[-1], respectively. Arbitrary shape.
         yrel (float): same as xrel.
-        x (list): [x0, x0+dx, x0+2dx, ...]
-        y (list): [y0, y0+dy, y0+2dy, ...]
+        x (np.ndarray): [x0, x0+dx, x0+2dx, ...]
+        y (np.ndarray): [y0, y0+dy, y0+2dy, ...]
 
     Returns:
-        ndarray: [xabs, yabs]. Each has the input's shape.
+        np.ndarray: [xabs, yabs]. Each has the input's shape.
     """
     xabs = (1. - xrel)*x[0] + xrel*x[-1]
     yabs = (1. - yrel)*y[0] + yrel*y[-1]
     return np.array([xabs, yabs])
 
 
-def abs2rel(xabs: float, yabs: float, x: list, y: list) -> list:
+def abs2rel(xabs: float, yabs: float,
+            x: np.ndarray, y: np.ndarray) -> np.ndarray:
     """Transform absolute coordinates to relative ones.
 
     Args:
         xabs (float): In the same frame of x.
         yabs (float): In the same frame of y.
-        x (list): [x0, x0+dx, x0+2dx, ...]
-        y (list): [y0, y0+dy, y0+2dy, ...]
+        x (np.ndarray): [x0, x0+dx, x0+2dx, ...]
+        y (np.ndarray): [y0, y0+dy, y0+2dy, ...]
 
     Returns:
         ndarray: [xrel, yrel]. Each has the input's shape. 0 <= xrel, yrel <= 1. 0 and 1 correspond to x[0] and x[-1], respectively.
@@ -112,7 +114,7 @@ def abs2rel(xabs: float, yabs: float, x: list, y: list) -> list:
     return np.array([xrel, yrel])
 
 
-def estimate_rms(data: list, sigma: float or str = 'hist') -> float:
+def estimate_rms(data: np.ndarray, sigma: float or str = 'hist') -> float:
     """Estimate a noise level of a N-D array.
        When a float number or None is given, this function just outputs it.
        Following methos are acceptable.
@@ -125,7 +127,7 @@ def estimate_rms(data: list, sigma: float or str = 'hist') -> float:
        'hist-pbcor': fit histgram with PB-corrected Gaussian.
 
     Args:
-        data (list): N-D array.
+        data (np.ndarray): N-D array.
         sigma (float or str): One of the methods above. Defaults to 'hist'.
         
     Returns:
@@ -174,22 +176,23 @@ def estimate_rms(data: list, sigma: float or str = 'hist') -> float:
     return noise
 
 
-def trim(data: list = None, x: list = None, y: list = None, v: list = None,
+def trim(data: np.ndarray = None, x: np.ndarray = None,
+         y: np.ndarray = None, v: np.ndarray = None,
          xlim: list = None, ylim: list = None, vlim: list = None,
          pv: bool = False) -> tuple:
     """Trim 2D or 3D data by given coordinates and their limits.
 
     Args:
-        x (list, optional): 1D array. Defaults to None.
-        y (list, optional): 1D array. Defaults to None.
-        v (list, optional): 1D array. Defaults to None.
+        data (np.ndarray, optional): 2D or 3D array. Defaults to None.
+        x (np.ndarray, optional): 1D array. Defaults to None.
+        y (np.ndarray, optional): 1D array. Defaults to None.
+        v (np.ndarray, optional): 1D array. Defaults to None.
         xlim (list, optional): [xmin, xmax]. Defaults to None.
         ylim (list, optional): [ymin, ymax]. Defaults to None.
         vlim (list, optional): [vmin, vmax]. Defaults to None.
-        data (list, optional): 2D or 3D array. Defaults to None.
 
     Returns:
-        tuple: Trimmed ([data, [x,y,v]). 
+        tuple: Trimmed (data, [x,y,v]). 
     """
     xout, yout, vout, dataout = x, y, v, data
     if not (x is None or xlim is None):
@@ -247,15 +250,16 @@ def Mrot(pa: float = 0) -> np.array:
     return np.array([[np.cos(p), -np.sin(p)], [np.sin(p),  np.cos(p)]])
 
 
-def dot2d(M: list = [[1, 0], [0, 1]], a: list = [0]) -> np.array:
-    """To maltiply a 2 x 2 matrix to (x,y) with lists of x and y.
+def dot2d(M: np.ndarray = [[1, 0], [0, 1]],
+          a: np.ndarray = [0, 0]) -> np.ndarray:
+    """To maltiply a 2 x 2 matrix to (x,y) with arrays of x and y.
 
     Args:
-        M (list, optional): 2 x 2 matrix. Defaults to [[1, 0], [0, 1]].
-        a (list, optional): 2D vector (of 1D arrays). Defaults to [0].
+        M (np.ndarray, optional): 2 x 2 matrix. Defaults to [[1, 0], [0, 1]].
+        a (np.ndarray, optional): 2D vector (of 1D arrays). Defaults to [0].
 
     Returns:
-        np.array: The 2D vector after the matrix multiplied.
+        np.ndarray: The 2D vector after the matrix multiplied.
     """
     x = M[0, 0] * np.array(a[0]) + M[0, 1] * np.array(a[1])
     y = M[1, 0] * np.array(a[0]) + M[1, 1] * np.array(a[1])

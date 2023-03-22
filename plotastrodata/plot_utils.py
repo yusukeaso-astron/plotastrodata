@@ -291,7 +291,7 @@ class PlotAstroData(AstroFrame):
     kwargs is the arguments of AstroFrame to define plotting ranges.
 
     Args:
-        v (list, optional): Used to set up channels if fitsimage not given. Defaults to [0].
+        v (np.ndarray, optional): Used to set up channels if fitsimage not given. Defaults to [0].
         vskip (int, optional): How many channels are skipped. Defaults to 1.
         veldigit (int, optional): How many digits after the decimal point. Defaults to 2.
         restfrq (float, optional): Used for velocity and brightness T. Defaults to None.
@@ -304,9 +304,9 @@ class PlotAstroData(AstroFrame):
         fig (optional): External plt.figure(). Defaults to None.
         ax (optional): External fig.add_subplot(). Defaults to None.
     """
-    def __init__(self, v: list = [0], vskip: int = 1, veldigit: int = 2,
-                 restfrq: float = None, channelnumber: int = None,
-                 nrows: int = 4, ncols: int = 6,
+    def __init__(self, v: np.ndarray = np.array([0]), vskip: int = 1,
+                 veldigit: int = 2, restfrq: float = None,
+                 channelnumber: int = None, nrows: int = 4, ncols: int = 6,
                  fontsize: int = None, nancolor: str = 'w',
                  figsize: tuple = None, fig=None, ax=None, **kwargs) -> None:
         super().__init__(**kwargs)
@@ -327,7 +327,7 @@ class PlotAstroData(AstroFrame):
             if type(channelnumber) is int: nchan = npages = 1
         def nij2ch(n: int, i: int, j: int):
             return n*nrows*ncols + i*ncols + j
-        def ch2nij(ch: int) -> list:
+        def ch2nij(ch: int) -> tuple:
             n = ch // (nrows*ncols)
             i = (ch - n*nrows*ncols) // ncols
             j = ch % ncols
@@ -360,14 +360,14 @@ class PlotAstroData(AstroFrame):
         self.allchan = np.arange(nchan if channelnumber is None else nv)
         self.bottomleft = nij2ch(np.arange(npages), nrows - 1, 0)
         self.channelnumber = channelnumber
-        def vskipfill(c: list) -> list:
+        def vskipfill(c: np.ndarray) -> np.ndarray:
             """Skip and fill channels with nan.
 
             Args:
-                c (list): 2D or 3D arrays.
+                c (np.ndarray): 2D or 3D arrays.
 
             Returns:
-                list: 3D arrays skipped and filled with nan.
+                np.ndarray: 3D arrays skipped and filled with nan.
             """
             if np.ndim(c) == 3:
                 d = c[::vskip]

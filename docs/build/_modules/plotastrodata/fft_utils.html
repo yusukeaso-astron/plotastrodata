@@ -80,48 +80,49 @@
 
 
 
-<div class="viewcode-block" id="shiftphase"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.fft_utils.shiftphase">[docs]</a><span class="k">def</span> <span class="nf">shiftphase</span><span class="p">(</span><span class="n">F</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">u</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">xoff</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<div class="viewcode-block" id="shiftphase"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.fft_utils.shiftphase">[docs]</a><span class="k">def</span> <span class="nf">shiftphase</span><span class="p">(</span><span class="n">F</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">u</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">xoff</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Shift the phase of 1D FFT by xoff.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        F (list): 1D FFT.</span>
-<span class="sd">        u (list): 1D array. The first frequency coordinate.</span>
+<span class="sd">        F (np.ndarray): 1D FFT.</span>
+<span class="sd">        u (np.ndarray): 1D array. The first frequency coordinate.</span>
 <span class="sd">        xoff (float): From old to new center. Defaults to 0.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        ndarray: phase-shifted FFT.</span>
+<span class="sd">        np.ndarray: phase-shifted FFT.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="n">F</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="mi">1</span><span class="n">j</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">u</span> <span class="o">*</span> <span class="n">xoff</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="shiftphase2"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.fft_utils.shiftphase2">[docs]</a><span class="k">def</span> <span class="nf">shiftphase2</span><span class="p">(</span><span class="n">F</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">u</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                <span class="n">xoff</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">yoff</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<div class="viewcode-block" id="shiftphase2"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.fft_utils.shiftphase2">[docs]</a><span class="k">def</span> <span class="nf">shiftphase2</span><span class="p">(</span><span class="n">F</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">u</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">xoff</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">yoff</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Shift the phase of 2D FFT by (xoff, yoff).</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        F (list): 2D FFT.</span>
-<span class="sd">        u (list): 1D or 2D array. The first frequency coordinate.</span>
-<span class="sd">        v (list): 1D or 2D array. The second frequency coordinate. Defaults to None.</span>
+<span class="sd">        F (np.ndarray): 2D FFT.</span>
+<span class="sd">        u (np.ndarray): 1D or 2D array. The first frequency coordinate.</span>
+<span class="sd">        v (np.ndarray): 1D or 2D array. The second frequency coordinate. Defaults to None.</span>
 <span class="sd">        xoff (float): From old to new center. Defaults to 0.</span>
 <span class="sd">        yoff (float): From old to new center. Defaults to 0.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        ndarray: phase-shifted FFT.</span>
+<span class="sd">        np.ndarray: phase-shifted FFT.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="p">(</span><span class="n">U</span><span class="p">,</span> <span class="n">V</span><span class="p">)</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">ndim</span><span class="p">(</span><span class="n">u</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">F</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="mi">1</span><span class="n">j</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="p">(</span><span class="n">U</span> <span class="o">*</span> <span class="n">xoff</span> <span class="o">+</span> <span class="n">V</span> <span class="o">*</span> <span class="n">yoff</span><span class="p">))</span></div>
 
 
-<div class="viewcode-block" id="fftcentering"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.fft_utils.fftcentering">[docs]</a><span class="k">def</span> <span class="nf">fftcentering</span><span class="p">(</span><span class="n">f</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">xcenter</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<div class="viewcode-block" id="fftcentering"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.fft_utils.fftcentering">[docs]</a><span class="k">def</span> <span class="nf">fftcentering</span><span class="p">(</span><span class="n">f</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">xcenter</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;FFT with the phase referring to a specific point.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        f (list): 1D array for FFT.</span>
-<span class="sd">        x (list, optional): 1D array. The spatial coordinate. Defaults to None.</span>
+<span class="sd">        f (np.ndarray): 1D array for FFT.</span>
+<span class="sd">        x (np.ndarray, optional): 1D array. The spatial coordinate. Defaults to None.</span>
 <span class="sd">        xcenter (float, optional): x of phase reference. Defaults to 0.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        list: [F, u]. F is FFT of f. u is a 1D array of the frequency coordinate.</span>
+<span class="sd">        tuple: (F, u). F is FFT of f. u is a 1D array of the frequency coordinate.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">nx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">f</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
     <span class="k">if</span> <span class="n">x</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">nx</span><span class="p">)</span>
@@ -130,22 +131,22 @@
     <span class="n">u</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">fftshift</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">fftfreq</span><span class="p">(</span><span class="n">nx</span><span class="p">,</span> <span class="n">d</span><span class="o">=</span><span class="n">dx</span><span class="p">))</span>
     <span class="n">F</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">fftshift</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">fft</span><span class="p">(</span><span class="n">f</span><span class="p">))</span>
     <span class="n">F</span> <span class="o">=</span> <span class="n">shiftphase</span><span class="p">(</span><span class="n">F</span><span class="p">,</span> <span class="n">u</span><span class="o">=</span><span class="n">u</span><span class="p">,</span> <span class="n">xoff</span><span class="o">=</span><span class="n">xcenter</span> <span class="o">-</span> <span class="n">X</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">dx</span><span class="p">)</span>
-    <span class="k">return</span> <span class="p">[</span><span class="n">F</span><span class="p">,</span> <span class="n">u</span><span class="p">]</span></div>
+    <span class="k">return</span> <span class="n">F</span><span class="p">,</span> <span class="n">u</span></div>
 
 
-<div class="viewcode-block" id="fftcentering2"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.fft_utils.fftcentering2">[docs]</a><span class="k">def</span> <span class="nf">fftcentering2</span><span class="p">(</span><span class="n">f</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                  <span class="n">xcenter</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">ycenter</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<div class="viewcode-block" id="fftcentering2"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.fft_utils.fftcentering2">[docs]</a><span class="k">def</span> <span class="nf">fftcentering2</span><span class="p">(</span><span class="n">f</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                  <span class="n">xcenter</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">ycenter</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;FFT with the phase referring to a specific point.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        f (list): 2D array for FFT.</span>
-<span class="sd">        x (list, optional): 1D or 2D array. The first spatial coordinate. Defaults to None.</span>
-<span class="sd">        y (list, optional): 1D or 2D array. The second spatial coordinate. Defaults to None.</span>
+<span class="sd">        f (np.ndarray): 2D array for FFT.</span>
+<span class="sd">        x (np.ndarray, optional): 1D or 2D array. The first spatial coordinate. Defaults to None.</span>
+<span class="sd">        y (np.ndarray, optional): 1D or 2D array. The second spatial coordinate. Defaults to None.</span>
 <span class="sd">        xcenter (float, optional): x of phase reference. Defaults to 0.</span>
 <span class="sd">        ycenter (float, optional): y of phase reference. Defaults to 0.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        list: [F, u, v]. F is FFT of f. u and v are 1D arrays of the frequency coordinates.</span>
+<span class="sd">        tuple: (F, u, v). F is FFT of f. u and v are 1D arrays of the frequency coordinates.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">ny</span><span class="p">,</span> <span class="n">nx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">x</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">nx</span><span class="p">)</span>
@@ -157,22 +158,22 @@
     <span class="n">v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">fftshift</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">fftfreq</span><span class="p">(</span><span class="n">ny</span><span class="p">,</span> <span class="n">d</span><span class="o">=</span><span class="n">dy</span><span class="p">))</span>
     <span class="n">F</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">fftshift</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">fft2</span><span class="p">(</span><span class="n">f</span><span class="p">))</span>
     <span class="n">F</span> <span class="o">=</span> <span class="n">shiftphase2</span><span class="p">(</span><span class="n">F</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">xcenter</span> <span class="o">-</span> <span class="n">X</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">dx</span><span class="p">,</span> <span class="n">ycenter</span> <span class="o">-</span> <span class="n">Y</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">dy</span><span class="p">)</span>
-    <span class="k">return</span> <span class="p">[</span><span class="n">F</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">]</span></div>
+    <span class="k">return</span> <span class="n">F</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">v</span></div>
 
 
-<div class="viewcode-block" id="ifftcentering"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.fft_utils.ifftcentering">[docs]</a><span class="k">def</span> <span class="nf">ifftcentering</span><span class="p">(</span><span class="n">F</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">u</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">xcenter</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
-                  <span class="n">x0</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">outreal</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<div class="viewcode-block" id="ifftcentering"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.fft_utils.ifftcentering">[docs]</a><span class="k">def</span> <span class="nf">ifftcentering</span><span class="p">(</span><span class="n">F</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">u</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">xcenter</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+                  <span class="n">x0</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">outreal</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;inverse FFT with the phase referring to a specific point.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        F (list): 1D array. A result of FFT.</span>
-<span class="sd">        u (list, optional): 1D array. The frequency coordinate. Defaults to None.</span>
+<span class="sd">        F (np.ndarray): 1D array. A result of FFT.</span>
+<span class="sd">        u (np.ndarray, optional): 1D array. The frequency coordinate. Defaults to None.</span>
 <span class="sd">        xcenter (float, optional): x of phase reference (used in fftcentering). Defaults to 0.</span>
 <span class="sd">        x0 (float, optional): spatial coordinate of x[0]. Defaults to None.</span>
 <span class="sd">        outreal (bool, optional): whether output only the real part. Defaults to True.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        list: [f, x]. f is iFFT of F. x is a 1D array of the spatial coordinate.</span>
+<span class="sd">        tuple: (f, x). f is iFFT of F. x is a 1D array of the spatial coordinate.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">nx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">F</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
     <span class="k">if</span> <span class="n">u</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="n">u</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">fftshift</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">fftfreq</span><span class="p">(</span><span class="n">nx</span><span class="p">,</span> <span class="n">d</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
@@ -182,19 +183,19 @@
     <span class="n">F</span> <span class="o">=</span> <span class="n">shiftphase</span><span class="p">(</span><span class="n">F</span><span class="p">,</span> <span class="n">u</span><span class="o">=</span><span class="n">u</span><span class="p">,</span> <span class="n">xoff</span><span class="o">=</span><span class="n">x</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">dx</span> <span class="o">-</span> <span class="n">xcenter</span><span class="p">)</span>
     <span class="n">f</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">ifft</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">ifftshift</span><span class="p">(</span><span class="n">F</span><span class="p">))</span>
     <span class="k">if</span> <span class="n">outreal</span><span class="p">:</span> <span class="n">f</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
-    <span class="k">return</span> <span class="p">[</span><span class="n">f</span><span class="p">,</span> <span class="n">x</span><span class="p">]</span></div>
+    <span class="k">return</span> <span class="n">f</span><span class="p">,</span> <span class="n">x</span></div>
 
 
-<div class="viewcode-block" id="ifftcentering2"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.fft_utils.ifftcentering2">[docs]</a><span class="k">def</span> <span class="nf">ifftcentering2</span><span class="p">(</span><span class="n">F</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">u</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<div class="viewcode-block" id="ifftcentering2"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.fft_utils.ifftcentering2">[docs]</a><span class="k">def</span> <span class="nf">ifftcentering2</span><span class="p">(</span><span class="n">F</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">u</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                    <span class="n">xcenter</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">ycenter</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
                    <span class="n">x0</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">y0</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                   <span class="n">outreal</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+                   <span class="n">outreal</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;inverse FFT with the phase referring to a specific point.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        F (list): 2D array. A result of FFT.</span>
-<span class="sd">        u (list, optional): 1D or 2D array. The first frequency coordinate. Defaults to None.</span>
-<span class="sd">        v (list, optional): 1D or 2D array. The second frequency cooridnate. Defaults to None.</span>
+<span class="sd">        F (np.ndarray): 2D array. A result of FFT.</span>
+<span class="sd">        u (np.ndarray, optional): 1D or 2D array. The first frequency coordinate. Defaults to None.</span>
+<span class="sd">        v (np.ndarray, optional): 1D or 2D array. The second frequency cooridnate. Defaults to None.</span>
 <span class="sd">        xcenter (float, optional): x of phase reference (used in fftcentering2). Defaults to 0.</span>
 <span class="sd">        ycenter (float, optional): y of phase reference (used in fftcentering2). Defaults to 0.</span>
 <span class="sd">        x0 (float, optional): spatial coordinate of x[0]. Defaults to None.</span>
@@ -202,7 +203,7 @@
 <span class="sd">        outreal (bool, optional): whether output only the real part. Defaults to True.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        list: [f, x, y]. f is iFFT of F. x and y are 1D arrays of the spatial coordinates.</span>
+<span class="sd">        tuple: (f, x, y). f is iFFT of F. x and y are 1D arrays of the spatial coordinates.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">ny</span><span class="p">,</span> <span class="n">nx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">F</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">u</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="n">u</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">fftshift</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">fftfreq</span><span class="p">(</span><span class="n">nx</span><span class="p">,</span> <span class="n">d</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
@@ -215,21 +216,22 @@
     <span class="n">F</span> <span class="o">=</span> <span class="n">shiftphase</span><span class="p">(</span><span class="n">F</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">x</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">dx</span> <span class="o">-</span> <span class="n">xcenter</span><span class="p">,</span> <span class="n">y</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">dy</span> <span class="o">-</span> <span class="n">ycenter</span><span class="p">)</span>
     <span class="n">f</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">ifft2</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">ifftshift</span><span class="p">(</span><span class="n">F</span><span class="p">))</span>
     <span class="k">if</span> <span class="n">outreal</span><span class="p">:</span> <span class="n">f</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
-    <span class="k">return</span> <span class="p">[</span><span class="n">f</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">]</span></div>
+    <span class="k">return</span> <span class="n">f</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span></div>
 
 
-<div class="viewcode-block" id="zeropadding"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.fft_utils.zeropadding">[docs]</a><span class="k">def</span> <span class="nf">zeropadding</span><span class="p">(</span><span class="n">f</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">xlim</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">ylim</span><span class="p">:</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<div class="viewcode-block" id="zeropadding"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.fft_utils.zeropadding">[docs]</a><span class="k">def</span> <span class="nf">zeropadding</span><span class="p">(</span><span class="n">f</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                <span class="n">xlim</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">ylim</span><span class="p">:</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Pad an outer region with zero.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        f (list): Input 2D array.</span>
-<span class="sd">        x (list): 1D array.</span>
-<span class="sd">        y (list): 1D array.</span>
+<span class="sd">        f (np.ndarray): Input 2D array.</span>
+<span class="sd">        x (np.ndarray): 1D array.</span>
+<span class="sd">        y (np.ndarray): 1D array.</span>
 <span class="sd">        xlim (list): range of x after the zero padding.</span>
 <span class="sd">        ylim (list): range of y after the zero padding.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        list: [fnew, xnew, ynew]. fnew is an 2D array and xnew and ynew are 1D arrays after the zero padding.</span>
+<span class="sd">        tuple: (fnew, xnew, ynew). fnew is an 2D array and xnew and ynew are 1D arrays after the zero padding.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">nx</span><span class="p">,</span> <span class="n">ny</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
     <span class="n">dx</span><span class="p">,</span> <span class="n">dy</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">y</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">y</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
@@ -245,12 +247,12 @@
     <span class="n">ynew</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">y</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">ny0</span><span class="o">*</span><span class="n">dy</span><span class="p">,</span> <span class="n">y</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">ny1</span><span class="o">*</span><span class="n">dy</span><span class="p">,</span> <span class="n">nynew</span><span class="p">)</span>
     <span class="n">fnew</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">nynew</span><span class="p">,</span> <span class="n">nxnew</span><span class="p">))</span>
     <span class="n">fnew</span><span class="p">[</span><span class="n">ny0</span><span class="p">:</span><span class="n">ny0</span> <span class="o">+</span> <span class="n">ny</span><span class="p">,</span> <span class="n">nx0</span><span class="p">:</span><span class="n">nx0</span> <span class="o">+</span> <span class="n">nx</span><span class="p">]</span> <span class="o">=</span> <span class="n">f</span>
-    <span class="k">return</span> <span class="p">[</span><span class="n">fnew</span><span class="p">,</span> <span class="n">xnew</span><span class="p">,</span> <span class="n">ynew</span><span class="p">]</span></div>
+    <span class="k">return</span> <span class="n">fnew</span><span class="p">,</span> <span class="n">xnew</span><span class="p">,</span> <span class="n">ynew</span></div>
 
 
 <div class="viewcode-block" id="fftfits"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.fft_utils.fftfits">[docs]</a><span class="k">def</span> <span class="nf">fftfits</span><span class="p">(</span><span class="n">fitsimage</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">center</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">lam</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
             <span class="n">xlim</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">ylim</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-            <span class="n">plot</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+            <span class="n">plot</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;FFT a fits image with the phase referring to a specific point.</span>
 
 <span class="sd">    Args:</span>
@@ -262,7 +264,7 @@
 <span class="sd">        plot (bool, optional): Check F through images.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        list: [F, u, v]. F is FFT of f in the unit of Jy. u and v are 1D arrays in the unit of lambda or meter if lam it not unity.</span>
+<span class="sd">        tuple: (F, u, v). F is FFT of f in the unit of Jy. u and v are 1D arrays in the unit of lambda or meter if lam it not unity.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">f</span><span class="p">,</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">v</span><span class="p">),</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">fits2data</span><span class="p">(</span><span class="n">fitsimage</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="n">center</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">xlim</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">ylim</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -293,21 +295,21 @@
         <span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
-    <span class="k">return</span> <span class="p">[</span><span class="n">F</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">]</span></div>
+    <span class="k">return</span> <span class="n">F</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">v</span></div>
 
 
-<div class="viewcode-block" id="findindex"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.fft_utils.findindex">[docs]</a><span class="k">def</span> <span class="nf">findindex</span><span class="p">(</span><span class="n">u</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-              <span class="n">uobs</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">vobs</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<div class="viewcode-block" id="findindex"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.fft_utils.findindex">[docs]</a><span class="k">def</span> <span class="nf">findindex</span><span class="p">(</span><span class="n">u</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+              <span class="n">uobs</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">vobs</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Find indicies of the observed visibility points.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        u (list, optional): 1D array. The first frequency coordinate. Defaults to None.</span>
-<span class="sd">        v (list, optional): 1D array. The second frequency cooridnate. Defaults to None.</span>
-<span class="sd">        uobs (list, optional): 1D array. Observed u. Defaults to None.</span>
-<span class="sd">        vobs (list, optional): 1D array. Observed v. Defaults to None.</span>
+<span class="sd">        u (np.ndarray, optional): 1D array. The first frequency coordinate. Defaults to None.</span>
+<span class="sd">        v (np.ndarray, optional): 1D array. The second frequency cooridnate. Defaults to None.</span>
+<span class="sd">        uobs (np.ndarray, optional): 1D array. Observed u. Defaults to None.</span>
+<span class="sd">        vobs (np.ndarray, optional): 1D array. Observed v. Defaults to None.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        list: Indicies or a list of indicies.</span>
+<span class="sd">        np.ndarray: Indicies or an array of indicies.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">u</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span> <span class="n">Nu</span><span class="p">,</span> <span class="n">du</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">u</span><span class="p">),</span> <span class="n">u</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">u</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
     <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span> <span class="n">Nv</span><span class="p">,</span> <span class="n">dv</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="p">),</span> <span class="n">v</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">v</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
@@ -321,30 +323,32 @@
 
 
 <div class="viewcode-block" id="fftfitssample"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.fft_utils.fftfitssample">[docs]</a><span class="k">def</span> <span class="nf">fftfitssample</span><span class="p">(</span><span class="n">fitsimage</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">center</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                  <span class="n">index_u</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">index_v</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                  <span class="n">index_u</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">index_v</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                   <span class="n">xlim</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">ylim</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                   <span class="n">getindex</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-                  <span class="n">u_sample</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">v_sample</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+                  <span class="n">u_sample</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                  <span class="n">v_sample</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Find indicies or the visibilities on them from an image fits file.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        fitsimage (str): Input fits name in the unit of Jy/pixel.</span>
 <span class="sd">        center (str, optional): Text coordinate. Defaults to None.</span>
-<span class="sd">        index_u (list, optional): Indicies. Output from the getindex mode. Defaults to None.</span>
-<span class="sd">        index_v (list, optional): Indicies. Output from the getindex mode. Defaults to None.</span>
+<span class="sd">        index_u (np.ndarray, optional): Indicies. Output from the getindex mode. Defaults to None.</span>
+<span class="sd">        index_v (np.ndarray, optional): Indicies. Output from the getindex mode. Defaults to None.</span>
 <span class="sd">        xlim (list, optional): Range of x for zero padding in arcsec.</span>
 <span class="sd">        ylim (list, optional): Range of y for zero padding in arcsec.</span>
 <span class="sd">        getindex (bool, optional): True outputs [index_u, index_v]. Defaults to False.</span>
-<span class="sd">        u_sample (list, optional): 1D array. Observed u. Defaults to None.</span>
-<span class="sd">        v_sample (list, optional): 1D array. Observed u. Defaults to None.</span>
+<span class="sd">        u_sample (np.ndarray, optional): 1D array. Observed u. Defaults to None.</span>
+<span class="sd">        v_sample (np.ndarray, optional): 1D array. Observed u. Defaults to None.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        list: _description_</span>
+<span class="sd">        np.ndarray: Array of indicies or sampled FFT.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">F</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">v</span> <span class="o">=</span> <span class="n">fftfits</span><span class="p">(</span><span class="n">fitsimage</span><span class="o">=</span><span class="n">fitsimage</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="n">center</span><span class="p">,</span> <span class="n">xlim</span><span class="o">=</span><span class="n">xlim</span><span class="p">,</span> <span class="n">ylim</span><span class="o">=</span><span class="n">ylim</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">getindex</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">index_u</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">index_v</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">index_u</span><span class="p">,</span> <span class="n">index_v</span> <span class="o">=</span> <span class="n">findindex</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">u_sample</span><span class="p">,</span> <span class="n">v_sample</span><span class="p">)</span>
-        <span class="k">return</span> <span class="p">[</span><span class="n">index_u</span><span class="p">,</span> <span class="n">index_v</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">getindex</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">index_u</span><span class="p">,</span> <span class="n">index_v</span><span class="p">])</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">F</span><span class="p">[</span><span class="n">index_v</span><span class="p">,</span> <span class="n">index_u</span><span class="p">]</span></div>
 </pre></div>

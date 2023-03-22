@@ -6,48 +6,49 @@ from plotastrodata.plot_utils import set_rcparams
 
 
 
-def shiftphase(F: list, u: list, xoff: float = 0) -> list:
+def shiftphase(F: np.ndarray, u: np.ndarray, xoff: float = 0) -> np.ndarray:
     """Shift the phase of 1D FFT by xoff.
 
     Args:
-        F (list): 1D FFT.
-        u (list): 1D array. The first frequency coordinate.
+        F (np.ndarray): 1D FFT.
+        u (np.ndarray): 1D array. The first frequency coordinate.
         xoff (float): From old to new center. Defaults to 0.
 
     Returns:
-        ndarray: phase-shifted FFT.
+        np.ndarray: phase-shifted FFT.
     """
     return F * np.exp(1j * 2 * np.pi * u * xoff)
 
 
-def shiftphase2(F: list, u: list, v: list = None,
-                xoff: float = 0, yoff: float = 0) -> list:
+def shiftphase2(F: np.ndarray, u: np.ndarray, v: np.ndarray = None,
+                xoff: float = 0, yoff: float = 0) -> np.ndarray:
     """Shift the phase of 2D FFT by (xoff, yoff).
 
     Args:
-        F (list): 2D FFT.
-        u (list): 1D or 2D array. The first frequency coordinate.
-        v (list): 1D or 2D array. The second frequency coordinate. Defaults to None.
+        F (np.ndarray): 2D FFT.
+        u (np.ndarray): 1D or 2D array. The first frequency coordinate.
+        v (np.ndarray): 1D or 2D array. The second frequency coordinate. Defaults to None.
         xoff (float): From old to new center. Defaults to 0.
         yoff (float): From old to new center. Defaults to 0.
 
     Returns:
-        ndarray: phase-shifted FFT.
+        np.ndarray: phase-shifted FFT.
     """
     (U, V) = np.meshgrid(u, v) if np.ndim(u) == 1 else (u, v)
     return F * np.exp(1j * 2 * np.pi * (U * xoff + V * yoff))
 
 
-def fftcentering(f: list, x: list = None, xcenter: float = 0) -> list:
+def fftcentering(f: np.ndarray, x: np.ndarray = None,
+                 xcenter: float = 0) -> tuple:
     """FFT with the phase referring to a specific point.
 
     Args:
-        f (list): 1D array for FFT.
-        x (list, optional): 1D array. The spatial coordinate. Defaults to None.
+        f (np.ndarray): 1D array for FFT.
+        x (np.ndarray, optional): 1D array. The spatial coordinate. Defaults to None.
         xcenter (float, optional): x of phase reference. Defaults to 0.
 
     Returns:
-        list: [F, u]. F is FFT of f. u is a 1D array of the frequency coordinate.
+        tuple: (F, u). F is FFT of f. u is a 1D array of the frequency coordinate.
     """
     nx = np.shape(f)[0]
     if x is None: x = np.arange(nx)
@@ -56,22 +57,22 @@ def fftcentering(f: list, x: list = None, xcenter: float = 0) -> list:
     u = np.fft.fftshift(np.fft.fftfreq(nx, d=dx))
     F = np.fft.fftshift(np.fft.fft(f))
     F = shiftphase(F, u=u, xoff=xcenter - X[-1] - dx)
-    return [F, u]
+    return F, u
 
 
-def fftcentering2(f: list, x: list = None, y: list = None,
-                  xcenter: float = 0, ycenter: float = 0) -> list:
+def fftcentering2(f: np.ndarray, x: np.ndarray = None, y: np.ndarray = None,
+                  xcenter: float = 0, ycenter: float = 0) -> tuple:
     """FFT with the phase referring to a specific point.
 
     Args:
-        f (list): 2D array for FFT.
-        x (list, optional): 1D or 2D array. The first spatial coordinate. Defaults to None.
-        y (list, optional): 1D or 2D array. The second spatial coordinate. Defaults to None.
+        f (np.ndarray): 2D array for FFT.
+        x (np.ndarray, optional): 1D or 2D array. The first spatial coordinate. Defaults to None.
+        y (np.ndarray, optional): 1D or 2D array. The second spatial coordinate. Defaults to None.
         xcenter (float, optional): x of phase reference. Defaults to 0.
         ycenter (float, optional): y of phase reference. Defaults to 0.
 
     Returns:
-        list: [F, u, v]. F is FFT of f. u and v are 1D arrays of the frequency coordinates.
+        tuple: (F, u, v). F is FFT of f. u and v are 1D arrays of the frequency coordinates.
     """
     ny, nx = np.shape(f)
     if x is None: x = np.arange(nx)
@@ -83,22 +84,22 @@ def fftcentering2(f: list, x: list = None, y: list = None,
     v = np.fft.fftshift(np.fft.fftfreq(ny, d=dy))
     F = np.fft.fftshift(np.fft.fft2(f))
     F = shiftphase2(F, u, v, xcenter - X[-1] - dx, ycenter - Y[-1] - dy)
-    return [F, u, v]
+    return F, u, v
 
 
-def ifftcentering(F: list, u: list = None, xcenter: float = 0,
-                  x0: float = None, outreal: bool = True) -> list:
+def ifftcentering(F: np.ndarray, u: np.ndarray = None, xcenter: float = 0,
+                  x0: float = None, outreal: bool = True) -> tuple:
     """inverse FFT with the phase referring to a specific point.
 
     Args:
-        F (list): 1D array. A result of FFT.
-        u (list, optional): 1D array. The frequency coordinate. Defaults to None.
+        F (np.ndarray): 1D array. A result of FFT.
+        u (np.ndarray, optional): 1D array. The frequency coordinate. Defaults to None.
         xcenter (float, optional): x of phase reference (used in fftcentering). Defaults to 0.
         x0 (float, optional): spatial coordinate of x[0]. Defaults to None.
         outreal (bool, optional): whether output only the real part. Defaults to True.
 
     Returns:
-        list: [f, x]. f is iFFT of F. x is a 1D array of the spatial coordinate.
+        tuple: (f, x). f is iFFT of F. x is a 1D array of the spatial coordinate.
     """
     nx = np.shape(F)[0]
     if u is None: u = np.fft.fftshift(np.fft.fftfreq(nx, d=1))
@@ -108,19 +109,19 @@ def ifftcentering(F: list, u: list = None, xcenter: float = 0,
     F = shiftphase(F, u=u, xoff=x[-1] + dx - xcenter)
     f = np.fft.ifft(np.fft.ifftshift(F))
     if outreal: f = np.real(f)
-    return [f, x]
+    return f, x
 
 
-def ifftcentering2(F: list, u: list = None, v: list = None,
+def ifftcentering2(F: np.ndarray, u: np.ndarray = None, v: np.ndarray = None,
                    xcenter: float = 0, ycenter: float = 0,
                    x0: float = None, y0: float = None,
-                   outreal: bool = True) -> list:
+                   outreal: bool = True) -> tuple:
     """inverse FFT with the phase referring to a specific point.
 
     Args:
-        F (list): 2D array. A result of FFT.
-        u (list, optional): 1D or 2D array. The first frequency coordinate. Defaults to None.
-        v (list, optional): 1D or 2D array. The second frequency cooridnate. Defaults to None.
+        F (np.ndarray): 2D array. A result of FFT.
+        u (np.ndarray, optional): 1D or 2D array. The first frequency coordinate. Defaults to None.
+        v (np.ndarray, optional): 1D or 2D array. The second frequency cooridnate. Defaults to None.
         xcenter (float, optional): x of phase reference (used in fftcentering2). Defaults to 0.
         ycenter (float, optional): y of phase reference (used in fftcentering2). Defaults to 0.
         x0 (float, optional): spatial coordinate of x[0]. Defaults to None.
@@ -128,7 +129,7 @@ def ifftcentering2(F: list, u: list = None, v: list = None,
         outreal (bool, optional): whether output only the real part. Defaults to True.
 
     Returns:
-        list: [f, x, y]. f is iFFT of F. x and y are 1D arrays of the spatial coordinates.
+        tuple: (f, x, y). f is iFFT of F. x and y are 1D arrays of the spatial coordinates.
     """
     ny, nx = np.shape(F)
     if u is None: u = np.fft.fftshift(np.fft.fftfreq(nx, d=1))
@@ -141,21 +142,22 @@ def ifftcentering2(F: list, u: list = None, v: list = None,
     F = shiftphase(F, u, v, x[-1] + dx - xcenter, y[-1] + dy - ycenter)
     f = np.fft.ifft2(np.fft.ifftshift(F))
     if outreal: f = np.real(f)
-    return [f, x, y]
+    return f, x, y
 
 
-def zeropadding(f: list, x: list, y: list, xlim: list, ylim: list) -> list:
+def zeropadding(f: np.ndarray, x: np.ndarray, y: np.ndarray,
+                xlim: list, ylim: list) -> tuple:
     """Pad an outer region with zero.
 
     Args:
-        f (list): Input 2D array.
-        x (list): 1D array.
-        y (list): 1D array.
+        f (np.ndarray): Input 2D array.
+        x (np.ndarray): 1D array.
+        y (np.ndarray): 1D array.
         xlim (list): range of x after the zero padding.
         ylim (list): range of y after the zero padding.
 
     Returns:
-        list: [fnew, xnew, ynew]. fnew is an 2D array and xnew and ynew are 1D arrays after the zero padding.
+        tuple: (fnew, xnew, ynew). fnew is an 2D array and xnew and ynew are 1D arrays after the zero padding.
     """
     nx, ny = len(x), len(y)
     dx, dy = x[1] - x[0], y[1] - y[0]
@@ -171,12 +173,12 @@ def zeropadding(f: list, x: list, y: list, xlim: list, ylim: list) -> list:
     ynew = np.linspace(y[0] - ny0*dy, y[-1] + ny1*dy, nynew)
     fnew = np.zeros((nynew, nxnew))
     fnew[ny0:ny0 + ny, nx0:nx0 + nx] = f
-    return [fnew, xnew, ynew]
+    return fnew, xnew, ynew
 
 
 def fftfits(fitsimage: str, center: str = None, lam: float = 1,
             xlim: list = None, ylim: list = None,
-            plot: bool = False) -> list:
+            plot: bool = False) -> tuple:
     """FFT a fits image with the phase referring to a specific point.
 
     Args:
@@ -188,7 +190,7 @@ def fftfits(fitsimage: str, center: str = None, lam: float = 1,
         plot (bool, optional): Check F through images.
 
     Returns:
-        list: [F, u, v]. F is FFT of f in the unit of Jy. u and v are 1D arrays in the unit of lambda or meter if lam it not unity.
+        tuple: (F, u, v). F is FFT of f in the unit of Jy. u and v are 1D arrays in the unit of lambda or meter if lam it not unity.
     """
     f, (x, y, v), _, _, _ = fits2data(fitsimage, center=center)
     if xlim is not None and ylim is not None:
@@ -219,21 +221,21 @@ def fftfits(fitsimage: str, center: str = None, lam: float = 1,
         fig.tight_layout()
         plt.show()
         plt.close()
-    return [F, u, v]
+    return F, u, v
 
 
-def findindex(u: list = None, v: list = None,
-              uobs: list = None, vobs: list = None) -> list:
+def findindex(u: np.ndarray = None, v: np.ndarray = None,
+              uobs: np.ndarray = None, vobs: np.ndarray = None) -> np.ndarray:
     """Find indicies of the observed visibility points.
 
     Args:
-        u (list, optional): 1D array. The first frequency coordinate. Defaults to None.
-        v (list, optional): 1D array. The second frequency cooridnate. Defaults to None.
-        uobs (list, optional): 1D array. Observed u. Defaults to None.
-        vobs (list, optional): 1D array. Observed v. Defaults to None.
+        u (np.ndarray, optional): 1D array. The first frequency coordinate. Defaults to None.
+        v (np.ndarray, optional): 1D array. The second frequency cooridnate. Defaults to None.
+        uobs (np.ndarray, optional): 1D array. Observed u. Defaults to None.
+        vobs (np.ndarray, optional): 1D array. Observed v. Defaults to None.
 
     Returns:
-        list: Indicies or a list of indicies.
+        np.ndarray: Indicies or an array of indicies.
     """
     if u is not None: Nu, du = len(u), u[1] - u[0]
     if v is not None: Nv, dv = len(v), v[1] - v[0]
@@ -247,29 +249,31 @@ def findindex(u: list = None, v: list = None,
 
 
 def fftfitssample(fitsimage: str, center: str = None,
-                  index_u: list = None, index_v: list = None,
+                  index_u: np.ndarray = None, index_v: np.ndarray = None,
                   xlim: list = None, ylim: list = None,
                   getindex: bool = False,
-                  u_sample: list = None, v_sample: list = None) -> list:
+                  u_sample: np.ndarray = None,
+                  v_sample: np.ndarray = None) -> np.ndarray:
     """Find indicies or the visibilities on them from an image fits file.
 
     Args:
         fitsimage (str): Input fits name in the unit of Jy/pixel.
         center (str, optional): Text coordinate. Defaults to None.
-        index_u (list, optional): Indicies. Output from the getindex mode. Defaults to None.
-        index_v (list, optional): Indicies. Output from the getindex mode. Defaults to None.
+        index_u (np.ndarray, optional): Indicies. Output from the getindex mode. Defaults to None.
+        index_v (np.ndarray, optional): Indicies. Output from the getindex mode. Defaults to None.
         xlim (list, optional): Range of x for zero padding in arcsec.
         ylim (list, optional): Range of y for zero padding in arcsec.
         getindex (bool, optional): True outputs [index_u, index_v]. Defaults to False.
-        u_sample (list, optional): 1D array. Observed u. Defaults to None.
-        v_sample (list, optional): 1D array. Observed u. Defaults to None.
+        u_sample (np.ndarray, optional): 1D array. Observed u. Defaults to None.
+        v_sample (np.ndarray, optional): 1D array. Observed u. Defaults to None.
 
     Returns:
-        list: _description_
+        np.ndarray: Array of indicies or sampled FFT.
     """
     F, u, v = fftfits(fitsimage=fitsimage, center=center, xlim=xlim, ylim=ylim)
-    if getindex:
+    if index_u is None or index_v is None:
         index_u, index_v = findindex(u, v, u_sample, v_sample)
-        return [index_u, index_v]
+    if getindex:
+        return np.array([index_u, index_v])
     else:
         return F[index_v, index_u]

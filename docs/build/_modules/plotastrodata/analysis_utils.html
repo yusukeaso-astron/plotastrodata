@@ -85,37 +85,57 @@
 
 
 
-<div class="viewcode-block" id="quadrantmean"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.analysis_utils.quadrantmean">[docs]</a><span class="k">def</span> <span class="nf">quadrantmean</span><span class="p">(</span><span class="n">c</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">quadrants</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span><span class="s1">&#39;13&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Take mean between 1st and 3rd (or 2nd and 4th) quadrants.&quot;&quot;&quot;</span>
+<div class="viewcode-block" id="quadrantmean"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.analysis_utils.quadrantmean">[docs]</a><span class="k">def</span> <span class="nf">quadrantmean</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                 <span class="n">quadrants</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span><span class="s1">&#39;13&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Take mean between 1st and 3rd (or 2nd and 4th) quadrants.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        data (np.ndarray): 2D array.</span>
+<span class="sd">        x (np.ndarray): 1D array. First coordinate.</span>
+<span class="sd">        y (np.ndarray): 1D array. Second coordinate.</span>
+<span class="sd">        quadrants (str, optional): &#39;13&#39; or &#39;24&#39;. Defaults to &#39;13&#39;.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        tuple: Averaged (data, x, y).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">ndim</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;data must be 2D.&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="o">-</span><span class="mi">1</span>
+    
     <span class="n">dx</span><span class="p">,</span> <span class="n">dy</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">y</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">y</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
     <span class="n">nx</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span> <span class="o">/</span> <span class="n">dx</span><span class="p">))</span>
     <span class="n">ny</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">y</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">y</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span> <span class="o">/</span> <span class="n">dy</span><span class="p">))</span>
     <span class="n">xnew</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="n">nx</span> <span class="o">*</span> <span class="n">dx</span><span class="p">,</span> <span class="n">nx</span> <span class="o">*</span> <span class="n">dx</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">nx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
     <span class="n">ynew</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="n">ny</span> <span class="o">*</span> <span class="n">dy</span><span class="p">,</span> <span class="n">ny</span> <span class="o">*</span> <span class="n">dy</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">ny</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">quadrants</span> <span class="o">==</span> <span class="s1">&#39;13&#39;</span><span class="p">:</span>
-        <span class="n">cnew</span> <span class="o">=</span> <span class="n">RBS</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">c</span><span class="p">)(</span><span class="n">ynew</span><span class="p">,</span> <span class="n">xnew</span><span class="p">)</span>
+        <span class="n">datanew</span> <span class="o">=</span> <span class="n">RBS</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">data</span><span class="p">)(</span><span class="n">ynew</span><span class="p">,</span> <span class="n">xnew</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">quadrants</span> <span class="o">==</span> <span class="s1">&#39;24&#39;</span><span class="p">:</span>
-        <span class="n">cnew</span> <span class="o">=</span> <span class="n">RBS</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="o">-</span><span class="n">x</span><span class="p">,</span> <span class="n">c</span><span class="p">)(</span><span class="n">ynew</span><span class="p">,</span> <span class="n">xnew</span><span class="p">)</span>
+        <span class="n">datanew</span> <span class="o">=</span> <span class="n">RBS</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="o">-</span><span class="n">x</span><span class="p">,</span> <span class="n">data</span><span class="p">)(</span><span class="n">ynew</span><span class="p">,</span> <span class="n">xnew</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;quadrants must be </span><span class="se">\&#39;</span><span class="s1">13</span><span class="se">\&#39;</span><span class="s1"> or </span><span class="se">\&#39;</span><span class="s1">24</span><span class="se">\&#39;</span><span class="s1">.&#39;</span><span class="p">)</span>
-    <span class="n">cnew</span> <span class="o">=</span> <span class="p">(</span><span class="n">cnew</span> <span class="o">+</span> <span class="n">cnew</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">::</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">/</span> <span class="mf">2.</span>
-    <span class="k">return</span> <span class="n">cnew</span><span class="p">[</span><span class="n">ny</span><span class="p">:,</span> <span class="n">nx</span><span class="p">:],</span> <span class="n">xnew</span><span class="p">[</span><span class="n">nx</span><span class="p">:],</span> <span class="n">ynew</span><span class="p">[</span><span class="n">ny</span><span class="p">:]</span></div>
+    <span class="n">datanew</span> <span class="o">=</span> <span class="p">(</span><span class="n">datanew</span> <span class="o">+</span> <span class="n">datanew</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">::</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">/</span> <span class="mf">2.</span>
+    <span class="k">return</span> <span class="n">datanew</span><span class="p">[</span><span class="n">ny</span><span class="p">:,</span> <span class="n">nx</span><span class="p">:],</span> <span class="n">xnew</span><span class="p">[</span><span class="n">nx</span><span class="p">:],</span> <span class="n">ynew</span><span class="p">[</span><span class="n">ny</span><span class="p">:]</span></div>
 
 
-<div class="viewcode-block" id="sortRBS"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.analysis_utils.sortRBS">[docs]</a><span class="k">def</span> <span class="nf">sortRBS</span><span class="p">(</span><span class="n">y</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
-            <span class="n">ynew</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">xnew</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<div class="viewcode-block" id="sortRBS"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.analysis_utils.sortRBS">[docs]</a><span class="k">def</span> <span class="nf">sortRBS</span><span class="p">(</span><span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+            <span class="n">ynew</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">xnew</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">object</span> <span class="ow">or</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;RBS but input x and y can be decreasing.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        y (list): 1D array.</span>
-<span class="sd">        x (list): 1D array.</span>
-<span class="sd">        data (list): 2D or 3D array.</span>
-<span class="sd">        ynew (list, optional): 1D array. Defaults to None.</span>
-<span class="sd">        xnew (list, optional): 1D array. Defaults to None.</span>
+<span class="sd">        y (np.ndarray): 1D array. Second coordinate.</span>
+<span class="sd">        x (np.ndarray): 1D array. First coordinate.</span>
+<span class="sd">        data (np.ndarray): 2D or 3D array.</span>
+<span class="sd">        ynew (np.ndarray, optional): 1D array. Defaults to None.</span>
+<span class="sd">        xnew (np.ndarray, optional): 1D array. Defaults to None.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        np.ndarray: The RBS function or the interpolated array.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">ndim</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;data must be 2D or 3D.&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="o">-</span><span class="mi">1</span>
+    
     <span class="n">d</span> <span class="o">=</span> <span class="p">[</span><span class="n">data</span><span class="p">]</span> <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">ndim</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span> <span class="k">else</span> <span class="n">data</span>
     <span class="n">xsort</span> <span class="o">=</span> <span class="n">x</span> <span class="k">if</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">else</span> <span class="n">x</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
     <span class="n">csort</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">if</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">else</span> <span class="n">c</span><span class="p">[:,</span> <span class="p">::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">d</span><span class="p">]</span>
@@ -131,14 +151,15 @@
     <span class="k">return</span> <span class="n">d</span></div>
 
 
-<div class="viewcode-block" id="filled2d"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.analysis_utils.filled2d">[docs]</a><span class="k">def</span> <span class="nf">filled2d</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
+<div class="viewcode-block" id="filled2d"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.analysis_utils.filled2d">[docs]</a><span class="k">def</span> <span class="nf">filled2d</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+             <span class="n">n</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Fill 2D data, 1D x, and 1D y by a factor of n using RBS.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        data (list): 2D or 3D array.</span>
-<span class="sd">        x (list): 1D array.</span>
-<span class="sd">        y (list): 1D array.</span>
-<span class="sd">        n (list, optional): How many times more the new grid is. Defaults to 1.</span>
+<span class="sd">        data (np.ndarray): 2D or 3D array.</span>
+<span class="sd">        x (np.ndarray): 1D array.</span>
+<span class="sd">        y (np.ndarray): 1D array.</span>
+<span class="sd">        n (int, optional): How many times more the new grid is. Defaults to 1.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        tuple: The interpolated (data, x, y).</span>
@@ -163,11 +184,11 @@
     <span class="sd">&quot;&quot;&quot;Data to be processed and parameters for processing the data.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        data (list, optional): 2D or 3D array. Defaults to None.</span>
-<span class="sd">        x (list, optional): 1D array. Defaults to None.</span>
-<span class="sd">        y (list, optional): 1D array. Defaults to None.</span>
-<span class="sd">        v (list, optional): 1D array. Defaults to None.</span>
-<span class="sd">        beam (list, optional): [bmaj, bmin, bpa]. Defaults ot [None, None, None].</span>
+<span class="sd">        data (np.ndarray, optional): 2D or 3D array. Defaults to None.</span>
+<span class="sd">        x (np.ndarray, optional): 1D array. Defaults to None.</span>
+<span class="sd">        y (np.ndarray, optional): 1D array. Defaults to None.</span>
+<span class="sd">        v (np.ndarray, optional): 1D array. Defaults to None.</span>
+<span class="sd">        beam (np.ndarray, optional): [bmaj, bmin, bpa]. Defaults ot [None, None, None].</span>
 <span class="sd">        fitsimage (str, optional): Input fits name. Defaults to None.</span>
 <span class="sd">        Tb (bool, optional): True means the mapped data are brightness T. Defaults to False.</span>
 <span class="sd">        sigma (float or str, optional): Noise level or method for measuring it. Defaults to &#39;hist&#39;.</span>

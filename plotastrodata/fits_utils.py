@@ -173,22 +173,22 @@ class FitsData:
             if 'RESTFREQ' in h.keys(): restfrq = h['RESTFREQ']
         self.x, self.y, self.v = None, None, None
         self.dx, self.dy, self.dv = None, None, None
-        def get_list(i: int, crval=False) -> list:
+        def get_list(i: int, crval=False) -> np.ndarray:
             s = np.arange(h[f'NAXIS{i:d}'])
             s = (s - h[f'CRPIX{i:d}'] + 1) * h[f'CDELT{i:d}']
             if crval: s = s + h[f'CRVAL{i:d}']
             return s
-        def gen_x(s: list) -> None:
+        def gen_x(s: np.ndarray) -> None:
             s = (s - cx) * dist
             if h['CUNIT1'].strip() in ['deg', 'DEG', 'degree', 'DEGREE']:
                 s *= 3600.
             self.x, self.dx = s, s[1] - s[0]
-        def gen_y(s: list) -> None:
+        def gen_y(s: np.ndarray) -> None:
             s = (s - cy) * dist
             if h['CUNIT2'].strip() in ['deg', 'DEG', 'degree', 'DEGREE']:
                 s *= 3600. 
             self.y, self.dy = s, s[1] - s[0]
-        def gen_v(s: list) -> None:
+        def gen_v(s: np.ndarray) -> None:
             if restfrq is None:
                 freq = np.mean(s)
                 print('restfrq is assumed to be the center.')            
@@ -206,15 +206,15 @@ class FitsData:
         if h['NAXIS'] > 2 and h['NAXIS3'] > 1:
                 gen_v(get_list(3, True))
                     
-    def get_grid(self, **kwargs) -> list:
+    def get_grid(self, **kwargs) -> tuple:
         """Output the grids, [x, y, v]. This method can take the arguments of gen_grid().
 
         Returns:
-            list: [x, y, v].
+            tuple: (x, y, v).
         """
         if not hasattr(self, 'x') or not hasattr(self, 'y'):
             self.gen_grid(**kwargs)
-        return [self.x, self.y, self.v]
+        return self.x, self.y, self.v
 
     def trim(self, rmax: float = 1e10, xoff: float = 0., yoff: float = 0.,
              vmin: float = -1e10, vmax: float = 1e10,
@@ -270,12 +270,12 @@ def fits2data(fitsimage: str, Tb: bool = False, log: bool = False,
     return fd.data, (fd.x, fd.y, fd.v), beam, bunit, rms
 
     
-def data2fits(d: list = None, h: dict = {}, templatefits: str = None,
+def data2fits(d: np.ndarray = None, h: dict = {}, templatefits: str = None,
               fitsimage: str = 'test') -> None:
     """Make a fits file from a N-D array.
 
     Args:
-        d (list, optional): N-D array. Defaults to None.
+        d (np.ndarray, optional): N-D array. Defaults to None.
         h (dict, optional): Fits header. Defaults to {}.
         templatefits (str, optional): Fits file to copy header. Defaults to None.
         fitsimage (str, optional): Output name. Defaults to 'test'.

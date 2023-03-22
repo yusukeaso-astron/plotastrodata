@@ -11,37 +11,57 @@ from plotastrodata.fits_utils import FitsData, data2fits
 
 
 
-def quadrantmean(c: list, x: list, y: list, quadrants: str ='13') -> tuple:
-    """Take mean between 1st and 3rd (or 2nd and 4th) quadrants."""
+def quadrantmean(data: np.ndarray, x: np.ndarray, y: np.ndarray,
+                 quadrants: str ='13') -> tuple:
+    """Take mean between 1st and 3rd (or 2nd and 4th) quadrants.
+
+    Args:
+        data (np.ndarray): 2D array.
+        x (np.ndarray): 1D array. First coordinate.
+        y (np.ndarray): 1D array. Second coordinate.
+        quadrants (str, optional): '13' or '24'. Defaults to '13'.
+
+    Returns:
+        tuple: Averaged (data, x, y).
+    """
+    if np.ndim(data) != 2:
+        print('data must be 2D.')
+        return -1
+    
     dx, dy = x[1] - x[0], y[1] - y[0]
     nx = int(np.floor(max(np.abs(x[0]), np.abs(x[-1])) / dx))
     ny = int(np.floor(max(np.abs(y[0]), np.abs(y[-1])) / dy))
     xnew = np.linspace(-nx * dx, nx * dx, 2 * nx + 1)
     ynew = np.linspace(-ny * dy, ny * dy, 2 * ny + 1)
     if quadrants == '13':
-        cnew = RBS(y, x, c)(ynew, xnew)
+        datanew = RBS(y, x, data)(ynew, xnew)
     elif quadrants == '24':
-        cnew = RBS(y, -x, c)(ynew, xnew)
+        datanew = RBS(y, -x, data)(ynew, xnew)
     else:
         print('quadrants must be \'13\' or \'24\'.')
-    cnew = (cnew + cnew[::-1, ::-1]) / 2.
-    return cnew[ny:, nx:], xnew[nx:], ynew[ny:]
+    datanew = (datanew + datanew[::-1, ::-1]) / 2.
+    return datanew[ny:, nx:], xnew[nx:], ynew[ny:]
 
 
-def sortRBS(y: list, x: list, data: list,
-            ynew: list = None, xnew: list = None) -> np.ndarray:
+def sortRBS(y: np.ndarray, x: np.ndarray, data: np.ndarray,
+            ynew: np.ndarray = None, xnew: np.ndarray = None
+            ) -> object or np.ndarray:
     """RBS but input x and y can be decreasing.
 
     Args:
-        y (list): 1D array.
-        x (list): 1D array.
-        data (list): 2D or 3D array.
-        ynew (list, optional): 1D array. Defaults to None.
-        xnew (list, optional): 1D array. Defaults to None.
+        y (np.ndarray): 1D array. Second coordinate.
+        x (np.ndarray): 1D array. First coordinate.
+        data (np.ndarray): 2D or 3D array.
+        ynew (np.ndarray, optional): 1D array. Defaults to None.
+        xnew (np.ndarray, optional): 1D array. Defaults to None.
 
     Returns:
         np.ndarray: The RBS function or the interpolated array.
     """
+    if not np.ndim(data) in [2, 3]:
+        print('data must be 2D or 3D.')
+        return -1
+    
     d = [data] if np.ndim(data) == 2 else data
     xsort = x if x[1] > x[0] else x[::-1]
     csort = [c if x[1] > x[0] else c[:, ::-1] for c in d]
@@ -57,14 +77,15 @@ def sortRBS(y: list, x: list, data: list,
     return d
 
 
-def filled2d(data: list, x: list, y: list, n: list = 1) -> tuple:
+def filled2d(data: np.ndarray, x: np.ndarray, y: np.ndarray,
+             n: int = 1) -> tuple:
     """Fill 2D data, 1D x, and 1D y by a factor of n using RBS.
 
     Args:
-        data (list): 2D or 3D array.
-        x (list): 1D array.
-        y (list): 1D array.
-        n (list, optional): How many times more the new grid is. Defaults to 1.
+        data (np.ndarray): 2D or 3D array.
+        x (np.ndarray): 1D array.
+        y (np.ndarray): 1D array.
+        n (int, optional): How many times more the new grid is. Defaults to 1.
 
     Returns:
         tuple: The interpolated (data, x, y).
@@ -89,11 +110,11 @@ class AstroData():
     """Data to be processed and parameters for processing the data.
 
     Args:
-        data (list, optional): 2D or 3D array. Defaults to None.
-        x (list, optional): 1D array. Defaults to None.
-        y (list, optional): 1D array. Defaults to None.
-        v (list, optional): 1D array. Defaults to None.
-        beam (list, optional): [bmaj, bmin, bpa]. Defaults ot [None, None, None].
+        data (np.ndarray, optional): 2D or 3D array. Defaults to None.
+        x (np.ndarray, optional): 1D array. Defaults to None.
+        y (np.ndarray, optional): 1D array. Defaults to None.
+        v (np.ndarray, optional): 1D array. Defaults to None.
+        beam (np.ndarray, optional): [bmaj, bmin, bpa]. Defaults ot [None, None, None].
         fitsimage (str, optional): Input fits name. Defaults to None.
         Tb (bool, optional): True means the mapped data are brightness T. Defaults to False.
         sigma (float or str, optional): Noise level or method for measuring it. Defaults to 'hist'.
