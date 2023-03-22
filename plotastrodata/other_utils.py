@@ -224,7 +224,7 @@ def trim(data: np.ndarray = None, x: np.ndarray = None,
     return dataout, [xout, yout, vout]
 
 
-def Mfac(f0: float = 1, f1: float = 1) -> np.array:
+def Mfac(f0: float = 1, f1: float = 1) -> np.ndarray:
     """2 x 2 matrix for (x,y) --> (f0 * x, f1 * y).
 
     Args:
@@ -232,19 +232,19 @@ def Mfac(f0: float = 1, f1: float = 1) -> np.array:
         f1 (float, optional): Defaults to 1.
 
     Returns:
-        np.array: Matrix for the multiplication.
+        np.ndarray: Matrix for the multiplication.
     """
     return np.array([[f0, 0], [0, f1]])
 
 
-def Mrot(pa: float = 0) -> np.array:
+def Mrot(pa: float = 0) -> np.ndarray:
     """2 x 2 matrix for rotation.
 
     Args:
         pa (float, optional): How many degrees are the image rotated by. Defaults to 0.
 
     Returns:
-        np.array: Matrix for the rotation.
+        np.ndarray: Matrix for the rotation.
     """
     p = np.radians(pa)
     return np.array([[np.cos(p), -np.sin(p)], [np.sin(p),  np.cos(p)]])

@@ -97,14 +97,14 @@ class FitsData:
             bpa = 0 if bpa is None else bpa
         self.bmaj, self.bmin, self.bpa = bmaj * dist, bmin * dist, bpa
 
-    def get_beam(self, dist: float = 1.) -> np.array:
+    def get_beam(self, dist: float = 1.) -> np.ndarray:
         """Output the beam array of [bmaj, bmin, bpa].
 
         Args:
             dist (float, optional): bmaj and bmin are multiplied by dist. Defaults to 1..
 
         Returns:
-            np.array: [bmaj, bmin, bpa].
+            np.ndarray: [bmaj, bmin, bpa].
         """
         if not hasattr(self, 'bmaj'):
             self.gen_beam(dist)
@@ -139,11 +139,11 @@ class FitsData:
         if log == True: d = np.log10(d.clip(np.min(d[d > 0]), None))
         self.data = d
         
-    def get_data(self, **kwargs) -> np.array:
+    def get_data(self, **kwargs) -> np.ndarray:
         """Output data. This method can take the arguments of gen_data().
 
         Returns:
-            np.array: data in the format of np.array.
+            np.ndarray: data in the format of np.ndarray.
         """
         if not hasattr(self, 'data'): self.gen_data(**kwargs)
         return self.data
