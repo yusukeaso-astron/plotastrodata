@@ -229,6 +229,7 @@ def kwargs2AstroData(kw: dict) -> AstroData:
         d = AstroData(**tmp)
         return d
 
+
 def kwargs2AstroFrame(kw: dict) -> AstroFrame:
     """Get AstroFrame from kwargs.
 
@@ -246,6 +247,7 @@ def kwargs2AstroFrame(kw: dict) -> AstroFrame:
             #del kw[k]
     f = AstroFrame(**tmp)
     return f
+
 
 def kwargs2PlotAxes2D(kw: dict) -> PlotAxes2D:
     """Get PlotAxes2D and remove its arguments from kwargs.
@@ -904,8 +906,8 @@ class PlotAstroData(AstroFrame):
         for axnow in self.ax:
             axnow.set_xlim(*self.Xlim)
             axnow.set_ylim(*self.Ylim)
-        ext = filename.split('.')[-1]
         if type(filename) is str:
+            ext = filename.split('.')[-1]
             for i in range(self.npages):
                 ver = '' if self.npages == 1 else f'_{i:d}'
                 fig = plt.figure(i)
