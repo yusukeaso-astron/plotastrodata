@@ -160,7 +160,8 @@ def estimate_rms(data: np.ndarray, sigma: float or str = 'hist') -> float:
             noise = np.nanstd(n)
     elif sigma[:4] == 'hist':
         m0, s0 = np.nanmean(data), np.nanstd(data)
-        hist, hbin = np.histogram(data, bins=100, density=True,
+        hist, hbin = np.histogram(data[~np.isnan(data)],
+                                  bins=100, density=True,
                                   range=(m0 - s0 * 5, m0 + s0 * 5))
         hist, hbin = hist * s0, (hbin[:-1] + hbin[1:]) / 2 / s0
         if sigma[4:] == '-pbcor':
