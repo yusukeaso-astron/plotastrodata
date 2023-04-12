@@ -35,9 +35,9 @@ def quadrantmean(data: np.ndarray, x: np.ndarray, y: np.ndarray,
     ynew = np.linspace(-ny * dy, ny * dy, 2 * ny + 1)
     Xnew, Ynew = np.meshgrid(x, y)
     if quadrants == '13':
-        datanew = RGI((y, x), data)((Ynew, Xnew))
+        datanew = RGI((y, x), data, bounds_error=False)((Ynew, Xnew))
     elif quadrants == '24':
-        datanew = RGI((y, -x), data)((Ynew, Xnew))
+        datanew = RGI((y, -x), data, bounds_error=False)((Ynew, Xnew))
     else:
         print('quadrants must be \'13\' or \'24\'.')
     datanew = (datanew + datanew[::-1, ::-1]) / 2.
@@ -69,11 +69,11 @@ def sortRGI(y: np.ndarray, x: np.ndarray, data: np.ndarray,
     ysort = y if y[1] > y[0] else y[::-1]
     csort = np.array([c if y[1] > y[0] else c[::-1, :] for c in csort])
     csort[np.isnan(csort)] = 0
-    f = [RGI((ysort, xsort), c) for c in csort]
+    f = [RGI((ysort, xsort), c, bounds_error=False) for c in csort]
     if ynew is None or xnew is None:
         return f[0] if len(f) == 1 else f
     Xnew, Ynew = np.meshgrid(xnew, ynew)
-    d = np.array([g((Ynew, Xnew)) for g in f])
+    d = np.squeeze([g((Ynew, Xnew)) for g in f])
     return d
 
 
