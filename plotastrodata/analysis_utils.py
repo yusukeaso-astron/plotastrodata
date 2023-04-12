@@ -185,11 +185,10 @@ class AstroData():
     def centering(self):
         """Spatial regridding to set the center at (x,y)=(0,0).
         """
-        X = self.x - self.x[np.argmin(np.abs(self.x))]
-        Y = self.y - self.y[np.argmin(np.abs(self.y))]
-        x, y = np.meshgrid(X, Y)
+        x = self.x - self.x[np.argmin(np.abs(self.x))]
+        y = self.y - self.y[np.argmin(np.abs(self.y))]
         self.data = sortRGI(self.y, self.x, self.data, y, x)
-        self.y, self.x = Y, X
+        self.y, self.x = y, x
 
     def circularbeam(self):
         """Make the beam circular by convolving with 1D Gaussian
