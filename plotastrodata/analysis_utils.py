@@ -190,8 +190,8 @@ class AstroData():
         """
         x = self.x - self.x[np.argmin(np.abs(self.x))]
         y = self.y - self.y[np.argmin(np.abs(self.y))]
-        x, y = np.meshgrid(x, y)
-        self.data = sortRGI(self.y, self.x, self.data, y, x)
+        X, Y = np.meshgrid(x, y)
+        self.data = sortRGI(self.y, self.x, self.data, Y, X)
         self.y, self.x = y, x
 
     def circularbeam(self):
