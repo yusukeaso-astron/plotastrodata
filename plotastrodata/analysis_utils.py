@@ -35,9 +35,11 @@ def quadrantmean(data: np.ndarray, x: np.ndarray, y: np.ndarray,
     ynew = np.linspace(-ny * dy, ny * dy, 2 * ny + 1)
     Xnew, Ynew = np.meshgrid(x, y)
     if quadrants == '13':
-        datanew = RGI((y, x), data, bounds_error=False)((Ynew, Xnew))
+        f = RGI((y, x), data, bounds_error=False, fill_value=0)
+        datanew = f((Ynew, Xnew))
     elif quadrants == '24':
-        datanew = RGI((y, -x), data, bounds_error=False)((Ynew, Xnew))
+        f = RGI((y, -x), data, bounds_error=False, fill_value=0)
+        datanew = f((Ynew, Xnew))
     else:
         print('quadrants must be \'13\' or \'24\'.')
     datanew = (datanew + datanew[::-1, ::-1]) / 2.
@@ -69,12 +71,13 @@ def sortRGI(y: np.ndarray, x: np.ndarray, data: np.ndarray,
     ysort = y if y[1] > y[0] else y[::-1]
     csort = np.array([c if y[1] > y[0] else c[::-1, :] for c in csort])
     csort[np.isnan(csort)] = 0
-    f = [RGI((ysort, xsort), c, bounds_error=False) for c in csort]
+    psort = (ysort, xsort)
+    f = [RGI(psort, c, bounds_error=False, fill_value=0) for c in csort]
     if ynew is None or xnew is None:
         return f[0] if len(f) == 1 else f
-    Xnew, Ynew = np.meshgrid(xnew, ynew)
-    d = np.squeeze([g((Ynew, Xnew)) for g in f])
-    return d
+    pnew = (ynew.ravel(), xnew.ravel())
+    d = np.reshape([g(pnew) for g in f], (len(f), *np.shape(csort)))
+    return np.squeeze(d)
 
 
 def filled2d(data: np.ndarray, x: np.ndarray, y: np.ndarray,
@@ -187,6 +190,7 @@ class AstroData():
         """
         x = self.x - self.x[np.argmin(np.abs(self.x))]
         y = self.y - self.y[np.argmin(np.abs(self.y))]
+        x, y = np.meshgrid(x, y)
         self.data = sortRGI(self.y, self.x, self.data, y, x)
         self.y, self.x = y, x
 
@@ -220,6 +224,7 @@ class AstroData():
         y, x = dot2d(A, np.meshgrid(self.x, self.y)[::-1])
         self.data = sortRGI(self.y, self.x, self.data, y, x)
         bmaj, bmin, bpa = self.beam
+        bpa = bpa + 360
         a, b = np.linalg.multi_dot([Mfac(1/bmaj, 1/bmin), Mrot(pa - bpa),
                                     Mfac(1, ci), Mrot(-pa)]).T
         alpha = (np.dot(a, a) + np.dot(b, b)) / 2
