@@ -430,9 +430,6 @@ class AstroFrame():
         xlim = [self.xoff - xdir*self.rmax, self.xoff + xdir*self.rmax]
         ylim = [self.yoff - ydir*self.rmax, self.yoff + ydir*self.rmax]
         vlim = [self.vmin, self.vmax]
-        if self.quadrants is not None:
-            xlim = [0, self.rmax]
-            vlim = [0, min(self.vmax - self.vsys, self.vsys - self.vmin)]
         if self.pv: xlim = np.sort(xlim)
         self.xlim = xlim
         self.ylim = ylim
@@ -443,6 +440,9 @@ class AstroFrame():
         else:
             self.Xlim = ylim if self.swapxy else xlim
             self.Ylim = xlim if self.swapxy else ylim
+        if self.quadrants is not None:
+            self.Xlim = [0, self.rmax]
+            self.Ylim = [0, min(self.vmax - self.vsys, self.vsys - self.vmin)]
         if self.fitsimage is not None and self.center is None:
             self.center = FitsData(self.fitsimage).get_center()
         
