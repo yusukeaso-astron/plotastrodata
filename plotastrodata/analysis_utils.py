@@ -1,6 +1,6 @@
 import numpy as np
 from dataclasses import dataclass
-from scipy.interpolate import RectBivariateSpline as RBS
+from scipy.interpolate import RegularGridInterpolator as RGI
 from scipy.optimize import curve_fit
 from scipy.signal import convolve
 from astropy import constants
@@ -33,20 +33,21 @@ def quadrantmean(data: np.ndarray, x: np.ndarray, y: np.ndarray,
     ny = int(np.floor(max(np.abs(y[0]), np.abs(y[-1])) / dy))
     xnew = np.linspace(-nx * dx, nx * dx, 2 * nx + 1)
     ynew = np.linspace(-ny * dy, ny * dy, 2 * ny + 1)
+    Xnew, Ynew = np.meshgrid(x, y)
     if quadrants == '13':
-        datanew = RBS(y, x, data)(ynew, xnew)
+        datanew = RGI((y, x), data)((Ynew, Xnew))
     elif quadrants == '24':
-        datanew = RBS(y, -x, data)(ynew, xnew)
+        datanew = RGI((y, -x), data)((Ynew, Xnew))
     else:
         print('quadrants must be \'13\' or \'24\'.')
     datanew = (datanew + datanew[::-1, ::-1]) / 2.
     return datanew[ny:, nx:], xnew[nx:], ynew[ny:]
 
 
-def sortRBS(y: np.ndarray, x: np.ndarray, data: np.ndarray,
+def sortRGI(y: np.ndarray, x: np.ndarray, data: np.ndarray,
             ynew: np.ndarray = None, xnew: np.ndarray = None
             ) -> object or np.ndarray:
-    """RBS but input x and y can be decreasing.
+    """RGI but input x and y can be decreasing.
 
     Args:
         y (np.ndarray): 1D array. Second coordinate.
@@ -56,7 +57,7 @@ def sortRBS(y: np.ndarray, x: np.ndarray, data: np.ndarray,
         xnew (np.ndarray, optional): 1D array. Defaults to None.
 
     Returns:
-        np.ndarray: The RBS function or the interpolated array.
+        np.ndarray: The RGI function or the interpolated array.
     """
     if not np.ndim(data) in [2, 3]:
         print('data must be 2D or 3D.')
@@ -68,18 +69,17 @@ def sortRBS(y: np.ndarray, x: np.ndarray, data: np.ndarray,
     ysort = y if y[1] > y[0] else y[::-1]
     csort = np.array([c if y[1] > y[0] else c[::-1, :] for c in csort])
     csort[np.isnan(csort)] = 0
-    f = [RBS(ysort, xsort, c) for c in csort]
+    f = [RGI((ysort, xsort), c) for c in csort]
     if ynew is None or xnew is None:
         return f[0] if len(f) == 1 else f
-    x1d, y1d = np.ravel(xnew), np.ravel(ynew)
-    c = [np.squeeze(list(map(g, y1d, x1d))) for g in f]
-    d = np.squeeze(np.reshape(c, (len(f), *np.shape(xnew))))
+    Xnew, Ynew = np.meshgrid(xnew, ynew)
+    d = np.array([g((Ynew, Xnew)) for g in f])
     return d
 
 
 def filled2d(data: np.ndarray, x: np.ndarray, y: np.ndarray,
              n: int = 1) -> tuple:
-    """Fill 2D data, 1D x, and 1D y by a factor of n using RBS.
+    """Fill 2D data, 1D x, and 1D y by a factor of n using RGI.
 
     Args:
         data (np.ndarray): 2D or 3D array.
@@ -99,7 +99,8 @@ def filled2d(data: np.ndarray, x: np.ndarray, y: np.ndarray,
     xsort = xf if xf[1] > xf[0] else xf[::-1]
     ysort = yf if yf[1] > yf[0] else yf[::-1]
     d = [data] if np.ndim(data) == 2 else data
-    d = np.array([np.squeeze(f(ysort, xsort)) for f in sortRBS(y, x, d)])
+    xsort, ysort = np.meshgrid(xsort, ysort)
+    d = np.array([f((ysort, xsort)) for f in sortRGI((y, x), d)])
     d = d if x[1] > x[0] else d[:, :, ::-1]
     d = d if y[1] > y[0] else d[:, ::-1, :]
     return np.squeeze(d), xf, yf
@@ -187,7 +188,7 @@ class AstroData():
         X = self.x - self.x[np.argmin(np.abs(self.x))]
         Y = self.y - self.y[np.argmin(np.abs(self.y))]
         x, y = np.meshgrid(X, Y)
-        self.data = sortRBS(self.y, self.x, self.data, y, x)
+        self.data = sortRGI(self.y, self.x, self.data, y, x)
         self.y, self.x = Y, X
 
     def circularbeam(self):
@@ -218,7 +219,7 @@ class AstroData():
         ci = np.cos(np.radians(incl))
         A = np.linalg.multi_dot([Mrot(pa), Mfac(1, ci), Mrot(-pa)])
         y, x = dot2d(A, np.meshgrid(self.x, self.y)[::-1])
-        self.data = sortRBS(self.y, self.x, self.data, y, x)
+        self.data = sortRGI(self.y, self.x, self.data, y, x)
         bmaj, bmin, bpa = self.beam
         a, b = np.linalg.multi_dot([Mfac(1/bmaj, 1/bmin), Mrot(pa - bpa),
                                     Mfac(1, ci), Mrot(-pa)]).T
@@ -335,7 +336,7 @@ class AstroData():
             pa (float, optional): Position angle in the unit of degree. Defaults to 0.
         """
         y, x = dot2d(Mrot(-pa), np.meshgrid(self.x, self.y)[::-1])
-        self.data = sortRBS(self.y, self.x, self.data, y, x)
+        self.data = sortRGI(self.y, self.x, self.data, y, x)
         self.beam[2] = self.beam[2] + pa
     
     def slice(self, length: float = 0, pa: float = 0,
@@ -354,7 +355,7 @@ class AstroData():
         n = int(np.ceil(length / 2 / dx))
         r = np.linspace(-n, n, 2 * n + 1) * dx
         xg, yg = r * np.sin(np.radians(pa)), r * np.cos(np.radians(pa))
-        z = sortRBS(self.y, self.x, self.data, yg, xg)
+        z = sortRGI(self.y, self.x, self.data, yg, xg)
         return np.array([r, z])
    
     def writetofits(self, fitsimage: str = 'out.fits', header: dict = {}):
