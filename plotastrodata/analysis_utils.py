@@ -220,6 +220,7 @@ class AstroData():
         y, x = dot2d(A, np.meshgrid(self.x, self.y)[::-1])
         self.data = sortRBS(self.y, self.x, self.data, y, x)
         bmaj, bmin, bpa = self.beam
+        bpa = bpa + 360
         a, b = np.linalg.multi_dot([Mfac(1/bmaj, 1/bmin), Mrot(pa - bpa),
                                     Mfac(1, ci), Mrot(-pa)]).T
         alpha = (np.dot(a, a) + np.dot(b, b)) / 2
