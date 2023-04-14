@@ -224,14 +224,13 @@ class AstroData():
         y, x = dot2d(A, np.meshgrid(self.x, self.y)[::-1])
         self.data = sortRGI(self.y, self.x, self.data, y, x)
         bmaj, bmin, bpa = self.beam
-        bpa = bpa + 360
         a, b = np.linalg.multi_dot([Mfac(1/bmaj, 1/bmin), Mrot(pa - bpa),
                                     Mfac(1, ci), Mrot(-pa)]).T
         alpha = (np.dot(a, a) + np.dot(b, b)) / 2
         beta = np.dot(a, b)
         gamma = (np.dot(a, a) - np.dot(b, b)) / 2
         bpa_new = np.arctan(beta / gamma) / 2 * np.degrees(1)
-        if beta * bpa_new > 0: bpa_new += 90
+        if beta * bpa_new >= 0: bpa_new += 90
         Det = np.sqrt(beta**2 + gamma**2)
         bmaj_new = 1 / np.sqrt(alpha - Det)
         bmin_new = 1 / np.sqrt(alpha + Det)
