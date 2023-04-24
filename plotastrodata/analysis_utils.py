@@ -76,7 +76,7 @@ def sortRGI(y: np.ndarray, x: np.ndarray, data: np.ndarray,
     if ynew is None or xnew is None:
         return f[0] if len(f) == 1 else f
     pnew = (ynew.ravel(), xnew.ravel())
-    d = np.reshape([g(pnew) for g in f], (len(f), *np.shape(csort)))
+    d = np.reshape([g(pnew) for g in f], (len(f), *np.shape(xnew)))
     return np.squeeze(d)
 
 
@@ -103,7 +103,7 @@ def filled2d(data: np.ndarray, x: np.ndarray, y: np.ndarray,
     ysort = yf if yf[1] > yf[0] else yf[::-1]
     d = [data] if np.ndim(data) == 2 else data
     xsort, ysort = np.meshgrid(xsort, ysort)
-    d = np.array([f((ysort, xsort)) for f in sortRGI((y, x), d)])
+    d = np.array([f((ysort, xsort)) for f in sortRGI(y, x, d)])
     d = d if x[1] > x[0] else d[:, :, ::-1]
     d = d if y[1] > y[0] else d[:, ::-1, :]
     return np.squeeze(d), xf, yf
