@@ -11,10 +11,8 @@
   <![endif]-->
   
         <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
-        <script src="../../_static/jquery.js"></script>
-        <script src="../../_static/underscore.js"></script>
-        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/sphinx_highlight.js"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" /> 
@@ -81,7 +79,7 @@
 
 
 <div class="viewcode-block" id="shiftphase"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.fft_utils.shiftphase">[docs]</a><span class="k">def</span> <span class="nf">shiftphase</span><span class="p">(</span><span class="n">F</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">u</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">xoff</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Shift the phase of 1D FFT by xoff.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Shift the phase of 1D FFT by xoff.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        F (np.ndarray): 1D FFT.</span>
@@ -96,7 +94,7 @@
 
 <div class="viewcode-block" id="shiftphase2"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.fft_utils.shiftphase2">[docs]</a><span class="k">def</span> <span class="nf">shiftphase2</span><span class="p">(</span><span class="n">F</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">u</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                 <span class="n">xoff</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">yoff</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Shift the phase of 2D FFT by (xoff, yoff).</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Shift the phase of 2D FFT by (xoff, yoff).</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        F (np.ndarray): 2D FFT.</span>
@@ -114,7 +112,7 @@
 
 <div class="viewcode-block" id="fftcentering"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.fft_utils.fftcentering">[docs]</a><span class="k">def</span> <span class="nf">fftcentering</span><span class="p">(</span><span class="n">f</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                  <span class="n">xcenter</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;FFT with the phase referring to a specific point.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;FFT with the phase referring to a specific point.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        f (np.ndarray): 1D array for FFT.</span>
@@ -136,7 +134,7 @@
 
 <div class="viewcode-block" id="fftcentering2"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.fft_utils.fftcentering2">[docs]</a><span class="k">def</span> <span class="nf">fftcentering2</span><span class="p">(</span><span class="n">f</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                   <span class="n">xcenter</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">ycenter</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;FFT with the phase referring to a specific point.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;FFT with the phase referring to a specific point.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        f (np.ndarray): 2D array for FFT.</span>
@@ -163,7 +161,7 @@
 
 <div class="viewcode-block" id="ifftcentering"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.fft_utils.ifftcentering">[docs]</a><span class="k">def</span> <span class="nf">ifftcentering</span><span class="p">(</span><span class="n">F</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">u</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">xcenter</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
                   <span class="n">x0</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">outreal</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;inverse FFT with the phase referring to a specific point.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;inverse FFT with the phase referring to a specific point.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        F (np.ndarray): 1D array. A result of FFT.</span>
@@ -190,7 +188,7 @@
                    <span class="n">xcenter</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">ycenter</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
                    <span class="n">x0</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">y0</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                    <span class="n">outreal</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;inverse FFT with the phase referring to a specific point.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;inverse FFT with the phase referring to a specific point.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        F (np.ndarray): 2D array. A result of FFT.</span>
@@ -221,7 +219,7 @@
 
 <div class="viewcode-block" id="zeropadding"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.fft_utils.zeropadding">[docs]</a><span class="k">def</span> <span class="nf">zeropadding</span><span class="p">(</span><span class="n">f</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
                 <span class="n">xlim</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">ylim</span><span class="p">:</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Pad an outer region with zero.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Pad an outer region with zero.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        f (np.ndarray): Input 2D array.</span>
@@ -253,7 +251,7 @@
 <div class="viewcode-block" id="fftfits"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.fft_utils.fftfits">[docs]</a><span class="k">def</span> <span class="nf">fftfits</span><span class="p">(</span><span class="n">fitsimage</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">center</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">lam</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
             <span class="n">xlim</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">ylim</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
             <span class="n">plot</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;FFT a fits image with the phase referring to a specific point.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;FFT a fits image with the phase referring to a specific point.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        fitsimage (str): Input fits name in the unit of Jy/pixel.</span>
@@ -300,7 +298,7 @@
 
 <div class="viewcode-block" id="findindex"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.fft_utils.findindex">[docs]</a><span class="k">def</span> <span class="nf">findindex</span><span class="p">(</span><span class="n">u</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
               <span class="n">uobs</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">vobs</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Find indicies of the observed visibility points.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Find indicies of the observed visibility points.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        u (np.ndarray, optional): 1D array. The first frequency coordinate. Defaults to None.</span>
@@ -328,7 +326,7 @@
                   <span class="n">getindex</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
                   <span class="n">u_sample</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                   <span class="n">v_sample</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Find indicies or the visibilities on them from an image fits file.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Find indicies or the visibilities on them from an image fits file.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        fitsimage (str): Input fits name in the unit of Jy/pixel.</span>

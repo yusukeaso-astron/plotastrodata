@@ -11,10 +11,8 @@
   <![endif]-->
   
         <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
-        <script src="../../_static/jquery.js"></script>
-        <script src="../../_static/underscore.js"></script>
-        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/sphinx_highlight.js"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" /> 
@@ -83,7 +81,7 @@
 
 
 <div class="viewcode-block" id="terminal"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.other_utils.terminal">[docs]</a><span class="k">def</span> <span class="nf">terminal</span><span class="p">(</span><span class="n">cmd</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Run a terminal command through subprocess.run.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Run a terminal command through subprocess.run.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        cmd (str): Terminal command.</span>
@@ -92,7 +90,7 @@
 
 
 <div class="viewcode-block" id="runpython"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.other_utils.runpython">[docs]</a><span class="k">def</span> <span class="nf">runpython</span><span class="p">(</span><span class="n">filename</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Run a python file.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Run a python file.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        filename (str): Python file name.</span>
@@ -101,7 +99,7 @@
 
 
 <div class="viewcode-block" id="listing"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.other_utils.listing">[docs]</a><span class="k">def</span> <span class="nf">listing</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Output a list of the input when the input is string or number.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Output a list of the input when the input is string or number.</span>
 <span class="sd">    </span>
 <span class="sd">    Returns:</span>
 <span class="sd">        list: With a single non-list input, the output is a list like [&#39;a&#39;], rather than [[&#39;a&#39;]].</span>
@@ -116,7 +114,7 @@
 
 <div class="viewcode-block" id="coord2xy"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.other_utils.coord2xy">[docs]</a><span class="k">def</span> <span class="nf">coord2xy</span><span class="p">(</span><span class="n">coords</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">coordorg</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;00h00m00s 00d00m00s&#39;</span><span class="p">,</span>
              <span class="n">frame</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;icrs&#39;</span><span class="p">,</span> <span class="n">frameorg</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;icrs&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Transform R.A.-Dec. to relative (deg, deg).</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Transform R.A.-Dec. to relative (deg, deg).</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        coords (str): something like &#39;01h23m45.6s 01d23m45.6s&#39;. The input can be a list of str in an arbitrary shape.</span>
@@ -135,7 +133,7 @@
 
 <div class="viewcode-block" id="xy2coord"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.other_utils.xy2coord">[docs]</a><span class="k">def</span> <span class="nf">xy2coord</span><span class="p">(</span><span class="n">xy</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">coordorg</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;00h00m00s 00d00m00s&#39;</span><span class="p">,</span>
              <span class="n">frame</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;icrs&#39;</span><span class="p">,</span> <span class="n">frameorg</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;icrs&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Transform relative (deg, deg) to R.A.-Dec.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Transform relative (deg, deg) to R.A.-Dec.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        xy (list): [(array of) alphas, (array of) deltas] in degree. alphas and deltas can have an arbitrary shape.</span>
@@ -154,7 +152,7 @@
 
 <div class="viewcode-block" id="rel2abs"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.other_utils.rel2abs">[docs]</a><span class="k">def</span> <span class="nf">rel2abs</span><span class="p">(</span><span class="n">xrel</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">yrel</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
             <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Transform relative coordinates to absolute ones.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Transform relative coordinates to absolute ones.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        xrel (float): 0 &lt;= xrel &lt;= 1. 0 and 1 correspond to x[0] and x[-1], respectively. Arbitrary shape.</span>
@@ -172,7 +170,7 @@
 
 <div class="viewcode-block" id="abs2rel"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.other_utils.abs2rel">[docs]</a><span class="k">def</span> <span class="nf">abs2rel</span><span class="p">(</span><span class="n">xabs</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">yabs</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
             <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Transform absolute coordinates to relative ones.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Transform absolute coordinates to relative ones.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        xabs (float): In the same frame of x.</span>
@@ -189,7 +187,7 @@
 
 
 <div class="viewcode-block" id="estimate_rms"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.other_utils.estimate_rms">[docs]</a><span class="k">def</span> <span class="nf">estimate_rms</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">sigma</span><span class="p">:</span> <span class="nb">float</span> <span class="ow">or</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;hist&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Estimate a noise level of a N-D array.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Estimate a noise level of a N-D array.</span>
 <span class="sd">       When a float number or None is given, this function just outputs it.</span>
 <span class="sd">       Following methos are acceptable.</span>
 <span class="sd">       &#39;edge&#39;: use data[0] and data[-1].</span>
@@ -255,7 +253,7 @@
          <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
          <span class="n">xlim</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">ylim</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">vlim</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
          <span class="n">pv</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Trim 2D or 3D data by given coordinates and their limits.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Trim 2D or 3D data by given coordinates and their limits.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        data (np.ndarray, optional): 2D or 3D array. Defaults to None.</span>
@@ -300,7 +298,7 @@
 
 
 <div class="viewcode-block" id="Mfac"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.other_utils.Mfac">[docs]</a><span class="k">def</span> <span class="nf">Mfac</span><span class="p">(</span><span class="n">f0</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">f1</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;2 x 2 matrix for (x,y) --&gt; (f0 * x, f1 * y).</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;2 x 2 matrix for (x,y) --&gt; (f0 * x, f1 * y).</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        f0 (float, optional): Defaults to 1.</span>
@@ -313,7 +311,7 @@
 
 
 <div class="viewcode-block" id="Mrot"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.other_utils.Mrot">[docs]</a><span class="k">def</span> <span class="nf">Mrot</span><span class="p">(</span><span class="n">pa</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;2 x 2 matrix for rotation.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;2 x 2 matrix for rotation.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        pa (float, optional): How many degrees are the image rotated by. Defaults to 0.</span>
@@ -327,7 +325,7 @@
 
 <div class="viewcode-block" id="dot2d"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.other_utils.dot2d">[docs]</a><span class="k">def</span> <span class="nf">dot2d</span><span class="p">(</span><span class="n">M</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]],</span>
           <span class="n">a</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;To maltiply a 2 x 2 matrix to (x,y) with arrays of x and y.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;To maltiply a 2 x 2 matrix to (x,y) with arrays of x and y.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        M (np.ndarray, optional): 2 x 2 matrix. Defaults to [[1, 0], [0, 1]].</span>
@@ -342,7 +340,7 @@
 
 
 <div class="viewcode-block" id="BnuT"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.other_utils.BnuT">[docs]</a><span class="k">def</span> <span class="nf">BnuT</span><span class="p">(</span><span class="n">T</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">30</span><span class="p">,</span> <span class="n">nu</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">230e9</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Planck function.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Planck function.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        T (float, optional): Temperature in the unit of K. Defaults to 30.</span>
@@ -358,7 +356,7 @@
 
 
 <div class="viewcode-block" id="JnuT"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.other_utils.JnuT">[docs]</a><span class="k">def</span> <span class="nf">JnuT</span><span class="p">(</span><span class="n">T</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">30</span><span class="p">,</span> <span class="n">nu</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">230e9</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Brightness templerature from the Planck function.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Brightness templerature from the Planck function.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        T (float, optional): Temperature in the unit of K. Defaults to 30.</span>

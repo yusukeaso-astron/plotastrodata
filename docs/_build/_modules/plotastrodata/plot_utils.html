@@ -11,10 +11,8 @@
   <![endif]-->
   
         <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
-        <script src="../../_static/jquery.js"></script>
-        <script src="../../_static/underscore.js"></script>
-        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/sphinx_highlight.js"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" /> 
@@ -86,7 +84,7 @@
 <span class="n">plt</span><span class="o">.</span><span class="n">ioff</span><span class="p">()</span>  <span class="c1"># force to turn off interactive mode</span>
 
 <div class="viewcode-block" id="set_rcparams"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.plot_utils.set_rcparams">[docs]</a><span class="k">def</span> <span class="nf">set_rcparams</span><span class="p">(</span><span class="n">fontsize</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">18</span><span class="p">,</span> <span class="n">nancolor</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span><span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Nice rcParams for figures.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Nice rcParams for figures.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        fontsize (int, optional): plt.rcParams[&#39;font.size&#39;]. Defaults to 18.</span>
@@ -112,7 +110,7 @@
 
 
 <div class="viewcode-block" id="logticks"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.plot_utils.logticks">[docs]</a><span class="k">def</span> <span class="nf">logticks</span><span class="p">(</span><span class="n">ticks</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">lim</span><span class="p">:</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Make nice ticks for a log axis.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Make nice ticks for a log axis.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        ticks (list): List of ticks.</span>
@@ -134,7 +132,7 @@
 
 <div class="viewcode-block" id="PlotAxes2D"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.plot_utils.PlotAxes2D">[docs]</a><span class="nd">@dataclass</span>
 <span class="k">class</span> <span class="nc">PlotAxes2D</span><span class="p">():</span>
-    <span class="sd">&quot;&quot;&quot;Use Axes.set_* to adjust x and y axes.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Use Axes.set_* to adjust x and y axes.</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
 <span class="sd">        samexy (bool, optional): True supports same ticks between x and y. Defaults to True.</span>
@@ -231,7 +229,7 @@
 
 <div class="viewcode-block" id="set_minmax"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.plot_utils.set_minmax">[docs]</a><span class="k">def</span> <span class="nf">set_minmax</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">stretch</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">stretchscale</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
                <span class="n">rms</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">kw</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Set vmin and vmax for color pcolormesh and RGB maps.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Set vmin and vmax for color pcolormesh and RGB maps.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        data (np.ndarray): Plotted data.</span>
@@ -282,7 +280,7 @@
 
 
 <div class="viewcode-block" id="kwargs2AstroData"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.plot_utils.kwargs2AstroData">[docs]</a><span class="k">def</span> <span class="nf">kwargs2AstroData</span><span class="p">(</span><span class="n">kw</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AstroData</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Get AstroData and remove its arguments from kwargs.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get AstroData and remove its arguments from kwargs.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        kw (dict): Parameters to make AstroData.</span>
@@ -305,7 +303,7 @@
 
 
 <div class="viewcode-block" id="kwargs2AstroFrame"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.plot_utils.kwargs2AstroFrame">[docs]</a><span class="k">def</span> <span class="nf">kwargs2AstroFrame</span><span class="p">(</span><span class="n">kw</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AstroFrame</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Get AstroFrame from kwargs.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get AstroFrame from kwargs.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        kw (dict): Parameters to make AstroFrame.</span>
@@ -324,7 +322,7 @@
 
 
 <div class="viewcode-block" id="kwargs2PlotAxes2D"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.plot_utils.kwargs2PlotAxes2D">[docs]</a><span class="k">def</span> <span class="nf">kwargs2PlotAxes2D</span><span class="p">(</span><span class="n">kw</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PlotAxes2D</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Get PlotAxes2D and remove its arguments from kwargs.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get PlotAxes2D and remove its arguments from kwargs.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        kw (dict): Parameters to make PlotAxes2D.</span>
@@ -343,7 +341,7 @@
 
 
 <div class="viewcode-block" id="PlotAstroData"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.plot_utils.PlotAstroData">[docs]</a><span class="k">class</span> <span class="nc">PlotAstroData</span><span class="p">(</span><span class="n">AstroFrame</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Make a figure from 2D/3D FITS files or 2D/3D arrays.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Make a figure from 2D/3D FITS files or 2D/3D arrays.</span>
 <span class="sd">    </span>
 <span class="sd">    Basic rules --- For 3D data, a 1D velocity array or a FITS file</span>
 <span class="sd">    with a velocity axis must be given to set up channels in each page.</span>
@@ -437,7 +435,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">bottomleft</span> <span class="o">=</span> <span class="n">nij2ch</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">npages</span><span class="p">),</span> <span class="n">nrows</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">channelnumber</span> <span class="o">=</span> <span class="n">channelnumber</span>
         <span class="k">def</span> <span class="nf">vskipfill</span><span class="p">(</span><span class="n">c</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-            <span class="sd">&quot;&quot;&quot;Skip and fill channels with nan.</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Skip and fill channels with nan.</span>
 
 <span class="sd">            Args:</span>
 <span class="sd">                c (np.ndarray): 2D or 3D arrays.</span>
@@ -458,7 +456,7 @@
 <div class="viewcode-block" id="PlotAstroData.add_region"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.plot_utils.PlotAstroData.add_region">[docs]</a>    <span class="k">def</span> <span class="nf">add_region</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">patch</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;ellipse&#39;</span><span class="p">,</span> <span class="n">poslist</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[],</span>
                    <span class="n">majlist</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[],</span> <span class="n">minlist</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[],</span> <span class="n">palist</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[],</span>
                    <span class="n">include_chan</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Use add_patch() and Rectangle or Ellipse of matplotlib.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Use add_patch() and Rectangle or Ellipse of matplotlib.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            patch (str, optional): &#39;ellipse&#39; or &#39;rectangle&#39;. Defaults to &#39;ellipse&#39;.</span>
@@ -496,7 +494,7 @@
                 
 <div class="viewcode-block" id="PlotAstroData.add_beam"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.plot_utils.PlotAstroData.add_beam">[docs]</a>    <span class="k">def</span> <span class="nf">add_beam</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">beam</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">beamcolor</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;gray&#39;</span><span class="p">,</span>
                  <span class="n">poslist</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Use add_region().</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Use add_region().</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            beam (list, optional): [bmaj, bmin, bpa]. Defaults to [0, 0, 0].</span>
@@ -512,7 +510,7 @@
     
 <div class="viewcode-block" id="PlotAstroData.add_marker"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.plot_utils.PlotAstroData.add_marker">[docs]</a>    <span class="k">def</span> <span class="nf">add_marker</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">poslist</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[],</span>
                    <span class="n">include_chan</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Use Axes.plot of matplotlib.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Use Axes.plot of matplotlib.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            poslist (list, optional): Text or relative. Defaults to [].</span>
@@ -530,7 +528,7 @@
             
 <div class="viewcode-block" id="PlotAstroData.add_text"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.plot_utils.PlotAstroData.add_text">[docs]</a>    <span class="k">def</span> <span class="nf">add_text</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">poslist</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[],</span> <span class="n">slist</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[],</span>
                   <span class="n">include_chan</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Use Axes.text of matplotlib.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Use Axes.text of matplotlib.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            poslist (list, optional): Text or relative. Defaults to [].</span>
@@ -550,7 +548,7 @@
 <div class="viewcode-block" id="PlotAstroData.add_line"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.plot_utils.PlotAstroData.add_line">[docs]</a>    <span class="k">def</span> <span class="nf">add_line</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">poslist</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[],</span> <span class="n">anglelist</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[],</span>
                  <span class="n">rlist</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[],</span> <span class="n">include_chan</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                  <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Use Axes.plot of matplotlib.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Use Axes.plot of matplotlib.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            poslist (list, optional): Text or relative. Defaults to [].</span>
@@ -575,7 +573,7 @@
 <div class="viewcode-block" id="PlotAstroData.add_arrow"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.plot_utils.PlotAstroData.add_arrow">[docs]</a>    <span class="k">def</span> <span class="nf">add_arrow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">poslist</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[],</span> <span class="n">anglelist</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[],</span>
                   <span class="n">rlist</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[],</span> <span class="n">include_chan</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                   <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Use Axes.quiver of matplotlib.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Use Axes.quiver of matplotlib.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            poslist (list, optional): Text or relative. Defaults to [].</span>
@@ -601,7 +599,7 @@
                      <span class="n">color</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;gray&#39;</span><span class="p">,</span> <span class="n">barpos</span><span class="p">:</span> <span class="nb">tuple</span> <span class="o">=</span> <span class="p">(</span><span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.12</span><span class="p">),</span>
                      <span class="n">fontsize</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">linewidth</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
                      <span class="n">bbox</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;alpha&#39;</span><span class="p">:</span><span class="mi">0</span><span class="p">})</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Use Axes.text and Axes.plot of matplotlib.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Use Axes.text and Axes.plot of matplotlib.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            length (float, optional): In the unit of arcsec. Defaults to 0.</span>
@@ -633,7 +631,7 @@
                   <span class="n">cbticklabels</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">cblocation</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;right&#39;</span><span class="p">,</span>
                   <span class="n">show_beam</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">beamcolor</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;gray&#39;</span><span class="p">,</span>
                   <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Use Axes.pcolormesh of matplotlib. kwargs must include the arguments of AstroData to specify the data to be plotted.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Use Axes.pcolormesh of matplotlib. kwargs must include the arguments of AstroData to specify the data to be plotted.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            xskip, yskip (int, optional): Spatial pixel skip. Defaults to 1.</span>
@@ -702,7 +700,7 @@
                     <span class="n">levels</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="mi">12</span><span class="p">,</span><span class="o">-</span><span class="mi">6</span><span class="p">,</span><span class="o">-</span><span class="mi">3</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">6</span><span class="p">,</span><span class="mi">12</span><span class="p">,</span><span class="mi">24</span><span class="p">,</span><span class="mi">48</span><span class="p">,</span><span class="mi">96</span><span class="p">,</span><span class="mi">192</span><span class="p">,</span><span class="mi">384</span><span class="p">],</span>
                     <span class="n">show_beam</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">beamcolor</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;gray&#39;</span><span class="p">,</span>
                     <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Use Axes.contour of matplotlib. kwargs must include the arguments of AstroData to specify the data to be plotted.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Use Axes.contour of matplotlib. kwargs must include the arguments of AstroData to specify the data to be plotted.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            xskip, yskip (int, optional): Spatial pixel skip. Defaults to 1.</span>
@@ -734,7 +732,7 @@
                     <span class="n">cutoff</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">3.</span><span class="p">,</span> 
                     <span class="n">show_beam</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">beamcolor</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;gray&#39;</span><span class="p">,</span>
                     <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Use Axes.quiver of matplotlib. kwargs must include the arguments of AstroData to specify the data to be plotted. fitsimage = [ampfits, angfits, Ufits, Qfits]. data = [amp, ang, stU, stQ].</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Use Axes.quiver of matplotlib. kwargs must include the arguments of AstroData to specify the data to be plotted. fitsimage = [ampfits, angfits, Ufits, Qfits]. data = [amp, ang, stU, stQ].</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            ampfits (str, optional): In put fits name. Length of segment. Defaults to None.</span>
@@ -791,7 +789,7 @@
                 <span class="n">show_beam</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
                 <span class="n">beamcolor</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;red&#39;</span><span class="p">,</span> <span class="s1">&#39;green&#39;</span><span class="p">,</span> <span class="s1">&#39;blue&#39;</span><span class="p">],</span>
                 <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Use PIL.Image and imshow of matplotlib. kwargs must include the arguments of AstroData to specify the data to be plotted. A three-element array ([red, green, blue]) is supposed for all arguments, except for xskip, yskip and show_beam, including vmax and vmin.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Use PIL.Image and imshow of matplotlib. kwargs must include the arguments of AstroData to specify the data to be plotted. A three-element array ([red, green, blue]) is supposed for all arguments, except for xskip, yskip and show_beam, including vmax and vmin.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            xskip, yskip (int, optional): Spatial pixel skip. Defaults to 1.</span>
@@ -833,7 +831,7 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">add_beam</span><span class="p">(</span><span class="n">beam</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">beamcolor</span><span class="p">[</span><span class="n">i</span><span class="p">])</span></div>
     
 <div class="viewcode-block" id="PlotAstroData.set_axis"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.plot_utils.PlotAstroData.set_axis">[docs]</a>    <span class="k">def</span> <span class="nf">set_axis</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">title</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Use Axes.set_* of matplotlib. kwargs can include the arguments of PlotAxes2D to adjust x and y axis.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Use Axes.set_* of matplotlib. kwargs can include the arguments of PlotAxes2D to adjust x and y axis.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            title (dict, optional): str means set_title(str) for 2D or fig.suptitle(str) for 3D. Defaults to None.</span>
@@ -882,7 +880,7 @@
                        <span class="n">ylabel</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;Dec. (ICRS)&#39;</span><span class="p">,</span>
                        <span class="n">nticksminor</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
                        <span class="n">grid</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">title</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Use ax.set_* of matplotlib.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Use ax.set_* of matplotlib.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            center (str, optional): Defaults to None, initial one.</span>
@@ -970,7 +968,7 @@
             
 <div class="viewcode-block" id="PlotAstroData.savefig"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.plot_utils.PlotAstroData.savefig">[docs]</a>    <span class="k">def</span> <span class="nf">savefig</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                 <span class="n">show</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Use savefig of matplotlib.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Use savefig of matplotlib.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            filename (str, optional): Output image file name. Defaults to None.</span>
@@ -993,7 +991,7 @@
         <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
 
 <div class="viewcode-block" id="PlotAstroData.get_figax"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.plot_utils.PlotAstroData.get_figax">[docs]</a>    <span class="k">def</span> <span class="nf">get_figax</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Output the external fig and ax after plotting.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Output the external fig and ax after plotting.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            tuple: (fig, ax)</span>
@@ -1013,7 +1011,7 @@
                 <span class="n">getfigax</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
                 <span class="n">savefig</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">show</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
                 <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Use Axes.plot of matplotlib to plot line profiles at given coordinates. kwargs must include the arguments of AstroData to specify the data to be plotted. kwargs can include the arguments of PlotAxes2D to adjust x and y axes.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Use Axes.plot of matplotlib to plot line profiles at given coordinates. kwargs must include the arguments of AstroData to specify the data to be plotted. kwargs can include the arguments of PlotAxes2D to adjust x and y axes.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        coords (list, optional): Coordinates. Defaults to [].</span>
@@ -1096,7 +1094,7 @@
               <span class="n">fig</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">getfigax</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
               <span class="n">savefig</span><span class="p">:</span> <span class="nb">str</span> <span class="ow">or</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">show</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
               <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Use Axes.plot of matplotlib to plot a 1D spatial slice in a 2D map. kwargs must include the arguments of AstroData to specify the data to be plotted. kwargs can include the arguments of PlotAxes2D to adjust x and y axes.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Use Axes.plot of matplotlib to plot a 1D spatial slice in a 2D map. kwargs must include the arguments of AstroData to specify the data to be plotted. kwargs can include the arguments of PlotAxes2D to adjust x and y axes.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        length (float): Slice length.</span>
@@ -1154,7 +1152,7 @@
            <span class="n">xskip</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">yskip</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
            <span class="n">eye_p</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">eye_i</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">180</span><span class="p">,</span>
            <span class="n">outname</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;plot3d&#39;</span><span class="p">,</span> <span class="n">show</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Use Plotly. kwargs must include the arguments of AstroData to specify the data to be plotted. kwargs must include the arguments of AstroFrame to specify the ranges and so on for plotting.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Use Plotly. kwargs must include the arguments of AstroData to specify the data to be plotted. kwargs must include the arguments of AstroFrame to specify the ranges and so on for plotting.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        levels (list, optional): Contour levels. Defaults to [3,6,12].</span>

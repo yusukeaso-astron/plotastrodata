@@ -11,10 +11,8 @@
   <![endif]-->
   
         <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
-        <script src="../../_static/jquery.js"></script>
-        <script src="../../_static/underscore.js"></script>
-        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/sphinx_highlight.js"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" /> 
@@ -82,7 +80,7 @@
 
 <div class="viewcode-block" id="Jy2K"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.fits_utils.Jy2K">[docs]</a><span class="k">def</span> <span class="nf">Jy2K</span><span class="p">(</span><span class="n">header</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">bmaj</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">bmin</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
          <span class="n">restfrq</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Calculate a conversion factor in the unit of K/Jy.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Calculate a conversion factor in the unit of K/Jy.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        header (optional): astropy.io.fits.open(&#39;a.fits&#39;)[0].header. Defaults to None.</span>
@@ -109,7 +107,7 @@
 
 
 <div class="viewcode-block" id="FitsData"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.fits_utils.FitsData">[docs]</a><span class="k">class</span> <span class="nc">FitsData</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;For practical treatment of data in a FITS file.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;For practical treatment of data in a FITS file.</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
 <span class="sd">        fitsimage (str): Input FITS file name.</span>
@@ -118,7 +116,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">fitsimage</span> <span class="o">=</span> <span class="n">fitsimage</span>
 
 <div class="viewcode-block" id="FitsData.gen_hdu"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.fits_utils.FitsData.gen_hdu">[docs]</a>    <span class="k">def</span> <span class="nf">gen_hdu</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Generate self.hdu. fits.open()[0].</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate self.hdu. fits.open()[0].</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">hdu</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fitsimage</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span> <span class="o">=</span> <span class="n">hdu</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
@@ -130,14 +128,14 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">hdubeam</span> <span class="o">=</span> <span class="n">b</span><span class="p">[</span><span class="s1">&#39;BMAJ&#39;</span><span class="p">][</span><span class="n">imed</span><span class="p">],</span> <span class="n">b</span><span class="p">[</span><span class="s1">&#39;BMIN&#39;</span><span class="p">][</span><span class="n">imed</span><span class="p">],</span> <span class="n">b</span><span class="p">[</span><span class="s1">&#39;BPA&#39;</span><span class="p">][</span><span class="n">imed</span><span class="p">]</span></div>
         
 <div class="viewcode-block" id="FitsData.gen_header"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.fits_utils.FitsData.gen_header">[docs]</a>    <span class="k">def</span> <span class="nf">gen_header</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Generate self.header. fits.open()[0].header.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate self.header. fits.open()[0].header.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;hdu&#39;</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">gen_hdu</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">header</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="o">.</span><span class="n">header</span></div>
 
 <div class="viewcode-block" id="FitsData.get_header"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.fits_utils.FitsData.get_header">[docs]</a>    <span class="k">def</span> <span class="nf">get_header</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span> <span class="ow">or</span> <span class="nb">float</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Output the entire header or a value when a key is given.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Output the entire header or a value when a key is given.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            key (str, optional): Key name of the FITS header. Defaults to None.</span>
@@ -155,7 +153,7 @@
         <span class="k">return</span> <span class="kc">None</span></div>
 
 <div class="viewcode-block" id="FitsData.gen_beam"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.fits_utils.FitsData.gen_beam">[docs]</a>    <span class="k">def</span> <span class="nf">gen_beam</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dist</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Generate sef.bmaj, self.bmin, self.bpa from header[&#39;BMAJ&#39;], etc.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate sef.bmaj, self.bmin, self.bpa from header[&#39;BMAJ&#39;], etc.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            dist (float, optional): bmaj and bmin are multiplied by dist. Defaults to 1..</span>
@@ -172,7 +170,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">bmaj</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">bmin</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">bpa</span> <span class="o">=</span> <span class="n">bmaj</span> <span class="o">*</span> <span class="n">dist</span><span class="p">,</span> <span class="n">bmin</span> <span class="o">*</span> <span class="n">dist</span><span class="p">,</span> <span class="n">bpa</span></div>
 
 <div class="viewcode-block" id="FitsData.get_beam"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.fits_utils.FitsData.get_beam">[docs]</a>    <span class="k">def</span> <span class="nf">get_beam</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dist</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Output the beam array of [bmaj, bmin, bpa].</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Output the beam array of [bmaj, bmin, bpa].</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            dist (float, optional): bmaj and bmin are multiplied by dist. Defaults to 1..</span>
@@ -185,7 +183,7 @@
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">bmaj</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">bmin</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">bpa</span><span class="p">])</span></div>
 
 <div class="viewcode-block" id="FitsData.get_center"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.fits_utils.FitsData.get_center">[docs]</a>    <span class="k">def</span> <span class="nf">get_center</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Output the central coordinates as text.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Output the central coordinates as text.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            str: The central coordinates.</span>
@@ -196,7 +194,7 @@
 
 <div class="viewcode-block" id="FitsData.gen_data"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.fits_utils.FitsData.gen_data">[docs]</a>    <span class="k">def</span> <span class="nf">gen_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Tb</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">log</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
                  <span class="n">drop</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">restfrq</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Generate data, which may be brightness temperature.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate data, which may be brightness temperature.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            Tb (bool, optional): True means the data are brightness temperatures. Defaults to False.</span>
@@ -214,7 +212,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">d</span></div>
         
 <div class="viewcode-block" id="FitsData.get_data"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.fits_utils.FitsData.get_data">[docs]</a>    <span class="k">def</span> <span class="nf">get_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Output data. This method can take the arguments of gen_data().</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Output data. This method can take the arguments of gen_data().</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            np.ndarray: data in the format of np.ndarray.</span>
@@ -225,7 +223,7 @@
 <div class="viewcode-block" id="FitsData.gen_grid"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.fits_utils.FitsData.gen_grid">[docs]</a>    <span class="k">def</span> <span class="nf">gen_grid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">center</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">dist</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.</span><span class="p">,</span>
                  <span class="n">restfrq</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">vsys</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.</span><span class="p">,</span>
                  <span class="n">pv</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Generate grids relative to the center and vsys.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate grids relative to the center and vsys.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            center (str, optional): Center for the spatial grids. Defaults to None.</span>
@@ -281,7 +279,7 @@
                 <span class="n">gen_v</span><span class="p">(</span><span class="n">get_list</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="kc">True</span><span class="p">))</span></div>
                     
 <div class="viewcode-block" id="FitsData.get_grid"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.fits_utils.FitsData.get_grid">[docs]</a>    <span class="k">def</span> <span class="nf">get_grid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Output the grids, [x, y, v]. This method can take the arguments of gen_grid().</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Output the grids, [x, y, v]. This method can take the arguments of gen_grid().</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            tuple: (x, y, v).</span>
@@ -293,7 +291,7 @@
 <div class="viewcode-block" id="FitsData.trim"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.fits_utils.FitsData.trim">[docs]</a>    <span class="k">def</span> <span class="nf">trim</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rmax</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e10</span><span class="p">,</span> <span class="n">xoff</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.</span><span class="p">,</span> <span class="n">yoff</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.</span><span class="p">,</span>
              <span class="n">vmin</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1e10</span><span class="p">,</span> <span class="n">vmax</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e10</span><span class="p">,</span>
              <span class="n">pv</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Trim the data and grids. The data range will be from xoff - rmax, yoff - rmax, vmin to xoff + rmax, yoff + rmax, vmax.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Trim the data and grids. The data range will be from xoff - rmax, yoff - rmax, vmin to xoff + rmax, yoff + rmax, vmax.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            rmax (float, optional): Defaults to 1e10.</span>
@@ -318,7 +316,7 @@
               <span class="n">dist</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.</span><span class="p">,</span> <span class="n">sigma</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
               <span class="n">restfrq</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">center</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
               <span class="n">vsys</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.</span><span class="p">,</span> <span class="n">pv</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Extract data from a fits file. kwargs are arguments of FitsData.trim().</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Extract data from a fits file. kwargs are arguments of FitsData.trim().</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        fitsimage (str): Input fits name.</span>
@@ -346,7 +344,7 @@
     
 <div class="viewcode-block" id="data2fits"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.fits_utils.data2fits">[docs]</a><span class="k">def</span> <span class="nf">data2fits</span><span class="p">(</span><span class="n">d</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">h</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{},</span> <span class="n">templatefits</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
               <span class="n">fitsimage</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;test&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Make a fits file from a N-D array.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Make a fits file from a N-D array.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        d (np.ndarray, optional): N-D array. Defaults to None.</span>
