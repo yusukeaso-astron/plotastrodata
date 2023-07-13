@@ -24,7 +24,7 @@ def Jy2K(header = None, bmaj: float = None, bmin: float = None,
         bmaj, bmin = header['BMAJ'] * 3600, header['BMIN'] * 3600
         if bmaj == 0 or bmin == 0:
             print('Use CDELT1 x sqrt(4ln2 / pi) as BMAJ and BMIN.')
-            bmaj = bmin = header['CDELT1'] * 3600
+            bmaj = bmin = header['CDELT1']*3600 * np.sqrt(4*np.log(2)/np.pi)
         if 'RESTFREQ' in header.keys(): freq = header['RESTFREQ']
         if 'RESTFRQ' in header.keys(): freq = header['RESTFRQ']
     if restfrq is not None: freq = restfrq
