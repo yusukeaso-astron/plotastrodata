@@ -24,7 +24,7 @@ def Jy2K(header = None, bmaj: float = None, bmin: float = None,
         if 'BMAJ' in header and 'BMIN' in header:
             bmaj, bmin = header['BMAJ'], header['BMIN']
         else:
-            print('Use CDELT1 x sqrt(4ln2 / pi) as BMAJ and BMIN.')
+            print('Use CDELT1^2 for Tb conversion.')
             bmaj = bmin = header['CDELT1'] * np.sqrt(4*np.log(2)/np.pi)
         if 'RESTFREQ' in header.keys(): freq = header['RESTFREQ']
         if 'RESTFRQ' in header.keys(): freq = header['RESTFRQ']
