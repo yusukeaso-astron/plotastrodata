@@ -26,6 +26,8 @@ def Jy2K(header = None, bmaj: float = None, bmin: float = None,
         else:
             print('Use CDELT1^2 for Tb conversion.')
             bmaj = bmin = header['CDELT1'] * np.sqrt(4*np.log(2)/np.pi)
+            if header['CUNIT1'] == 'arcsec':
+                bmaj, bmin = bmaj / 3600, bmin / 3600
         if 'RESTFREQ' in header.keys(): freq = header['RESTFREQ']
         if 'RESTFRQ' in header.keys(): freq = header['RESTFRQ']
     if restfrq is not None: freq = restfrq
