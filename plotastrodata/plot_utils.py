@@ -699,6 +699,7 @@ class PlotAstroData(AstroFrame):
             amp[amp < cutoff * rms] = np.nan
         if amp is None: amp = np.ones_like(ang)
         if angonly: amp = np.sign(amp)**2
+        amp = amp / np.nanmax(amp)
         u = ampfactor * amp * np.sin(np.radians(ang + rotation))
         v = ampfactor * amp * np.cos(np.radians(ang + rotation))
         u = self.vskipfill(u)
