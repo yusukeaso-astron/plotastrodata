@@ -140,9 +140,9 @@ class FitsData:
         if not hasattr(self, 'hdu'):
             self.gen_hdu()
         h, d = self.hdu.header, self.hdu.data
-        if drop == True: d = np.squeeze(d)
-        if Tb == True: d *= Jy2K(header=h, restfrq=restfrq)
-        if log == True: d = np.log10(d.clip(np.min(d[d > 0]), None))
+        if drop: d = np.squeeze(d)
+        if Tb: d *= Jy2K(header=h, restfrq=restfrq)
+        if log: d = np.log10(d.clip(np.min(d[d > 0]), None))
         self.data = d
         
     def get_data(self, **kwargs) -> np.ndarray:
