@@ -487,9 +487,10 @@ class AstroFrame():
         if type(d.cfactor) is not list: d.cfactor = [d.cfactor] * d.n
         if type(d.rms) is not list: d.rms = [d.rms] * d.n
         if type(d.bunit) is not list: d.bunit = [d.bunit] * d.n
+        grid0 = [d.x, d.y, d.v]
         for i in range(d.n):
             if d.center[i] == 'common': d.center[i] = self.center
-            grid = [d.x, d.y, d.v]
+            grid = grid0
             if d.fitsimage[i] is not None:
                 fd = FitsData(d.fitsimage[i])
                 if d.center[i] is None and not self.pv:
