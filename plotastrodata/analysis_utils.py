@@ -10,7 +10,23 @@ from plotastrodata.other_utils import (coord2xy, rel2abs, estimate_rms, trim,
 from plotastrodata.fits_utils import FitsData, data2fits
 
 
+def to4dim(data: np.ndarray) -> np.ndarray:
+    """Change a 2D, 3D, or 4D array to a 4D array.
 
+    Args:
+        data (np.ndarray): Input data. 2D, 3D, or 4D.
+
+    Returns:
+        np.ndarray: Output 4D array.
+    """
+    if np.ndim(data) == 2:
+        d = np.array([[data]])
+    elif np.ndim(data) == 3:
+        d = np.array([data])
+    else:
+        d = data
+    return d
+    
 def quadrantmean(data: np.ndarray, x: np.ndarray, y: np.ndarray,
                  quadrants: str ='13') -> tuple:
     """Take mean between 1st and 3rd (or 2nd and 4th) quadrants.
@@ -65,13 +81,7 @@ def sortRGI(y: np.ndarray, x: np.ndarray, data: np.ndarray,
         print('data must be 2D, 3D, or 4D.')
         return -1
     
-    if np.ndim(data) == 2:
-        d = [[data]]
-    elif np.ndim(data) == 3:
-        d = [data]
-    else:
-        d = data
-    csort, xsort, ysort = d, x, y
+    csort, xsort, ysort = to4dim(data), x, y
     if x[0] > x[1]:
         xsort = x[::-1]
         csort = np.moveaxis(np.moveaxis(csort, -1, 0)[::-1], 0, -1)
@@ -168,12 +178,7 @@ class AstroData():
             width (list, optional): Number of channels, y-pixels, and x-pixels for binning. Defaults to [1, 1, 1].
         """
         width = [1] * (4 - len(width)) + width
-        if np.ndim(self.data) == 2:
-            d = [[self.data]]
-        elif np.ndim(self.data) == 3:
-            d = [self.data]
-        else:
-            d = self.data
+        d = to4dim(self.data)
         size = list(np.shape(d))
         newsize = size // np.array(width, dtype=int)
         grid = [None, self.v, self.y, self.x]
@@ -217,8 +222,8 @@ class AstroData():
         g1 /= np.sqrt(np.pi/4/np.log(2) * bmin * np.sqrt(1 - bmin**2/bmaj**2))
         g = np.zeros((ny, nx))
         g[:, (nx - 1) // 2] = g1
-        d = [self.data] if np.ndim(self.data) == 2 else self.data
-        self.data = np.squeeze([convolve(c, g, mode='same') for c in d])
+        self.data = np.squeeze([[convolve(c, g, mode='same')
+                                 for c in cc] for cc in to4dim(self.data)])
         self.rotate(bpa)
         self.beam[1] = self.beam[0]
         self.beam[2] = 0
