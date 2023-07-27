@@ -303,8 +303,8 @@ class AstroData():
         Returns:
             tuple: (v, list of profiles, result of Gaussian fit)
         """
-        if np.ndim(self.data) != 3:
-            print('Data must be 3D.')
+        if np.ndim(self.data) != 3 or self.v is None:
+            print('Data must be 3D with the v, y, and x axes.')
             return False
 
         if len(coords) > 0:
