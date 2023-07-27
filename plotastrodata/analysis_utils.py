@@ -61,22 +61,31 @@ def sortRGI(y: np.ndarray, x: np.ndarray, data: np.ndarray,
     Returns:
         np.ndarray: The RGI function or the interpolated array.
     """
-    if not np.ndim(data) in [2, 3]:
-        print('data must be 2D or 3D.')
+    if not np.ndim(data) in [2, 3, 4]:
+        print('data must be 2D, 3D, or 4D.')
         return -1
     
-    d = [data] if np.ndim(data) == 2 else data
-    xsort = x if x[1] > x[0] else x[::-1]
-    csort = [c if x[1] > x[0] else c[:, ::-1] for c in d]
-    ysort = y if y[1] > y[0] else y[::-1]
-    csort = np.array([c if y[1] > y[0] else c[::-1, :] for c in csort])
+    d = data
+    if np.ndim(d) == 2:
+        d = [[d]]
+    elif np.ndim(d) == 3:
+        d = [d]
+    csort, xsort, ysort = d, x, y
+    if x[0] > x[1]:
+        xsort = x[::-1]
+        csort = np.moveaxis(np.moveaxis(csort, -1, 0)[::-1], 0, -1)
+    if y[0] > y[1]:
+        ysort = y[::-1]
+        csort = np.moveaxis(np.moveaxis(csort, -2, 0)[::-1], 0, -2)
     csort[np.isnan(csort)] = 0
-    psort = (ysort, xsort)
-    f = [RGI(psort, c, bounds_error=False, fill_value=0) for c in csort]
+    f = [[RGI((ysort, xsort), c, bounds_error=False, fill_value=0)
+          for c in cc] for cc in csort]
     if ynew is None or xnew is None:
-        return f[0] if len(f) == 1 else f
-    pnew = (ynew.ravel(), xnew.ravel())
-    d = np.reshape([g(pnew) for g in f], (len(f), *np.shape(xnew)))
+        if len(f) == 1: f = f[0]
+        if len(f) == 1: f = f[0]
+        return f
+    d = [[g((ynew.ravel(), xnew.ravel())) for g in ff] for ff in f]
+    d = np.reshape(d, (*np.shape(f), *np.shape(xnew)))
     return np.squeeze(d)
 
 
