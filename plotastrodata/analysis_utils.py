@@ -166,23 +166,28 @@ class AstroData():
         Args:
             width (list, optional): Number of channels, y-pixels, and x-pixels for binning. Defaults to [1, 1, 1].
         """
-        if len(width) == 2: width = [1] + width
-        self.data = [self.data] if np.ndim(self.data) == 2 else self.data
-        size = np.array([len(self.v), len(self.y), len(self.x)])
+        width = [1] * (4 - len(width)) + width
+        if np.ndim(self.data) == 2:
+            data = np.array([[self.data]])
+        elif np.ndim(self.data) == 3:
+            data = np.array([self.data])
+        size = list(np.shape(data))
         newsize = size // np.array(width, dtype=int)
         grid = [self.v, self.y, self.x]
+        if self.y is None: grid = [grid[i] for i in [1, 0, 2]]  # for PV diagram
         for n in range(3):
             if width[n] == 1:
                 continue
             size[n] = newsize[n]
-            olddata = np.moveaxis(self.data, n, 0)
-            data = np.moveaxis(np.zeros(size), n, 0)
+            olddata = np.moveaxis(data, n, 0)
+            newdata = np.moveaxis(np.zeros(size), n, 0)
             t = np.zeros(newsize[n])
             for i in range(width[n]):
                 t += grid[n][i:i + newsize[n]*width[n]:width[n]]
-                data += olddata[i:i + newsize[n]*width[n]:width[n]]
+                newdata += olddata[i:i + newsize[n]*width[n]:width[n]]
             grid[n] = t / width[n]
-            self.data = np.moveaxis(data, 0, n) / width[n]
+            self.data = np.moveaxis(newdata, 0, n) / width[n]
+        if self.y is None: grid = [grid[i] for i in [1, 0, 2]]
         self.v, self.y, self.x = grid
             
     def centering(self):
