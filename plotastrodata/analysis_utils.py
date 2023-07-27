@@ -164,7 +164,7 @@ class AstroData():
         """Binning up neighboring pixels in the v, y, and x domain.
 
         Args:
-            width (list, optional): Number of channels, x-pixels, and y-pixels for binning. Defaults to [1, 1, 1].
+            width (list, optional): Number of channels, y-pixels, and x-pixels for binning. Defaults to [1, 1, 1].
         """
         if len(width) == 2: width = [1] + width
         self.data = [self.data] if np.ndim(self.data) == 2 else self.data
