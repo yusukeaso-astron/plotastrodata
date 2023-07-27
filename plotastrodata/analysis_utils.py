@@ -541,9 +541,9 @@ class AstroFrame():
                 grid[0] = grid[0][::xskip]
                 grid[1] = grid[1][::yskip]
                 a = d.data[i]
-                a = np.moveaxis(np.moveaxis(a, -1, 0), -1, 0)
+                a = np.moveaxis(a, [-2, -1], [0, 1])
                 a = a[::yskip, ::xskip]
-                a = np.moveaxis(np.moveaxis(a, 0, -1), 0, -1)
+                a = np.moveaxis(a, [0, 1], [-2, -1])
                 d.data[i] = a
                 d.x, d.y = grid
                 if self.quadrants is not None:

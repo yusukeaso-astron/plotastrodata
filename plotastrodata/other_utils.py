@@ -196,6 +196,8 @@ def trim(data: np.ndarray = None, x: np.ndarray = None,
         tuple: Trimmed (data, [x,y,v]). 
     """
     xout, yout, vout, dataout = x, y, v, data
+    i0 = j0 = k0 = 0
+    i1 = j1 = k1 = 100000
     if not (x is None or xlim is None):
         if not (None in xlim):
             i0 = np.argmin(np.abs(x - xlim[0]))
@@ -216,17 +218,14 @@ def trim(data: np.ndarray = None, x: np.ndarray = None,
             vout = v[k0:k1+1]
     if data is not None:
         d = np.squeeze(data)
-        if pv:
-            dataout = d[k0:k1+1, i0:i1+1]
-        elif np.ndim(d) == 2:
+        if np.ndim(d) == 2:
+            if pv: j0, j1 = k0, k1
             dataout = d[j0:j1+1, i0:i1+1]
-        elif np.ndim(d) == 3:
-            if np.all(vout == v):
-                dataout = d[:, j0:j1+1, i0:i1+1]
-            else:
-                dataout = d[k0:k1+1, j0:j1+1, i0:i1+1]
         else:
-            dataout = d[:, k0:k1+1, j0:j1+1, i0:i1+1]
+            d = np.moveaxis(d, [-3, -2, -1], [0, 1, 2])
+            d = d[k0:k1+1, j0:j1+1, i0:i1+1]
+            d = np.moveaxis(d, [0, 1, 2], [-3, -2, -1])
+            dataout = d
     return dataout, [xout, yout, vout]
 
 
