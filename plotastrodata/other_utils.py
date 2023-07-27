@@ -221,7 +221,6 @@ def trim(data: np.ndarray = None, x: np.ndarray = None,
         elif np.ndim(d) == 2:
             dataout = d[j0:j1+1, i0:i1+1]
         elif np.ndim(d) == 3:
-            print(v, vlim)
             if vout == v:
                 dataout = d[:, j0:j1+1, i0:i1+1]
             else:
