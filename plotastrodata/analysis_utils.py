@@ -65,11 +65,12 @@ def sortRGI(y: np.ndarray, x: np.ndarray, data: np.ndarray,
         print('data must be 2D, 3D, or 4D.')
         return -1
     
-    d = data
-    if np.ndim(d) == 2:
-        d = [[d]]
-    elif np.ndim(d) == 3:
-        d = [d]
+    if np.ndim(data) == 2:
+        d = [[data]]
+    elif np.ndim(data) == 3:
+        d = [data]
+    else:
+        d = data
     csort, xsort, ysort = d, x, y
     if x[0] > x[1]:
         xsort = x[::-1]
@@ -102,20 +103,10 @@ def filled2d(data: np.ndarray, x: np.ndarray, y: np.ndarray,
     Returns:
         tuple: The interpolated (data, x, y).
     """
-    if not np.ndim(data) in [2, 3]:
-        print('data must be 2D or 3D.')
-        return -1
-    
     xf = np.linspace(x[0], x[-1], n * (len(x) - 1) + 1)
     yf = np.linspace(y[0], y[-1], n * (len(y) - 1) + 1)
-    xsort = xf if xf[1] > xf[0] else xf[::-1]
-    ysort = yf if yf[1] > yf[0] else yf[::-1]
-    d = [data] if np.ndim(data) == 2 else data
-    xsort, ysort = np.meshgrid(xsort, ysort)
-    d = np.array([f((ysort, xsort)) for f in sortRGI(y, x, d)])
-    d = d if x[1] > x[0] else d[:, :, ::-1]
-    d = d if y[1] > y[0] else d[:, ::-1, :]
-    return np.squeeze(d), xf, yf
+    d = sortRGI(y, x, data, *np.meshgrid(xf, yf))
+    return d, xf, yf
     
 
 @dataclass
