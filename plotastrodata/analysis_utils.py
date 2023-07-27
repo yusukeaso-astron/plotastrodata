@@ -272,10 +272,10 @@ class AstroData():
             excludepix (list, optional): Data in this range is masked. Defaults to [].
         """
         if dataformask is None:
-            dataformask = self.data * 1
-        if np.ndim(self.data) ==3 and np.ndim(dataformask) == 2:
-            print('The 2D mask is broadcasted to 3D.')
-            mask = np.array([dataformask] * len(self.data))
+            dataformask = self.data
+        if np.ndim(self.data) > np.ndim(dataformask):
+            print('The mask is broadcasted.')
+            mask = np.full(np.shape(self.data), dataformask)
         else:
             mask = dataformask
         if np.shape(self.data) != np.shape(mask):
