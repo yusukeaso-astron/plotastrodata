@@ -220,8 +220,13 @@ def trim(data: np.ndarray = None, x: np.ndarray = None,
             dataout = d[k0:k1+1, i0:i1+1]
         elif np.ndim(d) == 2:
             dataout = d[j0:j1+1, i0:i1+1]
+        elif np.ndim(d) == 3:
+            if v is not None:
+                dataout = d[k0:k1+1, j0:j1+1, i0:i1+1]
+            else:
+                dataout = d[:, j0:j1+1, i0:i1+1]
         else:
-            dataout = d[k0:k1+1, j0:j1+1, i0:i1+1]
+            dataout = d[:, k0:k1+1, j0:j1+1, i0:i1+1]
     return dataout, [xout, yout, vout]
 
 
