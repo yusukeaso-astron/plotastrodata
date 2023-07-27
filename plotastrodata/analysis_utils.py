@@ -246,23 +246,24 @@ class AstroData():
         hbin = (hbin[:-1] + hbin[1:]) / 2
         return hbin, hist
 
-    def mask(self, dataformask: np.ndarray, includepix: list = [],
+    def mask(self, dataformask: np.ndarray = None, includepix: list = [],
              excludepix: list = []):
         """Mask self.data using a 2D or 3D array of dataformask.
 
         Args:
-            dataformask (np.ndarray): 2D or 3D array is used for specifying the mask.
+            dataformask (np.ndarray, optional): 2D or 3D array is used for specifying the mask.
             includepix (list, optional): Data in this range survivies. Defaults to [].
             excludepix (list, optional): Data in this range is masked. Defaults to [].
         """
-        if np.ndim(self.data) ==3 and np.ndim(dataformask) == 2:
-            print('The 2D mask is broadcasted to 3D.')
-            mask = np.array([dataformask] * len(self.data))
-        else:
-            mask = dataformask
-        if np.shape(self.data) != np.shape(mask):
-            print('The dataformask has a different shape.')
-            return False
+        if dataformask is not None:
+            if np.ndim(self.data) ==3 and np.ndim(dataformask) == 2:
+                print('The 2D mask is broadcasted to 3D.')
+                mask = np.array([dataformask] * len(self.data))
+            else:
+                mask = dataformask
+            if np.shape(self.data) != np.shape(mask):
+                print('The dataformask has a different shape.')
+                return False
 
         if len(includepix) == 2:
             self.data[(mask < includepix[0]) + (includepix[1] < mask)] = np.nan
