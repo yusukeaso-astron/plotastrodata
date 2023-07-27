@@ -105,7 +105,8 @@ def filled2d(data: np.ndarray, x: np.ndarray, y: np.ndarray,
     """
     xf = np.linspace(x[0], x[-1], n * (len(x) - 1) + 1)
     yf = np.linspace(y[0], y[-1], n * (len(y) - 1) + 1)
-    d = sortRGI(y, x, data, *np.meshgrid(xf, yf))
+    xnew, ynew = np.meshgrid(xf, yf)
+    d = sortRGI(y, x, data, ynew, xnew)
     return d, xf, yf
     
 
@@ -168,28 +169,31 @@ class AstroData():
         """
         width = [1] * (4 - len(width)) + width
         if np.ndim(self.data) == 2:
-            data = np.array([[self.data]])
+            d = [[self.data]]
         elif np.ndim(self.data) == 3:
-            data = np.array([self.data])
-        size = list(np.shape(data))
+            d = [self.data]
+        else:
+            d = self.data
+        size = list(np.shape(d))
         newsize = size // np.array(width, dtype=int)
         grid = [None, self.v, self.y, self.x]
-        if self.y is None: grid = [grid[i] for i in [0, 2, 1, 3]]  # for PV diagram
+        if self.y is None:
+            grid = [grid[i] for i in [0, 2, 1, 3]]  # for PV diagram
         for n in range(4):
             if width[n] == 1:
                 continue
             size[n] = newsize[n]
-            olddata = np.moveaxis(data, n, 0)
+            olddata = np.moveaxis(d, n, 0)
             newdata = np.moveaxis(np.zeros(size), n, 0)
             t = np.zeros(newsize[n])
             for i in range(width[n]):
                 t += grid[n][i:i + newsize[n]*width[n]:width[n]]
                 newdata += olddata[i:i + newsize[n]*width[n]:width[n]]
             grid[n] = t / width[n]
-            newdata = np.moveaxis(newdata, 0, n) / width[n]
-            data = np.squeeze(newdata)
-        self.data = data
-        if self.y is None: grid = [grid[i] for i in [0, 2, 1, 3]]
+            d = np.moveaxis(newdata, 0, n) / width[n]
+        self.data = np.squeeze(d)
+        if self.y is None:
+            grid = [grid[i] for i in [0, 2, 1, 3]]
         _, self.v, self.y, self.x = grid
             
     def centering(self):
