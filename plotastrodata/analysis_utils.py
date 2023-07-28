@@ -183,7 +183,7 @@ class AstroData():
         newsize = size // np.array(width, dtype=int)
         grid = [None, self.v, self.y, self.x]
         if self.y is None:
-            grid = [grid[i] for i in [0, 2, 1, 3]]  # for PV diagram
+            grid[1], grid[2] = grid[2], grid[1]  # for PV diagram
         for n in range(4):
             if width[n] == 1:
                 continue
@@ -198,7 +198,7 @@ class AstroData():
             d = np.moveaxis(newdata, 0, n) / width[n]
         self.data = np.squeeze(d)
         if self.y is None:
-            grid = [grid[i] for i in [0, 2, 1, 3]]
+            grid[1], grid[2] = grid[2], grid[1]
         _, self.v, self.y, self.x = grid
             
     def centering(self):
@@ -206,8 +206,8 @@ class AstroData():
         """
         x = self.x - self.x[np.argmin(np.abs(self.x))]
         y = self.y - self.y[np.argmin(np.abs(self.y))]
-        X, Y = np.meshgrid(x, y)
-        self.data = sortRGI(self.y, self.x, self.data, Y, X)
+        xnew, ynew = np.meshgrid(x, y)
+        self.data = sortRGI(self.y, self.x, self.data, ynew, xnew)
         self.y, self.x = y, x
 
     def circularbeam(self):
@@ -222,8 +222,9 @@ class AstroData():
         g1 /= np.sqrt(np.pi/4/np.log(2) * bmin * np.sqrt(1 - bmin**2/bmaj**2))
         g = np.zeros((ny, nx))
         g[:, (nx - 1) // 2] = g1
-        self.data = np.squeeze([[convolve(c, g, mode='same')
-                                 for c in cc] for cc in to4dim(self.data)])
+        d = to4dim(self.data)
+        d = [[convolve(c, g, mode='same') for c in cc] for cc in d]
+        self.data = np.squeeze(d)
         self.rotate(bpa)
         self.beam[1] = self.beam[0]
         self.beam[2] = 0
@@ -237,8 +238,8 @@ class AstroData():
         """
         ci = np.cos(np.radians(incl))
         A = np.linalg.multi_dot([Mrot(pa), Mfac(1, ci), Mrot(-pa)])
-        y, x = dot2d(A, np.meshgrid(self.x, self.y)[::-1])
-        self.data = sortRGI(self.y, self.x, self.data, y, x)
+        ynew, xnew = dot2d(A, np.meshgrid(self.x, self.y)[::-1])
+        self.data = sortRGI(self.y, self.x, self.data, ynew, xnew)
         bmaj, bmin, bpa = self.beam
         a, b = np.linalg.multi_dot([Mfac(1/bmaj, 1/bmin), Mrot(pa - bpa),
                                     Mfac(1, ci), Mrot(-pa)]).T
@@ -356,8 +357,8 @@ class AstroData():
         Args:
             pa (float, optional): Position angle in the unit of degree. Defaults to 0.
         """
-        y, x = dot2d(Mrot(-pa), np.meshgrid(self.x, self.y)[::-1])
-        self.data = sortRGI(self.y, self.x, self.data, y, x)
+        ynew, xnew = dot2d(Mrot(-pa), np.meshgrid(self.x, self.y)[::-1])
+        self.data = sortRGI(self.y, self.x, self.data, ynew, xnew)
         self.beam[2] = self.beam[2] + pa
     
     def slice(self, length: float = 0, pa: float = 0,
