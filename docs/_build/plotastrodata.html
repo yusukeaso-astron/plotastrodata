@@ -93,6 +93,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#plotastrodata.analysis_utils.filled2d"><code class="docutils literal notranslate"><span class="pre">filled2d()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#plotastrodata.analysis_utils.quadrantmean"><code class="docutils literal notranslate"><span class="pre">quadrantmean()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#plotastrodata.analysis_utils.sortRGI"><code class="docutils literal notranslate"><span class="pre">sortRGI()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#plotastrodata.analysis_utils.to4dim"><code class="docutils literal notranslate"><span class="pre">to4dim()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#module-plotastrodata.fft_utils">plotastrodata.fft_utils module</a><ul>
@@ -269,7 +270,7 @@
 <dd><p>Binning up neighboring pixels in the v, y, and x domain.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>width</strong> (<em>list</em><em>, </em><em>optional</em>) – Number of channels, x-pixels, and y-pixels for binning. Defaults to [1, 1, 1].</p>
+<dd class="field-odd"><p><strong>width</strong> (<em>list</em><em>, </em><em>optional</em>) – Number of channels, y-pixels, and x-pixels for binning. Defaults to [1, 1, 1].</p>
 </dd>
 </dl>
 </dd></dl>
@@ -336,12 +337,12 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="plotastrodata.analysis_utils.AstroData.mask">
-<span class="sig-name descname"><span class="pre">mask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataformask</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">includepix</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">excludepix</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/plotastrodata/analysis_utils.html#AstroData.mask"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#plotastrodata.analysis_utils.AstroData.mask" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">mask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataformask</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">includepix</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">excludepix</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/plotastrodata/analysis_utils.html#AstroData.mask"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#plotastrodata.analysis_utils.AstroData.mask" title="Permalink to this definition"></a></dt>
 <dd><p>Mask self.data using a 2D or 3D array of dataformask.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>dataformask</strong> (<em>np.ndarray</em>) – 2D or 3D array is used for specifying the mask.</p></li>
+<li><p><strong>dataformask</strong> (<em>np.ndarray</em><em>, </em><em>optional</em>) – 2D or 3D array is used for specifying the mask.</p></li>
 <li><p><strong>includepix</strong> (<em>list</em><em>, </em><em>optional</em>) – Data in this range survivies. Defaults to [].</p></li>
 <li><p><strong>excludepix</strong> (<em>list</em><em>, </em><em>optional</em>) – Data in this range is masked. Defaults to [].</p></li>
 </ul>
@@ -631,6 +632,23 @@
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>The RGI function or the interpolated array.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="plotastrodata.analysis_utils.to4dim">
+<span class="sig-prename descclassname"><span class="pre">plotastrodata.analysis_utils.</span></span><span class="sig-name descname"><span class="pre">to4dim</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/plotastrodata/analysis_utils.html#to4dim"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#plotastrodata.analysis_utils.to4dim" title="Permalink to this definition"></a></dt>
+<dd><p>Change a 2D, 3D, or 4D array to a 4D array.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>data</strong> (<em>np.ndarray</em>) – Input data. 2D, 3D, or 4D.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Output 4D array.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>np.ndarray</p>
