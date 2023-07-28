@@ -24,7 +24,7 @@ def to4dim(data: np.ndarray) -> np.ndarray:
     elif np.ndim(data) == 3:
         d = np.array([data])
     else:
-        d = data
+        d = np.array(data)
     return d
     
 def quadrantmean(data: np.ndarray, x: np.ndarray, y: np.ndarray,
