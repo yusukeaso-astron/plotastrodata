@@ -22,10 +22,10 @@ def Jy2K(header = None, bmaj: float = None, bmin: float = None,
     freq = None
     if header is not None:
         if 'BMAJ' in header and 'BMIN' in header:
-            bmaj, bmin = header['BMAJ'], header['BMIN']
+            bmaj, bmin = header['BMAJ'] * 3600, header['BMIN'] * 3600
         else:
             print('Use CDELT1^2 for Tb conversion.')
-            bmaj = bmin = header['CDELT1'] * np.sqrt(4*np.log(2)/np.pi)
+            bmaj = bmin = header['CDELT1'] * np.sqrt(4*np.log(2)/np.pi) * 3600
             if header['CUNIT1'] == 'arcsec':
                 bmaj, bmin = bmaj / 3600, bmin / 3600
         if 'RESTFREQ' in header.keys(): freq = header['RESTFREQ']
@@ -34,7 +34,7 @@ def Jy2K(header = None, bmaj: float = None, bmin: float = None,
     if freq is None:
         print('Please input restfrq.')
         return 1
-    omega = bmaj * bmin * units.deg**2 * np.pi / 4. / np.log(2.)
+    omega = bmaj * bmin * units.arcsec**2 * np.pi / 4. / np.log(2.)
     equiv = units.brightness_temperature(freq * units.Hz, beam_area=omega)
     T = (1 * units.Jy / units.beam).to(units.K, equivalencies=equiv)
     return T.value
