@@ -379,6 +379,19 @@ class AstroData():
         xg, yg = r * np.sin(np.radians(pa)), r * np.cos(np.radians(pa))
         z = sortRGI(self.y, self.x, self.data, yg, xg)
         return np.array([r, z])
+
+    def todict(self) -> dict:
+        """Output the attributes as a dictionary that can be input to PlotAstroData.
+
+        Returns:
+            dict: Output that can be input to PlotAstroData.
+        """
+        d = {'data':self.data, 'x':self.x, 'y':self.y, 'v':self.v,
+             'fitsimage':self.fitsimage, 'beam':self.beam, 'Tb':self.Tb,
+             'restfrq':self.restfrq, 'cfactor':self.cfactor,
+             'sigma':self.sigma, 'center':self.center, 'bunit':self.bunit}
+        if self.rms is not None: d['sigma'] = self.rms
+        return d
    
     def writetofits(self, fitsimage: str = 'out.fits', header: dict = {}):
         """Write out the AstroData to a FITS file.
@@ -562,6 +575,7 @@ class AstroFrame():
                         header['BMAJ'] = bmaj / 3600
                         header['BMIN'] = bmin / 3600
                     d.data[i] = d.data[i] * Jy2K(header=header)
+            d.cfactor[i] = 1
             d.fitsimage[i] = None
         if d.n == 1:
             d.data = d.data[0]
