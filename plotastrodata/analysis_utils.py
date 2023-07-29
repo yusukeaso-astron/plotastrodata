@@ -263,17 +263,6 @@ class AstroData():
         hbin = (hbin[:-1] + hbin[1:]) / 2
         return hbin, hist
 
-    def Jy2K(self):
-        """Convert Jy/beam to K (brightness temperature).
-        """
-        header = {'CDELT1':(self.x[1] - self.x[0]) / 3600,
-                  'CUNIT1':'DEG',
-                  'RESTFREQ':self.restfrq}
-        if self.beam[0] is not None and self.beam[0] > 0:
-            header['BMAJ'] = self.beam[0] / 3600
-            header['BMIN'] = self.beam[1] / 3600
-        self.data = self.data * Jy2K(header=header)
-
     def mask(self, dataformask: np.ndarray = None, includepix: list = [],
              excludepix: list = []):
         """Mask self.data using a 2D or 3D array of dataformask.
@@ -535,7 +524,6 @@ class AstroFrame():
                                    pv=self.pv)
                 d.beam[i] = fd.get_beam(dist=self.dist)
                 d.bunit[i] = fd.get_header('BUNIT')
-                d.fitsimage[i] = None
             if d.data[i] is not None:
                 d.rms[i] = estimate_rms(d.data[i], d.sigma[i])
                 d.data[i], grid = trim(data=d.data[i],
@@ -562,7 +550,19 @@ class AstroFrame():
                     d.data[i], d.x, d.y \
                         = quadrantmean(d.data[i], d.x, d.y, self.quadrants)
                 d.data[i] = d.data[i] * d.cfactor[i]
-                if d.rms[i] is not None: d.rms[i] = d.rms[i] * d.cfactor[i]
+                if d.rms[i] is not None:
+                    d.rms[i] = d.rms[i] * d.cfactor[i]
+                if d.fitsimage[i] is None and d.Tb[i]:
+                    header = {'CDELT1':(d.x[1] - d.x[0]) / 3600,
+                              'CUNIT1':'DEG',
+                              'RESTFREQ':d.restfrq[i]}
+                    bmaj, bmin = d.beam[i][:2]
+                    if bmaj is not None and bmaj > 0 \
+                       and bmin is not None and bmin > 0:
+                        header['BMAJ'] = bmaj / 3600
+                        header['BMIN'] = bmin / 3600
+                    d.data[i] = d.data[i] * Jy2K(header=header)
+            d.fitsimage[i] = None
         if d.n == 1:
             d.data = d.data[0]
             d.beam = d.beam[0]
