@@ -266,8 +266,8 @@ class AstroData():
     def Jy2K(self):
         """Convert Jy/beam to K (brightness temperature).
         """
-        header = {'bmaj':self.beam[0] / 3600,
-                  'bmin':self.beam[1] / 3600,
+        header = {'BMAJ':self.beam[0] / 3600,
+                  'BMIN':self.beam[1] / 3600,
                   'CDELT1':(self.x[1] - self.x[0]) / 3600,
                   'CUNIT1':'DEG',
                   'RESTFREQ':self.restfrq}
