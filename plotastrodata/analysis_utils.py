@@ -389,7 +389,7 @@ class AstroData():
         d = {'data':self.data, 'x':self.x, 'y':self.y, 'v':self.v,
              'fitsimage':self.fitsimage, 'beam':self.beam, 'Tb':self.Tb,
              'restfrq':self.restfrq, 'cfactor':self.cfactor,
-             'sigma':self.sigma, 'center':self.center, 'bunit':self.bunit}
+             'sigma':self.sigma, 'center':self.center}
         if self.rms is not None: d['sigma'] = self.rms
         return d
    
