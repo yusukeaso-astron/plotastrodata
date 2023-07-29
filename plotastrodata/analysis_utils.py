@@ -7,7 +7,7 @@ from astropy import constants
 
 from plotastrodata.other_utils import (coord2xy, rel2abs, estimate_rms, trim,
                                        Mfac, Mrot, dot2d)
-from plotastrodata.fits_utils import FitsData, data2fits
+from plotastrodata.fits_utils import FitsData, data2fits, Jy2K
 
 
 def to4dim(data: np.ndarray) -> np.ndarray:
@@ -262,6 +262,16 @@ class AstroData():
         hist, hbin = np.histogram(self.data, **kwargs)
         hbin = (hbin[:-1] + hbin[1:]) / 2
         return hbin, hist
+
+    def Tb(self):
+        """Convert Jy/beam to K (brightness temperature).
+        """
+        header = {'bmaj':self.beam[0] / 3600,
+                  'bmin':self.beam[1] / 3600,
+                  'CDELT1':(self.x[1] - self.x[0]) / 3600,
+                  'CUNIT1':'DEG',
+                  'RESTFREQ':self.restfrq}
+        self.data = self.data * Jy2K(header=header)
 
     def mask(self, dataformask: np.ndarray = None, includepix: list = [],
              excludepix: list = []):
