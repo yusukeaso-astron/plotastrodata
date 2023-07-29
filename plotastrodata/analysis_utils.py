@@ -263,7 +263,7 @@ class AstroData():
         hbin = (hbin[:-1] + hbin[1:]) / 2
         return hbin, hist
 
-    def Tb(self):
+    def Jy2K(self):
         """Convert Jy/beam to K (brightness temperature).
         """
         header = {'bmaj':self.beam[0] / 3600,
