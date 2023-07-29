@@ -269,9 +269,9 @@ class AstroData():
         header = {'CDELT1':(self.x[1] - self.x[0]) / 3600,
                   'CUNIT1':'DEG',
                   'RESTFREQ':self.restfrq}
-        if self.beam[0] is not None and self.beam[1] is not None:
-            header['BMAJ'] = self.beam[0]
-            header['BMIN'] = self.beam[1]
+        if self.beam[0] is not None and self.beam[0] > 0:
+            header['BMAJ'] = self.beam[0] / 3600
+            header['BMIN'] = self.beam[1] / 3600
         self.data = self.data * Jy2K(header=header)
 
     def mask(self, dataformask: np.ndarray = None, includepix: list = [],
