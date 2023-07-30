@@ -401,9 +401,10 @@ class AstroData():
             fitsimage (str, optional): Output FITS file name. Defaults to 'out.fits'.
             header (dict, optional): Header dictionary. Defaults to {}.
         """
-        if np.abs(len(self.x) - len(self.y)) > 2:
+        if self.y is None:
             print('writetofits does not support PV diagram yet.')
             return False
+        
         self.centering()
         cx, cy = (0, 0) if self.center is None else coord2xy(self.center)
         header['NAXIS1'] = len(self.x)
