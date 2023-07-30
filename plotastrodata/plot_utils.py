@@ -582,11 +582,11 @@ class PlotAstroData(AstroFrame):
         kwargs0 = {'cmap':'cubehelix', 'alpha':1, 'zorder':1}
         d = kwargs2AstroData(kwargs)
         self.read(d, xskip, yskip)
-        c, x, y, beam, bunit, rms = d.data, d.x, d.y, d.beam, d.bunit, d.rms
+        c, x, y, beam, bunit, sigma = d.data, d.x, d.y, d.beam, d.bunit, d.sigma
         self.beam = beam
-        self.rms = rms
-        if stretchscale is None: stretchscale = rms
-        c = set_minmax(c, stretch, stretchscale, rms, kwargs)
+        self.sigma = sigma
+        if stretchscale is None: stretchscale = sigma
+        c = set_minmax(c, stretch, stretchscale, sigma, kwargs)
         c = self.vskipfill(c)
         if type(self.channelnumber) is int: c = [c[self.channelnumber]]
         for axnow, cnow in zip(self.ax, c):
@@ -644,13 +644,13 @@ class PlotAstroData(AstroFrame):
         kwargs0 = {'colors':'gray', 'linewidths':1.0, 'zorder':2}
         d = kwargs2AstroData(kwargs)
         self.read(d, xskip, yskip)
-        c, x, y, beam, rms = d.data, d.x, d.y, d.beam, d.rms
+        c, x, y, beam, sigma = d.data, d.x, d.y, d.beam, d.sigma
         self.beam = beam
-        self.rms = rms
+        self.sigma = sigma
         c = self.vskipfill(c)
         if type(self.channelnumber) is int: c = [c[self.channelnumber]]
         for axnow, cnow in zip(self.ax, c):
-            axnow.contour(x, y, cnow, np.sort(levels) * rms,
+            axnow.contour(x, y, cnow, np.sort(levels) * sigma,
                           **dict(kwargs0, **kwargs))
         if show_beam and not self.pv:
             self.add_beam(beam, beamcolor)
@@ -692,16 +692,16 @@ class PlotAstroData(AstroFrame):
         kwargs['fitsimage'] = [ampfits, angfits, Ufits, Qfits]
         d = kwargs2AstroData(kwargs)
         self.read(d, xskip, yskip)
-        c, x, y, beam, rms = d.data, d.x, d.y, d.beam, d.rms
+        c, x, y, beam, sigma = d.data, d.x, d.y, d.beam, d.sigma
         amp, ang, stU, stQ = c
-        rmsU, rmsQ = rms[2:]
+        sigmaU, sigmaQ = sigma[2:]
         self.beam = beam
         beam = [beam[i] for i in range(4) if beam[i][0] is not None][0]
         if stU is not None and stQ is not None:
-            self.rms = rms = (rmsU + rmsQ) / 2.
+            self.sigma = sigma = (sigmaU + sigmaQ) / 2.
             ang = np.degrees(np.arctan2(stU, stQ) / 2.)
             amp = np.hypot(stU, stQ)
-            amp[amp < cutoff * rms] = np.nan
+            amp[amp < cutoff * sigma] = np.nan
         if amp is None: amp = np.ones_like(ang)
         if angonly: amp = np.sign(amp)**2
         amp = amp / np.nanmax(amp)
@@ -737,12 +737,12 @@ class PlotAstroData(AstroFrame):
         
         d = kwargs2AstroData(kwargs)
         self.read(d, xskip, yskip)
-        c, x, y, beam, rms = d.data, d.x, d.y, d.beam, d.rms
+        c, x, y, beam, sigma = d.data, d.x, d.y, d.beam, d.sigma
         self.beam = beam
-        self.rms = rms
+        self.sigma = sigma
         for i in range(len(stretchscale)):
-            if stretchscale[i] is None: stretchscale[i] = rms[i]
-        c = set_minmax(c, stretch, stretchscale, rms, kwargs)
+            if stretchscale[i] is None: stretchscale[i] = sigma[i]
+        c = set_minmax(c, stretch, stretchscale, sigma, kwargs)
         if not (np.shape(c[0]) == np.shape(c[1]) == np.shape(c[2])):
             print('RGB shapes mismatch. Skip add_rgb.')
             return -1
@@ -1067,8 +1067,8 @@ def plotslice(length: float, dx: float = None, pa: float = 0,
     kwargs['samexy'] = False
     pa2d = kwargs2PlotAxes2D(kwargs)
     ax.plot(r, z, **dict(kwargs0, **kwargs))
-    if d.rms is not None and d.rms > 0:
-        ax.plot(r, r * 0 + 3 * d.rms, 'k--')
+    if d.sigma is not None:
+        ax.plot(r, r * 0 + 3 * d.sigma, 'k--')
     pa2d.set_xyaxes(ax)
     if getfigax:
         return fig, ax
@@ -1109,7 +1109,7 @@ def plot3d(levels: list = [3,6,12], cmap: str = 'Jet',
     f = kwargs2AstroFrame(kwargs)
     d = kwargs2AstroData(kwargs)
     f.read(d, xskip, yskip)
-    volume, x, y, v, rms = d.data, d.x, d.y, d.v, d.rms
+    volume, x, y, v, sigma = d.data, d.x, d.y, d.v, d.sigma
     dx, dy, dv = x[1] - x[0], y[1] - y[0], v[1] - v[0]
     volume[np.isnan(volume)] = 0        
     if dx < 0: x, dx, volume = x[::-1], -dx, volume[:, :, ::-1]
@@ -1131,8 +1131,8 @@ def plot3d(levels: list = [3,6,12], cmap: str = 'Jet',
 
     data = []
     for lev in levels:
-        if lev * rms > np.max(volume): continue
-        vertices, simplices, _, _ = measure.marching_cubes(volume, lev * rms)
+        if lev * sigma > np.max(volume): continue
+        vertices, simplices, _, _ = measure.marching_cubes(volume, lev * sigma)
         Xg, Yg, Zg = [t[0] + i * dt for t, i, dt
                       in zip(s, vertices.T[::-1], ds)]
         i, j, k = simplices.T

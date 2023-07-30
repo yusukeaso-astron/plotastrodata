@@ -168,9 +168,9 @@ class AstroData():
         if n == 0:
             print('Either data or fitsimage must be given.')
         self.n = n
-        self.rms = None
         self.bunit = ''
         self.fitsimage_org = None
+        self.sigma_org = None
 
     def binning(self, width: list = [1, 1, 1]):
         """Binning up neighboring pixels in the v, y, and x domain.
@@ -397,7 +397,6 @@ class AstroData():
              'fitsimage':self.fitsimage, 'beam':self.beam, 'Tb':self.Tb,
              'restfrq':self.restfrq, 'cfactor':self.cfactor,
              'sigma':self.sigma, 'center':self.center}
-        if self.rms is not None: d['sigma'] = self.rms
         return d
    
     def writetofits(self, fitsimage: str = 'out.fits', header: dict = {}):
@@ -513,10 +512,11 @@ class AstroFrame():
         return np.array([x, y])
 
     def read(self, d: AstroData, xskip: int = 1, yskip: int = 1):
-        """Get data, grid, rms, beam, and bunit from AstroData, which is a part of the input of add_color, add_contour, add_segment, and add_rgb.
+        """Get data, grid, sigma, beam, and bunit from AstroData, which is a part of the input of add_color, add_contour, add_segment, and add_rgb.
 
         Args:
-            d (AstroData): Dataclass for the add_* input. xskip, yskip (int): Spatial pixel skip. Defaults to 1.
+            d (AstroData): Dataclass for the add_* input.
+            xskip, yskip (int): Spatial pixel skip. Defaults to 1.
         """
         if type(d.fitsimage) is not list: d.fitsimage = [d.fitsimage] * d.n
         if type(d.data) is not list: d.data = [d.data] * d.n
@@ -526,9 +526,9 @@ class AstroFrame():
         if type(d.center) is not list: d.center = [d.center] * d.n
         if type(d.restfrq) is not list: d.restfrq = [d.restfrq] * d.n
         if type(d.cfactor) is not list: d.cfactor = [d.cfactor] * d.n
-        if type(d.rms) is not list: d.rms = [d.rms] * d.n
         if type(d.bunit) is not list: d.bunit = [d.bunit] * d.n
         if type(d.fitsimage_org) is not list: d.fitsimage_org = [d.fitsimage_org] * d.n
+        if type(d.sigma_org) is not list: d.sigma_org = [d.sigma_org] * d.n
         grid0 = [d.x, d.y, d.v]
         for i in range(d.n):
             if d.center[i] == 'common': d.center[i] = self.center
@@ -548,7 +548,8 @@ class AstroFrame():
                 d.beam[i] = fd.get_beam(dist=self.dist)
                 d.bunit[i] = fd.get_header('BUNIT')
             if d.data[i] is not None:
-                d.rms[i] = estimate_rms(d.data[i], d.sigma[i])
+                d.sigma_org[i] = d.sigma[i]
+                d.sigma[i] = estimate_rms(d.data[i], d.sigma[i])
                 d.data[i], grid = trim(data=d.data[i],
                                        x=grid[0], y=grid[1], v=grid[2],
                                        xlim=self.xlim, ylim=self.ylim,
@@ -573,8 +574,8 @@ class AstroFrame():
                     d.data[i], d.x, d.y \
                         = quadrantmean(d.data[i], d.x, d.y, self.quadrants)
                 d.data[i] = d.data[i] * d.cfactor[i]
-                if d.rms[i] is not None:
-                    d.rms[i] = d.rms[i] * d.cfactor[i]
+                if d.sigma[i] is not None:
+                    d.sigma[i] = d.sigma[i] * d.cfactor[i]
                 if d.Tb[i]:
                     header = {'CDELT1':(d.x[1] - d.x[0]) / 3600,
                               'CUNIT1':'DEG',
@@ -598,4 +599,4 @@ class AstroFrame():
             d.cfactor = d.cfactor[0]
             d.bunit = d.bunit[0]
             d.fitsimage_org = d.fitsimage_org[0]
-            d.rms = d.rms[0]
+            d.sigma_org = d.sigma_org[0]
