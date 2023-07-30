@@ -98,10 +98,9 @@ class FitsData:
             bmaj = self.get_header('BMAJ')
             bmin = self.get_header('BMIN')
             bpa = self.get_header('BPA')
-            bmaj = 0 if bmaj is None else bmaj * 3600.
-            bmin = 0 if bmin is None else bmin * 3600.
-            bpa = 0 if bpa is None else bpa
-        self.bmaj, self.bmin, self.bpa = bmaj * dist, bmin * dist, bpa
+        if bmaj is not None: bmaj =  bmaj * 3600 * dist
+        if bmin is not None: bmin =  bmin * 3600 * dist
+        self.bmaj, self.bmin, self.bpa = bmaj, bmin, bpa
 
     def get_beam(self, dist: float = 1.) -> np.ndarray:
         """Output the beam array of [bmaj, bmin, bpa].

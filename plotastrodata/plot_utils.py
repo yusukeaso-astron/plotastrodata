@@ -420,15 +420,20 @@ class PlotAstroData(AstroFrame):
                       angle=angle * self.xdir, **dict(kwargs0, **kwargs))
                 axnow.add_patch(p)
                 
-    def add_beam(self, beam: list = [0, 0, 0], beamcolor: str = 'gray',
+    def add_beam(self, beam: list = [None, None, None],
+                 beamcolor: str = 'gray',
                  poslist: list = None) -> None:
         """Use add_region().
 
         Args:
-            beam (list, optional): [bmaj, bmin, bpa]. Defaults to [0, 0, 0].
+            beam (list, optional): [bmaj, bmin, bpa]. Defaults to [None, None, None].
             beamcolor (str, optional): matplotlib color. Defaults to 'gray'.
             poslist (list, optional): text or relative. Defaults to None.
         """
+        if None in beam:
+            print('No beam.')
+            return False
+        
         if poslist is None:
             poslist = [max(0.35 * beam[0] / self.rmax, 0.1)] * 2
         include_chan = self.bottomleft if self.channelnumber is None else self.allchan

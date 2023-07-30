@@ -214,6 +214,10 @@ class AstroData():
     def circularbeam(self):
         """Make the beam circular by convolving with 1D Gaussian
         """
+        if None in self.beam:
+            print('No beam.')
+            return False
+        
         bmaj, bmin, bpa = self.beam
         self.rotate(-bpa)
         nx = len(self.x) if len(self.x) % 2 == 1 else len(self.x) - 1
@@ -241,18 +245,19 @@ class AstroData():
         A = np.linalg.multi_dot([Mrot(pa), Mfac(1, ci), Mrot(-pa)])
         ynew, xnew = dot2d(A, np.meshgrid(self.x, self.y)[::-1])
         self.data = sortRGI(self.y, self.x, self.data, ynew, xnew)
-        bmaj, bmin, bpa = self.beam
-        a, b = np.linalg.multi_dot([Mfac(1/bmaj, 1/bmin), Mrot(pa - bpa),
-                                    Mfac(1, ci), Mrot(-pa)]).T
-        alpha = (np.dot(a, a) + np.dot(b, b)) / 2
-        beta = np.dot(a, b)
-        gamma = (np.dot(a, a) - np.dot(b, b)) / 2
-        bpa_new = np.arctan(beta / gamma) / 2 * np.degrees(1)
-        if beta * bpa_new >= 0: bpa_new += 90
-        Det = np.sqrt(beta**2 + gamma**2)
-        bmaj_new = 1 / np.sqrt(alpha - Det)
-        bmin_new = 1 / np.sqrt(alpha + Det)
-        self.beam = np.array([bmaj_new, bmin_new, bpa_new])
+        if None not in self.beam:
+            bmaj, bmin, bpa = self.beam
+            a, b = np.linalg.multi_dot([Mfac(1/bmaj, 1/bmin), Mrot(pa-bpa),
+                                        Mfac(1, ci), Mrot(-pa)]).T
+            alpha = (np.dot(a, a) + np.dot(b, b)) / 2
+            beta = np.dot(a, b)
+            gamma = (np.dot(a, a) - np.dot(b, b)) / 2
+            bpa_new = np.arctan(beta / gamma) / 2 * np.degrees(1)
+            if beta * bpa_new >= 0: bpa_new += 90
+            Det = np.sqrt(beta**2 + gamma**2)
+            bmaj_new = 1 / np.sqrt(alpha - Det)
+            bmin_new = 1 / np.sqrt(alpha + Det)
+            self.beam = np.array([bmaj_new, bmin_new, bpa_new])
 
     def histogram(self, **kwargs) -> tuple:
         """Output histogram of self.data using numpy.histogram. This method can take the arguments of numpy.histogram.
@@ -330,7 +335,7 @@ class AstroData():
                     prof[i] = [np.sum(d[r <= 1]) for d in data]
                 else:
                     prof[i] = [np.mean(d[r <= 1]) for d in data]
-        if flux:
+        if flux and (None not in self.beam):
             Omega = np.pi * self.beam[0] * self.beam[1] / 4. / np.log(2.)
             dxdy = np.abs((yf[1]-yf[0]) * (xf[1]-xf[0]))
             prof *= dxdy / Omega
@@ -360,7 +365,8 @@ class AstroData():
         """
         ynew, xnew = dot2d(Mrot(-pa), np.meshgrid(self.x, self.y)[::-1])
         self.data = sortRGI(self.y, self.x, self.data, ynew, xnew)
-        self.beam[2] = self.beam[2] + pa
+        if self.beam[2] is not None:
+            self.beam[2] = self.beam[2] + pa
     
     def slice(self, length: float = 0, pa: float = 0,
               dx: float = None) -> np.ndarray:
@@ -421,9 +427,10 @@ class AstroData():
             header['CRPIX3'] = i = np.argmin(np.abs(self.v)) + 1
             header['CRVAL3'] = (1 - self.v[i]/clight) * self.restfrq
             header['CDELT3'] = (self.v[0]-self.v[1]) /clight*self.restfrq
-        header['BMAJ'] = self.beam[0] / 3600
-        header['BMIN'] = self.beam[1] / 3600
-        header['BPA'] = self.beam[2]
+        if None not in self.beam:
+            header['BMAJ'] = self.beam[0] / 3600
+            header['BMIN'] = self.beam[1] / 3600
+            header['BPA'] = self.beam[2]
         data2fits(d=self.data, h=header, templatefits=self.fitsimage_org,
                   fitsimage=fitsimage)
         
@@ -572,11 +579,9 @@ class AstroFrame():
                     header = {'CDELT1':(d.x[1] - d.x[0]) / 3600,
                               'CUNIT1':'DEG',
                               'RESTFREQ':d.restfrq[i]}
-                    bmaj, bmin = d.beam[i][:2]
-                    if bmaj is not None and bmaj > 0 \
-                       and bmin is not None and bmin > 0:
-                        header['BMAJ'] = bmaj / 3600
-                        header['BMIN'] = bmin / 3600
+                    if None not in d.beam[i]:
+                        header['BMAJ'] = d.beam[i][0] / 3600
+                        header['BMIN'] = d.beam[i][1] / 3600
                     d.data[i] = d.data[i] * Jy2K(header=header)
             d.Tb[i] = False
             d.cfactor[i] = 1
