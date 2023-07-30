@@ -515,7 +515,8 @@ class AstroFrame():
         """Get data, grid, sigma, beam, and bunit from AstroData, which is a part of the input of add_color, add_contour, add_segment, and add_rgb.
 
         Args:
-            d (AstroData): Dataclass for the add_* input. xskip, yskip (int): Spatial pixel skip. Defaults to 1.
+            d (AstroData): Dataclass for the add_* input.
+            xskip, yskip (int): Spatial pixel skip. Defaults to 1.
         """
         if type(d.fitsimage) is not list: d.fitsimage = [d.fitsimage] * d.n
         if type(d.data) is not list: d.data = [d.data] * d.n
@@ -527,6 +528,7 @@ class AstroFrame():
         if type(d.cfactor) is not list: d.cfactor = [d.cfactor] * d.n
         if type(d.bunit) is not list: d.bunit = [d.bunit] * d.n
         if type(d.fitsimage_org) is not list: d.fitsimage_org = [d.fitsimage_org] * d.n
+        if type(d.sigma_org) is not list: d.sigma_org = [d.sigma_org] * d.n
         grid0 = [d.x, d.y, d.v]
         for i in range(d.n):
             if d.center[i] == 'common': d.center[i] = self.center
