@@ -170,6 +170,7 @@ class AstroData():
         self.n = n
         self.rms = None
         self.bunit = ''
+        self.fitsimage_org = None
 
     def binning(self, width: list = [1, 1, 1]):
         """Binning up neighboring pixels in the v, y, and x domain.
@@ -422,7 +423,7 @@ class AstroData():
         header['BMAJ'] = self.beam[0] / 3600
         header['BMIN'] = self.beam[1] / 3600
         header['BPA'] = self.beam[2]
-        data2fits(d=self.data, h=header, templatefits=self.fitsimage,
+        data2fits(d=self.data, h=header, templatefits=self.fitsimage_org,
                   fitsimage=fitsimage)
         
 
@@ -519,6 +520,7 @@ class AstroFrame():
         if type(d.cfactor) is not list: d.cfactor = [d.cfactor] * d.n
         if type(d.rms) is not list: d.rms = [d.rms] * d.n
         if type(d.bunit) is not list: d.bunit = [d.bunit] * d.n
+        if type(d.fitsimage_org) is not list: d.fitsimage_org = [d.fitsimage_org] * d.n
         grid0 = [d.x, d.y, d.v]
         for i in range(d.n):
             if d.center[i] == 'common': d.center[i] = self.center
@@ -577,6 +579,7 @@ class AstroFrame():
                     d.data[i] = d.data[i] * Jy2K(header=header)
             d.Tb[i] = False
             d.cfactor[i] = 1
+            d.fitsimage_org[i] = d.fitsimage[i]
             d.fitsimage[i] = None
         if d.n == 1:
             d.data = d.data[0]
@@ -588,4 +591,5 @@ class AstroFrame():
             d.restfrq = d.restfrq[0]
             d.cfactor = d.cfactor[0]
             d.bunit = d.bunit[0]
+            d.fitsimage_org = d.fitsimage_org[0]
             d.rms = d.rms[0]
