@@ -599,3 +599,4 @@ class AstroFrame():
             d.cfactor = d.cfactor[0]
             d.bunit = d.bunit[0]
             d.fitsimage_org = d.fitsimage_org[0]
+            d.sigma_org = d.sigma_org[0]
