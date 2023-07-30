@@ -531,7 +531,7 @@ class AstroFrame():
                     h = fd.get_header()
                     if 'RESTFRQ' in h: d.restfrq[i] = h['RESTFRQ']
                     if 'RESTFREQ' in h: d.restfrq[i] = h['RESTFREQ']
-                d.data[i] = fd.get_data(Tb=d.Tb[i], restfrq=d.restfrq[i])
+                d.data[i] = fd.get_data()
                 grid = fd.get_grid(center=d.center[i], dist=self.dist,
                                    restfrq=d.restfrq[i], vsys=self.vsys,
                                    pv=self.pv)
@@ -565,7 +565,7 @@ class AstroFrame():
                 d.data[i] = d.data[i] * d.cfactor[i]
                 if d.rms[i] is not None:
                     d.rms[i] = d.rms[i] * d.cfactor[i]
-                if d.fitsimage[i] is None and d.Tb[i]:
+                if d.Tb[i]:
                     header = {'CDELT1':(d.x[1] - d.x[0]) / 3600,
                               'CUNIT1':'DEG',
                               'RESTFREQ':d.restfrq[i]}
