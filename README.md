@@ -19,7 +19,7 @@ Also, setting the path in .bashrc (or .zshrc etc.) will be useful.
 export PYTHONPATH=${PYTHONPATH}:/YOUR_PATH_TO/plotastrodata
 ```
 Or maybe,
-```python
+```Python
 import  sys
 sys.path.append( "/YOUR_PATH_TO/plotastrodata" )
 ```
