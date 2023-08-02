@@ -18,6 +18,11 @@ Also, setting the path in .bashrc (or .zshrc etc.) will be useful.
 ```bash
 export PYTHONPATH=${PYTHONPATH}:/YOUR_PATH_TO/plotastrodata
 ```
+Or maybe,
+```bash
+import  sys
+sys.path.append( "/YOUR_PATH_TO/plotastrodata" )
+```
 The Sphinx html document is available from docs/_build/index.html or [readthedocs](https://plotastrodata.readthedocs.io/en/latest/).
  
 ## Features
