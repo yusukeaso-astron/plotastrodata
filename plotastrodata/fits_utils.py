@@ -94,6 +94,8 @@ class FitsData:
         """
         if hasattr(self, 'hdubeam'):
             bmaj, bmin, bpa = self.hdubeam
+            bmaj = bmaj * dist
+            bmin = bmin * dist
         else:
             bmaj = self.get_header('BMAJ')
             bmin = self.get_header('BMIN')
