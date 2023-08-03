@@ -141,7 +141,7 @@ class AstroData():
     x: np.ndarray = None
     y: np.ndarray = None
     v: np.ndarray = None
-    beam: np.ndarray = np.array([None] * 3)
+    beam: np.ndarray = (None, None, None)
     fitsimage: str = None
     Tb: bool = False
     sigma: str = 'hist'
