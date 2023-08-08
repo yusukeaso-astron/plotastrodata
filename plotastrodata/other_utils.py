@@ -138,9 +138,9 @@ def estimate_rms(data: np.ndarray, sigma: float or str = 'hist') -> float:
 
     nums = [float, int, np.float64, np.int64, np.float32, np.int32]
     if type(sigma) in nums: noise = sigma
-    elif np.shape(data) in [(1, 1, 1, 1), (1, 1, 1), (1, 1)]:
+    elif np.ndim(np.squeeze(data)) == 0:
         print('sigma cannot be estimated from only one pixel.')
-        noise = float(np.squeeze(data))
+        noise = np.mean(data)
     elif sigma == 'edge': noise = np.nanstd(data[::len(data) - 1])
     elif sigma == 'neg': noise = np.sqrt(np.nanmean(data[data < 0]**2))
     elif sigma == 'med': noise = np.sqrt(np.nanmedian(data**2) / 0.454936)
@@ -224,6 +224,9 @@ def trim(data: np.ndarray = None, x: np.ndarray = None,
             vout = v[k0:k1+1]
     if data is not None:
         d = np.squeeze(data)
+        if np.ndim(d) == 0:
+            print('data has only one pixel.')
+            d = data
         if np.ndim(d) == 2:
             if pv: j0, j1 = k0, k1
             dataout = d[j0:j1+1, i0:i1+1]
