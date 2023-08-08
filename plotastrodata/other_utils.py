@@ -203,18 +203,21 @@ def trim(data: np.ndarray = None, x: np.ndarray = None,
             i0 = np.argmin(np.abs(x - xlim[0]))
             i1 = np.argmin(np.abs(x - xlim[1]))
             i0, i1 = sorted([i0, i1])
+            if i0 == len(x): i0 -= 1
             xout = x[i0:i1+1]
     if not (y is None or ylim is None):
         if not (None in ylim):
             j0 = np.argmin(np.abs(y - ylim[0]))
             j1 = np.argmin(np.abs(y - ylim[1]))
             j0, j1 = sorted([j0, j1])
+            if j0 == len(y): j0 -= 1
             yout = y[j0:j1+1]
     if not (v is None or vlim is None):
         if not (None in vlim):
             k0 = np.argmin(np.abs(v - vlim[0]))
             k1 = np.argmin(np.abs(v - vlim[1]))
             k0, k1 = sorted([k0, k1])
+            if k0 == len(v): k0 -= 1
             vout = v[k0:k1+1]
     if data is not None:
         d = np.squeeze(data)
