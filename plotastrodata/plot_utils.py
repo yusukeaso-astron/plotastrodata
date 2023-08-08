@@ -431,7 +431,7 @@ class PlotAstroData(AstroFrame):
             poslist (list, optional): text or relative. Defaults to None.
         """
         if None in beam:
-            print('No beam.')
+            print('No beam to plot.')
             return False
         
         if poslist is None:
