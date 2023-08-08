@@ -712,7 +712,7 @@ class PlotAstroData(AstroFrame):
         if type(self.channelnumber) is int:
             u = [u[self.channelnumber]]
             v = [v[self.channelnumber]]
-        kwargs0['scale'] = 1. / np.abs(x[1] - x[0])
+        kwargs0['scale'] = 1 if len(x) == 1 else 1. / np.abs(x[1] - x[0])
         for axnow, unow, vnow in zip(self.ax, u, v):
             axnow.quiver(x, y, unow, vnow, **dict(kwargs0, **kwargs))
         if show_beam and not self.pv:
