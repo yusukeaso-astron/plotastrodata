@@ -140,7 +140,7 @@ def estimate_rms(data: np.ndarray, sigma: float or str = 'hist') -> float:
     if type(sigma) in nums: noise = sigma
     elif np.ndim(np.squeeze(data)) == 0:
         print('sigma cannot be estimated from only one pixel.')
-        noise = np.mean(data)
+        noise = 0.0
     elif sigma == 'edge': noise = np.nanstd(data[::len(data) - 1])
     elif sigma == 'neg': noise = np.sqrt(np.nanmean(data[data < 0]**2))
     elif sigma == 'med': noise = np.sqrt(np.nanmedian(data**2) / 0.454936)
