@@ -410,7 +410,6 @@ class AstroData():
             print('writetofits does not support PV diagram yet.')
             return False
         
-        self.centering()
         cx, cy = (0, 0) if self.center is None else coord2xy(self.center)
         header['NAXIS1'] = len(self.x)
         header['CRPIX1'] = np.argmin(np.abs(self.x)) + 1
