@@ -585,7 +585,8 @@ class AstroFrame():
                     d.data[i] = d.data[i] * Jy2K(header=header)
             d.Tb[i] = False
             d.cfactor[i] = 1
-            d.fitsimage_org[i] = d.fitsimage[i]
+            if d.fitsimage[i] is not None:
+                d.fitsimage_org[i] = d.fitsimage[i]
             d.fitsimage[i] = None
         if d.n == 1:
             d.data = d.data[0]
