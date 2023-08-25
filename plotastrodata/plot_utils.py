@@ -21,6 +21,7 @@ def set_rcparams(fontsize: int = 18, nancolor: str ='w') -> None:
     #plt.rcParams['font.family'] = 'arial'
     plt.rcParams['axes.facecolor'] = nancolor
     plt.rcParams['font.size'] = fontsize
+    plt.rcParams['savefig.dpi'] = 256
     plt.rcParams['legend.fontsize'] = 15
     plt.rcParams['axes.linewidth'] = 1.5
     plt.rcParams['xtick.direction'] = 'inout'
