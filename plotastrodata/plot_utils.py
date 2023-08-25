@@ -341,7 +341,8 @@ class PlotAstroData(AstroFrame):
         for ch in range(nchan):
             n, i, j = ch2nij(ch)
             if figsize is None:
-                sqrt_a = np.abs((self.ymax-self.ymin) / (self.xmax-self.xmin))
+                sqrt_a = (self.ymax - self.ymin) / (self.xmax - self.xmin)
+                sqrt_a = np.sqrt(np.abs(sqrt_a))
                 if nchan == 1:
                     figsize = (7 / sqrt_a, 5 * sqrt_a)
                 else:
