@@ -341,7 +341,11 @@ class PlotAstroData(AstroFrame):
         for ch in range(nchan):
             n, i, j = ch2nij(ch)
             if figsize is None:
-                figsize = (7, 5) if nchan == 1 else (ncols*2, max(nrows*2, 3))
+                sqrt_a = (self.ymax - self.ymin) / (self.xmax - self.xmin)
+                if nchan == 1:
+                    figsize = (7 / sqrt_a, 5 * sqrt_a)
+                else:
+                    figsize = (ncols * 2 / sqrt_a, max(nrows*2, 3) * sqrt_a)
             if internalfig:
                 fig = plt.figure(n, figsize=figsize)
             sharex = ax[nij2ch(n, i - 1, j)] if i > 0 else None
@@ -987,7 +991,8 @@ def plotprofile(coords: list = [], xlist: list = [], ylist: list = [],
         return p * np.exp(-4. * np.log(2.) * ((x - c) / w)**2)
     set_rcparams(20, 'w')
     if ncols == 1: nrows = nprof
-    if fig is None: fig = plt.figure(figsize=(6 * ncols, 3 * nrows))
+    if fig is None:
+        fig = plt.figure(figsize=(6 * ncols, 3 * nrows))
     if nprof > 1 and ax is not None:
         print('External ax is supported only when len(coords)=1.')
         ax = None
