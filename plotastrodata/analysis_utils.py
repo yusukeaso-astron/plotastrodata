@@ -443,7 +443,11 @@ class AstroFrame():
         vsys (float, optional): Each channel shows v-vsys. Defaults to 0..
         center (str, optional): Central coordinate like '12h34m56.7s 12d34m56.7s'. Defaults to None.
         fitsimage (str, optional): Fits to get center. Defaults to None.
-        rmax (float, optional): Map size is 2rmax x 2rmax. Defaults to 1e10.
+        rmax (float, optional): The x range is [-rmax, rmax]. The y range is [-rmax, ramx]. Defaults to 1e10.
+        xmax (float, optional): The x range is [xmin, xmax]. Defaults to None.
+        xmin (float, optional): The x range is [xmin, xmax]. Defaults to None.
+        ymax (float, optional): The y range is [ymin, ymax]. Defaults to None.
+        ymin (float, optional): The y range is [ymin, ymax]. Defaults to None.
         dist (float, optional): Change x and y in arcsec to au. Defaults to 1..
         xoff (float, optional): Map center relative to the center. Defaults to 0.
         yoff (float, optional): Map center relative to the center. Defaults to 0.
@@ -454,6 +458,10 @@ class AstroFrame():
         quadrants (str, optional): '13' or '24'. Quadrants to take mean. None means not taking mean. Defaults to None.
     """
     rmax: float = 1e10
+    xmax: float = None
+    xmin: float = None
+    ymax: float = None
+    ymin: float = None
     dist: float = 1
     center: str = None
     fitsimage: str = None
@@ -468,10 +476,16 @@ class AstroFrame():
     pv: bool = False
     quadrants: str = None
     def __post_init__(self):
-        self.xdir = xdir = -1 if self.xflip else 1
-        self.ydir = ydir = -1 if self.yflip else 1
-        xlim = [self.xoff - xdir*self.rmax, self.xoff + xdir*self.rmax]
-        ylim = [self.yoff - ydir*self.rmax, self.yoff + ydir*self.rmax]
+        self.xdir = -1 if self.xflip else 1
+        self.ydir = -1 if self.yflip else 1
+        if self.xmax is None: self.xmax = self.rmax
+        if self.xmin is None: self.xmin = -self.rmax
+        if self.ymax is None: self.ymax = self.rmax
+        if self.ymin is None: self.ymin = -self.rmax
+        if self.xdir == -1: self.xmin, self.xmax = self.xmax, self.xmin
+        if self.ydir == -1: self.ymin, self.ymax = self.ymax, self.ymin
+        xlim = [self.xoff + self.xmin, self.xoff + self.xmax]
+        ylim = [self.yoff + self.ymin, self.yoff + self.ymax]
         vlim = [self.vmin, self.vmax]
         if self.pv: xlim = np.sort(xlim)
         self.xlim = xlim
