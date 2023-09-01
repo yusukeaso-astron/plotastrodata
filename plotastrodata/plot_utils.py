@@ -11,17 +11,19 @@ from plotastrodata.analysis_utils import AstroData, AstroFrame
     
 plt.ioff()  # force to turn off interactive mode
 
-def set_rcparams(fontsize: int = 18, nancolor: str ='w') -> None:
+def set_rcparams(fontsize: int = 18, nancolor: str ='w',
+                 dpi: int = 256) -> None:
     """Nice rcParams for figures.
 
     Args:
         fontsize (int, optional): plt.rcParams['font.size']. Defaults to 18.
         nancolor (str, optional): plt.rcParams['axes.facecolor']. Defaults to 'w'.
+        dpi (int, optional): plt.rcParams['savefig.dpi']. Defaults to 256.
     """
     #plt.rcParams['font.family'] = 'arial'
     plt.rcParams['axes.facecolor'] = nancolor
     plt.rcParams['font.size'] = fontsize
-    plt.rcParams['savefig.dpi'] = 256
+    plt.rcParams['savefig.dpi'] = dpi
     plt.rcParams['legend.fontsize'] = 15
     plt.rcParams['axes.linewidth'] = 1.5
     plt.rcParams['xtick.direction'] = 'inout'
