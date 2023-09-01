@@ -587,7 +587,7 @@ class PlotAstroData(AstroFrame):
             show_beam (bool, optional): Defaults to True.
             beamcolor (str, optional): Matplotlib color. Defaults to 'gray'.
         """
-        kwargs0 = {'cmap':'cubehelix', 'alpha':1, 'zorder':1}
+        kwargs0 = {'cmap':'cubehelix', 'alpha':1, 'edgecolors':'face', 'zorder':1}
         d = kwargs2AstroData(kwargs)
         self.read(d, xskip, yskip)
         c, x, y, beam, bunit, sigma = d.data, d.x, d.y, d.beam, d.bunit, d.sigma
