@@ -191,7 +191,8 @@ def set_minmax(data: np.ndarray, stretch: str, stretchscale: float,
         elif st == 'power':
             cmin = kw['min'][i] if 'vmin' in kw.keys() else r
             c = c.clip(cmin, None)
-            c = ((c / cmin)**(1 - stretchpower) - 1) / (1 - stretchpower)
+            c = ((c / cmin)**(1 - stretchpower) - 1) \
+                / (1 - stretchpower) / np.log(10)
         data[i] = c
     n = len(data)
     for m in ['vmin', 'vmax']:
@@ -203,7 +204,7 @@ def set_minmax(data: np.ndarray, stretch: str, stretchscale: float,
                     kw[m][i] = np.arcsinh(kw[m][i] / stsc)
                 elif st == 'power':
                     kw[m][i] = ((kw[m][i]/c.min())**(1 - stretchpower) - 1) \
-                               / (1 - stretchpower)
+                               / (1 - stretchpower) / np.log(10)
         else:
             kw[m] = [None] * n
             for i, (c, st, _, r) in enumerate(zip(*z)):
@@ -590,7 +591,7 @@ class PlotAstroData(AstroFrame):
             xskip, yskip (int, optional): Spatial pixel skip. Defaults to 1.
             stretch (str, optional): 'log' means the mapped data are logarithmic. 'asinh' means the mapped data are arc sin hyperbolic. Defaults to 'linear'.
             stretchscale (float, optional): color scale is asinh(data / stretchscale). Defaults to None.
-            stretchpower (float, optional): color scale is ((data / vmin)**(1 - stretchpower) - 1) / (1 - stretchpower). 0 means the linear scale. 1 means the logarithmic scale. Defaults to 0.
+            stretchpower (float, optional): color scale is ((data / vmin)**(1 - stretchpower) - 1) / (1 - stretchpower) / ln(10). 0 means the linear scale. 1 means the logarithmic scale. Defaults to 0.
             show_cbar (bool, optional): Show color bar. Defaults to True.
             cblabel (str, optional): Colorbar label. Defaults to None.
             cbformat (float, optional): Format for ticklabels of colorbar. Defaults to '%.1e'.
@@ -638,7 +639,7 @@ class PlotAstroData(AstroFrame):
                     cbticks = np.arcsinh(np.array(cbticks) / stretchscale)
                 elif stretch == 'power':
                     cbticks = (np.array(cbticks) / cmin_org)**(1 - stretchpower)
-                    cbticks = (cbticks - 1) / (1 - stretchpower)
+                    cbticks = (cbticks - 1) / (1 - stretchpower) / np.log(10)
                 cb.set_ticks(cbticks)
             if cbticklabels is not None:
                 cb.set_ticklabels(cbticklabels)
@@ -651,7 +652,7 @@ class PlotAstroData(AstroFrame):
                 elif stretch == 'asinh':
                     ticklin = np.sinh(t) * stretchscale
                 elif stretch == 'power':
-                    ticklin = 1 + (1 - stretchpower) * t
+                    ticklin = 1 + (1 - stretchpower) * np.log(10) * t
                     ticklin = cmin_org * ticklin**(1 / (1 - stretchpower))
                 cb.set_ticklabels([f'{d:{cbformat[1:]}}' for d in ticklin])
         if show_beam and not self.pv:
@@ -759,7 +760,7 @@ class PlotAstroData(AstroFrame):
             xskip, yskip (int, optional): Spatial pixel skip. Defaults to 1.
             stretch (str, optional): 'log' means the mapped data are logarithmic. 'asinh' means the mapped data are arc sin hyperbolic. Defaults to 'linear'.
             stretchscale (float, optional): color scale is asinh(data / stretchscale). Defaults to None.
-            stretchpower (float, optional): color scale is ((data / vmin)**(1 - stretchpower) - 1) / (1 - stretchpower). 0 means the linear scale. 1 means the logarithmic scale. Defaults to 0.
+            stretchpower (float, optional): color scale is ((data / vmin)**(1 - stretchpower) - 1) / (1 - stretchpower) / ln(10). 0 means the linear scale. 1 means the logarithmic scale. Defaults to 0.
             show_beam (bool, optional): Defaults to True.
             beamcolor (str, optional): Matplotlib color. Defaults to 'gray'.
         """
