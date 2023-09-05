@@ -179,34 +179,33 @@ def set_minmax(data: np.ndarray, stretch: str, stretchscale: float,
         rms = [rms]
         stretch = [stretch]
         stretchscale = [stretchscale]
-        stretchpower = [stretchpower]
         if 'vmin' in kw.keys(): kw['vmin'] = [kw['vmin']]
         if 'vmax' in kw.keys(): kw['vmax'] = [kw['vmax']]
-    z = (data, stretch, stretchscale, stretchpower, rms)
-    for i, (c, st, stsc, stpw, r) in enumerate(zip(*z)):
+    z = (data, stretch, stretchscale, rms)
+    for i, (c, st, stsc, r) in enumerate(zip(*z)):
         if stsc is None: stsc = r
-        if stpw is None: stpw = 0
         if st == 'log':
             c = np.log10(c.clip(c[c > 0].min(), None))
         elif st == 'asinh':
             c = np.arcsinh(c / stsc)
         elif st == 'power':
             cmin = kw['min'][i] if 'vmin' in kw.keys() else c[c > 0].min()
-            c = ((c.clip(cmin, None) / cmin)**(1 - stpw) - 1) / (1 - stpw)
+            c = ((c.clip(cmin, None) / cmin)**(1 - stretchpower) - 1) / (1 - stretchpower)
         data[i] = c
     n = len(data)
     for m in ['vmin', 'vmax']:
         if m in kw.keys():
-            for i, (c, st, stsc, stpw, _) in enumerate(zip(*z)):
+            for i, (c, st, stsc, _) in enumerate(zip(*z)):
                 if st == 'log':
                     kw[m][i] = np.log10(kw[m][i])
                 elif st == 'asinh':
                     kw[m][i] = np.arcsinh(kw[m][i] / stsc)
                 elif st == 'power':
-                    kw[m][i] = ((kw[m][i]/c.min())**(1-stpw) - 1) / (1 - stpw)
+                    kw[m][i] = ((kw[m][i]/c.min())**(1 - stretchpower) - 1) \
+                               / (1 - stretchpower)
         else:
             kw[m] = [None] * n
-            for i, (c, st, _, _, r) in enumerate(zip(*z)):
+            for i, (c, st, _, r) in enumerate(zip(*z)):
                 if m == 'vmin':
                     
                     kw[m][i] = np.log10(r) if st == 'log' else np.nanmin(c)
@@ -576,7 +575,9 @@ class PlotAstroData(AstroFrame):
                        '-', linewidth=linewidth, color=color)
     
     def add_color(self, xskip: int = 1, yskip: int = 1,
-                  stretch: str = 'linear', stretchscale: float = None,
+                  stretch: str = 'linear',
+                  stretchscale: float = None,
+                  stretchpower: float = 0,
                   show_cbar: bool = True, cblabel: str = None,
                   cbformat: float = '%.1e', cbticks: list = None,
                   cbticklabels: list = None, cblocation: str = 'right',
@@ -588,6 +589,7 @@ class PlotAstroData(AstroFrame):
             xskip, yskip (int, optional): Spatial pixel skip. Defaults to 1.
             stretch (str, optional): 'log' means the mapped data are logarithmic. 'asinh' means the mapped data are arc sin hyperbolic. Defaults to 'linear'.
             stretchscale (float, optional): color scale is asinh(data / stretchscale). Defaults to None.
+            stretchpower (float, optional): color scale is ((data / vmin)**(1 - stretchpower) - 1) / (1 - stretchpower). Defaults to 0 (linear stretch).
             show_cbar (bool, optional): Show color bar. Defaults to True.
             cblabel (str, optional): Colorbar label. Defaults to None.
             cbformat (float, optional): Format for ticklabels of colorbar. Defaults to '%.1e'.
@@ -604,7 +606,7 @@ class PlotAstroData(AstroFrame):
         self.beam = beam
         self.sigma = sigma
         if stretchscale is None: stretchscale = sigma
-        c = set_minmax(c, stretch, stretchscale, sigma, kwargs)
+        c = set_minmax(c, stretch, stretchscale, stretchpower, sigma, kwargs)
         c = self.vskipfill(c)
         if type(self.channelnumber) is int: c = [c[self.channelnumber]]
         for axnow, cnow in zip(self.ax, c):
@@ -632,10 +634,13 @@ class PlotAstroData(AstroFrame):
                     cbticks = np.log10(cbticks)
                 elif stretch == 'asinh':
                     cbticks = np.arcsinh(np.array(cbticks) / stretchscale)
+                elif stretch == 'power':
+                    cbticks = ((np.array(cbticks) / np.min(c))**(1 - stretchpower) - 1) \
+                              / (1 - stretchpower)
                 cb.set_ticks(cbticks)
             if cbticklabels is not None:
                 cb.set_ticklabels(cbticklabels)
-            elif stretch in ['log', 'asinh']:
+            elif stretch in ['log', 'asinh', 'power']:
                 t = cb.get_ticks()
                 t = t[(kwargs['vmin'] < t) * (t < kwargs['vmax'])]
                 cb.set_ticks(t)
@@ -643,6 +648,9 @@ class PlotAstroData(AstroFrame):
                     ticklin = 10**t
                 elif stretch == 'asinh':
                     ticklin = np.sinh(t) * stretchscale
+                elif stretch == 'power':
+                    ticklin = 1 + (1 - stretchpower) * t
+                    ticklin = np.min(c) * ticklin**(1 / (1 - stretchpower))
                 cb.set_ticklabels([f'{d:{cbformat[1:]}}' for d in ticklin])
         if show_beam and not self.pv:
             self.add_beam(beam, beamcolor)
@@ -739,6 +747,7 @@ class PlotAstroData(AstroFrame):
     def add_rgb(self, xskip: int = 1, yskip: int = 1,
                 stretch: list = ['linear'] * 3,
                 stretchscale: list = [None] * 3,
+                stretchpower: float = 0,
                 show_beam: bool = True,
                 beamcolor: list = ['red', 'green', 'blue'],
                 **kwargs) -> None:
@@ -748,6 +757,7 @@ class PlotAstroData(AstroFrame):
             xskip, yskip (int, optional): Spatial pixel skip. Defaults to 1.
             stretch (str, optional): 'log' means the mapped data are logarithmic. 'asinh' means the mapped data are arc sin hyperbolic. Defaults to 'linear'.
             stretchscale (float, optional): color scale is asinh(data / stretchscale). Defaults to None.
+            stretchpower (float, optional): color scale is ((data / vmin)**(1 - stretchpower) - 1) / (1 - stretchpower). Defaults to 0 (linear stretch).
             show_beam (bool, optional): Defaults to True.
             beamcolor (str, optional): Matplotlib color. Defaults to 'gray'.
         """
@@ -760,7 +770,7 @@ class PlotAstroData(AstroFrame):
         self.sigma = sigma
         for i in range(len(stretchscale)):
             if stretchscale[i] is None: stretchscale[i] = sigma[i]
-        c = set_minmax(c, stretch, stretchscale, sigma, kwargs)
+        c = set_minmax(c, stretch, stretchscale, stretchpower, sigma, kwargs)
         if not (np.shape(c[0]) == np.shape(c[1]) == np.shape(c[2])):
             print('RGB shapes mismatch. Skip add_rgb.')
             return -1
