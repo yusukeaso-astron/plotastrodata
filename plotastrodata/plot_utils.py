@@ -189,8 +189,9 @@ def set_minmax(data: np.ndarray, stretch: str, stretchscale: float,
         elif st == 'asinh':
             c = np.arcsinh(c / stsc)
         elif st == 'power':
-            cmin = kw['min'][i] if 'vmin' in kw.keys() else c[c > 0].min()
-            c = ((c.clip(cmin, None) / cmin)**(1 - stretchpower) - 1) / (1 - stretchpower)
+            cmin = kw['min'][i] if 'vmin' in kw.keys() else r
+            c = c.clip(cmin, None)
+            c = ((c / cmin)**(1 - stretchpower) - 1) / (1 - stretchpower)
         data[i] = c
     n = len(data)
     for m in ['vmin', 'vmax']:
@@ -606,6 +607,7 @@ class PlotAstroData(AstroFrame):
         self.beam = beam
         self.sigma = sigma
         if stretchscale is None: stretchscale = sigma
+        cmin_org = kwargs['vmin'] if 'vmin' in kwargs.keys() else sigma
         c = set_minmax(c, stretch, stretchscale, stretchpower, sigma, kwargs)
         c = self.vskipfill(c)
         if type(self.channelnumber) is int: c = [c[self.channelnumber]]
@@ -635,8 +637,8 @@ class PlotAstroData(AstroFrame):
                 elif stretch == 'asinh':
                     cbticks = np.arcsinh(np.array(cbticks) / stretchscale)
                 elif stretch == 'power':
-                    cbticks = ((np.array(cbticks) / np.min(c))**(1 - stretchpower) - 1) \
-                              / (1 - stretchpower)
+                    cbticks = (np.array(cbticks) / cmin_org)**(1 - stretchpower)
+                    cbticks = (cbticks - 1) / (1 - stretchpower)
                 cb.set_ticks(cbticks)
             if cbticklabels is not None:
                 cb.set_ticklabels(cbticklabels)
@@ -650,7 +652,7 @@ class PlotAstroData(AstroFrame):
                     ticklin = np.sinh(t) * stretchscale
                 elif stretch == 'power':
                     ticklin = 1 + (1 - stretchpower) * t
-                    ticklin = np.min(c) * ticklin**(1 / (1 - stretchpower))
+                    ticklin = cmin_org * ticklin**(1 / (1 - stretchpower))
                 cb.set_ticklabels([f'{d:{cbformat[1:]}}' for d in ticklin])
         if show_beam and not self.pv:
             self.add_beam(beam, beamcolor)
