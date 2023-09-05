@@ -159,13 +159,15 @@ class PlotAxes2D():
 
 
 def set_minmax(data: np.ndarray, stretch: str, stretchscale: float,
+               stretchpower: float,
                rms: float, kw: dict) -> np.ndarray:
     """Set vmin and vmax for color pcolormesh and RGB maps.
 
     Args:
         data (np.ndarray): Plotted data.
-        stretch (str): 'log', 'asinh'. Any other means linear.
+        stretch (str): 'log', 'asinh', 'power'. Any other means linear.
         stretchscale (float): For the arcsinh strech.
+        stretchpower (float): For the power strech.
         rms (float): RMS noise level.
         kw (dict): Probably like {'vmin':0, 'vmax':1}.
 
@@ -177,28 +179,36 @@ def set_minmax(data: np.ndarray, stretch: str, stretchscale: float,
         rms = [rms]
         stretch = [stretch]
         stretchscale = [stretchscale]
+        stretchpower = [stretchpower]
         if 'vmin' in kw.keys(): kw['vmin'] = [kw['vmin']]
         if 'vmax' in kw.keys(): kw['vmax'] = [kw['vmax']]
-    z = (data, stretch, stretchscale, rms)
-    for i, (c, st, stsc, r) in enumerate(zip(*z)):
+    z = (data, stretch, stretchscale, stretchpower, rms)
+    for i, (c, st, stsc, stpw, r) in enumerate(zip(*z)):
         if stsc is None: stsc = r
+        if stpw is None: stpw = 0
         if st == 'log':
             c = np.log10(c.clip(c[c > 0].min(), None))
         elif st == 'asinh':
             c = np.arcsinh(c / stsc)
+        elif st == 'power':
+            cmin = kw['min'][i] if 'vmin' in kw.keys() else c[c > 0].min()
+            c = ((c.clip(cmin, None) / cmin)**(1 - stpw) - 1) / (1 - stpw)
         data[i] = c
     n = len(data)
     for m in ['vmin', 'vmax']:
         if m in kw.keys():
-            for i, (_, st, stsc, _) in enumerate(zip(*z)):
+            for i, (c, st, stsc, stpw, _) in enumerate(zip(*z)):
                 if st == 'log':
                     kw[m][i] = np.log10(kw[m][i])
                 elif st == 'asinh':
                     kw[m][i] = np.arcsinh(kw[m][i] / stsc)
+                elif st == 'power':
+                    kw[m][i] = ((kw[m][i]/c.min())**(1-stpw) - 1) / (1 - stpw)
         else:
             kw[m] = [None] * n
-            for i, (c, st, _, r) in enumerate(zip(*z)):
+            for i, (c, st, _, _, r) in enumerate(zip(*z)):
                 if m == 'vmin':
+                    
                     kw[m][i] = np.log10(r) if st == 'log' else np.nanmin(c)
                 else:
                     kw[m][i] = np.nanmax(c)
