@@ -590,7 +590,7 @@ class PlotAstroData(AstroFrame):
             xskip, yskip (int, optional): Spatial pixel skip. Defaults to 1.
             stretch (str, optional): 'log' means the mapped data are logarithmic. 'asinh' means the mapped data are arc sin hyperbolic. Defaults to 'linear'.
             stretchscale (float, optional): color scale is asinh(data / stretchscale). Defaults to None.
-            stretchpower (float, optional): color scale is ((data / vmin)**(1 - stretchpower) - 1) / (1 - stretchpower). Defaults to 0 (linear stretch).
+            stretchpower (float, optional): color scale is ((data / vmin)**(1 - stretchpower) - 1) / (1 - stretchpower). 0 means the linear scale. 1 means the logarithmic scale. Defaults to 0.
             show_cbar (bool, optional): Show color bar. Defaults to True.
             cblabel (str, optional): Colorbar label. Defaults to None.
             cbformat (float, optional): Format for ticklabels of colorbar. Defaults to '%.1e'.
@@ -759,7 +759,7 @@ class PlotAstroData(AstroFrame):
             xskip, yskip (int, optional): Spatial pixel skip. Defaults to 1.
             stretch (str, optional): 'log' means the mapped data are logarithmic. 'asinh' means the mapped data are arc sin hyperbolic. Defaults to 'linear'.
             stretchscale (float, optional): color scale is asinh(data / stretchscale). Defaults to None.
-            stretchpower (float, optional): color scale is ((data / vmin)**(1 - stretchpower) - 1) / (1 - stretchpower). Defaults to 0 (linear stretch).
+            stretchpower (float, optional): color scale is ((data / vmin)**(1 - stretchpower) - 1) / (1 - stretchpower). 0 means the linear scale. 1 means the logarithmic scale. Defaults to 0.
             show_beam (bool, optional): Defaults to True.
             beamcolor (str, optional): Matplotlib color. Defaults to 'gray'.
         """
