@@ -333,6 +333,9 @@ class PlotAstroData(AstroFrame):
             self.read(d := AstroData(fitsimage=self.fitsimage,
                                      restfrq=restfrq, sigma=None))
             v = d.v
+        k0 = np.argmin(np.abs(v - self.vmin))
+        k1 = np.argmin(np.abs(v - self.vmax))
+        v = v[k0:k1+1]
         if self.pv or v is None or len(v) == 1:
             nv = nrows = ncols = npages = nchan = 1
         else:
