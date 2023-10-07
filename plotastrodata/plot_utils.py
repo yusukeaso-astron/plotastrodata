@@ -384,17 +384,24 @@ class PlotAstroData(AstroFrame):
         self.allchan = np.arange(nchan if channelnumber is None else nv)
         self.bottomleft = nij2ch(np.arange(npages), nrows - 1, 0)
         self.channelnumber = channelnumber
-        def vskipfill(c: np.ndarray) -> np.ndarray:
+        def vskipfill(c: np.ndarray, v_in: np.ndarray = None) -> np.ndarray:
             """Skip and fill channels with nan.
 
             Args:
                 c (np.ndarray): 2D or 3D arrays.
+                v_in (np.ndarray): 1D array.
 
             Returns:
                 np.ndarray: 3D arrays skipped and filled with nan.
             """
             if np.ndim(c) == 3:
-                d = c[::vskip]
+                if v_in is not None:
+                    if (k0 := np.argmin(np.abs(v_in - v[0]))) > 0:
+                        prenan = np.full((k0, *np.shape(c)[1:]), np.nan)
+                        d = np.append(prenan, c, axis=0)
+                    else:
+                        d = c
+                d = d[::vskip]
             else:
                 d = np.full((nv, *np.shape(c)), c)
             n = nchan if channelnumber is None else nv
@@ -607,13 +614,14 @@ class PlotAstroData(AstroFrame):
         kwargs0 = {'cmap':'cubehelix', 'alpha':1, 'edgecolors':'none', 'zorder':1}
         d = kwargs2AstroData(kwargs)
         self.read(d, xskip, yskip)
-        c, x, y, beam, bunit, sigma = d.data, d.x, d.y, d.beam, d.bunit, d.sigma
+        c, x, y, v, beam, sigma = d.data, d.x, d.y, d.v, d.beam, d.sigma
+        bunit = d.bunit
         self.beam = beam
         self.sigma = sigma
         if stretchscale is None: stretchscale = sigma
         cmin_org = kwargs['vmin'] if 'vmin' in kwargs.keys() else sigma
         c = set_minmax(c, stretch, stretchscale, stretchpower, sigma, kwargs)
-        c = self.vskipfill(c)
+        c = self.vskipfill(c, v)
         if type(self.channelnumber) is int: c = [c[self.channelnumber]]
         for axnow, cnow in zip(self.ax, c):
             p = axnow.pcolormesh(x, y, cnow, **dict(kwargs0, **kwargs))
@@ -676,10 +684,10 @@ class PlotAstroData(AstroFrame):
         kwargs0 = {'colors':'gray', 'linewidths':1.0, 'zorder':2}
         d = kwargs2AstroData(kwargs)
         self.read(d, xskip, yskip)
-        c, x, y, beam, sigma = d.data, d.x, d.y, d.beam, d.sigma
+        c, x, y, v, beam, sigma = d.data, d.x, d.y, d.v, d.beam, d.sigma
         self.beam = beam
         self.sigma = sigma
-        c = self.vskipfill(c)
+        c = self.vskipfill(c, v)
         if type(self.channelnumber) is int: c = [c[self.channelnumber]]
         for axnow, cnow in zip(self.ax, c):
             axnow.contour(x, y, cnow, np.sort(levels) * sigma,
@@ -724,7 +732,7 @@ class PlotAstroData(AstroFrame):
         kwargs['fitsimage'] = [ampfits, angfits, Ufits, Qfits]
         d = kwargs2AstroData(kwargs)
         self.read(d, xskip, yskip)
-        c, x, y, beam, sigma = d.data, d.x, d.y, d.beam, d.sigma
+        c, x, y, v, beam, sigma = d.data, d.x, d.y, d.v, d.beam, d.sigma
         amp, ang, stU, stQ = c
         sigmaU, sigmaQ = sigma[2:]
         self.beam = beam
@@ -737,15 +745,15 @@ class PlotAstroData(AstroFrame):
         if amp is None: amp = np.ones_like(ang)
         if angonly: amp = np.sign(amp)**2
         amp = amp / np.nanmax(amp)
-        u = ampfactor * amp * np.sin(np.radians(ang + rotation))
-        v = ampfactor * amp * np.cos(np.radians(ang + rotation))
-        u = self.vskipfill(u)
-        v = self.vskipfill(v)
+        U = ampfactor * amp * np.sin(np.radians(ang + rotation))
+        V = ampfactor * amp * np.cos(np.radians(ang + rotation))
+        U = self.vskipfill(U, v)
+        V = self.vskipfill(V, v)
         if type(self.channelnumber) is int:
-            u = [u[self.channelnumber]]
-            v = [v[self.channelnumber]]
+            U = [U[self.channelnumber]]
+            V = [V[self.channelnumber]]
         kwargs0['scale'] = 1 if len(x) == 1 else 1. / np.abs(x[1] - x[0])
-        for axnow, unow, vnow in zip(self.ax, u, v):
+        for axnow, unow, vnow in zip(self.ax, U, V):
             axnow.quiver(x, y, unow, vnow, **dict(kwargs0, **kwargs))
         if show_beam and not self.pv:
             self.add_beam(beam, beamcolor)
@@ -771,7 +779,7 @@ class PlotAstroData(AstroFrame):
         
         d = kwargs2AstroData(kwargs)
         self.read(d, xskip, yskip)
-        c, x, y, beam, sigma = d.data, d.x, d.y, d.beam, d.sigma
+        c, x, y, v, beam, sigma = d.data, d.x, d.y, d.v, d.beam, d.sigma
         self.beam = beam
         self.sigma = sigma
         for i in range(len(stretchscale)):
@@ -784,7 +792,7 @@ class PlotAstroData(AstroFrame):
         for i in range(3):
             c[i] = (c[i] - kwargs['vmin'][i]) \
                    / (kwargs['vmax'][i] - kwargs['vmin'][i]) * 255
-            c[i] = self.vskipfill(c[i])
+            c[i] = self.vskipfill(c[i], v)
         size = np.shape(c[0][0])
         for axnow, red, green, blue in zip(self.ax, *c):
             im = Image.new('RGB', size[::-1], (128, 128, 128))
