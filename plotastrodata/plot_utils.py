@@ -333,9 +333,19 @@ class PlotAstroData(AstroFrame):
             self.read(d := AstroData(fitsimage=self.fitsimage,
                                      restfrq=restfrq, sigma=None))
             v = d.v
-        k0 = np.argmin(np.abs(v - self.vmin))
-        k1 = np.argmin(np.abs(v - self.vmax))
-        v = v[k0:k1+1]
+        dv = v[1] - v[0]
+        k0 = int(round((self.vmin - v[0]) / dv))
+        if k0 < 0:
+            vpre = v[0] - (1 + np.arange(-k0)[::-1]) * dv
+            v = np.append(vpre, v)
+        else:
+            v = v[k0:]
+        k1 = len(v) + int(round((self.vmax - v[-1]) / dv))
+        if k1 > len(v):
+            vpost = v[-1] + (1 + np.arange(k1 - len(v))) * dv
+            v = np.append(v, vpost)
+        else:
+            v = v[:k1]
         if self.pv or v is None or len(v) == 1:
             nv = nrows = ncols = npages = nchan = 1
         else:
@@ -396,7 +406,7 @@ class PlotAstroData(AstroFrame):
             """
             if np.ndim(c) == 3:
                 if v_in is not None:
-                    if (k0 := np.argmin(np.abs(v_in - v[0]))) > 0:
+                    if (k0 := np.argmin(np.abs(v - v_in[0]))) > 0:
                         prenan = np.full((k0, *np.shape(c)[1:]), np.nan)
                         d = np.append(prenan, c, axis=0)
                     else:
