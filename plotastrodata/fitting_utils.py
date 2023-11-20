@@ -11,6 +11,14 @@ global_bounds = None
 bar = None
 global_progressbar = True
 def logp(x: np.ndarray) -> float:
+    """Log prior function made from the boundary (global_bounds) of fitting parameters.
+
+    Args:
+        x (np.ndarray): The fitting parameters.
+
+    Returns:
+        float: The log prior function. 0 if all the parameters are in the boundary else -np.inf.
+    """
     if global_progressbar:
         bar.update(1)
     for bmin, bmax, xx in zip(*global_bounds, x):
