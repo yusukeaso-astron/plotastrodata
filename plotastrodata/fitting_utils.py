@@ -6,9 +6,7 @@ import warnings
 from tqdm import tqdm
 from multiprocessing import Pool, cpu_count
 
-"""If parallel=True, fitting_utils.global_logl and fitting_utils.global_bounds need to be given in the external script that imports fitting_utils.
-"""
-global_logl = None
+
 global_bounds = None
 bar = None
 global_progressbar = True
@@ -39,8 +37,6 @@ class EmceeCorner():
         global global_bounds, global_progressbar
         global_bounds = np.array(bounds) if len(bounds) < 3 else np.transpose(bounds)
         global_progressbar = progressbar
-        if global_logl is not None:
-            logl = global_logl
         if logl is None and not (None in [model, xdata, ydata]):
             def logl(x: np.ndarray) -> float:
                 return np.sum((ydata - model(xdata, *x))**2 / sigma**2) / (-2)
