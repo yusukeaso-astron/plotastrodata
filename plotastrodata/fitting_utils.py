@@ -6,6 +6,14 @@ import warnings
 from tqdm import tqdm
 from multiprocessing import Pool, cpu_count
 
+global_logl = None
+global_bounds = None
+if global_bounds is not None:
+    def global_logp(x: np.ndarray) -> float:
+        for bmin, bmax, xx in zip(*global_bounds, x):
+            if xx < bmin or bmax < xx:
+                return -np.inf
+        return 0
 
 class EmceeCorner():
     warnings.simplefilter('ignore', RuntimeWarning)
@@ -23,18 +31,23 @@ class EmceeCorner():
             sigma (np.ndarray, optional): Uncertainty to make a log likelihood function from the model. Defaults to 1.
             progressbar (bool, optional): Whether to show a progress bar. Defaults to False.
         """
-        global bar
+        global bar, global_bounds
         b = np.array(bounds) if len(bounds) < 3 else np.transpose(bounds)
+        global_bounds = b
+        if global_logl is not None:
+            logl = global_logl
         if logl is None and not (None in [model, xdata, ydata]):
             def logl(x: np.ndarray) -> float:
                 return np.sum((ydata - model(xdata, *x))**2 / sigma**2) / (-2)
-
-        def logp(x: np.ndarray) -> float:
-            if progressbar:
-                bar.update(1)
-            for bmin, bmax, xx in zip(b[0], b[1], x):
-                if xx < bmin or bmax < xx: return -np.inf
-            return 0
+        if global_logp is None:
+            def logp(x: np.ndarray) -> float:
+                if progressbar:
+                    bar.update(1)
+                for bmin, bmax, xx in zip(*global_bounds, x):
+                    if xx < bmin or bmax < xx: return -np.inf
+                return 0
+        else:
+            logp = global_logp
         
         self.bounds = b
         self.logl = logl
