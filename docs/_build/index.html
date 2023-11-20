@@ -12,8 +12,10 @@
   <![endif]-->
   
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
-        <script src="_static/sphinx_highlight.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -25,18 +27,14 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-
-          
-          
-          <a href="#" class="icon icon-home">
-            plotastrodata
+            <a href="#" class="icon icon-home"> plotastrodata
           </a>
               <div class="version">
                 0.0.1
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -60,7 +58,7 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="#" class="icon icon-home" aria-label="Home"></a></li>
+      <li><a href="#" class="icon icon-home"></a></li>
       <li class="breadcrumb-item active">Welcome to plotastrodata’s documentation!</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
@@ -76,177 +74,9 @@
 <div class="toctree-wrapper compound">
 <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="plotastrodata.html">plotastrodata package</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="plotastrodata.html#submodules">Submodules</a></li>
-<li class="toctree-l2"><a class="reference internal" href="plotastrodata.html#module-plotastrodata.analysis_utils">plotastrodata.analysis_utils module</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="plotastrodata.html#plotastrodata.analysis_utils.AstroData"><code class="docutils literal notranslate"><span class="pre">AstroData</span></code></a><ul>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.analysis_utils.AstroData.Tb"><code class="docutils literal notranslate"><span class="pre">AstroData.Tb</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.analysis_utils.AstroData.beam"><code class="docutils literal notranslate"><span class="pre">AstroData.beam</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.analysis_utils.AstroData.binning"><code class="docutils literal notranslate"><span class="pre">AstroData.binning()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.analysis_utils.AstroData.center"><code class="docutils literal notranslate"><span class="pre">AstroData.center</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.analysis_utils.AstroData.centering"><code class="docutils literal notranslate"><span class="pre">AstroData.centering()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.analysis_utils.AstroData.cfactor"><code class="docutils literal notranslate"><span class="pre">AstroData.cfactor</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.analysis_utils.AstroData.circularbeam"><code class="docutils literal notranslate"><span class="pre">AstroData.circularbeam()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.analysis_utils.AstroData.data"><code class="docutils literal notranslate"><span class="pre">AstroData.data</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.analysis_utils.AstroData.deproject"><code class="docutils literal notranslate"><span class="pre">AstroData.deproject()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.analysis_utils.AstroData.fitsimage"><code class="docutils literal notranslate"><span class="pre">AstroData.fitsimage</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.analysis_utils.AstroData.histogram"><code class="docutils literal notranslate"><span class="pre">AstroData.histogram()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.analysis_utils.AstroData.mask"><code class="docutils literal notranslate"><span class="pre">AstroData.mask()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.analysis_utils.AstroData.profile"><code class="docutils literal notranslate"><span class="pre">AstroData.profile()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.analysis_utils.AstroData.restfrq"><code class="docutils literal notranslate"><span class="pre">AstroData.restfrq</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.analysis_utils.AstroData.rotate"><code class="docutils literal notranslate"><span class="pre">AstroData.rotate()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.analysis_utils.AstroData.sigma"><code class="docutils literal notranslate"><span class="pre">AstroData.sigma</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.analysis_utils.AstroData.slice"><code class="docutils literal notranslate"><span class="pre">AstroData.slice()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.analysis_utils.AstroData.v"><code class="docutils literal notranslate"><span class="pre">AstroData.v</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.analysis_utils.AstroData.writetofits"><code class="docutils literal notranslate"><span class="pre">AstroData.writetofits()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.analysis_utils.AstroData.x"><code class="docutils literal notranslate"><span class="pre">AstroData.x</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.analysis_utils.AstroData.y"><code class="docutils literal notranslate"><span class="pre">AstroData.y</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="plotastrodata.html#plotastrodata.analysis_utils.AstroFrame"><code class="docutils literal notranslate"><span class="pre">AstroFrame</span></code></a><ul>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.analysis_utils.AstroFrame.center"><code class="docutils literal notranslate"><span class="pre">AstroFrame.center</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.analysis_utils.AstroFrame.dist"><code class="docutils literal notranslate"><span class="pre">AstroFrame.dist</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.analysis_utils.AstroFrame.fitsimage"><code class="docutils literal notranslate"><span class="pre">AstroFrame.fitsimage</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.analysis_utils.AstroFrame.pos2xy"><code class="docutils literal notranslate"><span class="pre">AstroFrame.pos2xy()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.analysis_utils.AstroFrame.pv"><code class="docutils literal notranslate"><span class="pre">AstroFrame.pv</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.analysis_utils.AstroFrame.quadrants"><code class="docutils literal notranslate"><span class="pre">AstroFrame.quadrants</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.analysis_utils.AstroFrame.read"><code class="docutils literal notranslate"><span class="pre">AstroFrame.read()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.analysis_utils.AstroFrame.rmax"><code class="docutils literal notranslate"><span class="pre">AstroFrame.rmax</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.analysis_utils.AstroFrame.swapxy"><code class="docutils literal notranslate"><span class="pre">AstroFrame.swapxy</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.analysis_utils.AstroFrame.vmax"><code class="docutils literal notranslate"><span class="pre">AstroFrame.vmax</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.analysis_utils.AstroFrame.vmin"><code class="docutils literal notranslate"><span class="pre">AstroFrame.vmin</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.analysis_utils.AstroFrame.vsys"><code class="docutils literal notranslate"><span class="pre">AstroFrame.vsys</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.analysis_utils.AstroFrame.xflip"><code class="docutils literal notranslate"><span class="pre">AstroFrame.xflip</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.analysis_utils.AstroFrame.xoff"><code class="docutils literal notranslate"><span class="pre">AstroFrame.xoff</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.analysis_utils.AstroFrame.yflip"><code class="docutils literal notranslate"><span class="pre">AstroFrame.yflip</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.analysis_utils.AstroFrame.yoff"><code class="docutils literal notranslate"><span class="pre">AstroFrame.yoff</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="plotastrodata.html#plotastrodata.analysis_utils.filled2d"><code class="docutils literal notranslate"><span class="pre">filled2d()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="plotastrodata.html#plotastrodata.analysis_utils.quadrantmean"><code class="docutils literal notranslate"><span class="pre">quadrantmean()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="plotastrodata.html#plotastrodata.analysis_utils.sortRGI"><code class="docutils literal notranslate"><span class="pre">sortRGI()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="plotastrodata.html#plotastrodata.analysis_utils.to4dim"><code class="docutils literal notranslate"><span class="pre">to4dim()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="plotastrodata.html#module-plotastrodata.fft_utils">plotastrodata.fft_utils module</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="plotastrodata.html#plotastrodata.fft_utils.fftcentering"><code class="docutils literal notranslate"><span class="pre">fftcentering()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="plotastrodata.html#plotastrodata.fft_utils.fftcentering2"><code class="docutils literal notranslate"><span class="pre">fftcentering2()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="plotastrodata.html#plotastrodata.fft_utils.fftfits"><code class="docutils literal notranslate"><span class="pre">fftfits()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="plotastrodata.html#plotastrodata.fft_utils.fftfitssample"><code class="docutils literal notranslate"><span class="pre">fftfitssample()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="plotastrodata.html#plotastrodata.fft_utils.findindex"><code class="docutils literal notranslate"><span class="pre">findindex()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="plotastrodata.html#plotastrodata.fft_utils.ifftcentering"><code class="docutils literal notranslate"><span class="pre">ifftcentering()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="plotastrodata.html#plotastrodata.fft_utils.ifftcentering2"><code class="docutils literal notranslate"><span class="pre">ifftcentering2()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="plotastrodata.html#plotastrodata.fft_utils.shiftphase"><code class="docutils literal notranslate"><span class="pre">shiftphase()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="plotastrodata.html#plotastrodata.fft_utils.shiftphase2"><code class="docutils literal notranslate"><span class="pre">shiftphase2()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="plotastrodata.html#plotastrodata.fft_utils.zeropadding"><code class="docutils literal notranslate"><span class="pre">zeropadding()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="plotastrodata.html#module-plotastrodata.fits_utils">plotastrodata.fits_utils module</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="plotastrodata.html#plotastrodata.fits_utils.FitsData"><code class="docutils literal notranslate"><span class="pre">FitsData</span></code></a><ul>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.fits_utils.FitsData.gen_beam"><code class="docutils literal notranslate"><span class="pre">FitsData.gen_beam()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.fits_utils.FitsData.gen_data"><code class="docutils literal notranslate"><span class="pre">FitsData.gen_data()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.fits_utils.FitsData.gen_grid"><code class="docutils literal notranslate"><span class="pre">FitsData.gen_grid()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.fits_utils.FitsData.gen_hdu"><code class="docutils literal notranslate"><span class="pre">FitsData.gen_hdu()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.fits_utils.FitsData.gen_header"><code class="docutils literal notranslate"><span class="pre">FitsData.gen_header()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.fits_utils.FitsData.get_beam"><code class="docutils literal notranslate"><span class="pre">FitsData.get_beam()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.fits_utils.FitsData.get_center"><code class="docutils literal notranslate"><span class="pre">FitsData.get_center()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.fits_utils.FitsData.get_data"><code class="docutils literal notranslate"><span class="pre">FitsData.get_data()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.fits_utils.FitsData.get_grid"><code class="docutils literal notranslate"><span class="pre">FitsData.get_grid()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.fits_utils.FitsData.get_header"><code class="docutils literal notranslate"><span class="pre">FitsData.get_header()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.fits_utils.FitsData.trim"><code class="docutils literal notranslate"><span class="pre">FitsData.trim()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="plotastrodata.html#plotastrodata.fits_utils.Jy2K"><code class="docutils literal notranslate"><span class="pre">Jy2K()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="plotastrodata.html#plotastrodata.fits_utils.data2fits"><code class="docutils literal notranslate"><span class="pre">data2fits()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="plotastrodata.html#plotastrodata.fits_utils.fits2data"><code class="docutils literal notranslate"><span class="pre">fits2data()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="plotastrodata.html#module-plotastrodata.other_utils">plotastrodata.other_utils module</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="plotastrodata.html#plotastrodata.other_utils.BnuT"><code class="docutils literal notranslate"><span class="pre">BnuT()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="plotastrodata.html#plotastrodata.other_utils.JnuT"><code class="docutils literal notranslate"><span class="pre">JnuT()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="plotastrodata.html#plotastrodata.other_utils.Mfac"><code class="docutils literal notranslate"><span class="pre">Mfac()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="plotastrodata.html#plotastrodata.other_utils.Mrot"><code class="docutils literal notranslate"><span class="pre">Mrot()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="plotastrodata.html#plotastrodata.other_utils.abs2rel"><code class="docutils literal notranslate"><span class="pre">abs2rel()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="plotastrodata.html#plotastrodata.other_utils.coord2xy"><code class="docutils literal notranslate"><span class="pre">coord2xy()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="plotastrodata.html#plotastrodata.other_utils.dot2d"><code class="docutils literal notranslate"><span class="pre">dot2d()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="plotastrodata.html#plotastrodata.other_utils.estimate_rms"><code class="docutils literal notranslate"><span class="pre">estimate_rms()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="plotastrodata.html#plotastrodata.other_utils.listing"><code class="docutils literal notranslate"><span class="pre">listing()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="plotastrodata.html#plotastrodata.other_utils.rel2abs"><code class="docutils literal notranslate"><span class="pre">rel2abs()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="plotastrodata.html#plotastrodata.other_utils.runpython"><code class="docutils literal notranslate"><span class="pre">runpython()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="plotastrodata.html#plotastrodata.other_utils.terminal"><code class="docutils literal notranslate"><span class="pre">terminal()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="plotastrodata.html#plotastrodata.other_utils.trim"><code class="docutils literal notranslate"><span class="pre">trim()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="plotastrodata.html#plotastrodata.other_utils.xy2coord"><code class="docutils literal notranslate"><span class="pre">xy2coord()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="plotastrodata.html#module-plotastrodata.plot_utils">plotastrodata.plot_utils module</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="plotastrodata.html#plotastrodata.plot_utils.PlotAstroData"><code class="docutils literal notranslate"><span class="pre">PlotAstroData</span></code></a><ul>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.plot_utils.PlotAstroData.add_arrow"><code class="docutils literal notranslate"><span class="pre">PlotAstroData.add_arrow()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.plot_utils.PlotAstroData.add_beam"><code class="docutils literal notranslate"><span class="pre">PlotAstroData.add_beam()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.plot_utils.PlotAstroData.add_color"><code class="docutils literal notranslate"><span class="pre">PlotAstroData.add_color()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.plot_utils.PlotAstroData.add_contour"><code class="docutils literal notranslate"><span class="pre">PlotAstroData.add_contour()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.plot_utils.PlotAstroData.add_line"><code class="docutils literal notranslate"><span class="pre">PlotAstroData.add_line()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.plot_utils.PlotAstroData.add_marker"><code class="docutils literal notranslate"><span class="pre">PlotAstroData.add_marker()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.plot_utils.PlotAstroData.add_region"><code class="docutils literal notranslate"><span class="pre">PlotAstroData.add_region()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.plot_utils.PlotAstroData.add_rgb"><code class="docutils literal notranslate"><span class="pre">PlotAstroData.add_rgb()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.plot_utils.PlotAstroData.add_scalebar"><code class="docutils literal notranslate"><span class="pre">PlotAstroData.add_scalebar()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.plot_utils.PlotAstroData.add_segment"><code class="docutils literal notranslate"><span class="pre">PlotAstroData.add_segment()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.plot_utils.PlotAstroData.add_text"><code class="docutils literal notranslate"><span class="pre">PlotAstroData.add_text()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.plot_utils.PlotAstroData.get_figax"><code class="docutils literal notranslate"><span class="pre">PlotAstroData.get_figax()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.plot_utils.PlotAstroData.savefig"><code class="docutils literal notranslate"><span class="pre">PlotAstroData.savefig()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.plot_utils.PlotAstroData.set_axis"><code class="docutils literal notranslate"><span class="pre">PlotAstroData.set_axis()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.plot_utils.PlotAstroData.set_axis_radec"><code class="docutils literal notranslate"><span class="pre">PlotAstroData.set_axis_radec()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="plotastrodata.html#plotastrodata.plot_utils.PlotAxes2D"><code class="docutils literal notranslate"><span class="pre">PlotAxes2D</span></code></a><ul>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.plot_utils.PlotAxes2D.aspect"><code class="docutils literal notranslate"><span class="pre">PlotAxes2D.aspect</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.plot_utils.PlotAxes2D.grid"><code class="docutils literal notranslate"><span class="pre">PlotAxes2D.grid</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.plot_utils.PlotAxes2D.loglog"><code class="docutils literal notranslate"><span class="pre">PlotAxes2D.loglog</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.plot_utils.PlotAxes2D.samexy"><code class="docutils literal notranslate"><span class="pre">PlotAxes2D.samexy</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.plot_utils.PlotAxes2D.set_xyaxes"><code class="docutils literal notranslate"><span class="pre">PlotAxes2D.set_xyaxes()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.plot_utils.PlotAxes2D.xlabel"><code class="docutils literal notranslate"><span class="pre">PlotAxes2D.xlabel</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.plot_utils.PlotAxes2D.xlim"><code class="docutils literal notranslate"><span class="pre">PlotAxes2D.xlim</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.plot_utils.PlotAxes2D.xscale"><code class="docutils literal notranslate"><span class="pre">PlotAxes2D.xscale</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.plot_utils.PlotAxes2D.xticklabels"><code class="docutils literal notranslate"><span class="pre">PlotAxes2D.xticklabels</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.plot_utils.PlotAxes2D.xticks"><code class="docutils literal notranslate"><span class="pre">PlotAxes2D.xticks</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.plot_utils.PlotAxes2D.xticksminor"><code class="docutils literal notranslate"><span class="pre">PlotAxes2D.xticksminor</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.plot_utils.PlotAxes2D.ylabel"><code class="docutils literal notranslate"><span class="pre">PlotAxes2D.ylabel</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.plot_utils.PlotAxes2D.ylim"><code class="docutils literal notranslate"><span class="pre">PlotAxes2D.ylim</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.plot_utils.PlotAxes2D.yscale"><code class="docutils literal notranslate"><span class="pre">PlotAxes2D.yscale</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.plot_utils.PlotAxes2D.yticklabels"><code class="docutils literal notranslate"><span class="pre">PlotAxes2D.yticklabels</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.plot_utils.PlotAxes2D.yticks"><code class="docutils literal notranslate"><span class="pre">PlotAxes2D.yticks</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="plotastrodata.html#plotastrodata.plot_utils.PlotAxes2D.yticksminor"><code class="docutils literal notranslate"><span class="pre">PlotAxes2D.yticksminor</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="plotastrodata.html#plotastrodata.plot_utils.kwargs2AstroData"><code class="docutils literal notranslate"><span class="pre">kwargs2AstroData()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="plotastrodata.html#plotastrodata.plot_utils.kwargs2AstroFrame"><code class="docutils literal notranslate"><span class="pre">kwargs2AstroFrame()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="plotastrodata.html#plotastrodata.plot_utils.kwargs2PlotAxes2D"><code class="docutils literal notranslate"><span class="pre">kwargs2PlotAxes2D()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="plotastrodata.html#plotastrodata.plot_utils.logticks"><code class="docutils literal notranslate"><span class="pre">logticks()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="plotastrodata.html#plotastrodata.plot_utils.plot3d"><code class="docutils literal notranslate"><span class="pre">plot3d()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="plotastrodata.html#plotastrodata.plot_utils.plotprofile"><code class="docutils literal notranslate"><span class="pre">plotprofile()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="plotastrodata.html#plotastrodata.plot_utils.plotslice"><code class="docutils literal notranslate"><span class="pre">plotslice()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="plotastrodata.html#plotastrodata.plot_utils.set_minmax"><code class="docutils literal notranslate"><span class="pre">set_minmax()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="plotastrodata.html#plotastrodata.plot_utils.set_rcparams"><code class="docutils literal notranslate"><span class="pre">set_rcparams()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="plotastrodata.html#module-plotastrodata">Module contents</a></li>
-</ul>
-</li>
+<li class="toctree-l1"><a class="reference internal" href="plotastrodata.html">plotastrodata package</a></li>
 </ul>
 </div>
-</section>
-<section id="tips">
-  <h1>Tips<a class="headerlink" href="#tips" title="Permalink to this heading"></a></h1>
-  <ul class="simple">
-  <li>For 3D data, a 1D velocity array or a FITS file with a velocity axis must be given to set up channels in each page.</li>
-  <li>For 2D/3D data, the spatial center can be read from a FITS file or manually given.</li>
-  <li>len(v)=1 (default) means to make a 2D figure.</li>
-  <li>Spatial lengths are in the unit of arcsec, or au if dist (!= 1) is given.</li>
-  <li>Angles are in the unit of degree.</li>
-  <li>For region, line, arrow, label, and marker, a single input can be treated without a list, e.g., anglelist=60, as well as anglelist=[60].</li>
-  <li>Each element of poslist supposes a text coordinate like '01h23m45.6s 01d23m45.6s' or a list of relative x and y like [0.2, 0.3] (0 is left or bottom, 1 is right or top).</li>
-  <li>Parameters for original methods in matplotlib.axes.Axes can be used as kwargs; see the default kwargs0 for reference.</li>
-  <li>Position-velocity diagrams (pv=True) does not yet suppot region, line, arrow, and segment because the units of abscissa and ordinate are different.</li>
-  </ul>
 </section>
 <section id="indices-and-tables">
 <h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this heading"></a></h1>

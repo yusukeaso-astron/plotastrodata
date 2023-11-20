@@ -28,6 +28,14 @@ plotastrodata.fits\_utils module
    :undoc-members:
    :show-inheritance:
 
+plotastrodata.fitting\_utils module
+-----------------------------------
+
+.. automodule:: plotastrodata.fitting_utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 plotastrodata.other\_utils module
 ---------------------------------
 

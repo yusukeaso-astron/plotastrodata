@@ -11,8 +11,10 @@
   <![endif]-->
   
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
-        <script src="_static/sphinx_highlight.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="#" />
     <link rel="search" title="Search" href="search.html" /> 
@@ -23,18 +25,14 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-
-          
-          
-          <a href="index.html" class="icon icon-home">
-            plotastrodata
+            <a href="index.html" class="icon icon-home"> plotastrodata
           </a>
               <div class="version">
                 0.0.1
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -58,7 +56,7 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li><a href="index.html" class="icon icon-home"></a></li>
       <li class="breadcrumb-item active">Index</li>
       <li class="wy-breadcrumbs-aside">
       </li>
@@ -192,6 +190,10 @@
 <h2 id="E">E</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="plotastrodata.html#plotastrodata.fitting_utils.EmceeCorner">EmceeCorner (class in plotastrodata.fitting_utils)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="plotastrodata.html#plotastrodata.other_utils.estimate_rms">estimate_rms() (in module plotastrodata.other_utils)</a>
 </li>
   </ul></td>
@@ -213,6 +215,8 @@
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="plotastrodata.html#plotastrodata.fft_utils.findindex">findindex() (in module plotastrodata.fft_utils)</a>
+</li>
+      <li><a href="plotastrodata.html#plotastrodata.fitting_utils.EmceeCorner.fit">fit() (plotastrodata.fitting_utils.EmceeCorner method)</a>
 </li>
       <li><a href="plotastrodata.html#plotastrodata.fits_utils.fits2data">fits2data() (in module plotastrodata.fits_utils)</a>
 </li>
@@ -253,6 +257,8 @@
       <li><a href="plotastrodata.html#plotastrodata.fits_utils.FitsData.get_grid">get_grid() (plotastrodata.fits_utils.FitsData method)</a>
 </li>
       <li><a href="plotastrodata.html#plotastrodata.fits_utils.FitsData.get_header">get_header() (plotastrodata.fits_utils.FitsData method)</a>
+</li>
+      <li><a href="plotastrodata.html#plotastrodata.fitting_utils.global_logp">global_logp() (in module plotastrodata.fitting_utils)</a>
 </li>
       <li><a href="plotastrodata.html#plotastrodata.plot_utils.PlotAxes2D.grid">grid (plotastrodata.plot_utils.PlotAxes2D attribute)</a>
 </li>
@@ -338,6 +344,8 @@
 </li>
         <li><a href="plotastrodata.html#module-plotastrodata.fits_utils">plotastrodata.fits_utils</a>
 </li>
+        <li><a href="plotastrodata.html#module-plotastrodata.fitting_utils">plotastrodata.fitting_utils</a>
+</li>
         <li><a href="plotastrodata.html#module-plotastrodata.other_utils">plotastrodata.other_utils</a>
 </li>
         <li><a href="plotastrodata.html#module-plotastrodata.plot_utils">plotastrodata.plot_utils</a>
@@ -385,6 +393,13 @@
         <li><a href="plotastrodata.html#module-plotastrodata.fits_utils">module</a>
 </li>
       </ul></li>
+      <li>
+    plotastrodata.fitting_utils
+
+      <ul>
+        <li><a href="plotastrodata.html#module-plotastrodata.fitting_utils">module</a>
+</li>
+      </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li>
@@ -402,6 +417,8 @@
 </li>
       </ul></li>
       <li><a href="plotastrodata.html#plotastrodata.plot_utils.PlotAxes2D">PlotAxes2D (class in plotastrodata.plot_utils)</a>
+</li>
+      <li><a href="plotastrodata.html#plotastrodata.fitting_utils.EmceeCorner.plotcorner">plotcorner() (plotastrodata.fitting_utils.EmceeCorner method)</a>
 </li>
       <li><a href="plotastrodata.html#plotastrodata.plot_utils.plotprofile">plotprofile() (in module plotastrodata.plot_utils)</a>
 </li>
@@ -489,9 +506,11 @@
 </li>
       <li><a href="plotastrodata.html#plotastrodata.other_utils.terminal">terminal() (in module plotastrodata.other_utils)</a>
 </li>
+      <li><a href="plotastrodata.html#plotastrodata.analysis_utils.to4dim">to4dim() (in module plotastrodata.analysis_utils)</a>
+</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="plotastrodata.html#plotastrodata.analysis_utils.to4dim">to4dim() (in module plotastrodata.analysis_utils)</a>
+      <li><a href="plotastrodata.html#plotastrodata.analysis_utils.AstroData.todict">todict() (plotastrodata.analysis_utils.AstroData method)</a>
 </li>
       <li><a href="plotastrodata.html#plotastrodata.other_utils.trim">trim() (in module plotastrodata.other_utils)</a>
 
@@ -537,10 +556,14 @@
 </li>
       <li><a href="plotastrodata.html#plotastrodata.plot_utils.PlotAxes2D.xlim">xlim (plotastrodata.plot_utils.PlotAxes2D attribute)</a>
 </li>
-      <li><a href="plotastrodata.html#plotastrodata.analysis_utils.AstroFrame.xoff">xoff (plotastrodata.analysis_utils.AstroFrame attribute)</a>
+      <li><a href="plotastrodata.html#plotastrodata.analysis_utils.AstroFrame.xmax">xmax (plotastrodata.analysis_utils.AstroFrame attribute)</a>
+</li>
+      <li><a href="plotastrodata.html#plotastrodata.analysis_utils.AstroFrame.xmin">xmin (plotastrodata.analysis_utils.AstroFrame attribute)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="plotastrodata.html#plotastrodata.analysis_utils.AstroFrame.xoff">xoff (plotastrodata.analysis_utils.AstroFrame attribute)</a>
+</li>
       <li><a href="plotastrodata.html#plotastrodata.plot_utils.PlotAxes2D.xscale">xscale (plotastrodata.plot_utils.PlotAxes2D attribute)</a>
 </li>
       <li><a href="plotastrodata.html#plotastrodata.plot_utils.PlotAxes2D.xticklabels">xticklabels (plotastrodata.plot_utils.PlotAxes2D attribute)</a>
@@ -565,8 +588,12 @@
 </li>
       <li><a href="plotastrodata.html#plotastrodata.plot_utils.PlotAxes2D.ylim">ylim (plotastrodata.plot_utils.PlotAxes2D attribute)</a>
 </li>
+      <li><a href="plotastrodata.html#plotastrodata.analysis_utils.AstroFrame.ymax">ymax (plotastrodata.analysis_utils.AstroFrame attribute)</a>
+</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="plotastrodata.html#plotastrodata.analysis_utils.AstroFrame.ymin">ymin (plotastrodata.analysis_utils.AstroFrame attribute)</a>
+</li>
       <li><a href="plotastrodata.html#plotastrodata.analysis_utils.AstroFrame.yoff">yoff (plotastrodata.analysis_utils.AstroFrame attribute)</a>
 </li>
       <li><a href="plotastrodata.html#plotastrodata.plot_utils.PlotAxes2D.yscale">yscale (plotastrodata.plot_utils.PlotAxes2D attribute)</a>
