@@ -103,7 +103,7 @@ class EmceeCorner():
             np.save(savechain.replace('.npy', '') + '.npy', samples)
         lnps = sampler.logprobability[0]  # [0] is in the temperature axis.
         idx_best = np.unravel_index(np.argmax(lnps), lnps.shape)
-        self.popt = sampler.chain[idx_best]
+        self.popt = sampler.chain[0][idx_best]
         lnps = lnps[:, nburnin:]
         self.lnps = lnps
         samples = samples.reshape((-1, dim))
