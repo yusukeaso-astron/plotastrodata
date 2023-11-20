@@ -11,7 +11,7 @@ from multiprocessing import Pool, cpu_count
 global_logl = None
 global_bounds = None
 bar = None
-global_progressbar = None
+global_progressbar = True
 def logp(x: np.ndarray) -> float:
     if global_progressbar:
         bar.update(1)
@@ -24,7 +24,7 @@ class EmceeCorner():
     warnings.simplefilter('ignore', RuntimeWarning)
     def __init__(self, bounds: np.ndarray, logl=None, model=None,
                  xdata: np.ndarray = None, ydata: np.ndarray = None,
-                 sigma: np.ndarray = 1, progressbar: bool = False):
+                 sigma: np.ndarray = 1, progressbar: bool = True):
         """Make bounds, logl, and logp for ptemcee.
 
         Args:
@@ -34,7 +34,7 @@ class EmceeCorner():
             xdata (np.ndarray, optional): Input for the model function. Defaults to None.
             ydata (np.ndarray, optional): Values to be compared with the model. Defaults to None.
             sigma (np.ndarray, optional): Uncertainty to make a log likelihood function from the model. Defaults to 1.
-            progressbar (bool, optional): Whether to show a progress bar. Defaults to False.
+            progressbar (bool, optional): Whether to show a progress bar. Defaults to True.
         """
         global global_bounds, global_progressbar
         global_bounds = np.array(bounds) if len(bounds) < 3 else np.transpose(bounds)
