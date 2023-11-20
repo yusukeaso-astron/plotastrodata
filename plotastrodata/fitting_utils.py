@@ -47,7 +47,6 @@ class EmceeCorner():
         self.bounds = global_bounds
         self.logl = logl
         self.logp = global_logp
-        self.progressbar = progressbar
         self.ndata = 10000 if xdata is None else len(xdata)
     
     def fit(self, nwalkersperdim: int = 2, ntemps: int = 2, nsteps: int = 1000,
@@ -73,7 +72,7 @@ class EmceeCorner():
         global bar
         dim = len(self.bounds[0])
         nwalkers = max(nwalkersperdim, 2) * dim  # must be even and >= 2 * dim
-        if self.progressbar and not parallel:
+        if global_progressbar:
             bar = tqdm(total=ntry * ntemps * nwalkers * (nsteps + 1))
             bar.set_description('Within the ranges')
 
