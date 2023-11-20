@@ -7,6 +7,7 @@ from tqdm import tqdm
 from multiprocessing import Pool, cpu_count
 
 global_logl = None
+global_logp = None
 global_bounds = None
 if global_bounds is not None:
     def global_logp(x: np.ndarray) -> float:
