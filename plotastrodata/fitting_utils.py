@@ -12,7 +12,7 @@ global_logl = None
 global_bounds = None
 bar = None
 global_progressbar = None
-def global_logp(x: np.ndarray) -> float:
+def logp(x: np.ndarray) -> float:
     if global_progressbar:
         bar.update(1)
     for bmin, bmax, xx in zip(*global_bounds, x):
@@ -46,7 +46,7 @@ class EmceeCorner():
                 return np.sum((ydata - model(xdata, *x))**2 / sigma**2) / (-2)
         self.bounds = global_bounds
         self.logl = logl
-        self.logp = global_logp
+        self.logp = logp
         self.ndata = 10000 if xdata is None else len(xdata)
     
     def fit(self, nwalkersperdim: int = 2, ntemps: int = 2, nsteps: int = 1000,
