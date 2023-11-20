@@ -11,17 +11,17 @@ class EmceeCorner():
     warnings.simplefilter('ignore', RuntimeWarning)
     def __init__(self, bounds: np.ndarray, logl=None, model=None,
                  xdata: np.ndarray = None, ydata: np.ndarray = None,
-                 sigma: float = 1, progressbar: bool = False):
+                 sigma: np.ndarray = 1, progressbar: bool = False):
         """Make bounds, logl, and logp for ptemcee.
 
         Args:
-            bounds (np.ndarray): _description_
-            logl (_type_, optional): _description_. Defaults to None.
-            model (_type_, optional): _description_. Defaults to None.
-            xdata (np.ndarray, optional): _description_. Defaults to None.
-            ydata (np.ndarray, optional): _description_. Defaults to None.
-            sigma (float, optional): _description_. Defaults to 1.
-            progressbar (bool, optional): _description_. Defaults to False.
+            bounds (np.ndarray): Bounds for ptemcee in the shape of (2, dim).
+            logl (function, optional): Log likelihood for ptemcee. Defaults to None.
+            model (function, optional): Model function to make a log likelihood function. Defaults to None.
+            xdata (np.ndarray, optional): Input for the model function. Defaults to None.
+            ydata (np.ndarray, optional): Values to be compared with the model. Defaults to None.
+            sigma (np.ndarray, optional): Uncertainty to make a log likelihood function from the model. Defaults to 1.
+            progressbar (bool, optional): Whether to show a progress bar. Defaults to False.
         """
         global bar
         b = np.array(bounds) if len(bounds) < 3 else np.transpose(bounds)
