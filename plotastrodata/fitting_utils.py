@@ -9,12 +9,11 @@ from multiprocessing import Pool, cpu_count
 global_logl = None
 global_logp = None
 global_bounds = None
-if global_bounds is not None:
-    def global_logp(x: np.ndarray) -> float:
-        for bmin, bmax, xx in zip(*global_bounds, x):
-            if xx < bmin or bmax < xx:
-                return -np.inf
-        return 0
+def global_logp(x: np.ndarray) -> float:
+    for bmin, bmax, xx in zip(*global_bounds, x):
+        if xx < bmin or bmax < xx:
+            return -np.inf
+    return 0
 
 class EmceeCorner():
     warnings.simplefilter('ignore', RuntimeWarning)
