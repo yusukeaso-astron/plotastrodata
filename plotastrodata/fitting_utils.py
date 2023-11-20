@@ -10,11 +10,12 @@ from multiprocessing import Pool, cpu_count
 """
 global_logl = None
 global_bounds = None
+global_ncore = 1
 bar = None
 global_progressbar = None
 def global_logp(x: np.ndarray) -> float:
     if global_progressbar:
-        bar.update(1)
+        bar.update(global_ncore)
     for bmin, bmax, xx in zip(*global_bounds, x):
         if xx < bmin or bmax < xx:
             return -np.inf
@@ -36,7 +37,7 @@ class EmceeCorner():
             sigma (np.ndarray, optional): Uncertainty to make a log likelihood function from the model. Defaults to 1.
             progressbar (bool, optional): Whether to show a progress bar. Defaults to False.
         """
-        global bar, global_bounds, global_progressbar
+        global global_bounds, global_progressbar
         global_bounds = np.array(bounds) if len(bounds) < 3 else np.transpose(bounds)
         global_progressbar = progressbar
         if global_logl is not None:
@@ -69,7 +70,7 @@ class EmceeCorner():
             parallel (bool, optional): Wehther to use multiprocessing.Pool. Defaults to False.
             ncore (int, optional): Number of cores for multiprocessing.Pool. Defaults to 1.
         """
-        global bar
+        global bar, global_ncore
         dim = len(self.bounds[0])
         nwalkers = max(nwalkersperdim, 2) * dim  # must be even and >= 2 * dim
         if global_progressbar:
@@ -86,6 +87,7 @@ class EmceeCorner():
             pars = {'ntemps':ntemps, 'nwalkers':nwalkers, 'dim':dim,
                     'logl':self.logl, 'logp':self.logp}
             if parallel:
+                global_ncore = ncore
                 print(f'Use {ncore:d} / {cpu_count():d} CPUs')
                 with Pool(ncore) as pool:
                     sampler = ptemcee.Sampler(**pars, pool=pool)
