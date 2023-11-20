@@ -10,12 +10,11 @@ from multiprocessing import Pool, cpu_count
 """
 global_logl = None
 global_bounds = None
-global_ncore = 1
 bar = None
 global_progressbar = None
 def global_logp(x: np.ndarray) -> float:
     if global_progressbar:
-        bar.update(global_ncore)
+        bar.update(1)
     for bmin, bmax, xx in zip(*global_bounds, x):
         if xx < bmin or bmax < xx:
             return -np.inf
@@ -70,11 +69,11 @@ class EmceeCorner():
             parallel (bool, optional): Wehther to use multiprocessing.Pool. Defaults to False.
             ncore (int, optional): Number of cores for multiprocessing.Pool. Defaults to 1.
         """
-        global bar, global_ncore
+        global bar
         dim = len(self.bounds[0])
         nwalkers = max(nwalkersperdim, 2) * dim  # must be even and >= 2 * dim
         if global_progressbar:
-            bar = tqdm(total=ntry * ntemps * nwalkers * (nsteps + 1))
+            bar = tqdm(total=ntry * ntemps * nwalkers * (nsteps + 1) / ncore)
             bar.set_description('Within the ranges')
 
         GR = [2] * dim
@@ -87,7 +86,6 @@ class EmceeCorner():
             pars = {'ntemps':ntemps, 'nwalkers':nwalkers, 'dim':dim,
                     'logl':self.logl, 'logp':self.logp}
             if parallel:
-                global_ncore = ncore
                 print(f'Use {ncore:d} / {cpu_count():d} CPUs')
                 with Pool(ncore) as pool:
                     sampler = ptemcee.Sampler(**pars, pool=pool)
