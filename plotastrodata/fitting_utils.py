@@ -6,10 +6,15 @@ import warnings
 from tqdm import tqdm
 from multiprocessing import Pool, cpu_count
 
+"""If parallel=True, fitting_utils.global_logl and fitting_utils.global_bounds need to be given in the external script that imports fitting_utils.
+"""
 global_logl = None
-global_logp = None
 global_bounds = None
+bar = None
+global_progressbar = None
 def global_logp(x: np.ndarray) -> float:
+    if global_progressbar:
+        bar.update(1)
     for bmin, bmax, xx in zip(*global_bounds, x):
         if xx < bmin or bmax < xx:
             return -np.inf
@@ -31,27 +36,17 @@ class EmceeCorner():
             sigma (np.ndarray, optional): Uncertainty to make a log likelihood function from the model. Defaults to 1.
             progressbar (bool, optional): Whether to show a progress bar. Defaults to False.
         """
-        global bar, global_bounds
-        b = np.array(bounds) if len(bounds) < 3 else np.transpose(bounds)
-        global_bounds = b
+        global bar, global_bounds, global_progressbar
+        global_bounds = np.array(bounds) if len(bounds) < 3 else np.transpose(bounds)
+        global_progressbar = progressbar
         if global_logl is not None:
             logl = global_logl
         if logl is None and not (None in [model, xdata, ydata]):
             def logl(x: np.ndarray) -> float:
                 return np.sum((ydata - model(xdata, *x))**2 / sigma**2) / (-2)
-        if global_logp is None:
-            def logp(x: np.ndarray) -> float:
-                if progressbar:
-                    bar.update(1)
-                for bmin, bmax, xx in zip(*global_bounds, x):
-                    if xx < bmin or bmax < xx: return -np.inf
-                return 0
-        else:
-            logp = global_logp
-        
-        self.bounds = b
+        self.bounds = global_bounds
         self.logl = logl
-        self.logp = logp
+        self.logp = global_logp
         self.progressbar = progressbar
         self.ndata = 10000 if xdata is None else len(xdata)
     
@@ -78,7 +73,7 @@ class EmceeCorner():
         global bar
         dim = len(self.bounds[0])
         nwalkers = max(nwalkersperdim, 2) * dim  # must be even and >= 2 * dim
-        if self.progressbar:
+        if self.progressbar and not parallel:
             bar = tqdm(total=ntry * ntemps * nwalkers * (nsteps + 1))
             bar.set_description('Within the ranges')
 
