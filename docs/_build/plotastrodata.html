@@ -1071,7 +1071,19 @@
 <dl class="py function">
 <dt class="sig sig-object py" id="plotastrodata.fitting_utils.logp">
 <span class="sig-prename descclassname"><span class="pre">plotastrodata.fitting_utils.</span></span><span class="sig-name descname"><span class="pre">logp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/plotastrodata/fitting_utils.html#logp"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#plotastrodata.fitting_utils.logp" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
+<dd><p>Log prior function made from the boundary (global_bounds) of fitting parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>x</strong> (<em>np.ndarray</em>) – The fitting parameters.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The log prior function. 0 if all the parameters are in the boundary else -np.inf.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
 
 </section>
 <section id="module-plotastrodata.other_utils">
