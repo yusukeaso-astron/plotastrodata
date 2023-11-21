@@ -139,7 +139,7 @@ class EmceeCorner():
         if labels is None:
             labels = [f'Par {i:d}' for i in range(dim)]
         if cornerrange is None:
-            cornerrange = np.transopose(self.bounds)
+            cornerrange = np.transpose(self.bounds)
         corner.corner(self.samples, truths=self.popt,
                       quantiles=[percent[0] / 100, 0.5, percent[1] / 100],
                       show_titles=True, labels=labels, range=cornerrange)
