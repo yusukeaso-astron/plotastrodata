@@ -55,8 +55,7 @@ class EmceeCorner():
     
     def fit(self, nwalkersperdim: int = 2, ntemps: int = 2, nsteps: int = 1000,
             nburnin: int = 500, ntry: int = 1, pos0: np.ndarray = None,
-            percent: list = [16, 84], savechain: str = None,
-            parallel: bool = False, ncore: int = 1):
+            percent: list = [16, 84], savechain: str = None, ncore: int = 1):
         """Perform a Markov Chain Monte Carlo (MCMC) fitting process using the ptemcee library, which is a parallel tempering version of the emcee package, and make a corner plot of the samples using the corner package.
 
         Args:
@@ -70,15 +69,13 @@ class EmceeCorner():
             show (bool, optional): Whether to show the corner plot. Defaults to False.
             savefig (str, optional): File name of the corner plot. Defaults to None.
             savechain (str, optional): File name of the chain in format of .npy. Defaults to None.
-            parallel (bool, optional): Wehther to use multiprocessing.Pool. Defaults to False.
-            ncore (int, optional): Number of cores for multiprocessing.Pool. Defaults to 1.
+            ncore (int, optional): Number of cores for multiprocessing.Pool. ncore=1 does not use multiprocessing. Defaults to 1.
         """
         global bar
         dim = len(self.bounds[0])
         nwalkers = max(nwalkersperdim, 2) * dim  # must be even and >= 2 * dim
         if global_progressbar:
-            total = ntry * ntemps * nwalkers * (nsteps + 1) / (ncore if parallel else 1)
-            bar = tqdm(total=total)
+            bar = tqdm(total=ntry * ntemps * nwalkers * (nsteps + 1) / ncore)
             bar.set_description('Within the ranges')
 
         GR = [2] * dim
@@ -90,7 +87,7 @@ class EmceeCorner():
                        * (self.bounds[1] - self.bounds[0]) + self.bounds[0]
             pars = {'ntemps':ntemps, 'nwalkers':nwalkers, 'dim':dim,
                     'logl':self.logl, 'logp':self.logp}
-            if parallel:
+            if ncore > 1:
                 print(f'Use {ncore:d} / {cpu_count():d} CPUs')
                 with Pool(ncore) as pool:
                     sampler = ptemcee.Sampler(**pars, pool=pool)
