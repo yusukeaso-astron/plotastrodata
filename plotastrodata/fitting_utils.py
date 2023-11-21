@@ -77,7 +77,8 @@ class EmceeCorner():
         dim = len(self.bounds[0])
         nwalkers = max(nwalkersperdim, 2) * dim  # must be even and >= 2 * dim
         if global_progressbar:
-            bar = tqdm(total=ntry * ntemps * nwalkers * (nsteps + 1) / ncore)
+            total = ntry * ntemps * nwalkers * (nsteps + 1) / (ncore if parallel else 1)
+            bar = tqdm(total=total)
             bar.set_description('Within the ranges')
 
         GR = [2] * dim
