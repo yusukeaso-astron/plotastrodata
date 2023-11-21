@@ -82,7 +82,7 @@ class EmceeCorner():
         i =  0
         while np.min(GR) > 1.25 and i < ntry:
             i += 1
-            if pos0 is not None:
+            if pos0 is None:
                 pos0 = np.random.rand(ntemps, nwalkers, dim) \
                        * (self.bounds[1] - self.bounds[0]) + self.bounds[0]
             pars = {'ntemps':ntemps, 'nwalkers':nwalkers, 'dim':dim,
