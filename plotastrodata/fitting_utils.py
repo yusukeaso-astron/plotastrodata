@@ -21,10 +21,10 @@ def logp(x: np.ndarray) -> float:
     """
     if global_progressbar:
         bar.update(1)
-    for bmin, bmax, xx in zip(*global_bounds, x):
-        if xx < bmin or bmax < xx:
-            return -np.inf
-    return 0
+    if  np.all((global_bounds[0] < x) & (x < global_bounds[1])):
+        return 0
+    else:
+        return -np.inf
 
 class PTEmceeCorner():
     warnings.simplefilter('ignore', RuntimeWarning)
