@@ -316,6 +316,7 @@ class PlotAstroData(AstroFrame):
         ncols (int, optional): Used for channel maps. Defaults to 6.
         fontsize (int, optional): rc_Params['font.size']. None means 18 (2D) or 12 (3D). Defaults to None.
         nancolor (str, optional): Color for masked regions. Defaults to white.
+        dpi (int, optional): Dot per inch for plotting an image. Defaults to 256.
         figsize (tuple, optional): Defaults to None.
         fig (optional): External plt.figure(). Defaults to None.
         ax (optional): External fig.add_subplot(). Defaults to None.
@@ -323,7 +324,7 @@ class PlotAstroData(AstroFrame):
     def __init__(self, v: np.ndarray = np.array([0]), vskip: int = 1,
                  veldigit: int = 2, restfrq: float = None,
                  channelnumber: int = None, nrows: int = 4, ncols: int = 6,
-                 fontsize: int = None, nancolor: str = 'w',
+                 fontsize: int = None, nancolor: str = 'w', dpi: int = 256,
                  figsize: tuple = None, fig=None, ax=None, **kwargs) -> None:
         super().__init__(**kwargs)
         internalfig = fig is None
@@ -364,7 +365,7 @@ class PlotAstroData(AstroFrame):
             return n, i, j
         if fontsize is None:
             fontsize=18 if nchan == 1 else 12
-        set_rcparams(fontsize=fontsize, nancolor=nancolor)
+        set_rcparams(fontsize=fontsize, nancolor=nancolor, dpi=dpi)
         ax = np.empty(nchan, dtype='object') if internalax else [ax]
         for ch in range(nchan):
             n, i, j = ch2nij(ch)
