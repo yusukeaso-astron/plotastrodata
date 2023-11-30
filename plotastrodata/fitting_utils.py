@@ -74,8 +74,6 @@ class PTEmceeCorner():
         global bar
         dim = len(self.bounds[0])
         nwalkers = max(nwalkersperdim, 2) * dim  # must be even and >= 2 * dim
-        if ncore > 1:
-            print(f'Use {ncore:d} / {cpu_count():d} CPUs')
         if global_progressbar:
             bar = tqdm(total=ntry * ntemps * nwalkers * (nsteps + 1) / ncore)
             bar.set_description('Within the ranges')
@@ -90,6 +88,7 @@ class PTEmceeCorner():
             pars = {'ntemps':ntemps, 'nwalkers':nwalkers, 'dim':dim,
                     'logl':self.logl, 'logp':self.logp}
             if ncore > 1:
+                print(f'Use {ncore:d} / {cpu_count():d} CPUs')
                 with Pool(ncore) as pool:
                     sampler = ptemcee.Sampler(**pars, pool=pool)
                     sampler.run_mcmc(pos0, nsteps)
