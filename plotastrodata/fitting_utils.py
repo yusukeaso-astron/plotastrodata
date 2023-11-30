@@ -74,7 +74,8 @@ class PTEmceeCorner():
         global bar
         dim = len(self.bounds[0])
         nwalkers = max(nwalkersperdim, 2) * dim  # must be even and >= 2 * dim
-        print(f'Use {ncore:d} / {cpu_count():d} CPUs')
+        if ncore > 1:
+            print(f'Use {ncore:d} / {cpu_count():d} CPUs')
         if global_progressbar:
             bar = tqdm(total=ntry * ntemps * nwalkers * (nsteps + 1) / ncore)
             bar.set_description('Within the ranges')
