@@ -53,7 +53,7 @@ class PTEmceeCorner():
         self.logp = logp
         self.ndata = 10000 if xdata is None else len(xdata)
     
-    def fit(self, nwalkersperdim: int = 2, ntemps: int = 2, nsteps: int = 1000,
+    def fit(self, nwalkersperdim: int = 2, ntemps: int = 1, nsteps: int = 1000,
             nburnin: int = 500, ntry: int = 1, pos0: np.ndarray = None,
             percent: list = [16, 84], savechain: str = None, ncore: int = 1):
         """Perform a Markov Chain Monte Carlo (MCMC) fitting process using the ptemcee library, which is a parallel tempering version of the emcee package, and make a corner plot of the samples using the corner package.
@@ -122,7 +122,8 @@ class PTEmceeCorner():
         self.high = np.percentile(samples, percent[1], axis=0)
     
     def plotcorner(self, percent: list = [16, 84], show: bool = False,
-               savefig: str = None, labels: list = None, cornerrange: list = None):
+                   savefig: str = None, labels: list = None,
+                   cornerrange: list = None):
         """Make the corner plot from self.samples.
 
         Args:
@@ -130,7 +131,7 @@ class PTEmceeCorner():
             show (bool, optional): Whether to show the corner plot. Defaults to False.
             savefig (str, optional): File name of the corner plot. Defaults to None.
             labels (list, optional): Labels for the corner plot. Defaults to None.
-            range (list, optional): Range for the corner plot. Defaults to None.
+            cornerrange (list, optional): Range for the corner plot. Defaults to None.
         """
         dim = np.shape(self.samples)[-1]
         if labels is None:
