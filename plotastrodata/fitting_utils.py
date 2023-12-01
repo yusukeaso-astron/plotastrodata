@@ -148,18 +148,19 @@ class PTEmceeCorner():
         
     def calcongrid(self, ngrid: float = 100):
         dim = len(global_bounds[0])
-        x = [np.linspace(a, b, ngrid) for a, b in zip(*global_bounds)]
-        p = np.exp(self.logl(np.meshgrid(*x[::-1], indexing='ij')[::-1]))
+        pargrid = [np.linspace(a, b, ngrid) for a, b in zip(*global_bounds)]
+        p = np.exp(self.logl(np.meshgrid(*pargrid[::-1], indexing='ij')[::-1]))
         iopt = np.unravel_index(np.argmax(p), np.shape(p))[::-1]
-        self.popt = [t[i] for t, i in zip(x, iopt)]
+        self.popt = [t[i] for t, i in zip(pargrid, iopt)]
         adim = np.arange(dim)
         p1d = [np.sum(p, axis=tuple(np.delete(adim, i))) for i in adim[::-1]]
         p1dcum = np.cumsum(p1d, axis=1) / np.sum(p1d, axis=1)
         def getpercentile(percent: float):
             idxmin = np.argmin(np.abs(p1dcum - percent), axis=1)
-            return np.array([t[i] for t, i in zip(x, idxmin)])
+            return np.array([t[i] for t, i in zip(pargrid, idxmin)])
         self.plow = getpercentile(self.percent[0] / 100)
         self.pmid = getpercentile(0.5)
         self.phigh = getpercentile(self.percent[1] / 100)
         self.p = p
         self.p1d = p1d
+        self.pargrid = pargrid
