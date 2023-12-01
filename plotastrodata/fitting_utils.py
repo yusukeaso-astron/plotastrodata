@@ -187,7 +187,7 @@ class PTEmceeCorner():
             cornerrange = np.transpose(self.bounds)
         x = self.pargrid
         y = self.p1d
-        fig = plt.figure()
+        fig = plt.figure(figsize=(3 * self.ndim * 1.2, 3 * self.ndim))
         for i in adim:
             for j in adim:
                 if i < j:
