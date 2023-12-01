@@ -161,3 +161,5 @@ class PTEmceeCorner():
         self.plow = getpercentile(self.percent[0] / 100)
         self.pmid = getpercentile(0.5)
         self.phigh = getpercentile(self.percent[1] / 100)
+        self.p = p
+        self.p1d = p1d
