@@ -146,7 +146,7 @@ class PTEmceeCorner():
             plt.show()
         plt.close()
         
-    def calcongrid(self, ngrid: float = 100):
+    def posteriorongrid(self, ngrid: float = 100):
         dim = len(global_bounds[0])
         pargrid = [np.linspace(a, b, ngrid) for a, b in zip(*global_bounds)]
         p = np.exp(self.logl(np.meshgrid(*pargrid[::-1], indexing='ij')[::-1]))
