@@ -59,7 +59,7 @@ class PTEmceeCorner():
     
     def fit(self, nwalkersperdim: int = 2, ntemps: int = 1, nsteps: int = 1000,
             nburnin: int = 500, ntry: int = 1, pos0: np.ndarray = None,
-            savechain: str = None, ncore: int = 1):
+            savechain: str = None, ncore: int = 1, grcheck: bool = False):
         """Perform a Markov Chain Monte Carlo (MCMC) fitting process using the ptemcee library, which is a parallel tempering version of the emcee package, and make a corner plot of the samples using the corner package.
 
         Args:
@@ -71,6 +71,7 @@ class PTEmceeCorner():
             pos0 (np.nparray, optional): Initial parameter set in the shape of (ntemps, nwalkers, dim). Defaults to None.
             savechain (str, optional): File name of the chain in format of .npy. Defaults to None.
             ncore (int, optional): Number of cores for multiprocessing.Pool. ncore=1 does not use multiprocessing. Defaults to 1.
+            grcheck (bool, optional): Whether to check Gelman-Rubin statistics. Defaults to False.
         """
         global bar
         nwalkers = max(nwalkersperdim, 2) * self.dim  # must be even and >= 2 * dim
@@ -96,14 +97,17 @@ class PTEmceeCorner():
                 sampler = ptemcee.Sampler(**pars)
                 sampler.run_mcmc(pos0, nsteps)
             samples = sampler.chain[0, :, nburnin:, :]
-            ##### Gelman-Rubin statistics #####
-            B = np.std(np.mean(samples, axis=1), axis=0)
-            W = np.mean(np.std(samples, axis=1), axis=0)
-            V = (len(samples[0]) - 1) / len(samples[0]) * W \
-                + (nwalkers + 1) / (nwalkers - 1) * B
-            d = self.ndata - self.dim - 1
-            GR = np.sqrt((d + 3) / (d + 1) * V / W)
-            ###################################
+            if grcheck:
+                ##### Gelman-Rubin statistics #####
+                B = np.std(np.mean(samples, axis=1), axis=0)
+                W = np.mean(np.std(samples, axis=1), axis=0)
+                V = (len(samples[0]) - 1) / len(samples[0]) * W \
+                    + (nwalkers + 1) / (nwalkers - 1) * B
+                d = self.ndata - self.dim - 1
+                GR = np.sqrt((d + 3) / (d + 1) * V / W)
+                ###################################
+            else:
+                GR = np.zeros(self.dim)
             if i == ntry - 1 and np.max(GR) > 1.25:
                 print(f'!!! Max GR >1.25 during {ntry:d} trials.!!!')
 
