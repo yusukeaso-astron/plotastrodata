@@ -121,9 +121,9 @@ class PTEmceeCorner():
         self.lnps = lnps
         samples = samples.reshape((-1, self.dim))
         lnps = lnps.reshape((-1, 1))
-        self.low = np.percentile(samples, self.percent[0], axis=0)
-        self.mid = np.percentile(samples, 50, axis=0)
-        self.high = np.percentile(samples, self.percent[1], axis=0)
+        self.plow = np.percentile(samples, self.percent[0], axis=0)
+        self.pmid = np.percentile(samples, 50, axis=0)
+        self.phigh = np.percentile(samples, self.percent[1], axis=0)
     
     def plotcorner(self, show: bool = False,
                    savefig: str = None, labels: list = None,
