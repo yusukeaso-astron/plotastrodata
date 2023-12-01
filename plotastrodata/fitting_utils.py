@@ -205,7 +205,7 @@ class PTEmceeCorner():
                     if i < self.dim - 1:
                         ax.set_xticks([])
                 else:
-                    yy = np.sum(self.p, axis=tuple(np.delete(adim, [i, j])))
+                    yy = np.sum(self.p, axis=tuple(np.delete(adim[::-1], [i, j])))
                     ax.pcolormesh(x[j], x[i], yy, cmap=cmap)
                     ax.plot(self.popt[j], self.popt[i], 'o')
                     ax.axvline(self.popt[j])
