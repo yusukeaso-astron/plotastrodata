@@ -30,7 +30,8 @@ class PTEmceeCorner():
     warnings.simplefilter('ignore', RuntimeWarning)
     def __init__(self, bounds: np.ndarray, logl=None, model=None,
                  xdata: np.ndarray = None, ydata: np.ndarray = None,
-                 sigma: np.ndarray = 1, progressbar: bool = True):
+                 sigma: np.ndarray = 1, progressbar: bool = True,
+                 percent: list = [16, 84]):
         """Make bounds, logl, and logp for ptemcee.
 
         Args:
@@ -41,6 +42,7 @@ class PTEmceeCorner():
             ydata (np.ndarray, optional): Values to be compared with the model. Defaults to None.
             sigma (np.ndarray, optional): Uncertainty to make a log likelihood function from the model. Defaults to 1.
             progressbar (bool, optional): Whether to show a progress bar. Defaults to True.
+            percent (list, optional): The lower and upper percnetiles to be calculated. Defaults to [16, 84].
         """
         global global_bounds, global_progressbar
         global_bounds = np.array(bounds) if len(bounds) < 3 else np.transpose(bounds)
@@ -51,11 +53,12 @@ class PTEmceeCorner():
         self.bounds = global_bounds
         self.logl = logl
         self.logp = logp
+        self.percent = percent
         self.ndata = 10000 if xdata is None else len(xdata)
     
     def fit(self, nwalkersperdim: int = 2, ntemps: int = 1, nsteps: int = 1000,
             nburnin: int = 500, ntry: int = 1, pos0: np.ndarray = None,
-            percent: list = [16, 84], savechain: str = None, ncore: int = 1):
+            savechain: str = None, ncore: int = 1):
         """Perform a Markov Chain Monte Carlo (MCMC) fitting process using the ptemcee library, which is a parallel tempering version of the emcee package, and make a corner plot of the samples using the corner package.
 
         Args:
@@ -65,9 +68,6 @@ class PTEmceeCorner():
             nburnin (int, optional): Number of burn-in steps. Defaults to 500.
             ntry (int, optional): Number of trials for the Gelman-Rubin check. Defaults to 1.
             pos0 (np.nparray, optional): Initial parameter set in the shape of (ntemps, nwalkers, dim). Defaults to None.
-            percent (list, optional): The lower and upper percnetiles to be calculated. Defaults to [16, 84].
-            show (bool, optional): Whether to show the corner plot. Defaults to False.
-            savefig (str, optional): File name of the corner plot. Defaults to None.
             savechain (str, optional): File name of the chain in format of .npy. Defaults to None.
             ncore (int, optional): Number of cores for multiprocessing.Pool. ncore=1 does not use multiprocessing. Defaults to 1.
         """
@@ -117,17 +117,16 @@ class PTEmceeCorner():
         self.lnps = lnps
         samples = samples.reshape((-1, dim))
         lnps = lnps.reshape((-1, 1))
-        self.low = np.percentile(samples, percent[0], axis=0)
+        self.low = np.percentile(samples, self.percent[0], axis=0)
         self.mid = np.percentile(samples, 50, axis=0)
-        self.high = np.percentile(samples, percent[1], axis=0)
+        self.high = np.percentile(samples, self.percent[1], axis=0)
     
-    def plotcorner(self, percent: list = [16, 84], show: bool = False,
+    def plotcorner(self, show: bool = False,
                    savefig: str = None, labels: list = None,
                    cornerrange: list = None):
         """Make the corner plot from self.samples.
 
         Args:
-            percent (list, optional): The lower and upper percnetiles to be calculated. Defaults to [16, 84].
             show (bool, optional): Whether to show the corner plot. Defaults to False.
             savefig (str, optional): File name of the corner plot. Defaults to None.
             labels (list, optional): Labels for the corner plot. Defaults to None.
@@ -139,10 +138,26 @@ class PTEmceeCorner():
         if cornerrange is None:
             cornerrange = np.transpose(self.bounds)
         corner.corner(self.samples, truths=self.popt,
-                      quantiles=[percent[0] / 100, 0.5, percent[1] / 100],
+                      quantiles=[self.percent[0] / 100, 0.5, self.percent[1] / 100],
                       show_titles=True, labels=labels, range=cornerrange)
         if savefig is not None:
             plt.savefig(savefig)
         if show:
             plt.show()
         plt.close()
+        
+    def calcongrid(self, ngrid: float = 100):
+        dim = len(global_bounds[0])
+        x = [np.linspace(a, b, ngrid) for a, b in zip(*global_bounds)]
+        p = np.exp(self.logl(np.meshgrid(*x[::-1], indexing='ij')[::-1]))
+        iopt = np.unravel_index(np.argmax(p), np.shape(p))[::-1]
+        self.popt = [t[i] for t, i in zip(x, iopt)]
+        adim = np.arange(dim)
+        p1d = [np.sum(p, axis=tuple(np.delete(adim, i))) for i in adim[::-1]]
+        p1dcum = np.cumsum(p1d, axis=1) / np.sum(p1d, axis=1)
+        def getpercentile(percent: float):
+            idxmin = np.argmin(np.abs(p1dcum - percent), axis=1)
+            return np.array([t[i] for t, i in zip(x, idxmin)])
+        self.plow = getpercentile(self.percent[0] / 100)
+        self.pmid = getpercentile(0.5)
+        self.phigh = getpercentile(self.percent[1] / 100)
