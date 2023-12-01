@@ -154,7 +154,7 @@ class PTEmceeCorner():
         self.popt = [t[i] for t, i in zip(pargrid, iopt)]
         adim = np.arange(dim)
         p1d = [np.sum(p, axis=tuple(np.delete(adim, i))) for i in adim[::-1]]
-        p1dcum = np.cumsum(p1d, axis=1) / np.sum(p1d, axis=1)
+        p1dcum = np.cumsum(p1d, axis=1) / np.transpose([np.sum(p1d, axis=1)])
         def getpercentile(percent: float):
             idxmin = np.argmin(np.abs(p1dcum - percent), axis=1)
             return np.array([t[i] for t, i in zip(pargrid, idxmin)])
