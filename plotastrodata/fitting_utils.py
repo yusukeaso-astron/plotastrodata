@@ -51,6 +51,7 @@ class PTEmceeCorner():
             def logl(x: np.ndarray) -> float:
                 return np.sum((ydata - model(xdata, *x))**2 / sigma**2) / (-2)
         self.bounds = global_bounds
+        self.dim = len(self.bounds[0])
         self.logl = logl
         self.logp = logp
         self.percent = percent
@@ -72,20 +73,19 @@ class PTEmceeCorner():
             ncore (int, optional): Number of cores for multiprocessing.Pool. ncore=1 does not use multiprocessing. Defaults to 1.
         """
         global bar
-        dim = len(self.bounds[0])
-        nwalkers = max(nwalkersperdim, 2) * dim  # must be even and >= 2 * dim
+        nwalkers = max(nwalkersperdim, 2) * self.dim  # must be even and >= 2 * dim
         if global_progressbar:
             bar = tqdm(total=ntry * ntemps * nwalkers * (nsteps + 1) / ncore)
             bar.set_description('Within the ranges')
 
-        GR = [2] * dim
+        GR = [2] * self.dim
         i =  0
         while np.min(GR) > 1.25 and i < ntry:
             i += 1
             if pos0 is None:
-                pos0 = np.random.rand(ntemps, nwalkers, dim) \
+                pos0 = np.random.rand(ntemps, nwalkers, self.dim) \
                        * (self.bounds[1] - self.bounds[0]) + self.bounds[0]
-            pars = {'ntemps':ntemps, 'nwalkers':nwalkers, 'dim':dim,
+            pars = {'ntemps':ntemps, 'nwalkers':nwalkers, 'dim':self.dim,
                     'logl':self.logl, 'logp':self.logp}
             if ncore > 1:
                 print(f'Use {ncore:d} / {cpu_count():d} CPUs')
@@ -101,7 +101,7 @@ class PTEmceeCorner():
             W = np.mean(np.std(samples, axis=1), axis=0)
             V = (len(samples[0]) - 1) / len(samples[0]) * W \
                 + (nwalkers + 1) / (nwalkers - 1) * B
-            d = self.ndata - dim - 1
+            d = self.ndata - self.dim - 1
             GR = np.sqrt((d + 3) / (d + 1) * V / W)
             ###################################
             if i == ntry - 1 and np.max(GR) > 1.25:
@@ -115,7 +115,7 @@ class PTEmceeCorner():
         self.popt = sampler.chain[0][idx_best]
         lnps = lnps[:, nburnin:]
         self.lnps = lnps
-        samples = samples.reshape((-1, dim))
+        samples = samples.reshape((-1, self.dim))
         lnps = lnps.reshape((-1, 1))
         self.low = np.percentile(samples, self.percent[0], axis=0)
         self.mid = np.percentile(samples, 50, axis=0)
@@ -132,9 +132,8 @@ class PTEmceeCorner():
             labels (list, optional): Labels for the corner plot. Defaults to None.
             cornerrange (list, optional): Range for the corner plot. Defaults to None.
         """
-        dim = np.shape(self.samples)[-1]
         if labels is None:
-            labels = [f'Par {i:d}' for i in range(dim)]
+            labels = [f'Par {i:d}' for i in range(self.dim)]
         if cornerrange is None:
             cornerrange = np.transpose(self.bounds)
         corner.corner(self.samples, truths=self.popt,
@@ -146,13 +145,17 @@ class PTEmceeCorner():
             plt.show()
         plt.close()
         
-    def posteriorongrid(self, ngrid: float = 100):
-        dim = len(global_bounds[0])
+    def posteriorongrid(self, ngrid: int = 100):
+        """Calculate the posterior on a grid of ngrid x ngrid x ... x ngrid.
+
+        Args:
+            ngrid (int, optional): Number of grid on each parameter. Defaults to 100.
+        """
         pargrid = [np.linspace(a, b, ngrid) for a, b in zip(*global_bounds)]
         p = np.exp(self.logl(np.meshgrid(*pargrid[::-1], indexing='ij')[::-1]))
         iopt = np.unravel_index(np.argmax(p), np.shape(p))[::-1]
         self.popt = [t[i] for t, i in zip(pargrid, iopt)]
-        adim = np.arange(dim)
+        adim = np.arange(self.dim)
         p1d = [np.sum(p, axis=tuple(np.delete(adim, i))) for i in adim[::-1]]
         p1dcum = np.cumsum(p1d, axis=1) / np.transpose([np.sum(p1d, axis=1)])
         def getpercentile(percent: float):
@@ -164,3 +167,62 @@ class PTEmceeCorner():
         self.p = p
         self.p1d = p1d
         self.pargrid = pargrid
+
+    def plotongrid(self, show: bool = False, savefig: str = None,
+                   labels: list = None, cornerrange: list = None,
+                   cmap: str = 'binary'):
+        """Make the corner plot from the posterior calculated on a grid.
+
+        Args:
+            show (bool, optional): Whether to show the corner plot. Defaults to False.
+            savefig (str, optional): File name of the corner plot. Defaults to None.
+            labels (list, optional): Labels for the corner plot. Defaults to None.
+            cornerrange (list, optional): Range for the corner plot. Defaults to None.
+            cmap: (str, optional): cmap for matplotlib.pyplot.plt.pcolormesh(). Defaults to 'binary'.
+        """
+        adim = np.arange(self.dim)
+        if labels is None:
+            labels = [f'Par {i:d}' for i in adim]
+        if cornerrange is None:
+            cornerrange = np.transpose(self.bounds)
+        x = self.pargrid
+        y = self.p1d
+        fig = plt.figure()
+        for i in adim:
+            for j in adim:
+                if i < j:
+                    continue
+                ax = fig.add_subplot(self.dim, self.dim, self.dim * i + j + 1)
+                if i == j:
+                    ax.plot(x[i], y[i], 'k-')
+                    ax.axvline(self.popt[i])
+                    ax.axvline(self.plow[i], linestyle='--', color='k')
+                    ax.axvline(self.pmid[i], linestyle='--', color='k')
+                    ax.axvline(self.phigh[i], linestyle='--', color='k')
+                    ax.set_title(f'{labels[i]}={self.pmid[i]:.2f}')
+                    ax.set_xlim(cornerrange[i])
+                    ax.set_yticks([])
+                    if i < self.dim - 1:
+                        ax.set_xticks([])
+                else:
+                    yy = np.sum(self.p, axis=tuple(np.delete(adim, [i, j])))
+                    ax.pcolormesh(x[j], x[i], yy, cmap=cmap)
+                    ax.plot(self.popt[j], self.popt[i], 'o')
+                    ax.axvline(self.popt[j])
+                    ax.axhline(self.popt[i])
+                    ax.set_xlim(cornerrange[j])
+                    ax.set_ylim(cornerrange[i])
+                    if j == 0:
+                        ax.set_ylabel(labels[i])
+                    else:
+                        ax.set_yticks([])
+                    if i == self.dim - 1:
+                        ax.set_xlabel(labels[j])
+                    else:
+                        ax.set_xticks([])
+        if savefig is not None:
+            plt.savefig(savefig)
+        if show:
+            plt.show()
+
+
