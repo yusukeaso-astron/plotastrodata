@@ -4,7 +4,7 @@ import ptemcee
 import corner
 import warnings
 from tqdm import tqdm
-from multiprocessing import Pool, cpu_count
+from multiprocessing import Pool
 
 
 global_bounds = None
@@ -56,7 +56,6 @@ class PTEmceeCorner():
         self.logp = logp
         self.percent = percent
         self.ndata = 10000 if xdata is None else len(xdata)
-        print(f'{cpu_count():d} CPUs available.')
     
     def fit(self, nwalkersperdim: int = 2, ntemps: int = 1, nsteps: int = 1000,
             nburnin: int = 500, ntry: int = 1, pos0: np.ndarray = None,
