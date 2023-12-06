@@ -56,6 +56,7 @@ class PTEmceeCorner():
         self.logp = logp
         self.percent = percent
         self.ndata = 10000 if xdata is None else len(xdata)
+        print(f'{cpu_count():d} CPUs available.')
     
     def fit(self, nwalkersperdim: int = 2, ntemps: int = 1, nsteps: int = 1000,
             nburnin: int = 500, ntry: int = 1, pos0: np.ndarray = None,
@@ -89,7 +90,6 @@ class PTEmceeCorner():
             pars = {'ntemps':ntemps, 'nwalkers':nwalkers, 'dim':self.dim,
                     'logl':self.logl, 'logp':self.logp}
             if ncore > 1:
-                print(f'Use {ncore:d} / {cpu_count():d} CPUs')
                 with Pool(ncore) as pool:
                     sampler = ptemcee.Sampler(**pars, pool=pool)
                     sampler.run_mcmc(pos0, nsteps)
@@ -108,7 +108,7 @@ class PTEmceeCorner():
                 ###################################
             else:
                 GR = np.zeros(self.dim)
-            if i == ntry - 1 and np.max(GR) > 1.25:
+            if i == ntry - 1 and np.min(GR) > 1.25:
                 print(f'!!! Max GR >1.25 during {ntry:d} trials.!!!')
 
         self.samples = samples
