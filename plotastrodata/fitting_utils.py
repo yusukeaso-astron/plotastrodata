@@ -148,13 +148,15 @@ class PTEmceeCorner():
             plt.show()
         plt.close()
         
-    def posteriorongrid(self, ngrid: int = 100):
+    def posteriorongrid(self, ngrid: list = 100):
         """Calculate the posterior on a grid of ngrid x ngrid x ... x ngrid.
 
         Args:
-            ngrid (int, optional): Number of grid on each parameter. Defaults to 100.
+            ngrid (list, optional): Number of grid on each parameter. Defaults to 100.
         """
-        pargrid = [np.linspace(a, b, ngrid) for a, b in zip(*global_bounds)]
+        if type(ngrid) == int:
+            ngrid = [ngrid] * self.dim
+        pargrid = [np.linspace(*a) for a in zip(*global_bounds, ngrid)]
         p = np.exp(self.logl(np.meshgrid(*pargrid[::-1], indexing='ij')[::-1]))
         iopt = np.unravel_index(np.argmax(p), np.shape(p))[::-1]
         self.popt = [t[i] for t, i in zip(pargrid, iopt)]
