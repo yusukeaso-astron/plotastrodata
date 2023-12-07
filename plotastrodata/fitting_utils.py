@@ -148,23 +148,30 @@ class PTEmceeCorner():
             plt.show()
         plt.close()
         
-    def posteriorongrid(self, ngrid: list = 100):
+    def posteriorongrid(self, ngrid: list = 100, log: list = False):
         """Calculate the posterior on a grid of ngrid x ngrid x ... x ngrid.
 
         Args:
             ngrid (list, optional): Number of grid on each parameter. Defaults to 100.
+            log (list, optional): Whether to search in the logarithmic space. The percentile is counted in the linear space regardless of this option. Defaults to False.
         """
         if type(ngrid) == int:
             ngrid = [ngrid] * self.dim
-        pargrid = [np.linspace(*a) for a in zip(*global_bounds, ngrid)]
+        if type(log) == bool:
+            log = [log] * self.dim
+        pargrid = []
+        for a, b, c, d in zip(*global_bounds, ngrid, log):
+            pargrid.append(np.geomspace(a, b, c) if d else np.linspace(a, b, c))
         p = np.exp(self.logl(np.meshgrid(*pargrid[::-1], indexing='ij')[::-1]))
+        dpar = [np.r_[0, pg[1:] - pg[:-1]] for pg in pargrid]
+        vol = np.product(np.meshgrid(*dpar[::-1], indexing='ij')[::-1], axis=0)
         iopt = np.unravel_index(np.argmax(p), np.shape(p))[::-1]
         self.popt = [t[i] for t, i in zip(pargrid, iopt)]
         adim = np.arange(self.dim)
-        p1d = [np.sum(p, axis=tuple(np.delete(adim, i))) for i in adim[::-1]]
-        p1dcum = np.cumsum(p1d, axis=1) / np.transpose([np.sum(p1d, axis=1)])
+        p1d = [np.sum(p * vol, axis=tuple(np.delete(adim, i))) for i in adim[::-1]]
+        p1dcum = [np.cumsum(q * w) / np.transpose([np.sum(q * w)]) for q, w in zip(p1d, dpar)]
         def getpercentile(percent: float):
-            idxmin = np.argmin(np.abs(p1dcum - percent), axis=1)
+            idxmin = [np.argmin(np.abs(q - percent)) for q in p1dcum]
             return np.array([t[i] for t, i in zip(pargrid, idxmin)])
         self.plow = getpercentile(self.percent[0] / 100)
         self.pmid = getpercentile(0.5)
