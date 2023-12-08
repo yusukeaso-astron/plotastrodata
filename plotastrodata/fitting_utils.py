@@ -168,7 +168,8 @@ class PTEmceeCorner():
         iopt = np.unravel_index(np.argmax(p), np.shape(p))[::-1]
         self.popt = [t[i] for t, i in zip(pargrid, iopt)]
         adim = np.arange(self.dim)
-        p1d = [np.sum(p * vol, axis=tuple(np.delete(adim, i))) for i in adim[::-1]]
+        p1d = [np.sum(p * vol, axis=tuple(np.delete(adim, i))) 
+               / np.sum(vol, axis=tuple(np.delete(adim, i))) for i in adim[::-1]]
         p1dcum = [np.cumsum(q * w) / np.transpose([np.sum(q * w)]) for q, w in zip(p1d, dpar)]
         def getpercentile(percent: float):
             idxmin = [np.argmin(np.abs(q - percent)) for q in p1dcum]
@@ -179,6 +180,7 @@ class PTEmceeCorner():
         self.p = p
         self.p1d = p1d
         self.pargrid = pargrid
+        self.vol = vol
 
     def plotongrid(self, show: bool = False, savefig: str = None,
                    labels: list = None, cornerrange: list = None,
@@ -217,7 +219,8 @@ class PTEmceeCorner():
                     if i < self.dim - 1:
                         ax.set_xticks([])
                 else:
-                    yy = np.sum(self.p, axis=tuple(np.delete(adim[::-1], [i, j])))
+                    yy = np.sum(self.p * self.vol, axis=tuple(np.delete(adim[::-1], [i, j]))) \
+                         / np.sum(self.vol, axis=tuple(np.delete(adim[::-1], [i, j])))
                     ax.pcolormesh(x[j], x[i], yy, cmap=cmap)
                     ax.plot(self.popt[j], self.popt[i], 'o')
                     ax.axvline(self.popt[j])
