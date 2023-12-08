@@ -163,7 +163,7 @@ class PTEmceeCorner():
         for a, b, c, d in zip(*global_bounds, ngrid, log):
             pargrid.append(np.geomspace(a, b, c) if d else np.linspace(a, b, c))
         p = np.exp(self.logl(np.meshgrid(*pargrid[::-1], indexing='ij')[::-1]))
-        dpar = [np.r_[0, pg[1:] - pg[:-1]] for pg in pargrid]
+        dpar = [np.r_[0, (pg[2:] - pg[:-2]) / 2., 0] for pg in pargrid]
         vol = np.product(np.meshgrid(*dpar[::-1], indexing='ij')[::-1], axis=0)
         iopt = np.unravel_index(np.argmax(p), np.shape(p))[::-1]
         self.popt = [t[i] for t, i in zip(pargrid, iopt)]
