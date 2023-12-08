@@ -172,7 +172,7 @@ class PTEmceeCorner():
                / np.sum(vol, axis=tuple(np.delete(adim, i))) for i in adim[::-1]]
         p1dcum = [np.cumsum(q * w) / np.transpose([np.sum(q * w)]) for q, w in zip(p1d, dpar)]
         def getpercentile(percent: float):
-            idxmin = [np.argmin(np.abs(q - percent)) for q in p1dcum]
+            idxmin = [np.nanargmin(np.abs(q - percent)) for q in p1dcum]
             return np.array([t[i] for t, i in zip(pargrid, idxmin)])
         self.plow = getpercentile(self.percent[0] / 100)
         self.pmid = getpercentile(0.5)
