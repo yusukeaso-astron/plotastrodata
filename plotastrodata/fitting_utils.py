@@ -164,16 +164,19 @@ class PTEmceeCorner():
             pargrid.append(np.geomspace(a, b, c) if d else np.linspace(a, b, c))
         p = np.exp(self.logl(np.meshgrid(*pargrid[::-1], indexing='ij')[::-1]))
         dpar = [np.r_[0, (pg[2:] - pg[:-2]) / 2., 0] for pg in pargrid]
+        for i in range(self.dim):
+            dpar[i][0] = dpar[i][1] / (dpar[i][2] / dpar[i][1])
+            dpar[i][-1] = dpar[i][-2] * (dpar[i][-2] / dpar[i][-3])
         vol = np.product(np.meshgrid(*dpar[::-1], indexing='ij')[::-1], axis=0)
         iopt = np.unravel_index(np.argmax(p), np.shape(p))[::-1]
         self.popt = [t[i] for t, i in zip(pargrid, iopt)]
         adim = np.arange(self.dim)
         p1d = [np.sum(p * vol, axis=tuple(np.delete(adim, i))) 
                / np.sum(vol, axis=tuple(np.delete(adim, i))) for i in adim[::-1]]
-        p1dcum = [np.nancumsum(q * w) / np.transpose([np.nansum(q * w)]) 
+        p1dcum = [np.cumsum(q * w) / np.transpose([np.sum(q * w)]) 
                   for q, w in zip(p1d, dpar)]
         def getpercentile(percent: float):
-            idxmin = [np.nanargmin(np.abs(q - percent)) for q in p1dcum]
+            idxmin = [np.argmin(np.abs(q - percent)) for q in p1dcum]
             return np.array([t[i] for t, i in zip(pargrid, idxmin)])
         self.plow = getpercentile(self.percent[0] / 100)
         self.pmid = getpercentile(0.5)
