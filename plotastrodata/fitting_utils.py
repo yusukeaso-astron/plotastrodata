@@ -226,6 +226,8 @@ class PTEmceeCorner():
                     yy = np.sum(self.p * self.vol, axis=tuple(np.delete(adim[::-1], [i, j]))) \
                          / np.sum(self.vol, axis=tuple(np.delete(adim[::-1], [i, j])))
                     ax.pcolormesh(x[j], x[i], yy, cmap=cmap)
+                    ax.contour(x[j], x[i], yy, colors='k',
+                               levels=(0.05 + np.arange(10) * 0.1) * np.nanmax(yy))
                     ax.plot(self.popt[j], self.popt[i], 'o')
                     ax.axvline(self.popt[j])
                     ax.axhline(self.popt[i])
