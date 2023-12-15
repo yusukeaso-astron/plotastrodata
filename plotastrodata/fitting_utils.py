@@ -169,12 +169,13 @@ class PTEmceeCorner():
         x = x[:nend:naverage]
         for i in range(self.dim):
             y = self.samples[:, :, i]
-            m = np.mean(np.reshape(np.mean(y, axis=0)[:nend], (naverage, -1)), axis=0)
-            s = np.mean(np.reshape(np.std(y, axis=0)[:nend], (naverage, -1)), axis=0)
+            plist = [self.percent[0], 50, self.percent[1]]
+            y = [np.percentile(y, p, axis=0) for p in plist]
+            y = [np.mean(np.reshape(yy[:nend], (naverage, -1)), axis=0) for yy in y]
             ax = fig.add_subplot(self.dim, 1, i + 1)
-            ax.plot(x, m - s, 'c-', linewidth=1)
-            ax.plot(x, m + s, 'c-', linewidth=1)
-            ax.plot(x, m, 'b-', linewidth=2)
+            ax.plot(x, y[0], 'c-', linewidth=1)
+            ax.plot(x, y[1], 'b-', linewidth=2)
+            ax.plot(x, y[2], 'c-', linewidth=1)
             ax.set_ylim(ylim[i])
             ax.set_ylabel(labels[i])
             if i < self.dim - 1:
