@@ -178,6 +178,7 @@ class PTEmceeCorner():
                 ax.set_xticks([])
             else:
                 ax.set_xlabel('Step')
+        fig.tight_layout()
         if savefig is not None:
             plt.savefig(savefig)
         if show:
@@ -279,6 +280,7 @@ class PTEmceeCorner():
                         ax.set_xlabel(labels[j])
                     else:
                         ax.set_xticks([])
+        fig.tight_layout()
         if savefig is not None:
             plt.savefig(savefig)
         if show:
