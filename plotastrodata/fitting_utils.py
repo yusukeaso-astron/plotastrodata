@@ -189,7 +189,7 @@ class PTEmceeCorner():
     def plotongrid(self, show: bool = False, savefig: str = None,
                    labels: list = None, cornerrange: list = None,
                    cmap: str = 'binary',
-                   levels: list = [1, 2, 4, 8, 16, 32, 64, 128, 256]):
+                   levels: list = [0.001, 0.01, 0.1]):
         """Make the corner plot from the posterior calculated on a grid.
 
         Args:
@@ -198,7 +198,7 @@ class PTEmceeCorner():
             labels (list, optional): Labels for the corner plot. Defaults to None.
             cornerrange (list, optional): Range for the corner plot. Defaults to None.
             cmap: (str, optional): cmap for matplotlib.pyplot.plt.pcolormesh(). Defaults to 'binary'.
-            levels: (list, optional): levels for matplotlib.pyplot.plt.contour() relative to the median of non-zero values. Defaults to [1, 2, 4, 8, ..., 256].
+            levels: (list, optional): levels for matplotlib.pyplot.plt.contour() relative to the peak. Defaults to [0.001, 0.01, 0.1].
         """
         adim = np.arange(self.dim)
         if labels is None:
@@ -229,7 +229,7 @@ class PTEmceeCorner():
                          / np.sum(self.vol, axis=tuple(np.delete(adim[::-1], [i, j])))
                     ax.pcolormesh(x[j], x[i], yy, cmap=cmap)
                     ax.contour(x[j], x[i], yy, colors='k',
-                               levels=np.array(levels) * np.nanmedian(yy[yy > 0]))
+                               levels=np.array(levels) * np.nanmax(yy))
                     ax.plot(self.popt[j], self.popt[i], 'o')
                     ax.axvline(self.popt[j])
                     ax.axhline(self.popt[i])
