@@ -163,7 +163,7 @@ class PTEmceeCorner():
         if ylim is None:
             ylim = np.transpose(self.bounds)
         fig = plt.figure(figsize=(4, 2 * self.dim))
-        x = np.arange(self.dim)
+        x = np.arange(np.shape(self.samples)[1])
         for i in range(self.dim):
             y = self.samples[:, :, i]
             m = np.mean(y, axis=0)
