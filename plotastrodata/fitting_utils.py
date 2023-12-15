@@ -149,7 +149,7 @@ class PTEmceeCorner():
         plt.close()
         
     def plotchain(self, show: bool = False, savefig: str = None,
-                  labels: list = None, plotrange: list = None):
+                  labels: list = None, ylim: list = None):
         """Plot parameters as a function of steps using self.samples.
 
         Args:
