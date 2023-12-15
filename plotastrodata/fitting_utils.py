@@ -189,7 +189,7 @@ class PTEmceeCorner():
     def plotongrid(self, show: bool = False, savefig: str = None,
                    labels: list = None, cornerrange: list = None,
                    cmap: str = 'binary',
-                   levels: list = [0.01, 0.02, 0.04, 0.08, 0.16, 0.32, 0.64, 1.28, 2.56]):
+                   levels: list = [1, 2, 4, 8, 16, 32, 64, 128, 256]):
         """Make the corner plot from the posterior calculated on a grid.
 
         Args:
@@ -198,7 +198,7 @@ class PTEmceeCorner():
             labels (list, optional): Labels for the corner plot. Defaults to None.
             cornerrange (list, optional): Range for the corner plot. Defaults to None.
             cmap: (str, optional): cmap for matplotlib.pyplot.plt.pcolormesh(). Defaults to 'binary'.
-            levels: (list, optional): levels for matplotlib.pyplot.plt.contour() relative to the median of non-zero values. Defaults to [0.01, 0.02, 0.04, 0.08, ..., 2.56].
+            levels: (list, optional): levels for matplotlib.pyplot.plt.contour() relative to the median of non-zero values. Defaults to [1, 2, 4, 8, ..., 256].
         """
         adim = np.arange(self.dim)
         if labels is None:
