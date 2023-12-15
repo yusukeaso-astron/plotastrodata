@@ -166,8 +166,8 @@ class PTEmceeCorner():
         x = np.arange(self.dim)
         for i in range(self.dim):
             y = self.samples[:, :, i]
-            m = np.mean(y, axis=1)
-            s = np.std(y, axis=1)
+            m = np.mean(y, axis=0)
+            s = np.std(y, axis=0)
             ax = fig.add_subplot(1, self.dim, i + 1)
             ax.plot(x, m - s, 'c-', linewidth=1)
             ax.plot(x, m + s, 'c-', linewidth=1)
