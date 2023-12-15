@@ -148,6 +148,42 @@ class PTEmceeCorner():
             plt.show()
         plt.close()
         
+    def plotchain(self, show: bool = False, savefig: str = None,
+                  labels: list = None, plotrange: list = None):
+        """Plot parameters as a function of steps using self.samples.
+
+        Args:
+            show (bool, optional): Whether to show the chain plot. Defaults to False.
+            savefig (str, optional): File name of the chain plot. Defaults to None.
+            labels (list, optional): Labels for the chain plot. Defaults to None.
+            ylim (list, optional): Y-range for the chain plot. Defaults to None.
+        """
+        if labels is None:
+            labels = [f'Par {i:d}' for i in range(self.dim)]
+        if ylim is None:
+            ylim = np.transpose(self.bounds)
+        fig = plt.figure(figsize=(4, 2 * self.dim))
+        x = np.arange(self.dim)
+        for i in range(self.dim):
+            y = self.samples[:, :, i]
+            m = np.mean(y, axis=1)
+            s = np.std(y, axis=1)
+            ax = fig.add_subplot(1, self.dim, i + 1)
+            ax.plot(x, m - s, 'c-', linewidth=1)
+            ax.plot(x, m + s, 'c-', linewidth=1)
+            ax.plot(x, m, 'b-', linewidth=2)
+            ax.set_ylim(ylim[i])
+            ax.set_ylabel(labels[i])
+            if i < self.dim - 1:
+                ax.set_xticks([])
+            else:
+                ax.set_xlabel('Step')
+        if savefig is not None:
+            plt.savefig(savefig)
+        if show:
+            plt.show()
+        plt.close()
+        
     def posteriorongrid(self, ngrid: list = 100, log: list = False):
         """Calculate the posterior on a grid of ngrid x ngrid x ... x ngrid.
 
