@@ -123,6 +123,8 @@ class PTEmceeCorner():
         self.plow = np.percentile(samples, self.percent[0], axis=0)
         self.pmid = np.percentile(samples, 50, axis=0)
         self.phigh = np.percentile(samples, self.percent[1], axis=0)
+        if global_progressbar:
+            print('')
     
     def plotcorner(self, show: bool = False,
                    savefig: str = None, labels: list = None,
