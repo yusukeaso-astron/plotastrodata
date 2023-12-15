@@ -164,10 +164,13 @@ class PTEmceeCorner():
             ylim = np.transpose(self.bounds)
         fig = plt.figure(figsize=(4, 2 * self.dim))
         x = np.arange(np.shape(self.samples)[1])
+        naverage = max(1, len(x) // 100)
+        nend = len(x) - len(x) % 100 if naverage > 1 else len(x)
+        x = x[:nend:naverage]
         for i in range(self.dim):
             y = self.samples[:, :, i]
-            m = np.mean(y, axis=0)
-            s = np.std(y, axis=0)
+            m = np.mean(np.reshape(np.mean(y, axis=0)[:nend], (naverage, -1)), axis=0)
+            s = np.mean(np.reshape(np.std(y, axis=0)[:nend], (naverage, -1)), axis=0)
             ax = fig.add_subplot(self.dim, 1, i + 1)
             ax.plot(x, m - s, 'c-', linewidth=1)
             ax.plot(x, m + s, 'c-', linewidth=1)
