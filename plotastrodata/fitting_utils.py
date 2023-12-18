@@ -116,10 +116,8 @@ class PTEmceeCorner():
         lnps = sampler.logprobability[0]  # [0] is in the temperature axis.
         idx_best = np.unravel_index(np.argmax(lnps), lnps.shape)
         self.popt = sampler.chain[0][idx_best]
-        lnps = lnps[:, nburnin:]
-        self.lnps = lnps
+        self.lnps = lnps[:, nburnin:]
         samples = samples.reshape((-1, self.dim))
-        lnps = lnps.reshape((-1, 1))
         self.plow = np.percentile(samples, self.percent[0], axis=0)
         self.pmid = np.percentile(samples, 50, axis=0)
         self.phigh = np.percentile(samples, self.percent[1], axis=0)
