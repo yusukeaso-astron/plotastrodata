@@ -173,11 +173,19 @@ class PTEmceeCorner():
             y = self.samples[:, :, i]
             plist = [self.percent[0], 50, self.percent[1]]
             y = [np.percentile(y, p, axis=0) for p in plist]
-            y = [np.mean(np.reshape(yy[:nend], (naverage, -1)), axis=0) for yy in y]
+            ymid = [np.mean(np.reshape(yy[:nend], (naverage, -1)), axis=0) for yy in y]
+            ymax = [np.max(np.reshape(yy[:nend], (naverage, -1)), axis=0) for yy in y]
+            ymin = [np.min(np.reshape(yy[:nend], (naverage, -1)), axis=0) for yy in y]
             ax = fig.add_subplot(self.dim, 1, i + 1)
-            ax.plot(x, y[0], 'c-', linewidth=1)
-            ax.plot(x, y[1], 'b-', linewidth=2)
-            ax.plot(x, y[2], 'c-', linewidth=1)
+            ax.plot(x, ymin[0], 'c-', linewidth=0.5)
+            ax.plot(x, ymid[0], 'c-', linewidth=1)
+            ax.plot(x, ymax[0], 'c-', linewidth=0.5)
+            ax.plot(x, ymin[1], 'b-', linewidth=1)
+            ax.plot(x, ymid[1], 'b-', linewidth=2)
+            ax.plot(x, ymax[1], 'b-', linewidth=1)
+            ax.plot(x, ymin[2], 'c-', linewidth=0.5)
+            ax.plot(x, ymid[2], 'c-', linewidth=1)
+            ax.plot(x, ymax[2], 'c-', linewidth=0.5)
             ax.set_ylim(ylim[i])
             ax.set_ylabel(labels[i])
             if i < self.dim - 1:
