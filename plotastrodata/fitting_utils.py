@@ -117,10 +117,10 @@ class PTEmceeCorner():
         idx_best = np.unravel_index(np.argmax(lnps), lnps.shape)
         self.popt = sampler.chain[0][idx_best]
         self.lnps = lnps[:, nburnin:]
-        samples = samples.reshape((-1, self.dim))
-        self.plow = np.percentile(samples, self.percent[0], axis=0)
-        self.pmid = np.percentile(samples, 50, axis=0)
-        self.phigh = np.percentile(samples, self.percent[1], axis=0)
+        s = samples.reshape((-1, self.dim))
+        self.plow = np.percentile(s, self.percent[0], axis=0)
+        self.pmid = np.percentile(s, 50, axis=0)
+        self.phigh = np.percentile(s, self.percent[1], axis=0)
         if global_progressbar:
             print('')
     
