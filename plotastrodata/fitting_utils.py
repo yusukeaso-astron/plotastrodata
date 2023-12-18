@@ -74,6 +74,8 @@ class PTEmceeCorner():
             grcheck (bool, optional): Whether to check Gelman-Rubin statistics. Defaults to False.
         """
         global bar
+        if nwalkersperdim < 2:
+            print(f'nwalkersperdim < 2 is not allowed. Use 2 instead of {nwalkersperdim:d}.')
         nwalkers = max(nwalkersperdim, 2) * self.dim  # must be even and >= 2 * dim
         if global_progressbar:
             bar = tqdm(total=ntry * ntemps * nwalkers * (nsteps + 1) / ncore)
