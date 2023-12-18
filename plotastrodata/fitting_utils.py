@@ -95,7 +95,7 @@ class PTEmceeCorner():
             else:
                 sampler = ptemcee.Sampler(**pars)
                 sampler.run_mcmc(pos0, nsteps)
-            samples = sampler.chain[0, :, nburnin:, :]
+            samples = sampler.chain[0, :, nburnin:, :]  # temperature, walker, step, dim
             if grcheck:
                 ##### Gelman-Rubin statistics #####
                 B = np.std(np.mean(samples, axis=1), axis=0)
