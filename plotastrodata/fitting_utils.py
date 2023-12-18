@@ -81,7 +81,7 @@ class PTEmceeCorner():
 
         GR = [2] * self.dim
         i =  0
-        while np.min(GR) > 1.25 and i < ntry:
+        while np.max(GR) > 1.25 and i < ntry:
             i += 1
             if pos0 is None:
                 pos0 = np.random.rand(ntemps, nwalkers, self.dim) \
@@ -107,7 +107,7 @@ class PTEmceeCorner():
                 ###################################
             else:
                 GR = np.zeros(self.dim)
-            if i == ntry - 1 and np.min(GR) > 1.25:
+            if i == ntry - 1 and np.max(GR) > 1.25:
                 print(f'!!! Max GR >1.25 during {ntry:d} trials.!!!')
 
         self.samples = samples
