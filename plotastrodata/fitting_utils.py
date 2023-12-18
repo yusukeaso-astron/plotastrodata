@@ -177,7 +177,7 @@ class PTEmceeCorner():
                   for p in plist] for yy in y]
             ax = fig.add_subplot(self.dim, 1, i + 1)
             for yy, l, c in zip(y, [1, 2, 1], ['c', 'b', 'c']):
-                for yyy, w in zip(yy, [0.3, 1, 0.3]):
+                for yyy, w in zip(yy, [0.25, 1, 0.25]):
                     ax.plot(x, yyy, '-', color=c, linewidth=l * w)
             ax.set_ylim(ylim[i])
             ax.set_ylabel(labels[i])
