@@ -211,7 +211,7 @@ class PTEmceeCorner():
         for i in range(self.dim):
             dpar[i][0] = dpar[i][1] / (dpar[i][2] / dpar[i][1])
             dpar[i][-1] = dpar[i][-2] * (dpar[i][-2] / dpar[i][-3])
-        vol = np.product(np.meshgrid(*dpar[::-1], indexing='ij')[::-1], axis=0)
+        vol = np.prod(np.meshgrid(*dpar[::-1], indexing='ij')[::-1], axis=0)
         iopt = np.unravel_index(np.argmax(p), np.shape(p))[::-1]
         self.popt = [t[i] for t, i in zip(pargrid, iopt)]
         adim = np.arange(self.dim)
