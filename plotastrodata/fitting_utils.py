@@ -141,7 +141,7 @@ class PTEmceeCorner():
             labels = [f'Par {i:d}' for i in range(self.dim)]
         if cornerrange is None:
             cornerrange = np.transpose(self.bounds)
-        corner.corner(self.samples, truths=self.popt,
+        corner.corner(np.reshape(self.samples, (-1, self.dim)), truths=self.popt,
                       quantiles=[self.percent[0] / 100, 0.5, self.percent[1] / 100],
                       show_titles=True, labels=labels, range=cornerrange)
         if savefig is not None:
