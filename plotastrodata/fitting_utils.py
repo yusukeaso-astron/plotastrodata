@@ -192,12 +192,13 @@ class PTEmceeCorner():
             plt.show()
         plt.close()
         
-    def posteriorongrid(self, ngrid: list = 100, log: list = False):
+    def posteriorongrid(self, ngrid: list = 100, log: list = False, pcut: float = 0):
         """Calculate the posterior on a grid of ngrid x ngrid x ... x ngrid.
 
         Args:
             ngrid (list, optional): Number of grid on each parameter. Defaults to 100.
             log (list, optional): Whether to search in the logarithmic space. The percentile is counted in the linear space regardless of this option. Defaults to False.
+            pcut (float, optional): Posterior is reset to be zero if it is below this cut off.
         """
         if type(ngrid) == int:
             ngrid = [ngrid] * self.dim
@@ -207,6 +208,7 @@ class PTEmceeCorner():
         for a, b, c, d in zip(*global_bounds, ngrid, log):
             pargrid.append(np.geomspace(a, b, c) if d else np.linspace(a, b, c))
         p = np.exp(self.logl(np.meshgrid(*pargrid[::-1], indexing='ij')[::-1]))
+        p[p < pcut] = 0
         dpar = [np.r_[0, (pg[2:] - pg[:-2]) / 2., 0] for pg in pargrid]
         for i in range(self.dim):
             dpar[i][0] = dpar[i][1] / (dpar[i][2] / dpar[i][1])
