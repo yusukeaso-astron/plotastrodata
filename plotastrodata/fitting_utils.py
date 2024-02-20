@@ -214,19 +214,26 @@ class PTEmceeCorner():
             dpar[i][0] = dpar[i][1] / (dpar[i][2] / dpar[i][1])
             dpar[i][-1] = dpar[i][-2] * (dpar[i][-2] / dpar[i][-3])
         vol = np.prod(np.meshgrid(*dpar[::-1], indexing='ij')[::-1], axis=0)
-        iopt = np.unravel_index(np.argmax(p), np.shape(p))[::-1]
-        self.popt = [t[i] for t, i in zip(pargrid, iopt)]
-        adim = np.arange(self.dim)
-        p1d = [np.sum(p * vol, axis=tuple(np.delete(adim, i))) 
-               / np.sum(vol, axis=tuple(np.delete(adim, i))) for i in adim[::-1]]
-        p1dcum = [np.cumsum(q * w) / np.transpose([np.sum(q * w)]) 
-                  for q, w in zip(p1d, dpar)]
-        def getpercentile(percent: float):
-            idxmin = [np.argmin(np.abs(q - percent)) for q in p1dcum]
-            return np.array([t[i] for t, i in zip(pargrid, idxmin)])
-        self.plow = getpercentile(self.percent[0] / 100)
-        self.pmid = getpercentile(0.5)
-        self.phigh = getpercentile(self.percent[1] / 100)
+        if np.all(p == 0):
+            print('All posterior is below pcut.')
+            self.popt = np.full(self.dim, np.nan)
+            self.plow = np.full(self.dim, np.nan)
+            self.pmid = np.full(self.dim, np.nan)
+            self.phigh = np.full(self.dim, np.nan)
+        else:
+            iopt = np.unravel_index(np.argmax(p), np.shape(p))[::-1]
+            self.popt = [t[i] for t, i in zip(pargrid, iopt)]
+            adim = np.arange(self.dim)
+            p1d = [np.sum(p * vol, axis=tuple(np.delete(adim, i))) 
+                   / np.sum(vol, axis=tuple(np.delete(adim, i))) for i in adim[::-1]]
+            p1dcum = [np.cumsum(q * w) / np.transpose([np.sum(q * w)]) 
+                      for q, w in zip(p1d, dpar)]
+            def getpercentile(percent: float):
+                idxmin = [np.argmin(np.abs(q - percent)) for q in p1dcum]
+                return np.array([t[i] for t, i in zip(pargrid, idxmin)])
+            self.plow = getpercentile(self.percent[0] / 100)
+            self.pmid = getpercentile(0.5)
+            self.phigh = getpercentile(self.percent[1] / 100)
         self.p = p
         self.p1d = p1d
         self.pargrid = pargrid
