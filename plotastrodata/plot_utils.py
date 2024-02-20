@@ -185,7 +185,8 @@ def set_minmax(data: np.ndarray, stretch: str, stretchscale: float,
     for i, (c, st, stsc, r) in enumerate(zip(*z)):
         if stsc is None: stsc = r
         if st == 'log':
-            c = np.log10(c.clip(c[c > 0].min(), None))
+            if np.any(c > 0):
+                c = np.log10(c.clip(c[c > 0].min(), None))
         elif st == 'asinh':
             c = np.arcsinh(c / stsc)
         elif st == 'power':
