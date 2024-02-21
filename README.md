@@ -40,14 +40,18 @@ plotastrodata can do the following things.
 * Use original arguments of matplotlib (pcolormesh, contour, quiver, plot, text, Ellipse, Rectangle).
 * Other functions for plotting line profiles and a spatial 1D slice.
 * example_advanced.py includes how to make a movie of channel maps.
+* There are other utilities for Fourier transform and fitting.
  
 ## Requirement
 
 * astropy
+* corner (only for fitting)
+* dynesty (only for fitting)
 * matplotlib
 * numpy
 * PIL (only for RGB figures)
 * plotly (only for html cube)
+* ptemcee (only for fitting)
 * skimage (only for html cube)
 * re
 * scipy
