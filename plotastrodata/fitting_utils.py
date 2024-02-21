@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import ptemcee
 import corner
+from dynesty import DynamicNestedSampler as DNS
 import warnings
 from tqdm import tqdm
 from multiprocessing import Pool
@@ -302,4 +303,14 @@ class PTEmceeCorner():
         if show:
             plt.show()
 
-
+    def getevidence(self):
+        def prior_transform(u):
+            return self.bounds[0] + (self.bounds[1] - self.bounds[0]) * u
+        dsampler = DNS(loglielihood=self.logl,
+                       prior_transform=prior_transform,
+                       ndim=self.dim)
+        dsampler.run_nested(print_progress=False)
+        results = dsampler.results
+        evidence = np.exp(results.logz[-1])
+        error = evidence * results.logzerr[-1]
+        return {'evidence':evidence, 'error':error}
