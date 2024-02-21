@@ -306,7 +306,7 @@ class PTEmceeCorner():
     def getevidence(self):
         def prior_transform(u):
             return self.bounds[0] + (self.bounds[1] - self.bounds[0]) * u
-        dsampler = DNS(loglielihood=self.logl,
+        dsampler = DNS(loglikelihood=self.logl,
                        prior_transform=prior_transform,
                        ndim=self.dim)
         dsampler.run_nested(print_progress=False)
