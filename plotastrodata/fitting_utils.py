@@ -303,14 +303,14 @@ class PTEmceeCorner():
         if show:
             plt.show()
 
-    def getevidence(self):
+    def getevidence(self, **kwargs):
         """Calculate the Bayesian evidence for a model using dynamic nested sampling through dynesty.
         """
         def prior_transform(u):
             return self.bounds[0] + (self.bounds[1] - self.bounds[0]) * u
         dsampler = DNS(loglikelihood=self.logl,
                        prior_transform=prior_transform,
-                       ndim=self.dim)
+                       ndim=self.dim, **kwargs)
         dsampler.run_nested(print_progress=False)
         results = dsampler.results
         evidence = np.exp(results.logz[-1])
