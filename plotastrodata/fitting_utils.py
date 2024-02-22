@@ -219,8 +219,8 @@ class PTEmceeCorner():
         p1d = [np.sum(p * vol, axis=tuple(np.delete(adim, i))) 
                / np.sum(vol, axis=tuple(np.delete(adim, i))) for i in adim[::-1]]
         evidence = np.sum(p * vol)
-        #p1dcum = [np.cumsum(q * w) / np.transpose([np.sum(q * w)]) 
-        p1dcum = [np.cumsum(q) / np.transpose([np.sum(q)]) for q in p1d]
+        p1dcum = [np.cumsum(q * w) / np.transpose([np.sum(q * w)])
+                  for q, w in zip(p1d, dpar)]
         if np.all(p == 0):
             print('All posterior is below pcut.')
             self.popt = np.full(self.dim, np.nan)
@@ -240,6 +240,7 @@ class PTEmceeCorner():
         self.p1d = p1d
         self.pargrid = pargrid
         self.vol = vol
+        self.evidence = evidence
 
     def plotongrid(self, show: bool = False, savefig: str = None,
                    labels: list = None, cornerrange: list = None,
