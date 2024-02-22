@@ -289,7 +289,10 @@ class PTEmceeCorner():
                     ax[k].set_xlim(cornerrange[i])
                     ax[k].set_ylim([0, np.max(y[i]) * 1.2])
                     ax[k].set_yticks([])
-                    plt.setp(ax[k].get_xticklabels(), visible=False)
+                    if i == self.dim - 1:
+                        plt.setp(ax[k].get_xticklabels(), rotation=45)
+                    else:
+                        plt.setp(ax[k].get_xticklabels(), visible=False)
                 else:
                     sharex = ax[self.dim * (i - 1) + j]
                     sharey = ax[self.dim * i + (j - 1)] if j > 1 else None
@@ -308,12 +311,12 @@ class PTEmceeCorner():
                     ax[k].set_ylim(cornerrange[i])
                     if j == 0:
                         ax[k].set_ylabel(labels[i])
-                        plt.setp(ax[k].yaxis.get_majorticklabels(), rotation=45)
+                        plt.setp(ax[k].get_yticklabels(), rotation=45)
                     else:
-                        ax[k].set_yticks([])
+                        plt.setp(ax[k].get_yticklabels(), visible=False)
                     if i == self.dim - 1:
                         ax[k].set_xlabel(labels[j])
-                        plt.setp(ax[k].xaxis.get_majorticklabels(), rotation=45)
+                        plt.setp(ax[k].get_xticklabels(), rotation=45)
                     else:
                         plt.setp(ax[k].get_xticklabels(), visible=False)
         fig.tight_layout()
