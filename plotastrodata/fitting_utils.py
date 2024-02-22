@@ -216,8 +216,8 @@ class PTEmceeCorner():
             dpar[i][-1] = dpar[i][-2] * (dpar[i][-2] / dpar[i][-3])
         vol = np.prod(np.meshgrid(*dpar[::-1], indexing='ij')[::-1], axis=0)
         adim = np.arange(self.dim)
-        p1d = [np.sum(p * vol, axis=tuple(np.delete(adim, i))) 
-               / np.sum(vol, axis=tuple(np.delete(adim, i))) for i in adim[::-1]]
+        axlist = [tuple(np.delete(adim, i)) for i in adim[::-1]]  # adim[::-1] is becuase the 0th parameter is the innermost axis.
+        p1d = [np.sum(p * vol, axis=a) / np.sum(vol, axis=a) for a in axlist]
         evidence = np.sum(p * vol)
         p1dcum = [np.cumsum(q * w) / np.transpose([np.sum(q * w)])
                   for q, w in zip(p1d, dpar)]
