@@ -277,15 +277,16 @@ class PTEmceeCorner():
                     s1 = self.phigh[i] - self.pmid[i]
                     s2 = self.pmid[i] - self.plow[i]
                     s0 = f'{s0:.2f}'
-                    s1 = f'+{s1:.2f}'
-                    s2 = f'-{s2:.2f}'
+                    s1 = '^{+' + f'{s1:.2f}' + '}'
+                    s2 = '_{-' + f'{s2:.2f}' + '}'
+                    s0 = s0 + s1 + s2
                     ax[k] = fig.add_subplot(self.dim, self.dim, k + 1)
                     ax[k].plot(x[i], y[i], 'k-')
                     ax[k].axvline(self.popt[i])
                     ax[k].axvline(self.plow[i], linestyle='--', color='k')
                     ax[k].axvline(self.pmid[i], linestyle='--', color='k')
                     ax[k].axvline(self.phigh[i], linestyle='--', color='k')
-                    ax[k].set_title(rf'{labels[i]}=${s0}^{s1}_{s2}$')
+                    ax[k].set_title(rf'{labels[i]}=${s0}$')
                     ax[k].set_xlim(cornerrange[i])
                     ax[k].set_ylim([0, np.max(y[i]) * 1.2])
                     ax[k].set_yticks([])
