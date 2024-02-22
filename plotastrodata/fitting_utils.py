@@ -292,7 +292,7 @@ class PTEmceeCorner():
                     plt.setp(ax[k].get_xticklabels(), visible=False)
                 else:
                     sharex = ax[self.dim * (i - 1) + j]
-                    sharey = ax[self.dim * i + (j - 1)]
+                    sharey = ax[self.dim * i + (j - 1)] if j > 1 else None
                     ax[k] = fig.add_subplot(self.dim, self.dim, k + 1,
                                             sharex=sharex, sharey=sharey)
                     axis = tuple(np.delete(adim[::-1], [i, j]))
