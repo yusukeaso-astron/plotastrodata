@@ -275,20 +275,23 @@ class PTEmceeCorner():
                     s0 = self.pmid[i]
                     s1 = self.phigh[i] - self.pmid[i]
                     s2 = self.pmid[i] - self.plow[i]
+                    s0 = f'{s0:.2f}'
+                    s1 = f'+{s1:.2f}'
+                    s2 = f'-{s2:.2f}'
                     ax[k] = fig.add_subplot(self.dim, self.dim, k + 1)
                     ax[k].plot(x[i], y[i], 'k-')
                     ax[k].axvline(self.popt[i])
                     ax[k].axvline(self.plow[i], linestyle='--', color='k')
                     ax[k].axvline(self.pmid[i], linestyle='--', color='k')
                     ax[k].axvline(self.phigh[i], linestyle='--', color='k')
-                    ax[k].set_title(rf'{labels[i]}={s0:.2f}$^{s1:.2f}_{s2:.2f}$')
+                    ax[k].set_title(rf'{labels[i]}=${s0}^{s1}_{s2}$')
                     ax[k].set_xlim(cornerrange[i])
                     ax[k].set_ylim([0, np.max(y[i]) * 1.2])
                     ax[k].set_yticks([])
                     plt.setp(ax[k].get_xticklabels(), visible=False)
                 else:
-                    sharex = ax[self.dim * j * j]
-                    sharey = ax[self.dim * i * (j - 1)]
+                    sharex = ax[self.dim * (i - 1) + j]
+                    sharey = ax[self.dim * i + (j - 1)]
                     ax[k] = fig.add_subplot(self.dim, self.dim, k + 1,
                                             sharex=sharex, sharey=sharey)
                     axis = tuple(np.delete(adim[::-1], [i, j]))
