@@ -275,7 +275,7 @@ class PTEmceeCorner():
                     s0 = self.pmid[i]
                     s1 = self.phigh[i] - self.pmid[i]
                     s2 = self.pmid[i] - self.plow[i]
-                    ax[k] = fig.add_subplot(self.dim, self.dim, self.dim * i + j + 1)
+                    ax[k] = fig.add_subplot(self.dim, self.dim, k + 1)
                     ax[k].plot(x[i], y[i], 'k-')
                     ax[k].axvline(self.popt[i])
                     ax[k].axvline(self.plow[i], linestyle='--', color='k')
@@ -289,7 +289,7 @@ class PTEmceeCorner():
                 else:
                     sharex = ax[self.dim * j * j]
                     sharey = ax[self.dim * i * (j - 1)]
-                    ax[k] = fig.add_subplot(self.dim, self.dim, self.dim * i + j + 1,
+                    ax[k] = fig.add_subplot(self.dim, self.dim, k + 1,
                                             sharex=sharex, sharey=sharey)
                     axis = tuple(np.delete(adim[::-1], [i, j]))
                     yy = np.sum(self.p * self.vol, axis=axis) \
