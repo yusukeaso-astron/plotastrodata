@@ -264,7 +264,7 @@ class PTEmceeCorner():
         x = self.pargrid
         y = self.p1d
         fig = plt.figure(figsize=(2 * self.dim * 1.2, 2 * self.dim))
-        fig.subplots_adjust(hspace=0, wspace=0)
+        fig.subplots_adjust(hspace=0, wspace=0, top=0.87, right=0.87)
         ax = np.empty(self.dim * self.dim, dtype='object')
         for i in adim:
             for j in adim:
