@@ -218,7 +218,7 @@ class PTEmceeCorner():
         adim = np.arange(self.dim)
         axlist = [tuple(np.delete(adim, i)) for i in adim[::-1]]  # adim[::-1] is becuase the 0th parameter is the innermost axis.
         p1d = [np.sum(p * vol, axis=a) / np.sum(vol, axis=a) for a in axlist]
-        evidence = np.sum(p * vol)
+        evidence = np.sum(p * vol) / np.sum(vol)
         p1dcum = [np.cumsum(q * w) / np.transpose([np.sum(q * w)])
                   for q, w in zip(p1d, dpar)]
         if np.all(p == 0):
