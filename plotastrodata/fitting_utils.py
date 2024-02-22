@@ -281,7 +281,7 @@ class PTEmceeCorner():
                     ax[k].axvline(self.plow[i], linestyle='--', color='k')
                     ax[k].axvline(self.pmid[i], linestyle='--', color='k')
                     ax[k].axvline(self.phigh[i], linestyle='--', color='k')
-                    ax[k].set_title(rf'{labels[i]}={s0:.2f}^{s1:.2f}_{s2:2f}')
+                    ax[k].set_title(rf'{labels[i]}={s0:.2f}$^{s1:.2f}_{s2:.2f}$')
                     ax[k].set_xlim(cornerrange[i])
                     ax[k].set_ylim([0, np.max(y[i]) * 1.2])
                     ax[k].set_yticks([])
