@@ -269,6 +269,7 @@ class PTEmceeCorner():
                 if i < j:
                     continue
                 ax = fig.add_subplot(self.dim, self.dim, self.dim * i + j + 1)
+                fig.subplots_adjust(hspace=0, wspace=0)
                 if i == j:
                     ax.plot(x[i], y[i], 'k-')
                     ax.axvline(self.popt[i])
@@ -279,6 +280,7 @@ class PTEmceeCorner():
                     ax.set_xlim(cornerrange[i])
                     ax.set_ylim([0, np.max(y[i]) * 1.2])
                     ax.set_yticks([])
+                    plt.setp(ax.get_xticklabels(), visible=False)
                 else:
                     yy = np.sum(self.p * self.vol, axis=tuple(np.delete(adim[::-1], [i, j]))) \
                          / np.sum(self.vol, axis=tuple(np.delete(adim[::-1], [i, j])))
@@ -296,6 +298,8 @@ class PTEmceeCorner():
                         ax.set_yticks([])
                     if i == self.dim - 1:
                         ax.set_xlabel(labels[j])
+                    else:
+                        plt.setp(ax.get_xticklabels(), visible=False)
         fig.tight_layout()
         if savefig is not None:
             plt.savefig(savefig)
