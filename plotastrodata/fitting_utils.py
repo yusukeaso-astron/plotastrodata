@@ -279,8 +279,6 @@ class PTEmceeCorner():
                     ax.set_xlim(cornerrange[i])
                     ax.set_ylim([0, np.max(y[i]) * 1.2])
                     ax.set_yticks([])
-                    if i < self.dim - 1:
-                        ax.set_xticks([])
                 else:
                     yy = np.sum(self.p * self.vol, axis=tuple(np.delete(adim[::-1], [i, j]))) \
                          / np.sum(self.vol, axis=tuple(np.delete(adim[::-1], [i, j])))
@@ -298,8 +296,6 @@ class PTEmceeCorner():
                         ax.set_yticks([])
                     if i == self.dim - 1:
                         ax.set_xlabel(labels[j])
-                    else:
-                        ax.set_xticks([])
         fig.tight_layout()
         if savefig is not None:
             plt.savefig(savefig)
