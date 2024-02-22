@@ -218,8 +218,9 @@ class PTEmceeCorner():
         adim = np.arange(self.dim)
         p1d = [np.sum(p * vol, axis=tuple(np.delete(adim, i))) 
                / np.sum(vol, axis=tuple(np.delete(adim, i))) for i in adim[::-1]]
-        p1dcum = [np.cumsum(q * w) / np.transpose([np.sum(q * w)]) 
-                  for q, w in zip(p1d, dpar)]
+        evidence = np.sum(p * vol)
+        #p1dcum = [np.cumsum(q * w) / np.transpose([np.sum(q * w)]) 
+        p1dcum = [np.cumsum(q) / np.transpose([np.sum(q)]) for q in p1d]
         if np.all(p == 0):
             print('All posterior is below pcut.')
             self.popt = np.full(self.dim, np.nan)
@@ -303,7 +304,7 @@ class PTEmceeCorner():
         if show:
             plt.show()
 
-    def getevidence(self, **kwargs):
+    def getDNSevidence(self, **kwargs):
         """Calculate the Bayesian evidence for a model using dynamic nested sampling through dynesty.
         """
         def prior_transform(u):
