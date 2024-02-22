@@ -264,42 +264,49 @@ class PTEmceeCorner():
         x = self.pargrid
         y = self.p1d
         fig = plt.figure(figsize=(2 * self.dim * 1.2, 2 * self.dim))
+        fig.subplots_adjust(hspace=0, wspace=0)
+        ax = np.empty(self.dim * self.dim, dtype='object')
         for i in adim:
             for j in adim:
                 if i < j:
                     continue
-                ax = fig.add_subplot(self.dim, self.dim, self.dim * i + j + 1)
-                fig.subplots_adjust(hspace=0, wspace=0)
+                k = self.dim * i + j
                 if i == j:
-                    ax.plot(x[i], y[i], 'k-')
-                    ax.axvline(self.popt[i])
-                    ax.axvline(self.plow[i], linestyle='--', color='k')
-                    ax.axvline(self.pmid[i], linestyle='--', color='k')
-                    ax.axvline(self.phigh[i], linestyle='--', color='k')
-                    ax.set_title(f'{labels[i]}={self.pmid[i]:.2f}')
-                    ax.set_xlim(cornerrange[i])
-                    ax.set_ylim([0, np.max(y[i]) * 1.2])
-                    ax.set_yticks([])
-                    plt.setp(ax.get_xticklabels(), visible=False)
+                    ax[k] = fig.add_subplot(self.dim, self.dim, self.dim * i + j + 1)
+                    ax[k].plot(x[i], y[i], 'k-')
+                    ax[k].axvline(self.popt[i])
+                    ax[k].axvline(self.plow[i], linestyle='--', color='k')
+                    ax[k].axvline(self.pmid[i], linestyle='--', color='k')
+                    ax[k].axvline(self.phigh[i], linestyle='--', color='k')
+                    ax[k].set_title(f'{labels[i]}={self.pmid[i]:.2f}')
+                    ax[k].set_xlim(cornerrange[i])
+                    ax[k].set_ylim([0, np.max(y[i]) * 1.2])
+                    ax[k].set_yticks([])
+                    plt.setp(ax[k].get_xticklabels(), visible=False)
                 else:
-                    yy = np.sum(self.p * self.vol, axis=tuple(np.delete(adim[::-1], [i, j]))) \
-                         / np.sum(self.vol, axis=tuple(np.delete(adim[::-1], [i, j])))
-                    ax.pcolormesh(x[j], x[i], yy, cmap=cmap)
-                    ax.contour(x[j], x[i], yy, colors='k',
+                    sharex = ax[self.dim * j * j]
+                    sharey = ax[self.dim * i * (j - 1)]
+                    ax[k] = fig.add_subplot(self.dim, self.dim, self.dim * i + j + 1,
+                                            sharex=sharex, sharey=sharey)
+                    axis = tuple(np.delete(adim[::-1], [i, j]))
+                    yy = np.sum(self.p * self.vol, axis=axis) \
+                         / np.sum(self.vol, axis=axis)
+                    ax[k].pcolormesh(x[j], x[i], yy, cmap=cmap)
+                    ax[k].contour(x[j], x[i], yy, colors='k',
                                levels=np.array(levels) * np.nanmax(yy))
-                    ax.plot(self.popt[j], self.popt[i], 'o')
-                    ax.axvline(self.popt[j])
-                    ax.axhline(self.popt[i])
-                    ax.set_xlim(cornerrange[j])
-                    ax.set_ylim(cornerrange[i])
+                    ax[k].plot(self.popt[j], self.popt[i], 'o')
+                    ax[k].axvline(self.popt[j])
+                    ax[k].axhline(self.popt[i])
+                    ax[k].set_xlim(cornerrange[j])
+                    ax[k].set_ylim(cornerrange[i])
                     if j == 0:
-                        ax.set_ylabel(labels[i])
+                        ax[k].set_ylabel(labels[i])
                     else:
-                        ax.set_yticks([])
+                        ax[k].set_yticks([])
                     if i == self.dim - 1:
-                        ax.set_xlabel(labels[j])
+                        ax[k].set_xlabel(labels[j])
                     else:
-                        plt.setp(ax.get_xticklabels(), visible=False)
+                        plt.setp(ax[k].get_xticklabels(), visible=False)
         fig.tight_layout()
         if savefig is not None:
             plt.savefig(savefig)
