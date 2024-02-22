@@ -308,10 +308,12 @@ class PTEmceeCorner():
                     ax[k].set_ylim(cornerrange[i])
                     if j == 0:
                         ax[k].set_ylabel(labels[i])
+                        plt.setp(ax[k].yaxis.get_majorticklabels(), rotation=45)
                     else:
                         ax[k].set_yticks([])
                     if i == self.dim - 1:
                         ax[k].set_xlabel(labels[j])
+                        plt.setp(ax[k].xaxis.get_majorticklabels(), rotation=45)
                     else:
                         plt.setp(ax[k].get_xticklabels(), visible=False)
         fig.tight_layout()
