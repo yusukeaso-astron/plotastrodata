@@ -269,6 +269,7 @@ class PTEmceeCorner():
         for i in adim:
             for j in adim:
                 if i < j:
+                    ax[k] = None
                     continue
                 k = self.dim * i + j
                 if i == j:
