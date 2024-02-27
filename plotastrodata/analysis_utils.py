@@ -489,7 +489,7 @@ class AstroFrame():
         vlim = [self.vmin, self.vmax]
         if self.pv:
             xlim = np.sort(xlim)
-            if self.xflip:
+            if not self.xflip:
                 xlim = xlim[::-1]
         self.xlim = xlim
         self.ylim = ylim
