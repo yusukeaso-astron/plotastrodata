@@ -841,8 +841,10 @@ class PlotAstroData(AstroFrame):
                 kwargs['xlabel'] = declabel if self.swapxy else ralabel
             if not 'ylabel' in kwargs:
                 kwargs['ylabel'] = ralabel if self.swapxy else declabel
-        kwargs['xlim'] = self.Xlim
-        kwargs['ylim'] = self.Ylim
+        if not 'xlim' in kwargs:
+            kwargs['xlim'] = self.Xlim
+        if not 'ylim' in kwargs:
+            kwargs['ylim'] = self.Ylim
         pa2 = kwargs2PlotAxes2D(kwargs)
         for ch, axnow in enumerate(self.ax):
             pa2.set_xyaxes(axnow)
