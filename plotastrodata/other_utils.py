@@ -8,22 +8,22 @@ from scipy.special import erf
 
 
 
-def terminal(cmd: str):
+def terminal(cmd: str, **kwargs):
     """Run a terminal command through subprocess.run.
 
     Args:
         cmd (str): Terminal command.
     """
-    subprocess.run(shlex.split(cmd))
+    subprocess.run(shlex.split(cmd), **kwargs)
 
 
-def runpython(filename: str):
+def runpython(filename: str, **kwargs):
     """Run a python file.
 
     Args:
         filename (str): Python file name.
     """
-    terminal(f'python {filename}')
+    terminal(f'python {filename}', **kwargs)
 
 
 def listing(*args) -> list:
