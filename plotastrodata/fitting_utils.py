@@ -210,10 +210,13 @@ class PTEmceeCorner():
             pargrid.append(np.geomspace(a, b, c) if d else np.linspace(a, b, c))
         p = np.exp(self.logl(np.meshgrid(*pargrid[::-1], indexing='ij')[::-1]))
         p[p < pcut] = 0
-        dpar = [np.r_[0, (pg[2:] - pg[:-2]) / 2., 0] for pg in pargrid]
-        for i in range(self.dim):
-            dpar[i][0] = dpar[i][1] / (dpar[i][2] / dpar[i][1])
-            dpar[i][-1] = dpar[i][-2] * (dpar[i][-2] / dpar[i][-3])
+        dpar = []
+        for pg, l in zip(pargrid, log):
+            if l:
+                r = np.sqrt(pg[1] / pg[0])
+                dpar.append(pg * (r - r**(-1)))
+            else:
+                dpar.append(pg * 0 + pg[1] - pg[0])
         vol = np.prod(np.meshgrid(*dpar[::-1], indexing='ij')[::-1], axis=0)
         adim = np.arange(self.dim)
         axlist = [tuple(np.delete(adim, i)) for i in adim[::-1]]  # adim[::-1] is becuase the 0th parameter is the innermost axis.
