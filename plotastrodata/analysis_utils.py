@@ -600,6 +600,7 @@ class AstroFrame():
                         header['BMAJ'] = d.beam[i][0] / 3600
                         header['BMIN'] = d.beam[i][1] / 3600
                     d.data[i] = d.data[i] * Jy2K(header=header)
+                    d.sigma[i] = d.sigma[i] * Jy2K(header=header)
             d.Tb[i] = False
             d.cfactor[i] = 1
             if d.fitsimage[i] is not None:
