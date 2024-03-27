@@ -78,22 +78,22 @@
 
 
 
-<div class="viewcode-block" id="terminal"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.other_utils.terminal">[docs]</a><span class="k">def</span> <span class="nf">terminal</span><span class="p">(</span><span class="n">cmd</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<div class="viewcode-block" id="terminal"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.other_utils.terminal">[docs]</a><span class="k">def</span> <span class="nf">terminal</span><span class="p">(</span><span class="n">cmd</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Run a terminal command through subprocess.run.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        cmd (str): Terminal command.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">shlex</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">cmd</span><span class="p">))</span></div>
+    <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">shlex</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">cmd</span><span class="p">),</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="runpython"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.other_utils.runpython">[docs]</a><span class="k">def</span> <span class="nf">runpython</span><span class="p">(</span><span class="n">filename</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<div class="viewcode-block" id="runpython"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.other_utils.runpython">[docs]</a><span class="k">def</span> <span class="nf">runpython</span><span class="p">(</span><span class="n">filename</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Run a python file.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        filename (str): Python file name.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">terminal</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;python </span><span class="si">{</span><span class="n">filename</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span></div>
+    <span class="n">terminal</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;python </span><span class="si">{</span><span class="n">filename</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="listing"><a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.other_utils.listing">[docs]</a><span class="k">def</span> <span class="nf">listing</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
