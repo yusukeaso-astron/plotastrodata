@@ -292,7 +292,7 @@ class AstroData():
         x, y = np.meshgrid(x, y)
         popt, pcov = curve_fit(gaussian2d, (x.ravel(), y.ravel()), d.ravel(),
                                p0=p0, bounds=bounds)
-        model = gaussian2d(x, y, *popt)
+        model = gaussian2d((x, y), *popt)
         residual = d - model
         return {'popt':popt, 'pcov':pcov, 'model':model, 'residual':residual}
 
