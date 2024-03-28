@@ -310,14 +310,13 @@ def JnuT(T: float = 30, nu: float = 230e9) -> float:
     k_B = constants.k_B.si.value
     return hh * nu / k_B / (np.exp(hh * nu / k_B / T) - 1)
 
-def gaussian2d(x: np.ndarray, y: np.ndarray,
+def gaussian2d(xy: np.ndarray,
                amplitude: float, xo: float, yo: float,
                fwhm_major: float, fwhm_minor: float, pa: float) -> np.ndarray:
     """Two dimensional Gaussian function.
 
     Args:
-        x (np.ndarray): _description_
-        y (np.ndarray): _description_
+        xy (np.ndarray): A pair of (x, y).
         amplitude (float): Peak value.
         xo (float): Offset in the x direction.
         yo (float): Offset in the y direction.
@@ -328,6 +327,6 @@ def gaussian2d(x: np.ndarray, y: np.ndarray,
     Returns:
         g (np.ndarray): 2D numpy array.
     """
-    s, t = np.dot(Mrot(pa), [y - yo, x - xo])
+    s, t = np.dot(Mrot(pa), [xy[1] - yo, xy[0] - xo])
     g = amplitude * np.exp2(-4 * ((s / fwhm_major)**2 + (t / fwhm_minor)**2))
     return g
