@@ -6,7 +6,7 @@ from scipy.signal import convolve
 from astropy import constants
 
 from plotastrodata.other_utils import (coord2xy, rel2abs, estimate_rms, trim,
-                                       Mfac, Mrot, dot2d)
+                                       Mfac, Mrot, dot2d, gaussian2d)
 from plotastrodata.fits_utils import FitsData, data2fits, Jy2K
 
 
@@ -268,6 +268,33 @@ class AstroData():
         hist, hbin = np.histogram(self.data, **kwargs)
         hbin = (hbin[:-1] + hbin[1:]) / 2
         return hbin, hist
+    
+    def gaussian2d(self, chan: int = None):
+        """Fit a 2D Gaussian function to self.data.
+        
+        Args:
+            chan (int): The channel number where the 2D Gaussian is fitted. Defaults to None.
+            
+        Returns:
+            dict: The best parameter set (popt), the covariance set (pcov), the best 2D Gaussian array (model), and the residual from the model (residual).
+        """
+        d = self.data if chan is None else self.data[chan]
+        x = self.x
+        y = self.y
+        p0 = (np.max(d), np.median(x), np.median(y), 1, 1, 0)
+        amax = np.max(np.abs(d))
+        xmin = np.min(x)
+        xmax = np.max(x)
+        ymin = np.min(y)
+        ymax = np.max(y)
+        bounds = [[-amax, xmin, ymin, np.abs(x[1] - x[0]), np.abs(y[1] - y[0]), -90],
+                  [amax, xmax, ymax, xmax - xmin, ymax - ymin, 90]]
+        x, y = np.meshgrid(x, y)
+        popt, pcov = curve_fit(gaussian2d, (x.ravel(), y.ravel()), d.ravel(),
+                               p0=p0, bounds=bounds)
+        model = gaussian2d(x, y, *popt)
+        residual = d - model
+        return {'popt':popt, 'pcov':pcov, 'model':model, 'residual':residual}
 
     def mask(self, dataformask: np.ndarray = None, includepix: list = [],
              excludepix: list = []):
