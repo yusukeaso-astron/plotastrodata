@@ -620,7 +620,8 @@ class AstroFrame():
                 if d.sigma[i] is not None:
                     d.sigma[i] = d.sigma[i] * d.cfactor[i]
                 if d.Tb[i]:
-                    header = {'CDELT1':(d.x[1] - d.x[0]) / 3600,
+                    dx = d.y[1] - d.y[0] if self.swapxy else d.x[1] - d.x[0]
+                    header = {'CDELT1':dx / 3600,
                               'CUNIT1':'DEG',
                               'RESTFREQ':d.restfrq[i]}
                     if None not in d.beam[i]:
