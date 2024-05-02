@@ -60,7 +60,7 @@ class PTEmceeCorner():
     
     def fit(self, nwalkersperdim: int = 2, ntemps: int = 1, nsteps: int = 1000,
             nburnin: int = 500, ntry: int = 1, pos0: np.ndarray = None,
-            savechain: str = None, ncore: int = 1, grcheck: bool = False):
+            savechain: str = None, ncores: int = 1, grcheck: bool = False):
         """Perform a Markov Chain Monte Carlo (MCMC) fitting process using the ptemcee library, which is a parallel tempering version of the emcee package, and make a corner plot of the samples using the corner package.
 
         Args:
@@ -71,7 +71,7 @@ class PTEmceeCorner():
             ntry (int, optional): Number of trials for the Gelman-Rubin check. Defaults to 1.
             pos0 (np.nparray, optional): Initial parameter set in the shape of (ntemps, nwalkers, dim). Defaults to None.
             savechain (str, optional): File name of the chain in format of .npy. Defaults to None.
-            ncore (int, optional): Number of cores for multiprocessing.Pool. ncore=1 does not use multiprocessing. Defaults to 1.
+            ncores (int, optional): Number of cores for multiprocessing.Pool. ncores=1 does not use multiprocessing. Defaults to 1.
             grcheck (bool, optional): Whether to check Gelman-Rubin statistics. Defaults to False.
         """
         global bar
@@ -79,7 +79,7 @@ class PTEmceeCorner():
             print(f'nwalkersperdim < 2 is not allowed. Use 2 instead of {nwalkersperdim:d}.')
         nwalkers = max(nwalkersperdim, 2) * self.dim  # must be even and >= 2 * dim
         if global_progressbar:
-            bar = tqdm(total=ntry * ntemps * nwalkers * (nsteps + 1) // ncore)
+            bar = tqdm(total=ntry * ntemps * nwalkers * (nsteps + 1) // ncores)
             bar.set_description('Within the ranges')
 
         GR = [2] * self.dim
@@ -91,8 +91,8 @@ class PTEmceeCorner():
                        * (self.bounds[1] - self.bounds[0]) + self.bounds[0]
             pars = {'ntemps':ntemps, 'nwalkers':nwalkers, 'dim':self.dim,
                     'logl':self.logl, 'logp':self.logp}
-            if ncore > 1:
-                with Pool(ncore) as pool:
+            if ncores > 1:
+                with Pool(ncores) as pool:
                     sampler = ptemcee.Sampler(**pars, pool=pool)
                     sampler.run_mcmc(pos0, nsteps)
             else:
