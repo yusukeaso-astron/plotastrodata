@@ -27,6 +27,7 @@ def to4dim(data: np.ndarray) -> np.ndarray:
         d = np.array(data)
     return d
     
+    
 def quadrantmean(data: np.ndarray, x: np.ndarray, y: np.ndarray,
                  quadrants: str ='13') -> tuple:
     """Take mean between 1st and 3rd (or 2nd and 4th) quadrants.
@@ -51,10 +52,10 @@ def quadrantmean(data: np.ndarray, x: np.ndarray, y: np.ndarray,
     ynew = np.linspace(-ny * dy, ny * dy, 2 * ny + 1)
     Xnew, Ynew = np.meshgrid(x, y)
     if quadrants == '13':
-        f = RGI((y, x), data, bounds_error=False, fill_value=0)
+        f = RGI((y, x), data, bounds_error=False, fill_value=np.nan)
         datanew = f((Ynew, Xnew))
     elif quadrants == '24':
-        f = RGI((y, -x), data, bounds_error=False, fill_value=0)
+        f = RGI((y, -x), data, bounds_error=False, fill_value=np.nan)
         datanew = f((Ynew, Xnew))
     else:
         print('quadrants must be \'13\' or \'24\'.')
@@ -89,7 +90,7 @@ def sortRGI(y: np.ndarray, x: np.ndarray, data: np.ndarray,
         ysort = y[::-1]
         csort = np.moveaxis(np.moveaxis(csort, -2, 0)[::-1], 0, -2)
     csort[np.isnan(csort)] = 0
-    f = [[RGI((ysort, xsort), c, bounds_error=False, fill_value=0)
+    f = [[RGI((ysort, xsort), c, bounds_error=False, fill_value=np.nan)
           for c in cc] for cc in csort]
     if ynew is None or xnew is None:
         if len(f) == 1: f = f[0]
@@ -202,14 +203,39 @@ class AstroData():
             grid[1], grid[2] = grid[2], grid[1]
         _, self.v, self.y, self.x = grid
             
-    def centering(self):
-        """Spatial regridding to set the center at (x,y)=(0,0).
+    def centering(self, includexy: bool = True, includev: bool = False):
+        """Spatial regridding to set the center at (x,y,v)=(0,0,0).
+
+        Args:
+            includexy (bool, optional): Centering in the x and y directions at each channel. Defaults to True.
+            includev (bool, optional): Centering in the v direction at each position. Defaults to False.
         """
         x = self.x - self.x[np.argmin(np.abs(self.x))]
         y = self.y - self.y[np.argmin(np.abs(self.y))]
-        xnew, ynew = np.meshgrid(x, y)
-        self.data = sortRGI(self.y, self.x, self.data, ynew, xnew)
-        self.y, self.x = y, x
+        v = self.v - self.v[np.argmin(np.abs(self.v))]
+        if includexy and includev:
+            vnew, ynew, xnew = np.meshgrid(v, y, x, indexing='ij')
+            f = RGI((self.v, self.y, self.x), self.data,
+                    method='linear', bounds_error=False, fill_value=np.nan)
+            self.data = f((vnew, ynew, xnew))
+            self.v, self.y, self.x = v, y, x
+        elif includexy:
+            xnew, ynew = np.meshgrid(x, y)
+            self.data = sortRGI(self.y, self.x, self.data, ynew, xnew)
+            self.y, self.x = y, x
+        elif includev:
+            nx, ny, nv = len(self.x), len(self.y), len(self.v)
+            a = np.empty((ny, nx, nv))
+            for i in range(ny):
+                for j in range(nx):
+                    f = RGI((self.v,), self.data[:, i, j], method='linear',
+                            bounds_error=False, fill_value=np.nan)
+                    a[i, j] = f(v)
+            self.data = np.moveaxis(a, -1, 0)
+            self.v = v
+        else:
+            print('No change because includexy=False and includev=False.')
+        
 
     def circularbeam(self):
         """Make the beam circular by convolving with 1D Gaussian
