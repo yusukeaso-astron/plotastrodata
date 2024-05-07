@@ -63,17 +63,15 @@ def quadrantmean(data: np.ndarray, x: np.ndarray, y: np.ndarray,
     return datanew[ny:, nx:], xnew[nx:], ynew[ny:]
 
 
-def sortRGI(y: np.ndarray, x: np.ndarray, data: np.ndarray,
-            ynew: np.ndarray = None, xnew: np.ndarray = None
-            ) -> object or np.ndarray:
-    """RGI but input x and y can be decreasing.
+def RGIxy(y: np.ndarray, x: np.ndarray, data: np.ndarray,
+          yxnew: tuple = None) -> object or np.ndarray:
+    """RGI for x and y at each channel.
 
     Args:
         y (np.ndarray): 1D array. Second coordinate.
         x (np.ndarray): 1D array. First coordinate.
-        data (np.ndarray): 2D or 3D array.
-        ynew (np.ndarray, optional): 1D array. Defaults to None.
-        xnew (np.ndarray, optional): 1D array. Defaults to None.
+        data (np.ndarray): 2D, 3D, or 4D array.
+        yxnew (tuple, optional): (ynew, xnew), where ynew and xnew are 1D or 2D arrays. Defaults to None.
 
     Returns:
         np.ndarray: The RGI function or the interpolated array.
@@ -82,23 +80,47 @@ def sortRGI(y: np.ndarray, x: np.ndarray, data: np.ndarray,
         print('data must be 2D, 3D, or 4D.')
         return -1
     
-    csort, xsort, ysort = to4dim(data), x, y
-    if x[0] > x[1]:
-        xsort = x[::-1]
-        csort = np.moveaxis(np.moveaxis(csort, -1, 0)[::-1], 0, -1)
-    if y[0] > y[1]:
-        ysort = y[::-1]
-        csort = np.moveaxis(np.moveaxis(csort, -2, 0)[::-1], 0, -2)
-    csort[np.isnan(csort)] = 0
-    f = [[RGI((ysort, xsort), c, bounds_error=False, fill_value=np.nan)
-          for c in cc] for cc in csort]
-    if ynew is None or xnew is None:
-        if len(f) == 1: f = f[0]
-        if len(f) == 1: f = f[0]
+    c4d = to4dim(data)
+    c4d[np.isnan(c4d)] = 0
+    f = [[RGI((y, x), c2d, bounds_error=False, fill_value=np.nan)
+          for c2d in c3d] for c3d in c4d]
+    if yxnew is None:
+        if len(f) == 1:
+            f = f[0]
+        if len(f) == 1:
+            f = f[0]
         return f
-    d = [[g((ynew.ravel(), xnew.ravel())) for g in ff] for ff in f]
-    d = np.reshape(d, (*np.shape(f), *np.shape(xnew)))
-    return np.squeeze(d)
+    else:
+        return np.squeeze([[f2d(tuple(yxnew)) for f2d in f3d] for f3d in f])
+
+
+def RGIxyv(v: np.ndarray, y: np.ndarray, x: np.ndarray, data: np.ndarray,
+          vyxnew: tuple = None) -> object or np.ndarray:
+    """RGI in the x-y-v space.
+
+    Args:
+        v (np.ndarray): 1D array. Third coordinate.
+        y (np.ndarray): 1D array. Second coordinate.
+        x (np.ndarray): 1D array. First coordinate.
+        data (np.ndarray): 3D or 4D array.
+        vyxnew (tuple, optional): (vnew, ynew, xnew), where vnew, ynew, and xnew are 1D or 2D arrays. Defaults to None.
+
+    Returns:
+        np.ndarray: The RGI function or the interpolated array.
+    """
+    if not np.ndim(data) in [3, 4]:
+        print('data must be 3D or 4D.')
+        return -1
+    
+    c4d = to4dim(data)
+    c4d[np.isnan(c4d)] = 0
+    f = [RGI((v, y, x), c3d, bounds_error=False, fill_value=np.nan) for c3d in c4d]
+    if vyxnew is None:
+        if len(f) == 1:
+            f = f[0]
+        return f
+    else:
+        return np.squeeze([f3d(tuple(vyxnew)) for f3d in f])
 
 
 def filled2d(data: np.ndarray, x: np.ndarray, y: np.ndarray,
@@ -114,11 +136,10 @@ def filled2d(data: np.ndarray, x: np.ndarray, y: np.ndarray,
     Returns:
         tuple: The interpolated (data, x, y).
     """
-    xf = np.linspace(x[0], x[-1], n * (len(x) - 1) + 1)
-    yf = np.linspace(y[0], y[-1], n * (len(y) - 1) + 1)
-    xnew, ynew = np.meshgrid(xf, yf)
-    d = sortRGI(y, x, data, ynew, xnew)
-    return d, xf, yf
+    xnew = np.linspace(x[0], x[-1], n * (len(x) - 1) + 1)
+    ynew = np.linspace(y[0], y[-1], n * (len(y) - 1) + 1)
+    d = RGIxy(y, x, data, np.meshgrid(ynew, xnew, indexing='ij'))
+    return d, xnew, ynew
     
 
 @dataclass
@@ -210,19 +231,17 @@ class AstroData():
             includexy (bool, optional): Centering in the x and y directions at each channel. Defaults to True.
             includev (bool, optional): Centering in the v direction at each position. Defaults to False.
         """
-        x = self.x - self.x[np.argmin(np.abs(self.x))]
-        y = self.y - self.y[np.argmin(np.abs(self.y))]
-        v = self.v - self.v[np.argmin(np.abs(self.v))]
+        xnew = self.x - self.x[np.argmin(np.abs(self.x))]
+        ynew = self.y - self.y[np.argmin(np.abs(self.y))]
+        vnew = self.v - self.v[np.argmin(np.abs(self.v))]
         if includexy and includev:
-            vnew, ynew, xnew = np.meshgrid(v, y, x, indexing='ij')
-            f = RGI((self.v, self.y, self.x), self.data,
-                    method='linear', bounds_error=False, fill_value=np.nan)
-            self.data = f((vnew, ynew, xnew))
-            self.v, self.y, self.x = v, y, x
+            self.data = RGIxyv(self.v, self.y, self.x, self.data,
+                               np.meshgrid(vnew, ynew, xnew, indexing='ij'))
+            self.v, self.y, self.x = vnew, ynew, xnew
         elif includexy:
-            xnew, ynew = np.meshgrid(x, y)
-            self.data = sortRGI(self.y, self.x, self.data, ynew, xnew)
-            self.y, self.x = y, x
+            self.data = RGIxy(self.y, self.x, self.data,
+                              np.meshgrid(ynew, xnew, indexing='ij'))
+            self.y, self.x = ynew, xnew
         elif includev:
             nx, ny, nv = len(self.x), len(self.y), len(self.v)
             a = np.empty((ny, nx, nv))
@@ -230,9 +249,9 @@ class AstroData():
                 for j in range(nx):
                     f = RGI((self.v,), self.data[:, i, j], method='linear',
                             bounds_error=False, fill_value=np.nan)
-                    a[i, j] = f(v)
+                    a[i, j] = f(vnew)
             self.data = np.moveaxis(a, -1, 0)
-            self.v = v
+            self.v = vnew
         else:
             print('No change because includexy=False and includev=False.')
         
@@ -269,8 +288,8 @@ class AstroData():
         """
         ci = np.cos(np.radians(incl))
         A = np.linalg.multi_dot([Mrot(pa), Mfac(1, ci), Mrot(-pa)])
-        ynew, xnew = dot2d(A, np.meshgrid(self.x, self.y)[::-1])
-        self.data = sortRGI(self.y, self.x, self.data, ynew, xnew)
+        yxnew = dot2d(A, np.meshgrid(self.y, self.x, indexing='ij'))
+        self.data = RGIxy(self.y, self.x, self.data, yxnew)
         if None not in self.beam:
             bmaj, bmin, bpa = self.beam
             a, b = np.linalg.multi_dot([Mfac(1/bmaj, 1/bmin), Mrot(pa-bpa),
@@ -416,8 +435,8 @@ class AstroData():
         Args:
             pa (float, optional): Position angle in the unit of degree. Defaults to 0.
         """
-        ynew, xnew = dot2d(Mrot(-pa), np.meshgrid(self.x, self.y)[::-1])
-        self.data = sortRGI(self.y, self.x, self.data, ynew, xnew)
+        yxnew = dot2d(Mrot(-pa), np.meshgrid(self.y, self.x, indexing='ij'))
+        self.data = RGIxy(self.y, self.x, self.data, yxnew)
         if self.beam[2] is not None:
             self.beam[2] = self.beam[2] + pa
     
@@ -433,11 +452,13 @@ class AstroData():
         Returns:
             np.ndarray: [x, data]. If self.data is 3D, the output data are in the shape of (len(v), len(x)).
         """
-        if dx is None: dx = np.abs(self.x[1] - self.x[0])
+        if dx is None:
+            dx = np.abs(self.x[1] - self.x[0])
         n = int(np.ceil(length / 2 / dx))
         r = np.linspace(-n, n, 2 * n + 1) * dx
-        xg, yg = r * np.sin(np.radians(pa)), r * np.cos(np.radians(pa))
-        z = sortRGI(self.y, self.x, self.data, yg, xg)
+        pa_rad = np.radians(pa)
+        yg, xg = r * np.cos(pa_rad), r * np.sin(pa_rad)
+        z = RGIxy(self.y, self.x, self.data, (yg, xg))
         return np.array([r, z])
 
     def todict(self) -> dict:
