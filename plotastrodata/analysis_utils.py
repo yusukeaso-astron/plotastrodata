@@ -255,7 +255,6 @@ class AstroData():
         else:
             print('No change because includexy=False and includev=False.')
         
-
     def circularbeam(self):
         """Make the beam circular by convolving with 1D Gaussian
         """
