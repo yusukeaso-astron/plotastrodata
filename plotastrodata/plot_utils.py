@@ -1113,7 +1113,7 @@ def plotslice(length: float, dx: float = None, pa: float = 0,
     if txtfile is not None:
         np.savetxt(txtfile, np.c_[r, z],
                    header=f'x ({xunit}), intensity ({yunit}); '
-                   + 'positive x is pa={pa:.2f} deg.')
+                   + f'positive x is pa={pa:.2f} deg.')
     set_rcparams()
     if fig is None: fig = plt.figure()
     if ax is None: ax = fig.add_subplot(1, 1, 1)
