@@ -231,9 +231,11 @@ class AstroData():
             includexy (bool, optional): Centering in the x and y directions at each channel. Defaults to True.
             includev (bool, optional): Centering in the v direction at each position. Defaults to False.
         """
-        xnew = self.x - self.x[np.argmin(np.abs(self.x))]
-        ynew = self.y - self.y[np.argmin(np.abs(self.y))]
-        vnew = self.v - self.v[np.argmin(np.abs(self.v))]
+        if includexy:
+            xnew = self.x - self.x[np.argmin(np.abs(self.x))]
+            ynew = self.y - self.y[np.argmin(np.abs(self.y))]
+        if includev:
+            vnew = self.v - self.v[np.argmin(np.abs(self.v))]
         if includexy and includev:
             self.data = RGIxyv(self.v, self.y, self.x, self.data,
                                np.meshgrid(vnew, ynew, xnew, indexing='ij'))
