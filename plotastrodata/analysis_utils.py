@@ -630,8 +630,12 @@ class AstroFrame():
                     d.center[i] = fd.get_center()
                 if d.restfrq[i] is None:
                     h = fd.get_header()
-                    if 'RESTFRQ' in h: d.restfrq[i] = h['RESTFRQ']
-                    if 'RESTFREQ' in h: d.restfrq[i] = h['RESTFREQ']
+                    if 'NAXIS3' in h.keys() and h['NAXIS3'] == 1:
+                        d.restfrq[i] = h['CRVAL3']
+                    elif 'RESTFRQ' in h:
+                        d.restfrq[i] = h['RESTFRQ']
+                    elif 'RESTFREQ' in h:
+                        d.restfrq[i] = h['RESTFREQ']
                 d.data[i] = fd.get_data()
                 grid = fd.get_grid(center=d.center[i], dist=self.dist,
                                    restfrq=d.restfrq[i], vsys=self.vsys,
