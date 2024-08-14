@@ -29,7 +29,7 @@ def to4dim(data: np.ndarray) -> np.ndarray:
     
     
 def quadrantmean(data: np.ndarray, x: np.ndarray, y: np.ndarray,
-                 quadrants: str ='13') -> tuple:
+                 quadrants: str ='13') -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Take mean between 1st and 3rd (or 2nd and 4th) quadrants.
 
     Args:
@@ -64,7 +64,7 @@ def quadrantmean(data: np.ndarray, x: np.ndarray, y: np.ndarray,
 
 
 def RGIxy(y: np.ndarray, x: np.ndarray, data: np.ndarray,
-          yxnew: tuple = None) -> object or np.ndarray:
+          yxnew: tuple[np.ndarray, np.ndarray] = None) -> object | np.ndarray:
     """RGI for x and y at each channel.
 
     Args:
@@ -95,7 +95,8 @@ def RGIxy(y: np.ndarray, x: np.ndarray, data: np.ndarray,
 
 
 def RGIxyv(v: np.ndarray, y: np.ndarray, x: np.ndarray, data: np.ndarray,
-          vyxnew: tuple = None) -> object or np.ndarray:
+          vyxnew: tuple[np.ndarray, np.ndarray, np.ndarray] = None
+          ) -> object or np.ndarray:
     """RGI in the x-y-v space.
 
     Args:
@@ -124,7 +125,7 @@ def RGIxyv(v: np.ndarray, y: np.ndarray, x: np.ndarray, data: np.ndarray,
 
 
 def filled2d(data: np.ndarray, x: np.ndarray, y: np.ndarray,
-             n: int = 1) -> tuple:
+             n: int = 1) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Fill 2D data, 1D x, and 1D y by a factor of n using RGI.
 
     Args:
@@ -194,7 +195,7 @@ class AstroData():
         self.fitsimage_org = None
         self.sigma_org = None
 
-    def binning(self, width: list = [1, 1, 1]):
+    def binning(self, width: list[int, int, int] = [1, 1, 1]):
         """Binning up neighboring pixels in the v, y, and x domain.
 
         Args:
@@ -342,8 +343,9 @@ class AstroData():
         residual = d - model
         return {'popt':popt, 'pcov':pcov, 'model':model, 'residual':residual}
 
-    def mask(self, dataformask: np.ndarray = None, includepix: list = [],
-             excludepix: list = []):
+    def mask(self, dataformask: np.ndarray = None,
+             includepix: list[float, float] = [],
+             excludepix: list[float, float] = []):
         """Mask self.data using a 2D or 3D array of dataformask.
 
         Args:
@@ -367,9 +369,12 @@ class AstroData():
         if len(excludepix) == 2:
             self.data[(excludepix[0] < mask) * (mask < excludepix[1])] = np.nan
 
-    def profile(self, coords: list = [], xlist: list = [], ylist: list = [],
-                ellipse: list = None, flux: bool = False,
-                gaussfit: bool = False) -> tuple:
+    def profile(self, coords: list[str] = [],
+                xlist: list[float] = [], ylist: list[float] = [],
+                ellipse: list[float, float, float] = None,
+                flux: bool = False,
+                gaussfit: bool = False
+                ) -> tuple[np.ndarray, np.ndarray, dict]:
         """Get a list of line profiles at given spatial coordinates.
 
         Args:
@@ -581,7 +586,7 @@ class AstroFrame():
         if self.fitsimage is not None and self.center is None:
             self.center = FitsData(self.fitsimage).get_center()
         
-    def pos2xy(self, poslist: list = []) -> np.ndarray:
+    def pos2xy(self, poslist: list[str | list[float, float]] = []) -> np.ndarray:
         """Text or relative to absolute coordinates.
 
          Args:
