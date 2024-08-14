@@ -20,7 +20,7 @@ def shiftphase(F: np.ndarray, u: np.ndarray, xoff: float = 0) -> np.ndarray:
     return F * np.exp(1j * 2 * np.pi * u * xoff)
 
 
-def shiftphase2(F: np.ndarray, u: np.ndarray, v: np.ndarray = None,
+def shiftphase2(F: np.ndarray, u: np.ndarray, v: np.ndarray,
                 xoff: float = 0, yoff: float = 0) -> np.ndarray:
     """Shift the phase of 2D FFT by (xoff, yoff).
 
@@ -38,7 +38,7 @@ def shiftphase2(F: np.ndarray, u: np.ndarray, v: np.ndarray = None,
     return F * np.exp(1j * 2 * np.pi * (U * xoff + V * yoff))
 
 
-def fftcentering(f: np.ndarray, x: np.ndarray = None,
+def fftcentering(f: np.ndarray, x: np.ndarray | None = None,
                  xcenter: float = 0
                  ) -> tuple[np.ndarray, np.ndarray]:
     """FFT with the phase referring to a specific point.
@@ -61,7 +61,8 @@ def fftcentering(f: np.ndarray, x: np.ndarray = None,
     return F, u
 
 
-def fftcentering2(f: np.ndarray, x: np.ndarray = None, y: np.ndarray = None,
+def fftcentering2(f: np.ndarray,
+                  x: np.ndarray | None = None, y: np.ndarray | None = None,
                   xcenter: float = 0, ycenter: float = 0
                   ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """FFT with the phase referring to a specific point.
@@ -89,8 +90,8 @@ def fftcentering2(f: np.ndarray, x: np.ndarray = None, y: np.ndarray = None,
     return F, u, v
 
 
-def ifftcentering(F: np.ndarray, u: np.ndarray = None, xcenter: float = 0,
-                  x0: float = None, outreal: bool = True
+def ifftcentering(F: np.ndarray, u: np.ndarray | None = None,
+                  xcenter: float = 0, x0: float = None, outreal: bool = True
                   ) -> tuple[np.ndarray, np.ndarray]:
     """inverse FFT with the phase referring to a specific point.
 
@@ -115,9 +116,10 @@ def ifftcentering(F: np.ndarray, u: np.ndarray = None, xcenter: float = 0,
     return f, x
 
 
-def ifftcentering2(F: np.ndarray, u: np.ndarray = None, v: np.ndarray = None,
+def ifftcentering2(F: np.ndarray,
+                   u: np.ndarray | None = None, v: np.ndarray | None = None,
                    xcenter: float = 0, ycenter: float = 0,
-                   x0: float = None, y0: float = None,
+                   x0: float | None = None, y0: float | None = None,
                    outreal: bool = True
                    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """inverse FFT with the phase referring to a specific point.
@@ -181,8 +183,8 @@ def zeropadding(f: np.ndarray, x: np.ndarray, y: np.ndarray,
     return fnew, xnew, ynew
 
 
-def fftfits(fitsimage: str, center: str = None, lam: float = 1,
-            xlim: list = None, ylim: list = None,
+def fftfits(fitsimage: str, center: str | None = None, lam: float = 1,
+            xlim: list | None = None, ylim: list | None = None,
             plot: bool = False) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """FFT a fits image with the phase referring to a specific point.
 
@@ -229,8 +231,9 @@ def fftfits(fitsimage: str, center: str = None, lam: float = 1,
     return F, u, v
 
 
-def findindex(u: np.ndarray = None, v: np.ndarray = None,
-              uobs: np.ndarray = None, vobs: np.ndarray = None) -> np.ndarray:
+def findindex(u: np.ndarray | None = None, v: np.ndarray | None = None,
+              uobs: np.ndarray | None = None, vobs: np.ndarray | None = None
+              ) -> np.ndarray:
     """Find indicies of the observed visibility points.
 
     Args:
@@ -253,12 +256,13 @@ def findindex(u: np.ndarray = None, v: np.ndarray = None,
         return idx_u
 
 
-def fftfitssample(fitsimage: str, center: str = None,
-                  index_u: np.ndarray = None, index_v: np.ndarray = None,
-                  xlim: list = None, ylim: list = None,
+def fftfitssample(fitsimage: str, center: str | None = None,
+                  index_u: np.ndarray | None = None,
+                  index_v: np.ndarray | None = None,
+                  xlim: list | None = None, ylim: list | None = None,
                   getindex: bool = False,
-                  u_sample: np.ndarray = None,
-                  v_sample: np.ndarray = None) -> np.ndarray:
+                  u_sample: np.ndarray | None = None,
+                  v_sample: np.ndarray | None = None) -> np.ndarray:
     """Find indicies or the visibilities on them from an image fits file.
 
     Args:

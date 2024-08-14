@@ -64,7 +64,8 @@ def quadrantmean(data: np.ndarray, x: np.ndarray, y: np.ndarray,
 
 
 def RGIxy(y: np.ndarray, x: np.ndarray, data: np.ndarray,
-          yxnew: tuple[np.ndarray, np.ndarray] = None) -> object | np.ndarray:
+          yxnew: tuple[np.ndarray, np.ndarray] | None = None
+          ) -> object | np.ndarray:
     """RGI for x and y at each channel.
 
     Args:
@@ -95,8 +96,8 @@ def RGIxy(y: np.ndarray, x: np.ndarray, data: np.ndarray,
 
 
 def RGIxyv(v: np.ndarray, y: np.ndarray, x: np.ndarray, data: np.ndarray,
-          vyxnew: tuple[np.ndarray, np.ndarray, np.ndarray] = None
-          ) -> object or np.ndarray:
+          vyxnew: tuple[np.ndarray, np.ndarray, np.ndarray] | None = None
+          ) -> object | np.ndarray:
     """RGI in the x-y-v space.
 
     Args:
@@ -124,8 +125,8 @@ def RGIxyv(v: np.ndarray, y: np.ndarray, x: np.ndarray, data: np.ndarray,
         return np.squeeze([f3d(tuple(vyxnew)) for f3d in f])
 
 
-def filled2d(data: np.ndarray, x: np.ndarray, y: np.ndarray,
-             n: int = 1) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def filled2d(data: np.ndarray, x: np.ndarray, y: np.ndarray, n: int = 1
+             ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Fill 2D data, 1D x, and 1D y by a factor of n using RGI.
 
     Args:
@@ -371,9 +372,8 @@ class AstroData():
 
     def profile(self, coords: list[str] = [],
                 xlist: list[float] = [], ylist: list[float] = [],
-                ellipse: list[float, float, float] = None,
-                flux: bool = False,
-                gaussfit: bool = False
+                ellipse: list[float, float, float] | None = None,
+                flux: bool = False, gaussfit: bool = False
                 ) -> tuple[np.ndarray, np.ndarray, dict]:
         """Get a list of line profiles at given spatial coordinates.
 
@@ -447,7 +447,7 @@ class AstroData():
             self.beam[2] = self.beam[2] + pa
     
     def slice(self, length: float = 0, pa: float = 0,
-              dx: float = None) -> np.ndarray:
+              dx: float | None = None) -> np.ndarray:
         """Get 1D slice with given a length and a position-angle.
 
         Args:

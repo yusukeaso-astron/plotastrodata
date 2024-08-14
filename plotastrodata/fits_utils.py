@@ -6,8 +6,8 @@ from plotastrodata.other_utils import coord2xy, xy2coord, estimate_rms, trim
 
 
 
-def Jy2K(header = None, bmaj: float = None, bmin: float = None,
-         restfrq: float = None) -> float:
+def Jy2K(header = None, bmaj: float | None = None, bmin: float | None = None,
+         restfrq: float | None = None) -> float:
     """Calculate a conversion factor in the unit of K/Jy.
 
     Args:
@@ -49,7 +49,7 @@ class FitsData:
     def __init__(self, fitsimage: str):
         self.fitsimage = fitsimage
 
-    def gen_hdu(self):
+    def gen_hdu(self) -> None:
         """Generate self.hdu. fits.open()[0].
         """
         hdu = fits.open(self.fitsimage)
@@ -68,7 +68,7 @@ class FitsData:
             self.gen_hdu()
         self.header = self.hdu.header
 
-    def get_header(self, key: str = None) -> dict or float:
+    def get_header(self, key: str | None = None) -> dict | float:
         """Output the entire header or a value when a key is given.
 
         Args:
@@ -155,8 +155,8 @@ class FitsData:
         if not hasattr(self, 'data'): self.gen_data(**kwargs)
         return self.data
 
-    def gen_grid(self, center: str = None, dist: float = 1.,
-                 restfrq: float = None, vsys: float = 0.,
+    def gen_grid(self, center: str | None = None, dist: float = 1.,
+                 restfrq: float | None = None, vsys: float = 0.,
                  pv: bool = False) -> None:
         """Generate grids relative to the center and vsys.
 
@@ -213,7 +213,7 @@ class FitsData:
         if h['NAXIS'] > 2 and h['NAXIS3'] > 1:
                 gen_v(get_list(3, True))
                     
-    def get_grid(self, **kwargs) -> tuple:
+    def get_grid(self, **kwargs) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Output the grids, [x, y, v]. This method can take the arguments of gen_grid().
 
         Returns:
@@ -248,9 +248,11 @@ class FitsData:
 
 
 def fits2data(fitsimage: str, Tb: bool = False, log: bool = False,
-              dist: float = 1., sigma: str = None,
-              restfrq: float = None, center: str = None,
-              vsys: float = 0., pv: bool = False, **kwargs) -> tuple:
+              dist: float = 1., sigma: str | None = None,
+              restfrq: float | None = None, center: str | None = None,
+              vsys: float = 0., pv: bool = False, **kwargs
+              ) -> tuple[np.ndarray, tuple[np.ndarray, np.ndarray, np.ndarray],
+                         tuple[float, float, float], float, float]:
     """Extract data from a fits file. kwargs are arguments of FitsData.trim().
 
     Args:
@@ -277,7 +279,8 @@ def fits2data(fitsimage: str, Tb: bool = False, log: bool = False,
     return fd.data, (fd.x, fd.y, fd.v), beam, bunit, rms
 
     
-def data2fits(d: np.ndarray = None, h: dict = {}, templatefits: str = None,
+def data2fits(d: np.ndarray | None = None, h: dict = {},
+              templatefits: str | None = None,
               fitsimage: str = 'test') -> None:
     """Make a fits file from a N-D array.
 

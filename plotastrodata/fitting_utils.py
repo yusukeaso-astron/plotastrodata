@@ -29,8 +29,9 @@ def logp(x: np.ndarray) -> float:
 
 class PTEmceeCorner():
     warnings.simplefilter('ignore', RuntimeWarning)
-    def __init__(self, bounds: np.ndarray, logl=None, model=None,
-                 xdata: np.ndarray = None, ydata: np.ndarray = None,
+    def __init__(self, bounds: np.ndarray, logl: object | None = None,
+                 model: object | None = None,
+                 xdata: np.ndarray | None = None, ydata: np.ndarray | None = None,
                  sigma: np.ndarray = 1, progressbar: bool = True,
                  percent: list = [16, 84]):
         """Make bounds, logl, and logp for ptemcee.
@@ -59,8 +60,9 @@ class PTEmceeCorner():
         self.ndata = 10000 if xdata is None else len(xdata)
     
     def fit(self, nwalkersperdim: int = 2, ntemps: int = 1, nsteps: int = 1000,
-            nburnin: int = 500, ntry: int = 1, pos0: np.ndarray = None,
-            savechain: str = None, ncores: int = 1, grcheck: bool = False):
+            nburnin: int = 500, ntry: int = 1, pos0: np.ndarray | None = None,
+            savechain: str | None = None, ncores: int = 1, grcheck: bool = False
+            ) -> None:
         """Perform a Markov Chain Monte Carlo (MCMC) fitting process using the ptemcee library, which is a parallel tempering version of the emcee package, and make a corner plot of the samples using the corner package.
 
         Args:
@@ -128,8 +130,8 @@ class PTEmceeCorner():
             print('')
     
     def plotcorner(self, show: bool = False,
-                   savefig: str = None, labels: list = None,
-                   cornerrange: list = None):
+                   savefig: str | None = None, labels: list[float] | None = None,
+                   cornerrange: list [float] = None) -> None:
         """Make the corner plot from self.samples.
 
         Args:
@@ -193,7 +195,7 @@ class PTEmceeCorner():
             plt.show()
         plt.close()
         
-    def posteriorongrid(self, ngrid: list = 100, log: list = False, pcut: float = 0):
+    def posteriorongrid(self, ngrid: list = 100, log: list[bool] = False, pcut: float = 0):
         """Calculate the posterior on a grid of ngrid x ngrid x ... x ngrid.
 
         Args:
@@ -245,10 +247,9 @@ class PTEmceeCorner():
         self.vol = vol
         self.evidence = evidence
 
-    def plotongrid(self, show: bool = False, savefig: str = None,
-                   labels: list = None, cornerrange: list = None,
-                   cmap: str = 'binary',
-                   levels: list = [0.001, 0.01, 0.1]):
+    def plotongrid(self, show: bool = False, savefig: str | None = None,
+                   labels: list[str] = None, cornerrange: list[float] = None,
+                   cmap: str = 'binary', levels: list[float] = [0.001, 0.01, 0.1]) -> None:
         """Make the corner plot from the posterior calculated on a grid.
 
         Args:

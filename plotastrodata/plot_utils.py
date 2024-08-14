@@ -40,7 +40,8 @@ def set_rcparams(fontsize: int = 18, nancolor: str ='w',
     plt.rcParams['ytick.minor.width'] = 1.5
 
 
-def logticks(ticks: list, lim: list) -> tuple:
+def logticks(ticks: list[float], lim: list[float, float]
+             ) -> tuple[list[float], list[str]]:
     """Make nice ticks for a log axis.
 
     Args:
@@ -994,15 +995,17 @@ class PlotAstroData(AstroFrame):
         return self.fig, self.ax[0]
 
 
-def plotprofile(coords: list = [], xlist: list = [], ylist: list = [],
-                ellipse: list = None, flux: bool = False, width: int = 1,
+def plotprofile(coords: list[str] = [],
+                xlist: list[float] = [], ylist: list[float] = [],
+                ellipse: list[float, float, float] | None = None,
+                flux: bool = False, width: int = 1,
                 gaussfit: bool = False, gauss_kwargs: dict = {},
-                title: list = None, text: list = None,
+                title: list[str] | None = None, text: list[str] | None = None,
                 dist: float = 1., vsys: float = 0.,
                 nrows: int = 0, ncols: int = 1, fig = None, ax = None,
                 getfigax: bool = False,
                 savefig: dict = None, show: bool = True,
-                **kwargs) -> tuple:
+                **kwargs) -> tuple[object, object]:
     """Use Axes.plot of matplotlib to plot line profiles at given coordinates. kwargs must include the arguments of AstroData to specify the data to be plotted. kwargs can include the arguments of PlotAxes2D to adjust x and y axes.
 
     Args:
@@ -1080,12 +1083,13 @@ def plotprofile(coords: list = [], xlist: list = [], ylist: list = [],
     plt.close()    
 
 
-def plotslice(length: float, dx: float = None, pa: float = 0,
+def plotslice(length: float, dx: float | None = None, pa: float = 0,
               dist: float = 1, xoff: float = 0, yoff: float = 0,
               xflip: bool = True, yflip: bool = False,
-              txtfile: str = None,
-              fig = None, ax = None, getfigax: bool = False,
-              savefig: str or dict = None, show: bool = False,
+              txtfile: str | None = None,
+              fig: object | None = None, ax: object | None = None,
+              getfigax: bool = False,
+              savefig: str | dict | None = None, show: bool = False,
               **kwargs) -> None:
     """Use Axes.plot of matplotlib to plot a 1D spatial slice in a 2D map. kwargs must include the arguments of AstroData to specify the data to be plotted. kwargs can include the arguments of PlotAxes2D to adjust x and y axes.
 
@@ -1138,13 +1142,13 @@ def plotslice(length: float, dx: float = None, pa: float = 0,
     plt.close()    
 
 
-def plot3d(levels: list = [3,6,12], cmap: str = 'Jet',
+def plot3d(levels: list[float] = [3,6,12], cmap: str = 'Jet',
            xlabel: str = 'R.A. (arcsec)',
            ylabel: str = 'Dec. (arcsec)',
            vlabel: str = 'Velocity (km/s)',
            xskip: int = 1, yskip: int = 1,
            eye_p: float = 0, eye_i: float = 180,
-           outname: str = 'plot3d', show: bool = False, **kwargs):
+           outname: str = 'plot3d', show: bool = False, **kwargs) -> None:
     """Use Plotly. kwargs must include the arguments of AstroData to specify the data to be plotted. kwargs must include the arguments of AstroFrame to specify the ranges and so on for plotting.
 
     Args:

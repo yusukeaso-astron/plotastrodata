@@ -8,7 +8,7 @@ from scipy.special import erf
 
 
 
-def terminal(cmd: str, **kwargs):
+def terminal(cmd: str, **kwargs) -> None:
     """Run a terminal command through subprocess.run.
 
     Args:
@@ -17,7 +17,7 @@ def terminal(cmd: str, **kwargs):
     subprocess.run(shlex.split(cmd), **kwargs)
 
 
-def runpython(filename: str, **kwargs):
+def runpython(filename: str, **kwargs) -> None:
     """Run a python file.
 
     Args:
@@ -180,10 +180,12 @@ def estimate_rms(data: np.ndarray, sigma: float or str = 'hist') -> float:
     return noise
 
 
-def trim(data: np.ndarray = None, x: np.ndarray = None,
-         y: np.ndarray = None, v: np.ndarray = None,
-         xlim: list = None, ylim: list = None, vlim: list = None,
-         pv: bool = False) -> tuple:
+def trim(data: np.ndarray | None = None, x: np.ndarray | None = None,
+         y: np.ndarray | None = None, v: np.ndarray | None = None,
+         xlim: list[float, float] | None = None,
+         ylim: list[float, float] | None = None,
+         vlim: list[float, float] | None = None,
+         pv: bool = False) -> tuple[np.ndarray, list[np.ndarray, np.ndarray, np.ndarray]]:
     """Trim 2D or 3D data by given coordinates and their limits.
 
     Args:
