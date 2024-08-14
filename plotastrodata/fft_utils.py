@@ -39,7 +39,8 @@ def shiftphase2(F: np.ndarray, u: np.ndarray, v: np.ndarray = None,
 
 
 def fftcentering(f: np.ndarray, x: np.ndarray = None,
-                 xcenter: float = 0) -> tuple:
+                 xcenter: float = 0
+                 ) -> tuple[np.ndarray, np.ndarray]:
     """FFT with the phase referring to a specific point.
 
     Args:
@@ -61,7 +62,8 @@ def fftcentering(f: np.ndarray, x: np.ndarray = None,
 
 
 def fftcentering2(f: np.ndarray, x: np.ndarray = None, y: np.ndarray = None,
-                  xcenter: float = 0, ycenter: float = 0) -> tuple:
+                  xcenter: float = 0, ycenter: float = 0
+                  ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """FFT with the phase referring to a specific point.
 
     Args:
@@ -88,7 +90,8 @@ def fftcentering2(f: np.ndarray, x: np.ndarray = None, y: np.ndarray = None,
 
 
 def ifftcentering(F: np.ndarray, u: np.ndarray = None, xcenter: float = 0,
-                  x0: float = None, outreal: bool = True) -> tuple:
+                  x0: float = None, outreal: bool = True
+                  ) -> tuple[np.ndarray, np.ndarray]:
     """inverse FFT with the phase referring to a specific point.
 
     Args:
@@ -115,7 +118,8 @@ def ifftcentering(F: np.ndarray, u: np.ndarray = None, xcenter: float = 0,
 def ifftcentering2(F: np.ndarray, u: np.ndarray = None, v: np.ndarray = None,
                    xcenter: float = 0, ycenter: float = 0,
                    x0: float = None, y0: float = None,
-                   outreal: bool = True) -> tuple:
+                   outreal: bool = True
+                   ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """inverse FFT with the phase referring to a specific point.
 
     Args:
@@ -146,7 +150,8 @@ def ifftcentering2(F: np.ndarray, u: np.ndarray = None, v: np.ndarray = None,
 
 
 def zeropadding(f: np.ndarray, x: np.ndarray, y: np.ndarray,
-                xlim: list, ylim: list) -> tuple:
+                xlim: list, ylim: list
+                ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Pad an outer region with zero.
 
     Args:
@@ -178,7 +183,7 @@ def zeropadding(f: np.ndarray, x: np.ndarray, y: np.ndarray,
 
 def fftfits(fitsimage: str, center: str = None, lam: float = 1,
             xlim: list = None, ylim: list = None,
-            plot: bool = False) -> tuple:
+            plot: bool = False) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """FFT a fits image with the phase referring to a specific point.
 
     Args:
