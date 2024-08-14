@@ -324,10 +324,11 @@ class PlotAstroData(AstroFrame):
         ax (optional): External fig.add_subplot(). Defaults to None.
     """
     def __init__(self, v: np.ndarray = np.array([0]), vskip: int = 1,
-                 veldigit: int = 2, restfrq: float = None,
-                 channelnumber: int = None, nrows: int = 4, ncols: int = 6,
-                 fontsize: int = None, nancolor: str = 'w', dpi: int = 256,
-                 figsize: tuple = None, fig=None, ax=None, **kwargs) -> None:
+                 veldigit: int = 2, restfrq: float | None = None,
+                 channelnumber: int | None = None, nrows: int = 4, ncols: int = 6,
+                 fontsize: int | None = None, nancolor: str = 'w', dpi: int = 256,
+                 figsize: tuple[float, float] | None = None,
+                 fig: object | None = None, ax: object | None =None, **kwargs) -> None:
         super().__init__(**kwargs)
         internalfig = fig is None
         internalax = ax is None
@@ -424,9 +425,11 @@ class PlotAstroData(AstroFrame):
             return np.concatenate((d, dnan), axis=0)
         self.vskipfill = vskipfill
         
-    def add_region(self, patch: str = 'ellipse', poslist: list = [],
-                   majlist: list = [], minlist: list = [], palist: list = [],
-                   include_chan: list = None, **kwargs) -> None:
+    def add_region(self, patch: str = 'ellipse',
+                   poslist: list[str | list[float, float]] = [],
+                   majlist: list[float] = [], minlist: list[float] = [],
+                   palist: list[float] = [],
+                   include_chan: list[int] | None = None, **kwargs) -> None:
         """Use add_patch() and Rectangle or Ellipse of matplotlib.
 
         Args:
@@ -463,9 +466,10 @@ class PlotAstroData(AstroFrame):
                       angle=angle * self.xdir, **dict(kwargs0, **kwargs))
                 axnow.add_patch(p)
                 
-    def add_beam(self, beam: list = [None, None, None],
+    def add_beam(self,
+                 beam: list[float | None, float | None, float | None] = [None, None, None],
                  beamcolor: str = 'gray',
-                 poslist: list = None) -> None:
+                 poslist: list[str | list[float, float]] | None = None) -> None:
         """Use add_region().
 
         Args:
@@ -484,8 +488,8 @@ class PlotAstroData(AstroFrame):
                         include_chan=include_chan,
                         facecolor=beamcolor, edgecolor=None)
     
-    def add_marker(self, poslist: list = [],
-                   include_chan: list = None, **kwargs) -> None:
+    def add_marker(self, poslist: list[str | list[float, float]] = [],
+                   include_chan: list[int] | None = None, **kwargs) -> None:
         """Use Axes.plot of matplotlib.
 
         Args:
@@ -502,8 +506,9 @@ class PlotAstroData(AstroFrame):
             for x, y in zip(*self.pos2xy(poslist)):
                 axnow.plot(x, y, **dict(kwsmark0, **kwargs), zorder=10)
             
-    def add_text(self, poslist: list = [], slist: list = [],
-                  include_chan: list = None, **kwargs) -> None:
+    def add_text(self, poslist: list[str | list[float, float]] = [],
+                 slist: list[str] = [],
+                 include_chan: list[int] = None, **kwargs) -> None:
         """Use Axes.text of matplotlib.
 
         Args:
@@ -521,8 +526,9 @@ class PlotAstroData(AstroFrame):
             for x, y, s in zip(*self.pos2xy(poslist), listing(slist)):
                 axnow.text(x=x, y=y, s=s, **dict(kwargs0, **kwargs))
 
-    def add_line(self, poslist: list = [], anglelist: list = [],
-                 rlist: list = [], include_chan: list = None,
+    def add_line(self, poslist: list[str | list[float, float]] = [],
+                 anglelist: list[float] = [],
+                 rlist: list[float] = [], include_chan: list[int] = None,
                  **kwargs) -> None:
         """Use Axes.plot of matplotlib.
 
@@ -546,8 +552,9 @@ class PlotAstroData(AstroFrame):
                            [y, y + r * np.cos(a)],
                            **dict(kwargs0, **kwargs))
 
-    def add_arrow(self, poslist: list = [], anglelist: list = [],
-                  rlist: list = [], include_chan: list = None,
+    def add_arrow(self, poslist: list[str | list[float, float]] = [],
+                  anglelist: list[float] = [],
+                  rlist: list[float] = [], include_chan: list[int] = None,
                   **kwargs) -> None:
         """Use Axes.quiver of matplotlib.
 
@@ -572,7 +579,7 @@ class PlotAstroData(AstroFrame):
                              **dict(kwargs0, **kwargs))
                 
     def add_scalebar(self, length: float = 0, label: str = '',
-                     color: str = 'gray', barpos: tuple = (0.8, 0.12),
+                     color: str = 'gray', barpos: tuple[float, float] = (0.8, 0.12),
                      fontsize: float = None, linewidth: float = 3,
                      bbox: dict = {'alpha':0}) -> None:
         """Use Axes.text and Axes.plot of matplotlib.
@@ -605,8 +612,8 @@ class PlotAstroData(AstroFrame):
                   stretchscale: float = None,
                   stretchpower: float = 0,
                   show_cbar: bool = True, cblabel: str = None,
-                  cbformat: float = '%.1e', cbticks: list = None,
-                  cbticklabels: list = None, cblocation: str = 'right',
+                  cbformat: float = '%.1e', cbticks: list[float] | None = None,
+                  cbticklabels: list[str] | None = None, cblocation: str = 'right',
                   show_beam: bool = True, beamcolor: str = 'gray',
                   **kwargs) -> None:
         """Use Axes.pcolormesh of matplotlib. kwargs must include the arguments of AstroData to specify the data to be plotted.
@@ -684,7 +691,7 @@ class PlotAstroData(AstroFrame):
             self.add_beam(beam, beamcolor)
 
     def add_contour(self, xskip: int = 1, yskip: int = 1,
-                    levels: list = [-12,-6,-3,3,6,12,24,48,96,192,384],
+                    levels: list[float] = [-12,-6,-3,3,6,12,24,48,96,192,384],
                     show_beam: bool = True, beamcolor: str = 'gray',
                     **kwargs) -> None:
         """Use Axes.contour of matplotlib. kwargs must include the arguments of AstroData to specify the data to be plotted.
@@ -712,8 +719,10 @@ class PlotAstroData(AstroFrame):
     def add_segment(self, ampfits: str = None, angfits: str = None,
                     Ufits: str = None, Qfits: str = None,
                     xskip: int = 1, yskip: int = 1,
-                    amp: list = None, ang: list = None,
-                    stU: list = None, stQ: list = None,
+                    amp: list[np.ndarray] | None = None,
+                    ang: list[np.ndarray] | None = None,
+                    stU: list[np.ndarray] | None = None,
+                    stQ: list[np.ndarray] | None = None,
                     ampfactor: float = 1., angonly: bool = False,
                     rotation: float = 0.,
                     cutoff: float = 3., 
@@ -773,11 +782,11 @@ class PlotAstroData(AstroFrame):
             self.add_beam(beam, beamcolor)
 
     def add_rgb(self, xskip: int = 1, yskip: int = 1,
-                stretch: list = ['linear'] * 3,
-                stretchscale: list = [None] * 3,
+                stretch: list[str, str, str] = ['linear'] * 3,
+                stretchscale: list[float | None, float | None, float | None] = [None] * 3,
                 stretchpower: float = 0,
                 show_beam: bool = True,
-                beamcolor: list = ['red', 'green', 'blue'],
+                beamcolor: list[str, str, str] = ['red', 'green', 'blue'],
                 **kwargs) -> None:
         """Use PIL.Image and imshow of matplotlib. kwargs must include the arguments of AstroData to specify the data to be plotted. A three-element array ([red, green, blue]) is supposed for all arguments, except for xskip, yskip and show_beam, including vmax and vmin.
 
@@ -821,7 +830,7 @@ class PlotAstroData(AstroFrame):
             for i in range(3):
                 self.add_beam(beam[i], beamcolor[i])
     
-    def set_axis(self, title: dict = None, **kwargs) -> None:
+    def set_axis(self, title: dict | None = None, **kwargs) -> None:
         """Use Axes.set_* of matplotlib. kwargs can include the arguments of PlotAxes2D to adjust x and y axis.
 
         Args:
@@ -868,11 +877,11 @@ class PlotAstroData(AstroFrame):
                 if type(title) is str: title = {'label':title}
                 axnow.set_title(**title)
             
-    def set_axis_radec(self, center: str = None, 
+    def set_axis_radec(self, center: str | None = None, 
                        xlabel: str = 'R.A. (ICRS)',
                        ylabel: str = 'Dec. (ICRS)',
                        nticksminor: int = 2,
-                       grid: dict = None, title: dict = None) -> None:
+                       grid: dict | None = None, title: dict | None = None) -> None:
         """Use ax.set_* of matplotlib.
 
         Args:
@@ -959,7 +968,7 @@ class PlotAstroData(AstroFrame):
                 if type(title) is str: title = {'label':title}
                 axnow.set_title(**title)
             
-    def savefig(self, filename: str = None,
+    def savefig(self, filename: str | None = None,
                 show: bool = False, **kwargs) -> None:
         """Use savefig of matplotlib.
 
@@ -983,7 +992,7 @@ class PlotAstroData(AstroFrame):
             plt.show()
         plt.close()
 
-    def get_figax(self) -> tuple:
+    def get_figax(self) -> tuple[object, object]:
         """Output the external fig and ax after plotting.
 
         Returns:
