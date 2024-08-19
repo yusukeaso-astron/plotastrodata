@@ -52,9 +52,9 @@ plotastrodata can do the following things.
 * PIL (only for RGB figures)
 * plotly (only for html cube)
 * ptemcee (only for fitting)
-* skimage (only for html cube)
 * re
 * scipy
+* skimage (only for html cube)
 * warnings
 
  
