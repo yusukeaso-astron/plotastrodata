@@ -47,6 +47,7 @@ plotastrodata can do the following things.
 * astropy
 * corner (only for fitting)
 * dynesty (only for fitting)
+* ffmpeg (only for movie)
 * matplotlib
 * numpy
 * PIL (only for RGB figures)
