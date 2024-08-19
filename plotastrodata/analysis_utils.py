@@ -635,7 +635,7 @@ class AstroFrame():
                     d.center[i] = fd.get_center()
                 if d.restfrq[i] is None:
                     h = fd.get_header()
-                    if 'NAXIS3' in h.keys() and h['NAXIS3'] == 1:
+                    if 'NAXIS3' in h and h['NAXIS3'] == 1:
                         d.restfrq[i] = h['CRVAL3']
                     elif 'RESTFRQ' in h:
                         d.restfrq[i] = h['RESTFRQ']

@@ -28,8 +28,8 @@ def Jy2K(header = None, bmaj: float | None = None, bmin: float | None = None,
             bmaj = bmin = header['CDELT1'] * np.sqrt(4*np.log(2)/np.pi) * 3600
             if header['CUNIT1'] == 'arcsec':
                 bmaj, bmin = bmaj / 3600, bmin / 3600
-        if 'RESTFREQ' in header.keys(): freq = header['RESTFREQ']
-        if 'RESTFRQ' in header.keys(): freq = header['RESTFRQ']
+        if 'RESTFREQ' in header: freq = header['RESTFREQ']
+        if 'RESTFRQ' in header: freq = header['RESTFRQ']
     if restfrq is not None: freq = restfrq
     if freq is None:
         print('Please input restfrq.')
@@ -176,8 +176,8 @@ class FitsData:
             cx, cy = 0, 0
         # rest frequency
         if restfrq is None:
-            if 'RESTFRQ' in h.keys(): restfrq = h['RESTFRQ']
-            if 'RESTFREQ' in h.keys(): restfrq = h['RESTFREQ']
+            if 'RESTFRQ' in h: restfrq = h['RESTFRQ']
+            if 'RESTFREQ' in h: restfrq = h['RESTFREQ']
         self.x, self.y, self.v = None, None, None
         self.dx, self.dy, self.dv = None, None, None
         def get_list(i: int, crval=False) -> np.ndarray:
@@ -293,17 +293,17 @@ def data2fits(d: np.ndarray | None = None, h: dict = {},
     ctype0 = ["RA---SIN", "DEC--SIN", "VELOCITY"]
     naxis = np.ndim(d)
     w = wcs.WCS(naxis=naxis)
-    if templatefits is not None:
-        h = dict(FitsData(templatefits).get_header(), **h)
-    if h == {}:
+    _h = {} if templatefits is None else FitsData(templatefits).get_header()
+    _h.update(h)
+    if _h == {}:
         w.wcs.crpix = [0] * naxis
         w.wcs.crval = [0] * naxis
         w.wcs.cdelt = [1] * naxis
         w.wcs.ctype = ctype0[:naxis]
     header = w.to_header()
     hdu = fits.PrimaryHDU(d, header=header)
-    for k in h.keys():
+    for k in _h:
         if not ('COMMENT' in k or 'HISTORY' in k):
-            hdu.header[k]=h[k]
+            hdu.header[k] = _h[k]
     hdu = fits.HDUList([hdu])
     hdu.writeto(fitsimage.replace('.fits', '') + '.fits', overwrite=True)

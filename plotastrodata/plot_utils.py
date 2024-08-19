@@ -180,8 +180,8 @@ def set_minmax(data: np.ndarray, stretch: str, stretchscale: float,
         rms = [rms]
         stretch = [stretch]
         stretchscale = [stretchscale]
-        if 'vmin' in kw.keys(): kw['vmin'] = [kw['vmin']]
-        if 'vmax' in kw.keys(): kw['vmax'] = [kw['vmax']]
+        if 'vmin' in kw: kw['vmin'] = [kw['vmin']]
+        if 'vmax' in kw: kw['vmax'] = [kw['vmax']]
     z = (data, stretch, stretchscale, rms)
     for i, (c, st, stsc, r) in enumerate(zip(*z)):
         if stsc is None: stsc = r
@@ -191,14 +191,14 @@ def set_minmax(data: np.ndarray, stretch: str, stretchscale: float,
         elif st == 'asinh':
             c = np.arcsinh(c / stsc)
         elif st == 'power':
-            cmin = kw['min'][i] if 'vmin' in kw.keys() else r
+            cmin = kw['min'][i] if 'vmin' in kw else r
             c = c.clip(cmin, None)
             c = ((c / cmin)**(1 - stretchpower) - 1) \
                 / (1 - stretchpower) / np.log(10)
         data[i] = c
     n = len(data)
     for m in ['vmin', 'vmax']:
-        if m in kw.keys():
+        if m in kw:
             for i, (c, st, stsc, _) in enumerate(zip(*z)):
                 if st == 'log':
                     kw[m][i] = np.log10(kw[m][i])
@@ -234,8 +234,8 @@ def kwargs2AstroData(kw: dict) -> AstroData:
     """
     tmp = {}
     d = AstroData(data=np.zeros((2, 2)))
-    for k in vars(d).keys():
-        if k in kw.keys():
+    for k in vars(d):
+        if k in kw:
             tmp[k] = kw[k]
             del kw[k]
     if tmp == {}:
@@ -257,8 +257,8 @@ def kwargs2AstroFrame(kw: dict) -> AstroFrame:
     """
     tmp = {}
     f = AstroFrame()
-    for k in vars(f).keys():
-        if k in kw.keys():
+    for k in vars(f):
+        if k in kw:
             tmp[k] = kw[k]
             #del kw[k]
     f = AstroFrame(**tmp)
@@ -276,8 +276,8 @@ def kwargs2PlotAxes2D(kw: dict) -> PlotAxes2D:
     """
     tmp = {}
     d = PlotAxes2D()
-    for k in vars(d).keys():
-        if k in kw.keys():
+    for k in vars(d):
+        if k in kw:
             tmp[k] = kw[k]
             del kw[k]
     d = PlotAxes2D(**tmp)
@@ -301,7 +301,7 @@ class PlotAstroData(AstroFrame):
     like '01h23m45.6s 01d23m45.6s' or a list of relative x and y
     like [0.2, 0.3] (0 is left or bottom, 1 is right or top).
     Parameters for original methods in matplotlib.axes.Axes can be
-    used as kwargs; see the default kwargs0 for reference.
+    used as kwargs; see the default _kw for reference.
     Position-velocity diagrams (pv=True) does not yet suppot region, line,
     arrow, and segment because the units of abscissa and ordinate
     are different.
@@ -429,7 +429,8 @@ class PlotAstroData(AstroFrame):
                    poslist: list[str | list[float, float]] = [],
                    majlist: list[float] = [], minlist: list[float] = [],
                    palist: list[float] = [],
-                   include_chan: list[int] | None = None, **kwargs) -> None:
+                   include_chan: list[int] | None = None,
+                   **kwargs) -> None:
         """Use add_patch() and Rectangle or Ellipse of matplotlib.
 
         Args:
@@ -440,8 +441,9 @@ class PlotAstroData(AstroFrame):
             palist (list, optional): Position angle (north to east). Defaults to [].
             include_chan (list, optional): None means all. Defaults to None.
         """
-        kwargs0 = {'facecolor':'none', 'edgecolor':'gray',
-                   'linewidth':1.5, 'zorder':10}
+        _kw = {'facecolor':'none', 'edgecolor':'gray',
+               'linewidth':1.5, 'zorder':10}
+        _kw.update(kwargs)
         if include_chan is None: include_chan = self.allchan
         if not (patch in ['rectangle', 'ellipse']):
             print('Only patch=\'rectangle\' or \'ellipse\' supported. ')
@@ -463,7 +465,7 @@ class PlotAstroData(AstroFrame):
                     xp, yp = x, y
                     p = Ellipse
                 p = p((xp, yp), width=width, height=height,
-                      angle=angle * self.xdir, **dict(kwargs0, **kwargs))
+                      angle=angle * self.xdir, **_kw)
                 axnow.add_patch(p)
                 
     def add_beam(self,
@@ -496,15 +498,16 @@ class PlotAstroData(AstroFrame):
             poslist (list, optional): Text or relative. Defaults to [].
             include_chan (list, optional): None means all. Defaults to None.
         """
-        kwsmark0 = {'marker':'+', 'ms':10, 'mfc':'gray',
-                    'mec':'gray', 'mew':2, 'alpha':1}
+        _kw = {'marker':'+', 'ms':10, 'mfc':'gray',
+               'mec':'gray', 'mew':2, 'alpha':1, 'zorder':10}
+        _kw.update(kwargs)
         if include_chan is None: include_chan = self.allchan
         for ch, axnow in enumerate(self.ax):
             if type(self.channelnumber) is int: ch = self.channelnumber
             if not (ch in include_chan):
                 continue
             for x, y in zip(*self.pos2xy(poslist)):
-                axnow.plot(x, y, **dict(kwsmark0, **kwargs), zorder=10)
+                axnow.plot(x, y, **_kw)
             
     def add_text(self, poslist: list[str | list[float, float]] = [],
                  slist: list[str] = [],
@@ -516,15 +519,16 @@ class PlotAstroData(AstroFrame):
             slist (list, optional): List of text. Defaults to [].
             include_chan (list, optional): None means all. Defaults to None.
         """
-        kwargs0 = {'color':'gray', 'fontsize':15, 'ha':'center',
-                   'va':'center', 'zorder':10}
+        _kw = {'color':'gray', 'fontsize':15, 'ha':'center',
+               'va':'center', 'zorder':10}
+        _kw.update(kwargs)
         if include_chan is None: include_chan = self.allchan
         for ch, axnow in enumerate(self.ax):
             if type(self.channelnumber) is int: ch = self.channelnumber
             if not (ch in include_chan):
                 continue
             for x, y, s in zip(*self.pos2xy(poslist), listing(slist)):
-                axnow.text(x=x, y=y, s=s, **dict(kwargs0, **kwargs))
+                axnow.text(x=x, y=y, s=s, **_kw)
 
     def add_line(self, poslist: list[str | list[float, float]] = [],
                  anglelist: list[float] = [],
@@ -538,8 +542,9 @@ class PlotAstroData(AstroFrame):
             rlist (list, optional): List of radius. Defaults to [].
             include_chan (list, optional): None means all. Defaults to None.
         """
-        kwargs0 = {'color':'gray', 'linewidth':1.5,
-                   'linestyle':'-', 'zorder':10}
+        _kw = {'color':'gray', 'linewidth':1.5,
+               'linestyle':'-', 'zorder':10}
+        _kw.update(kwargs)
         if include_chan is None: include_chan = self.allchan
         for ch, axnow in enumerate(self.ax):
             if type(self.channelnumber) is int: ch = self.channelnumber
@@ -549,8 +554,7 @@ class PlotAstroData(AstroFrame):
             for x, y, a, r \
                 in zip(*self.pos2xy(poslist), *listing(alist, rlist)):
                 axnow.plot([x, x + r * np.sin(a)],
-                           [y, y + r * np.cos(a)],
-                           **dict(kwargs0, **kwargs))
+                           [y, y + r * np.cos(a)], **_kw)
 
     def add_arrow(self, poslist: list[str | list[float, float]] = [],
                   anglelist: list[float] = [],
@@ -564,8 +568,9 @@ class PlotAstroData(AstroFrame):
             rlist (list, optional): List of radius. Defaults to [].
             include_chan (list, optional): None means all. Defaults to None.
         """
-        kwargs0 = {'color':'gray', 'width':0.012,
-                   'headwidth':5, 'headlength':5, 'zorder':10}
+        _kw = {'color':'gray', 'width':0.012,
+               'headwidth':5, 'headlength':5, 'zorder':10}
+        _kw.update(kwargs)
         if include_chan is None: include_chan = self.allchan
         for ch, axnow in enumerate(self.ax):
             if type(self.channelnumber) is int: ch = self.channelnumber
@@ -576,7 +581,7 @@ class PlotAstroData(AstroFrame):
                 in zip(*self.pos2xy(poslist), *listing(alist, rlist)):
                 axnow.quiver(x, y, r * np.sin(a), r * np.cos(a),
                              angles='xy', scale_units='xy', scale=1,
-                             **dict(kwargs0, **kwargs))
+                             **_kw)
                 
     def add_scalebar(self, length: float = 0, label: str = '',
                      color: str = 'gray', barpos: tuple[float, float] = (0.8, 0.12),
@@ -632,20 +637,21 @@ class PlotAstroData(AstroFrame):
             show_beam (bool, optional): Defaults to True.
             beamcolor (str, optional): Matplotlib color. Defaults to 'gray'.
         """
-        kwargs0 = {'cmap':'cubehelix', 'alpha':1, 'edgecolors':'none', 'zorder':1}
-        d = kwargs2AstroData(kwargs)
+        _kw = {'cmap':'cubehelix', 'alpha':1, 'edgecolors':'none', 'zorder':1}
+        _kw.update(kwargs)
+        d = kwargs2AstroData(_kw)
         self.read(d, xskip, yskip)
         c, x, y, v, beam, sigma = d.data, d.x, d.y, d.v, d.beam, d.sigma
         bunit = d.bunit
         self.beam = beam
         self.sigma = sigma
         if stretchscale is None: stretchscale = sigma
-        cmin_org = kwargs['vmin'] if 'vmin' in kwargs.keys() else sigma
-        c = set_minmax(c, stretch, stretchscale, stretchpower, sigma, kwargs)
+        cmin_org = _kw['vmin'] if 'vmin' in _kw else sigma
+        c = set_minmax(c, stretch, stretchscale, stretchpower, sigma, _kw)
         c = self.vskipfill(c, v)
         if type(self.channelnumber) is int: c = [c[self.channelnumber]]
         for axnow, cnow in zip(self.ax, c):
-            p = axnow.pcolormesh(x, y, cnow, **dict(kwargs0, **kwargs))
+            p = axnow.pcolormesh(x, y, cnow, **_kw)
         for ch in self.bottomleft:
             if not show_cbar:
                 break
@@ -677,7 +683,7 @@ class PlotAstroData(AstroFrame):
                 cb.set_ticklabels(cbticklabels)
             elif stretch in ['log', 'asinh', 'power']:
                 t = cb.get_ticks()
-                t = t[(kwargs['vmin'] < t) * (t < kwargs['vmax'])]
+                t = t[(_kw['vmin'] < t) * (t < _kw['vmax'])]
                 cb.set_ticks(t)
                 if stretch == 'log':
                     ticklin = 10**t
@@ -702,8 +708,9 @@ class PlotAstroData(AstroFrame):
             show_beam (bool, optional): Defaults to True.
             beamcolor (str, optional): Matplotlib color. Defaults to 'gray'.
         """
-        kwargs0 = {'colors':'gray', 'linewidths':1.0, 'zorder':2}
-        d = kwargs2AstroData(kwargs)
+        _kw = {'colors':'gray', 'linewidths':1.0, 'zorder':2}
+        _kw.update(kwargs)
+        d = kwargs2AstroData(_kw)
         self.read(d, xskip, yskip)
         c, x, y, v, beam, sigma = d.data, d.x, d.y, d.v, d.beam, d.sigma
         self.beam = beam
@@ -711,8 +718,7 @@ class PlotAstroData(AstroFrame):
         c = self.vskipfill(c, v)
         if type(self.channelnumber) is int: c = [c[self.channelnumber]]
         for axnow, cnow in zip(self.ax, c):
-            axnow.contour(x, y, cnow, np.sort(levels) * sigma,
-                          **dict(kwargs0, **kwargs))
+            axnow.contour(x, y, cnow, np.sort(levels) * sigma, **_kw)
         if show_beam and not self.pv:
             self.add_beam(beam, beamcolor)
             
@@ -748,12 +754,13 @@ class PlotAstroData(AstroFrame):
             show_beam (bool, optional): Defaults to True.
             beamcolor (str, optional): Matplotlib color. Defaults to 'gray'.
         """
-        kwargs0 = {'angles':'xy', 'scale_units':'xy', 'color':'gray',
-                   'pivot':'mid', 'headwidth':0, 'headlength':0,
-                   'headaxislength':0, 'width':0.007, 'zorder':3}
-        kwargs['data'] = [amp, ang, stU, stQ]
-        kwargs['fitsimage'] = [ampfits, angfits, Ufits, Qfits]
-        d = kwargs2AstroData(kwargs)
+        _kw = {'angles':'xy', 'scale_units':'xy', 'color':'gray',
+               'pivot':'mid', 'headwidth':0, 'headlength':0,
+               'headaxislength':0, 'width':0.007, 'zorder':3}
+        _kw.update(kwargs)
+        _kw['data'] = [amp, ang, stU, stQ]
+        _kw['fitsimage'] = [ampfits, angfits, Ufits, Qfits]
+        d = kwargs2AstroData(_kw)
         self.read(d, xskip, yskip)
         c, x, y, v, beam, sigma = d.data, d.x, d.y, d.v, d.beam, d.sigma
         amp, ang, stU, stQ = c
@@ -775,9 +782,9 @@ class PlotAstroData(AstroFrame):
         if type(self.channelnumber) is int:
             U = [U[self.channelnumber]]
             V = [V[self.channelnumber]]
-        kwargs0['scale'] = 1 if len(x) == 1 else 1. / np.abs(x[1] - x[0])
+        _kw['scale'] = 1 if len(x) == 1 else 1. / np.abs(x[1] - x[0])
         for axnow, unow, vnow in zip(self.ax, U, V):
-            axnow.quiver(x, y, unow, vnow, **dict(kwargs0, **kwargs))
+            axnow.quiver(x, y, unow, vnow, **_kw)
         if show_beam and not self.pv:
             self.add_beam(beam, beamcolor)
 
@@ -800,21 +807,23 @@ class PlotAstroData(AstroFrame):
         """
         from PIL import Image
         
-        d = kwargs2AstroData(kwargs)
+        _kw = {}
+        _kw.update(kwargs)
+        d = kwargs2AstroData(_kw)
         self.read(d, xskip, yskip)
         c, x, y, v, beam, sigma = d.data, d.x, d.y, d.v, d.beam, d.sigma
         self.beam = beam
         self.sigma = sigma
         for i in range(len(stretchscale)):
             if stretchscale[i] is None: stretchscale[i] = sigma[i]
-        c = set_minmax(c, stretch, stretchscale, stretchpower, sigma, kwargs)
+        c = set_minmax(c, stretch, stretchscale, stretchpower, sigma, _kw)
         if not (np.shape(c[0]) == np.shape(c[1]) == np.shape(c[2])):
             print('RGB shapes mismatch. Skip add_rgb.')
             return -1
 
         for i in range(3):
-            c[i] = (c[i] - kwargs['vmin'][i]) \
-                   / (kwargs['vmax'][i] - kwargs['vmin'][i]) * 255
+            c[i] = (c[i] - _kw['vmin'][i]) \
+                   / (_kw['vmax'][i] - _kw['vmin'][i]) * 255
             c[i] = self.vskipfill(c[i], v)
         size = np.shape(c[0][0])
         for axnow, red, green, blue in zip(self.ax, *c):
@@ -830,32 +839,34 @@ class PlotAstroData(AstroFrame):
             for i in range(3):
                 self.add_beam(beam[i], beamcolor[i])
     
-    def set_axis(self, title: dict | None = None, **kwargs) -> None:
+    def set_axis(self, title: dict | str | None = None, **kwargs) -> None:
         """Use Axes.set_* of matplotlib. kwargs can include the arguments of PlotAxes2D to adjust x and y axis.
 
         Args:
             title (dict, optional): str means set_title(str) for 2D or fig.suptitle(str) for 3D. Defaults to None.
         """
+        _kw = {}
+        _kw.update(kwargs)
         offunit = '(arcsec)' if self.dist == 1 else '(au)'
         if self.pv:
             offlabel = f'Offset {offunit}'
             vellabel = r'Velocity (km s$^{-1})$'
-            if not 'xlabel' in kwargs:
-                kwargs['xlabel'] = vellabel if self.swapxy else offlabel
-            if not 'ylabel' in kwargs:
-                kwargs['ylabel'] = offlabel if self.swapxy else vellabel
-            kwargs['samexy'] = False
+            if not 'xlabel' in _kw:
+                _kw['xlabel'] = vellabel if self.swapxy else offlabel
+            if not 'ylabel' in _kw:
+                _kw['ylabel'] = offlabel if self.swapxy else vellabel
+            _kw['samexy'] = False
         else:
             ralabel, declabel = f'R.A. {offunit}', f'Dec. {offunit}'
-            if not 'xlabel' in kwargs:
-                kwargs['xlabel'] = declabel if self.swapxy else ralabel
-            if not 'ylabel' in kwargs:
-                kwargs['ylabel'] = ralabel if self.swapxy else declabel
-        if not 'xlim' in kwargs:
-            kwargs['xlim'] = self.Xlim
-        if not 'ylim' in kwargs:
-            kwargs['ylim'] = self.Ylim
-        pa2 = kwargs2PlotAxes2D(kwargs)
+            if not 'xlabel' in _kw:
+                _kw['xlabel'] = declabel if self.swapxy else ralabel
+            if not 'ylabel' in _kw:
+                _kw['ylabel'] = ralabel if self.swapxy else declabel
+        if not 'xlim' in _kw:
+            _kw['xlim'] = self.Xlim
+        if not 'ylim' in _kw:
+            _kw['ylim'] = self.Ylim
+        pa2 = kwargs2PlotAxes2D(_kw)
         for ch, axnow in enumerate(self.ax):
             pa2.set_xyaxes(axnow)
             if not (ch in self.bottomleft):
@@ -868,14 +879,15 @@ class PlotAstroData(AstroFrame):
                     plt.figure(0).tight_layout()
         if title is not None:
             if len(self.ax) > 1:
-                if type(title) is str: title = {'t':title}
-                title = dict({'y':0.9}, **title)
+                t = {'y':0.9}
+                t_in = {'t':title} if type(title) is str else title
+                t.update(t_in)
                 for i in range(self.npages):
                     fig = plt.figure(i)
-                    fig.suptitle(**title)
+                    fig.suptitle(**t)
             else:
-                if type(title) is str: title = {'label':title}
-                axnow.set_title(**title)
+                t = {'label':title} if type(title) is str else title
+                axnow.set_title(**t)
             
     def set_axis_radec(self, center: str | None = None, 
                        xlabel: str = 'R.A. (ICRS)',
@@ -959,14 +971,15 @@ class PlotAstroData(AstroFrame):
                     plt.figure(0).tight_layout()
         if title is not None:
             if len(self.ax) > 1:
-                if type(title) is str: title = {'t':title}
-                title = dict({'y':0.9}, **title)
+                t = {'y':0.9}
+                t_in = {'t':title} if type(title) is str else title
+                t.update(t_in)
                 for i in range(self.npages):
                     fig = plt.figure(i)
-                    fig.suptitle(**title)
+                    fig.suptitle(**t)
             else:
-                if type(title) is str: title = {'label':title}
-                axnow.set_title(**title)
+                t = {'label':title} if type(title) is str else title
+                axnow.set_title(**t)
             
     def savefig(self, filename: str | None = None,
                 show: bool = False, **kwargs) -> None:
@@ -976,7 +989,8 @@ class PlotAstroData(AstroFrame):
             filename (str, optional): Output image file name. Defaults to None.
             show (bool, optional): True means doing plt.show(). Defaults to False.
         """
-        kwargs0 = {'transparent':True, 'bbox_inches':'tight'}
+        _kw = {'transparent':True, 'bbox_inches':'tight'}
+        _kw.update(kwargs)
         for axnow in self.ax:
             axnow.set_xlim(*self.Xlim)
             axnow.set_ylim(*self.Ylim)
@@ -986,8 +1000,8 @@ class PlotAstroData(AstroFrame):
                 ver = '' if self.npages == 1 else f'_{i:d}'
                 fig = plt.figure(i)
                 fig.patch.set_alpha(0)
-                fig.savefig(filename.replace('.' + ext, ver + '.' + ext),
-                            **dict(kwargs0, **kwargs))
+                fname = filename.replace(f'.{ext}', f'{ver}.{ext}')
+                fig.savefig(fname, **_kw)
         if show:
             plt.show()
         plt.close()
@@ -1032,19 +1046,21 @@ def plotprofile(coords: list[str] = [],
     Returns:
         tuple: (fig, ax), where ax is a list, if getfigax=True. Otherwise, no return.
     """
-    kwargs0 = {'drawstyle':'steps-mid', 'color':'k'}
-    gauss_kwargs0 = {'drawstyle':'default', 'color':'g'}
+    _kw = {'drawstyle':'steps-mid', 'color':'k'}
+    _kw.update(kwargs)
+    _kwgauss = {'drawstyle':'default', 'color':'g'}
+    _kwgauss.update(gauss_kwargs)
     savefig0 = {'bbox_inches':'tight', 'transparent':True}
     if type(coords) is str: coords = [coords]
-    vmin, vmax = kwargs['xlim'] if 'xlim' in kwargs else [-1e10, 1e10]
+    vmin, vmax = _kw['xlim'] if 'xlim' in _kw else [-1e10, 1e10]
     f = AstroFrame(dist=dist, vsys=vsys, vmin=vmin, vmax=vmax)
-    d = kwargs2AstroData(kwargs)
+    d = kwargs2AstroData(_kw)
     f.read(d)
     d.binning([width, 1, 1])
     v, prof, gfitres = d.profile(coords, xlist, ylist, ellipse, flux, gaussfit)
     nprof = len(prof)
-    if 'ylabel' in kwargs:
-        ylabel = kwargs['ylabel']
+    if 'ylabel' in _kw:
+        ylabel = _kw['ylabel']
     elif d.Tb:
         ylabel = r'$T_b$ (K)'
     elif flux:
@@ -1062,17 +1078,18 @@ def plotprofile(coords: list[str] = [],
         print('External ax is supported only when len(coords)=1.')
         ax = None
     ax = np.empty(nprof, dtype='object') if ax is None else [ax]
-    if not 'xlabel' in kwargs: kwargs['xlabel'] = 'Velocity (km s$^{-1}$)'
-    if not 'xlim' in kwargs: kwargs['xlim'] = [v.min(), v.max()]
-    kwargs['samexy'] = False
-    pa2d = kwargs2PlotAxes2D(kwargs)
+    if not 'xlabel' in _kw:
+        _kw['xlabel'] = 'Velocity (km s$^{-1}$)'
+    if not 'xlim' in _kw:
+        _kw['xlim'] = [v.min(), v.max()]
+    _kw['samexy'] = False
+    pa2d = kwargs2PlotAxes2D(_kw)
     for i in range(nprof):
         sharex = None if i < nrows - 1 else ax[i - 1]
         ax[i] = fig.add_subplot(nrows, ncols, i + 1, sharex=sharex)
         if gaussfit:
-            ax[i].plot(v, gauss(v, *gfitres['best'][i]),
-                       **dict(gauss_kwargs0, **gauss_kwargs))
-        ax[i].plot(v, prof[i], **dict(kwargs0, **kwargs))
+            ax[i].plot(v, gauss(v, *gfitres['best'][i]), **_kwgauss)
+        ax[i].plot(v, prof[i], **_kw)
         ax[i].hlines([0], v.min(), v.max(), linestyle='dashed', color='k')
         ax[i].set_ylabel(ylabel[i])
         pa2d.set_xyaxes(ax[i])
@@ -1086,8 +1103,9 @@ def plotprofile(coords: list[str] = [],
         return fig, ax
     fig.tight_layout()
     if savefig is not None:
-        if type(savefig) is str: savefig = {'fname':savefig} 
-        fig.savefig(**dict(savefig0, **savefig))
+        s = {'fname':savefig} if type(savefig) is str else savefig
+        savefig0.update(s)
+        fig.savefig(**savefig0)
     if show: plt.show()
     plt.close()    
 
@@ -1108,12 +1126,13 @@ def plotslice(length: float, dx: float | None = None, pa: float = 0,
         pa (float, optional): Degree. Position angle. Defaults to 0.
         fitsimage to show: same as in PlotAstroData.
     """
-    kwargs0 = {'linestyle':'-', 'marker':'o'}
+    _kw = {'linestyle':'-', 'marker':'o'}
+    _kw.update(kwargs)
     savefig0 = {'bbox_inches':'tight', 'transparent':True}
-    center = kwargs['center'] if 'center' in kwargs else None
+    center = _kw['center'] if 'center' in _kw else None
     f = AstroFrame(rmax=length / 2, dist=dist, xoff=xoff, yoff=yoff,
                    xflip=xflip, yflip=yflip, center=center)
-    d = kwargs2AstroData(kwargs)
+    d = kwargs2AstroData(_kw)
     f.read(d)
     if np.ndim(d.data) > 2:
         print('Only 2D map is supported.')
@@ -1130,14 +1149,15 @@ def plotslice(length: float, dx: float | None = None, pa: float = 0,
     set_rcparams()
     if fig is None: fig = plt.figure()
     if ax is None: ax = fig.add_subplot(1, 1, 1)
-    if not 'xlabel' in kwargs:
-        kwargs['xlabel'] = f'Offset ({xunit})'
-    if not 'ylabel' in kwargs:
-        kwargs['ylabel'] = f'Intensity ({yunit})'
-    if not 'xlim' in kwargs: kwargs['xlim'] = [r.min(), r.max()]
-    kwargs['samexy'] = False
-    pa2d = kwargs2PlotAxes2D(kwargs)
-    ax.plot(r, z, **dict(kwargs0, **kwargs))
+    if not 'xlabel' in _kw:
+        _kw['xlabel'] = f'Offset ({xunit})'
+    if not 'ylabel' in _kw:
+        _kw['ylabel'] = f'Intensity ({yunit})'
+    if not 'xlim' in _kw:
+        _kw['xlim'] = [r.min(), r.max()]
+    _kw['samexy'] = False
+    pa2d = kwargs2PlotAxes2D(_kw)
+    ax.plot(r, z, **_kw)
     if d.sigma is not None:
         ax.plot(r, r * 0 + 3 * d.sigma, 'k--')
     pa2d.set_xyaxes(ax)
@@ -1145,8 +1165,9 @@ def plotslice(length: float, dx: float | None = None, pa: float = 0,
         return fig, ax
     fig.tight_layout()
     if savefig is not None:
-        if type(savefig) is str: savefig = {'fname':savefig} 
-        fig.savefig(**dict(savefig0, **savefig))
+        s = {'fname':savefig} if type(savefig) is str else savefig
+        savefig0.update(s)
+        fig.savefig(**savefig0)
     if show: plt.show()
     plt.close()    
 
@@ -1157,7 +1178,8 @@ def plot3d(levels: list[float] = [3,6,12], cmap: str = 'Jet',
            vlabel: str = 'Velocity (km/s)',
            xskip: int = 1, yskip: int = 1,
            eye_p: float = 0, eye_i: float = 180,
-           outname: str = 'plot3d', show: bool = False, **kwargs) -> None:
+           outname: str = 'plot3d', show: bool = False,
+           **kwargs) -> None:
     """Use Plotly. kwargs must include the arguments of AstroData to specify the data to be plotted. kwargs must include the arguments of AstroFrame to specify the ranges and so on for plotting.
 
     Args:

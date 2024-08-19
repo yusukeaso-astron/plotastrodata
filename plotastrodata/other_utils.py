@@ -312,6 +312,7 @@ def JnuT(T: float = 30, nu: float = 230e9) -> float:
     k_B = constants.k_B.si.value
     return hh * nu / k_B / (np.exp(hh * nu / k_B / T) - 1)
 
+
 def gaussian2d(xy: np.ndarray,
                amplitude: float, xo: float, yo: float,
                fwhm_major: float, fwhm_minor: float, pa: float) -> np.ndarray:
