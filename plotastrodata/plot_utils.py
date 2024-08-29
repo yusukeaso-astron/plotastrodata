@@ -1143,10 +1143,11 @@ def plotslice(length: float, dx: float | None = None, pa: float = 0,
     r, z = d.slice(length=length, pa=pa, dx=dx)
     xunit = 'arcsec' if dist == 1 else 'au'
     yunit = 'K' if Tb else d.bunit
+    yquantity = 'Tb' if Tb else 'intensity'
         
     if txtfile is not None:
         np.savetxt(txtfile, np.c_[r, z],
-                   header=f'x ({xunit}), intensity ({yunit}); '
+                   header=f'x ({xunit}), {yquantity} ({yunit}); '
                    + f'positive x is pa={pa:.2f} deg.')
     set_rcparams()
     if fig is None: fig = plt.figure()
