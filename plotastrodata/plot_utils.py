@@ -1055,13 +1055,14 @@ def plotprofile(coords: list[str] = [],
     vmin, vmax = _kw['xlim'] if 'xlim' in _kw else [-1e10, 1e10]
     f = AstroFrame(dist=dist, vsys=vsys, vmin=vmin, vmax=vmax)
     d = kwargs2AstroData(_kw)
+    Tb = d.Tb
     f.read(d)
     d.binning([width, 1, 1])
     v, prof, gfitres = d.profile(coords, xlist, ylist, ellipse, flux, gaussfit)
     nprof = len(prof)
     if 'ylabel' in _kw:
         ylabel = _kw['ylabel']
-    elif d.Tb:
+    elif Tb:
         ylabel = r'$T_b$ (K)'
     elif flux:
         ylabel = 'Flux (Jy)'
@@ -1133,6 +1134,7 @@ def plotslice(length: float, dx: float | None = None, pa: float = 0,
     f = AstroFrame(rmax=length / 2, dist=dist, xoff=xoff, yoff=yoff,
                    xflip=xflip, yflip=yflip, center=center)
     d = kwargs2AstroData(_kw)
+    Tb = d.Tb
     f.read(d)
     if np.ndim(d.data) > 2:
         print('Only 2D map is supported.')
@@ -1140,7 +1142,7 @@ def plotslice(length: float, dx: float | None = None, pa: float = 0,
 
     r, z = d.slice(length=length, pa=pa, dx=dx)
     xunit = 'arcsec' if dist == 1 else 'au'
-    yunit = 'K' if d.Tb else d.bunit
+    yunit = 'K' if Tb else d.bunit
         
     if txtfile is not None:
         np.savetxt(txtfile, np.c_[r, z],
