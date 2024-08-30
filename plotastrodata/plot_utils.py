@@ -85,21 +85,21 @@ class PlotAxes2D():
         aspect (float, optional): Defaults to None.
     """
     samexy: bool = True
-    loglog: bool = None
+    loglog: bool | None = None
     xscale: str = 'linear'
     yscale: str = 'linear'
-    xlim: list = None
-    ylim: list = None
-    xlabel: str = None
-    ylabel: str = None
-    xticks: list = None
-    yticks: list = None
-    xticklabels: list = None
-    yticklabels: list = None
-    xticksminor: list or int = None
-    yticksminor: list or int = None
-    grid: dict = None
-    aspect: float = None
+    xlim: list | None = None
+    ylim: list | None = None
+    xlabel: str | None = None
+    ylabel: str | None = None
+    xticks: list | None = None
+    yticks: list | None = None
+    xticklabels: list | None = None
+    yticklabels: list | None = None
+    xticksminor: list | int = None
+    yticksminor: list | int = None
+    grid: dict | None = None
+    aspect: float | None = None
     def set_xyaxes(self, ax):
         if self.loglog is not None:
             self.xscale = 'log'

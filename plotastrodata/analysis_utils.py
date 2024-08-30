@@ -161,16 +161,16 @@ class AstroData():
         restfrq (float, optional): Used for velocity and brightness T. Defaults to None.
         cfactor (float, optional): Output data times cfactor. Defaults to 1.
     """
-    data: np.ndarray = None
-    x: np.ndarray = None
-    y: np.ndarray = None
-    v: np.ndarray = None
-    beam: np.ndarray = (None, None, None)
-    fitsimage: str = None
+    data: np.ndarray | None = None
+    x: np.ndarray | None = None
+    y: np.ndarray | None = None
+    v: np.ndarray | None = None
+    beam: np.ndarray | tuple[None] = (None, None, None)
+    fitsimage: str | None = None
     Tb: bool = False
     sigma: str = 'hist'
     center: str = 'common'
-    restfrq: float = None
+    restfrq: float | None = None
     cfactor: float = 1
     def __post_init__(self):
         if self.fitsimage is not None:
@@ -538,13 +538,13 @@ class AstroFrame():
         quadrants (str, optional): '13' or '24'. Quadrants to take mean. None means not taking mean. Defaults to None.
     """
     rmax: float = 1e10
-    xmax: float = None
-    xmin: float = None
-    ymax: float = None
-    ymin: float = None
+    xmax: float | None = None
+    xmin: float | None = None
+    ymax: float | None = None
+    ymin: float | None = None
     dist: float = 1
-    center: str = None
-    fitsimage: str = None
+    center: str | None = None
+    fitsimage: str | None = None
     xoff: float = 0
     yoff: float = 0
     vsys: float = 0
@@ -554,7 +554,7 @@ class AstroFrame():
     yflip: bool = False
     swapxy: bool = False
     pv: bool = False
-    quadrants: str = None
+    quadrants: str | None = None
     def __post_init__(self):
         self.xdir = -1 if self.xflip else 1
         self.ydir = -1 if self.yflip else 1
