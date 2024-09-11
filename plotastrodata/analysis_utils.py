@@ -195,6 +195,7 @@ class AstroData():
         self.bunit = ''
         self.fitsimage_org = None
         self.sigma_org = None
+        self.fitsheader = None
 
     def binning(self, width: list[int, int, int] = [1, 1, 1]):
         """Binning up neighboring pixels in the v, y, and x domain.
@@ -625,12 +626,15 @@ class AstroFrame():
         if type(d.bunit) is not list: d.bunit = [d.bunit] * d.n
         if type(d.fitsimage_org) is not list: d.fitsimage_org = [d.fitsimage_org] * d.n
         if type(d.sigma_org) is not list: d.sigma_org = [d.sigma_org] * d.n
+        if type(d.fitsheader) is not list: d.fitsheader = [d.fitsheader] * d.n
         grid0 = [d.x, d.y, d.v]
         for i in range(d.n):
             if d.center[i] == 'common': d.center[i] = self.center
             grid = grid0
             if d.fitsimage[i] is not None:
                 fd = FitsData(d.fitsimage[i])
+                if d.fitsheader[i] is None:
+                    d.fitsheader[i] = fd.get_header()
                 if d.center[i] is None and not self.pv:
                     d.center[i] = fd.get_center()
                 if d.restfrq[i] is None:
