@@ -707,3 +707,4 @@ class AstroFrame():
             d.bunit = d.bunit[0]
             d.fitsimage_org = d.fitsimage_org[0]
             d.sigma_org = d.sigma_org[0]
+            d.fitsheader = d.fitsheader[0]
