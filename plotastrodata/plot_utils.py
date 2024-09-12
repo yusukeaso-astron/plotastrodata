@@ -616,7 +616,7 @@ class PlotAstroData(AstroFrame):
                   stretch: str = 'linear',
                   stretchscale: float = None,
                   stretchpower: float = 0,
-                  show_cbar: bool = True, cblabel: str = None,
+                  show_cbar: bool = True, cblabel: str | None = None,
                   cbformat: float = '%.1e', cbticks: list[float] | None = None,
                   cbticklabels: list[str] | None = None, cblocation: str = 'right',
                   show_beam: bool = True, beamcolor: str = 'gray',
