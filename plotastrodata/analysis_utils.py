@@ -318,7 +318,7 @@ class AstroData():
         hbin = (hbin[:-1] + hbin[1:]) / 2
         return hbin, hist
     
-    def gaussian2d(self, chan: int = None):
+    def gaussfit2d(self, chan: int = None):
         """Fit a 2D Gaussian function to self.data.
         
         Args:
@@ -491,26 +491,27 @@ class AstroData():
             print('writetofits does not support PV diagram yet.')
             return False
         
+        h = dict(**header)
         cx, cy = (0, 0) if self.center is None else coord2xy(self.center)
-        header['NAXIS1'] = len(self.x)
-        header['CRPIX1'] = np.argmin(np.abs(self.x)) + 1
-        header['CRVAL1'] = cx
-        header['CDELT1'] = (self.x[1] - self.x[0]) / 3600
-        header['NAXIS2'] = len(self.y)
-        header['CRPIX2'] = np.argmin(np.abs(self.y)) + 1
-        header['CRVAL2'] = cy
-        header['CDELT2'] = (self.y[1] - self.y[0]) / 3600
+        h['NAXIS1'] = len(self.x)
+        h['CRPIX1'] = np.argmin(np.abs(self.x)) + 1
+        h['CRVAL1'] = cx
+        h['CDELT1'] = (self.x[1] - self.x[0]) / 3600
+        h['NAXIS2'] = len(self.y)
+        h['CRPIX2'] = np.argmin(np.abs(self.y)) + 1
+        h['CRVAL2'] = cy
+        h['CDELT2'] = (self.y[1] - self.y[0]) / 3600
         if self.v is not None:
             clight = constants.c.to('km*s**(-1)').value
-            header['NAXIS3'] = len(self.v)
-            header['CRPIX3'] = i = np.argmin(np.abs(self.v)) + 1
-            header['CRVAL3'] = (1 - self.v[i]/clight) * self.restfreq
-            header['CDELT3'] = (self.v[0]-self.v[1]) /clight*self.restfreq
+            h['NAXIS3'] = len(self.v)
+            h['CRPIX3'] = i = np.argmin(np.abs(self.v)) + 1
+            h['CRVAL3'] = (1 - self.v[i]/clight) * self.restfreq
+            h['CDELT3'] = (self.v[0]-self.v[1]) /clight*self.restfreq
         if None not in self.beam:
-            header['BMAJ'] = self.beam[0] / 3600
-            header['BMIN'] = self.beam[1] / 3600
-            header['BPA'] = self.beam[2]
-        data2fits(d=self.data, h=header, templatefits=self.fitsimage_org,
+            h['BMAJ'] = self.beam[0] / 3600
+            h['BMIN'] = self.beam[1] / 3600
+            h['BPA'] = self.beam[2]
+        data2fits(d=self.data, h=h, templatefits=self.fitsimage_org,
                   fitsimage=fitsimage)
         
 
@@ -638,7 +639,7 @@ class AstroFrame():
                 if d.center[i] is None and not self.pv:
                     d.center[i] = fd.get_center()
                 if d.restfreq[i] is None:
-                    h = fd.get_header()
+                    h = d.fitsheader[i]
                     if 'NAXIS3' in h and h['NAXIS3'] == 1:
                         d.restfreq[i] = h['CRVAL3']
                     elif 'RESTFRQ' in h:
@@ -650,7 +651,7 @@ class AstroFrame():
                                    restfreq=d.restfreq[i], vsys=self.vsys,
                                    pv=self.pv)
                 d.beam[i] = fd.get_beam(dist=self.dist)
-                d.bunit[i] = fd.get_header('BUNIT')
+                d.bunit[i] = d.fitsheader[i]['BUNIT']
             if d.data[i] is not None:
                 d.sigma_org[i] = d.sigma[i]
                 d.sigma[i] = estimate_rms(d.data[i], d.sigma[i])
