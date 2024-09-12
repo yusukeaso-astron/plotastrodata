@@ -312,7 +312,7 @@ class PlotAstroData(AstroFrame):
         v (np.ndarray, optional): Used to set up channels if fitsimage not given. Defaults to [0].
         vskip (int, optional): How many channels are skipped. Defaults to 1.
         veldigit (int, optional): How many digits after the decimal point. Defaults to 2.
-        restfrq (float, optional): Used for velocity and brightness T. Defaults to None.
+        restfreq (float, optional): Used for velocity and brightness T. Defaults to None.
         channelnumber (int, optional): Specify a channel number to make 2D maps. Defaults to None.
         nrows (int, optional): Used for channel maps. Defaults to 4.
         ncols (int, optional): Used for channel maps. Defaults to 6.
@@ -324,7 +324,7 @@ class PlotAstroData(AstroFrame):
         ax (optional): External fig.add_subplot(). Defaults to None.
     """
     def __init__(self, v: np.ndarray = np.array([0]), vskip: int = 1,
-                 veldigit: int = 2, restfrq: float | None = None,
+                 veldigit: int = 2, restfreq: float | None = None,
                  channelnumber: int | None = None, nrows: int = 4, ncols: int = 6,
                  fontsize: int | None = None, nancolor: str = 'w', dpi: int = 256,
                  figsize: tuple[float, float] | None = None,
@@ -335,7 +335,7 @@ class PlotAstroData(AstroFrame):
         if type(channelnumber) is int: nrows = ncols = 1
         if self.fitsimage is not None:
             self.read(d := AstroData(fitsimage=self.fitsimage,
-                                     restfrq=restfrq, sigma=None))
+                                     restfreq=restfreq, sigma=None))
             v = d.v
         if len(v) > 1:
             dv = v[1] - v[0]

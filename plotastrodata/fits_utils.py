@@ -7,7 +7,7 @@ from plotastrodata.other_utils import coord2xy, xy2coord, estimate_rms, trim
 
 
 def Jy2K(header = None, bmaj: float | None = None, bmin: float | None = None,
-         restfrq: float | None = None) -> float:
+         restfreq: float | None = None) -> float:
     """Calculate a conversion factor in the unit of K/Jy.
 
     Args:
@@ -30,9 +30,9 @@ def Jy2K(header = None, bmaj: float | None = None, bmin: float | None = None,
                 bmaj, bmin = bmaj / 3600, bmin / 3600
         if 'RESTFREQ' in header: freq = header['RESTFREQ']
         if 'RESTFRQ' in header: freq = header['RESTFRQ']
-    if restfrq is not None: freq = restfrq
+    if restfreq is not None: freq = restfreq
     if freq is None:
-        print('Please input restfrq.')
+        print('Please input restfreq.')
         return 1
     omega = bmaj * bmin * units.arcsec**2 * np.pi / 4. / np.log(2.)
     equiv = units.brightness_temperature(freq * units.Hz, beam_area=omega)
@@ -128,21 +128,21 @@ class FitsData:
         return xy2coord([ra_deg, dec_deg])
 
     def gen_data(self, Tb: bool = False, log: bool = False,
-                 drop: bool = True, restfrq: float = None) -> None:
+                 drop: bool = True, restfreq: float = None) -> None:
         """Generate data, which may be brightness temperature.
 
         Args:
             Tb (bool, optional): True means the data are brightness temperatures. Defaults to False.
             log (bool, optional): True means the data are after taking the logarithm to the base 10. Defaults to False.
             drop (bool, optional): True means the data are after using np.squeeze. Defaults to True.
-            restfrq (float, optional): Rest frequency for calculating the brightness temperature. Defaults to None.
+            restfreq (float, optional): Rest frequency for calculating the brightness temperature. Defaults to None.
         """
         self.data = None
         if not hasattr(self, 'hdu'):
             self.gen_hdu()
         h, d = self.hdu.header, self.hdu.data
         if drop: d = np.squeeze(d)
-        if Tb: d *= Jy2K(header=h, restfrq=restfrq)
+        if Tb: d *= Jy2K(header=h, restfreq=restfreq)
         if log: d = np.log10(d.clip(np.min(d[d > 0]), None))
         self.data = d
         
@@ -156,14 +156,14 @@ class FitsData:
         return self.data
 
     def gen_grid(self, center: str | None = None, dist: float = 1.,
-                 restfrq: float | None = None, vsys: float = 0.,
+                 restfreq: float | None = None, vsys: float = 0.,
                  pv: bool = False) -> None:
         """Generate grids relative to the center and vsys.
 
         Args:
             center (str, optional): Center for the spatial grids. Defaults to None.
             dist (float, optional): The spatial grids are multiplied by dist. Defaults to 1..
-            restfrq (float, optional): Rest frequency for converting the frequencies to velocities. Defaults to None.
+            restfreq (float, optional): Rest frequency for converting the frequencies to velocities. Defaults to None.
             vsys (float, optional): The velocity is relative to vsys. Defaults to 0..
             pv (bool, optional): Mode for position-velocity diagram. Defaults to False.
         """
@@ -175,9 +175,9 @@ class FitsData:
         else:
             cx, cy = 0, 0
         # rest frequency
-        if restfrq is None:
-            if 'RESTFRQ' in h: restfrq = h['RESTFRQ']
-            if 'RESTFREQ' in h: restfrq = h['RESTFREQ']
+        if restfreq is None:
+            if 'RESTFRQ' in h: restfreq = h['RESTFRQ']
+            if 'RESTFREQ' in h: restfreq = h['RESTFREQ']
         self.x, self.y, self.v = None, None, None
         self.dx, self.dy, self.dv = None, None, None
         def get_list(i: int, crval=False) -> np.ndarray:
@@ -196,13 +196,13 @@ class FitsData:
                 s *= 3600. 
             self.y, self.dy = s, s[1] - s[0]
         def gen_v(s: np.ndarray) -> None:
-            if restfrq is None:
+            if restfreq is None:
                 freq = np.mean(s)
-                print('restfrq is assumed to be the center.')            
+                print('restfreq is assumed to be the center.')            
             else:
-                freq = restfrq
+                freq = restfreq
             if freq == 0:
-                print('v is frequency because restfrq=0.')
+                print('v is frequency because restfreq=0.')
             else:
                 s = (1 - s / freq) * constants.c.to('km*s**(-1)').value - vsys
             self.v, self.dv = s, s[1] - s[0]
@@ -249,7 +249,7 @@ class FitsData:
 
 def fits2data(fitsimage: str, Tb: bool = False, log: bool = False,
               dist: float = 1., sigma: str | None = None,
-              restfrq: float | None = None, center: str | None = None,
+              restfreq: float | None = None, center: str | None = None,
               vsys: float = 0., pv: bool = False, **kwargs
               ) -> tuple[np.ndarray, tuple[np.ndarray, np.ndarray, np.ndarray],
                          tuple[float, float, float], float, float]:
@@ -261,7 +261,7 @@ def fits2data(fitsimage: str, Tb: bool = False, log: bool = False,
         log (bool, optional): True means output data are logarhismic. Defaults to False.
         dist (float, optional): Change x and y in arcsec to au. Defaults to 1..
         sigma (str, optional): Noise level or method for measuring it. Defaults to None.
-        restfrq (float, optional): Used for velocity and brightness temperature. Defaults to None.
+        restfreq (float, optional): Used for velocity and brightness temperature. Defaults to None.
         center (str, optional): Text coordinates. Defaults to None.
         vsys (float, optional): In the unit of km/s. Defaults to 0.
         pv (bool, optional): True means PV fits file. Defaults to False.
@@ -270,9 +270,9 @@ def fits2data(fitsimage: str, Tb: bool = False, log: bool = False,
         tuple: (data, (x, y, v), (bmaj, bmin, bpa), bunit, rms)
     """
     fd = FitsData(fitsimage)
-    fd.gen_data(Tb=Tb, log=log, drop=True, restfrq=restfrq)
+    fd.gen_data(Tb=Tb, log=log, drop=True, restfreq=restfreq)
     rms = estimate_rms(fd.data, sigma)
-    fd.gen_grid(center=center, dist=dist, restfrq=restfrq, vsys=vsys, pv=pv)
+    fd.gen_grid(center=center, dist=dist, restfreq=restfreq, vsys=vsys, pv=pv)
     fd.trim(pv=pv, **kwargs)
     beam = fd.get_beam(dist=dist)
     bunit = fd.get_header('BUNIT')

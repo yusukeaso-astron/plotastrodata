@@ -158,7 +158,7 @@ class AstroData():
         Tb (bool, optional): True means the mapped data are brightness T. Defaults to False.
         sigma (float or str, optional): Noise level or method for measuring it. Defaults to 'hist'.
         center (str, optional): Text coordinates. 'common' means initialized value. Defaults to 'common'.
-        restfrq (float, optional): Used for velocity and brightness T. Defaults to None.
+        restfreq (float, optional): Used for velocity and brightness T. Defaults to None.
         cfactor (float, optional): Output data times cfactor. Defaults to 1.
     """
     data: np.ndarray | None = None
@@ -170,7 +170,7 @@ class AstroData():
     Tb: bool = False
     sigma: str = 'hist'
     center: str = 'common'
-    restfrq: float | None = None
+    restfreq: float | None = None
     cfactor: float = 1
     def __post_init__(self):
         if self.fitsimage is not None:
@@ -476,7 +476,7 @@ class AstroData():
         """
         d = {'data':self.data, 'x':self.x, 'y':self.y, 'v':self.v,
              'fitsimage':self.fitsimage, 'beam':self.beam, 'Tb':self.Tb,
-             'restfrq':self.restfrq, 'cfactor':self.cfactor,
+             'restfreq':self.restfreq, 'cfactor':self.cfactor,
              'sigma':self.sigma, 'center':self.center}
         return d
    
@@ -504,8 +504,8 @@ class AstroData():
             clight = constants.c.to('km*s**(-1)').value
             header['NAXIS3'] = len(self.v)
             header['CRPIX3'] = i = np.argmin(np.abs(self.v)) + 1
-            header['CRVAL3'] = (1 - self.v[i]/clight) * self.restfrq
-            header['CDELT3'] = (self.v[0]-self.v[1]) /clight*self.restfrq
+            header['CRVAL3'] = (1 - self.v[i]/clight) * self.restfreq
+            header['CDELT3'] = (self.v[0]-self.v[1]) /clight*self.restfreq
         if None not in self.beam:
             header['BMAJ'] = self.beam[0] / 3600
             header['BMIN'] = self.beam[1] / 3600
@@ -621,7 +621,7 @@ class AstroFrame():
         if type(d.Tb) is not list: d.Tb = [d.Tb] * d.n
         if type(d.sigma) is not list: d.sigma = [d.sigma] * d.n
         if type(d.center) is not list: d.center = [d.center] * d.n
-        if type(d.restfrq) is not list: d.restfrq = [d.restfrq] * d.n
+        if type(d.restfreq) is not list: d.restfreq = [d.restfreq] * d.n
         if type(d.cfactor) is not list: d.cfactor = [d.cfactor] * d.n
         if type(d.bunit) is not list: d.bunit = [d.bunit] * d.n
         if type(d.fitsimage_org) is not list: d.fitsimage_org = [d.fitsimage_org] * d.n
@@ -637,17 +637,17 @@ class AstroFrame():
                     d.fitsheader[i] = fd.get_header()
                 if d.center[i] is None and not self.pv:
                     d.center[i] = fd.get_center()
-                if d.restfrq[i] is None:
+                if d.restfreq[i] is None:
                     h = fd.get_header()
                     if 'NAXIS3' in h and h['NAXIS3'] == 1:
-                        d.restfrq[i] = h['CRVAL3']
+                        d.restfreq[i] = h['CRVAL3']
                     elif 'RESTFRQ' in h:
-                        d.restfrq[i] = h['RESTFRQ']
+                        d.restfreq[i] = h['RESTFRQ']
                     elif 'RESTFREQ' in h:
-                        d.restfrq[i] = h['RESTFREQ']
+                        d.restfreq[i] = h['RESTFREQ']
                 d.data[i] = fd.get_data()
                 grid = fd.get_grid(center=d.center[i], dist=self.dist,
-                                   restfrq=d.restfrq[i], vsys=self.vsys,
+                                   restfreq=d.restfreq[i], vsys=self.vsys,
                                    pv=self.pv)
                 d.beam[i] = fd.get_beam(dist=self.dist)
                 d.bunit[i] = fd.get_header('BUNIT')
@@ -684,7 +684,7 @@ class AstroFrame():
                     dx = d.y[1] - d.y[0] if self.swapxy else d.x[1] - d.x[0]
                     header = {'CDELT1':dx / 3600,
                               'CUNIT1':'DEG',
-                              'RESTFREQ':d.restfrq[i]}
+                              'RESTFREQ':d.restfreq[i]}
                     if None not in d.beam[i]:
                         header['BMAJ'] = d.beam[i][0] / 3600
                         header['BMIN'] = d.beam[i][1] / 3600
@@ -702,7 +702,7 @@ class AstroFrame():
             d.Tb = d.Tb[0]
             d.sigma = d.sigma[0]
             d.center = d.center[0]
-            d.restfrq = d.restfrq[0]
+            d.restfreq = d.restfreq[0]
             d.cfactor = d.cfactor[0]
             d.bunit = d.bunit[0]
             d.fitsimage_org = d.fitsimage_org[0]
