@@ -143,7 +143,10 @@ def estimate_rms(data: np.ndarray, sigma: float | str | None = 'hist') -> float:
         print('sigma cannot be estimated from only one pixel.')
         noise = 0.0
     elif sigma == 'edge':
+        ave = np.nanmean(data[::len(data) - 1])
         noise = np.nanstd(data[::len(data) - 1])
+        if np.abs(ave) > 0.2 * noise:
+            print('Warning: The intensity offset is larger than 0.2 sigma.')
     elif sigma == 'neg':
         noise = np.sqrt(np.nanmean(data[data < 0]**2))
     elif sigma == 'med':
@@ -154,7 +157,10 @@ def estimate_rms(data: np.ndarray, sigma: float | str | None = 'hist') -> float:
             ave, sig = np.nanmean(n), np.nanstd(n)
             n = n - ave
             n = n[np.abs(n) < 3.5 * sig]
+        ave = np.nanmean(n)
         noise = np.nanstd(n)
+        if np.abs(ave) > 0.2 * noise:
+            print('Warning: The intensity offset is larger than 0.2 sigma.')
     elif sigma == 'out':
         n, n0, n1 = data.copy(), len(data), len(data[0])
         n = np.moveaxis(n, [-2, -1], [0, 1])
@@ -164,7 +170,10 @@ def estimate_rms(data: np.ndarray, sigma: float | str | None = 'hist') -> float:
                   + ' the outer region is filled with nan.')
             noise = np.sqrt(np.nanmean(data[data < 0]**2))
         else:
+            ave = np.nanmean(n)
             noise = np.nanstd(n)
+            if np.abs(ave) > 0.2 * noise:
+                print('Warning: The intensity offset is larger than 0.2 sigma.')
     elif sigma[:4] == 'hist':
         m0, s0 = np.nanmean(data), np.nanstd(data)
         hist, hbin = np.histogram(data[~np.isnan(data)],
@@ -179,9 +188,11 @@ def estimate_rms(data: np.ndarray, sigma: float | str | None = 'hist') -> float:
             def g(x, s, c, R):
                 return np.exp(-((x-c)/s)**2 / 2) / np.sqrt(2*np.pi) / s
         popt, _ = curve_fit(g, hbin, hist, p0=[1, 0, 1])
-        if np.abs(popt[1]) > 0.2 * popt[0]:
+        ave = popt[1]
+        noise = popt[0]
+        if np.abs(ave) > 0.2 * noise:
             print('Warning: The intensity offset is larger than 0.2 sigma.')
-        noise = popt[0] * s0
+        noise = noise * s0
     return noise
 
 
