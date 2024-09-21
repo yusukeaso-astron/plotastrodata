@@ -179,6 +179,8 @@ def estimate_rms(data: np.ndarray, sigma: float | str | None = 'hist') -> float:
             def g(x, s, c, R):
                 return np.exp(-((x-c)/s)**2 / 2) / np.sqrt(2*np.pi) / s
         popt, _ = curve_fit(g, hbin, hist, p0=[1, 0, 1])
+        if np.abs(popt[1]) > 0.2 * popt[0]:
+            print('Warning: The intensity offset is larger than 0.2 sigma.')
         noise = popt[0] * s0
     return noise
 

@@ -6,7 +6,7 @@ pre = 'testFITS/'
 
 # 2D case
 p = pad(rmax=0.8, center='04h04m43.07s 26d18m56.20s')
-d = AstroData(fitsimage=pre+'test2D.fits', Tb=True)
+d = AstroData(fitsimage=pre+'test2D.fits', Tb=True, sigma=5e-3)
 f = AstroFrame(rmax=0.8, center='04h04m43.07s 26d18m56.20s')
 f.read(d)
 p.add_color(**d.todict(), cblabel='Tb (K)')
@@ -62,7 +62,8 @@ p.savefig('testloglogPV.png', show=True)
 
 # RGB case
 p = pad(rmax=0.8, center='04h04m43.07s 26d18m56.20s')
-p.add_rgb(fitsimage=[pre+'test'+c+'.fits' for c in ['R', 'G', 'B']])
+p.add_rgb(fitsimage=[pre+'test'+c+'.fits' for c in ['R', 'G', 'B']],
+          sigma=[5e-3, 5e-3, 5e-3])
 p.add_contour(fitsimage=pre+'test2D_2.fits', colors='r', sigma=5e-3)
 p.add_contour(fitsimage=pre+'test2D.fits', xskip=2, yskip=2, sigma=5e-3)
 p.add_segment(ampfits=pre+'test2Damp.fits',
