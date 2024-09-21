@@ -114,7 +114,7 @@ def abs2rel(xabs: float, yabs: float,
     return np.array([xrel, yrel])
 
 
-def estimate_rms(data: np.ndarray, sigma: float | str = 'hist') -> float:
+def estimate_rms(data: np.ndarray, sigma: float | str | None = 'hist') -> float:
     """Estimate a noise level of a N-D array.
        When a float number or None is given, this function just outputs it.
        Following methos are acceptable.
@@ -137,13 +137,17 @@ def estimate_rms(data: np.ndarray, sigma: float | str = 'hist') -> float:
         return None
 
     nums = [float, int, np.float64, np.int64, np.float32, np.int32]
-    if type(sigma) in nums: noise = sigma
+    if type(sigma) in nums:
+        noise = sigma
     elif np.ndim(np.squeeze(data)) == 0:
         print('sigma cannot be estimated from only one pixel.')
         noise = 0.0
-    elif sigma == 'edge': noise = np.nanstd(data[::len(data) - 1])
-    elif sigma == 'neg': noise = np.sqrt(np.nanmean(data[data < 0]**2))
-    elif sigma == 'med': noise = np.sqrt(np.nanmedian(data**2) / 0.454936)
+    elif sigma == 'edge':
+        noise = np.nanstd(data[::len(data) - 1])
+    elif sigma == 'neg':
+        noise = np.sqrt(np.nanmean(data[data < 0]**2))
+    elif sigma == 'med':
+        noise = np.sqrt(np.nanmedian(data**2) / 0.454936)
     elif sigma == 'iter':
         n = data.copy()
         for _ in range(5):
@@ -176,7 +180,6 @@ def estimate_rms(data: np.ndarray, sigma: float | str = 'hist') -> float:
                 return np.exp(-((x-c)/s)**2 / 2) / np.sqrt(2*np.pi) / s
         popt, _ = curve_fit(g, hbin, hist, p0=[1, 0, 1])
         noise = popt[0] * s0
-    print(f'sigma = {noise:.2e}')
     return noise
 
 
