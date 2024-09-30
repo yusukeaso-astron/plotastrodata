@@ -221,16 +221,16 @@ def trim(data: np.ndarray | None = None, x: np.ndarray | None = None,
     i1 = j1 = k1 = 100000
     if not (x is None or xlim is None):
         if not (None in xlim):
-            x0 = np.max(np.min(x), xlim[0])
-            x1 = np.min(np.max(x), xlim[1])
+            x0 = np.max([np.min(x), xlim[0]])
+            x1 = np.min([np.max(x), xlim[1]])
             i0 = np.argmin(np.abs(x - x0))
             i1 = np.argmin(np.abs(x - x1))
             i0, i1 = sorted([i0, i1])
             xout = x[i0:i1+1]
     if not (y is None or ylim is None):
         if not (None in ylim):
-            y0 = np.max(np.min(y), ylim[0])
-            y1 = np.min(np.max(y), ylim[1])
+            y0 = np.max([np.min(y), ylim[0]])
+            y1 = np.min([np.max(y), ylim[1]])
             j0 = np.argmin(np.abs(y - y0))
             j1 = np.argmin(np.abs(y - y1))
             j0, j1 = sorted([j0, j1])
