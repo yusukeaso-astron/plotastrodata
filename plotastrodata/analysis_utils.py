@@ -640,7 +640,7 @@ class AstroFrame():
                     d.center[i] = fd.get_center()
                 if d.restfreq[i] is None:
                     h = d.fitsheader[i]
-                    if 'NAXIS3' in h and h['NAXIS3'] == 1:
+                    if 'NAXIS3' in h and h['NAXIS3'] == 1 and not self.pv:
                         d.restfreq[i] = h['CRVAL3']
                     elif 'RESTFRQ' in h:
                         d.restfreq[i] = h['RESTFRQ']
