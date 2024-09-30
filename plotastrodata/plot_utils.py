@@ -328,7 +328,7 @@ class PlotAstroData(AstroFrame):
                  channelnumber: int | None = None, nrows: int = 4, ncols: int = 6,
                  fontsize: int | None = None, nancolor: str = 'w', dpi: int = 256,
                  figsize: tuple[float, float] | None = None,
-                 fig: object | None = None, ax: object | None =None, **kwargs) -> None:
+                 fig: object | None = None, ax: object | None = None, **kwargs) -> None:
         super().__init__(**kwargs)
         internalfig = fig is None
         internalax = ax is None

@@ -249,7 +249,8 @@ def trim(data: np.ndarray | None = None, x: np.ndarray | None = None,
             print('data has only one pixel.')
             d = data
         if np.ndim(d) == 2:
-            if pv: j0, j1 = k0, k1
+            if pv:
+                j0, j1 = k0, k1
             dataout = d[j0:j1+1, i0:i1+1]
         else:
             d = np.moveaxis(d, [-3, -2, -1], [0, 1, 2])
