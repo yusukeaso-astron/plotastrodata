@@ -1018,9 +1018,10 @@ class PlotAstroData(AstroFrame):
         return self.fig, self.ax[0]
 
 
-def plotprofile(coords: list[str] = [],
+def plotprofile(coords: list[str] | str = [],
                 xlist: list[float] = [], ylist: list[float] = [],
                 ellipse: list[float, float, float] | None = None,
+                ninterp: int = 1,
                 flux: bool = False, width: int = 1,
                 gaussfit: bool = False, gauss_kwargs: dict = {},
                 title: list[str] | None = None, text: list[str] | None = None,
@@ -1036,6 +1037,7 @@ def plotprofile(coords: list[str] = [],
         xlist (list, optional): Offset from the center. Defaults to [].
         ylist (list, optional): Offset from the center. Defaults to [].
         ellipse (list, optional): [major, minor, pa], For average. Defaults to None.
+        ninterp (int, optional): Number of points for interpolation. Defaults to 1.
         flux (bool, optional): y axis is flux density. Defaults to False.
         width (int, optional): Rebinning step along v. Defaults to 1.
         gaussfit (bool, optional): Fit the profiles. Defaults to False.
@@ -1051,14 +1053,17 @@ def plotprofile(coords: list[str] = [],
     _kwgauss = {'drawstyle':'default', 'color':'g'}
     _kwgauss.update(gauss_kwargs)
     savefig0 = {'bbox_inches':'tight', 'transparent':True}
-    if type(coords) is str: coords = [coords]
+    if type(coords) is str:
+        coords = [coords]
     vmin, vmax = _kw['xlim'] if 'xlim' in _kw else [-1e10, 1e10]
     f = AstroFrame(dist=dist, vsys=vsys, vmin=vmin, vmax=vmax)
     d = kwargs2AstroData(_kw)
     Tb = d.Tb
     f.read(d)
     d.binning([width, 1, 1])
-    v, prof, gfitres = d.profile(coords, xlist, ylist, ellipse, flux, gaussfit)
+    v, prof, gfitres = d.profile(coords=coords, xlist=xlist, ylist=ylist,
+                                 ellipse=ellipse, ninterp=ninterp,
+                                 flux=flux, gaussfit=gaussfit)
     nprof = len(prof)
     if 'ylabel' in _kw:
         ylabel = _kw['ylabel']

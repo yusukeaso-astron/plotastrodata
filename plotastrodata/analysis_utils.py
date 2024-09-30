@@ -374,6 +374,7 @@ class AstroData():
     def profile(self, coords: list[str] = [],
                 xlist: list[float] = [], ylist: list[float] = [],
                 ellipse: list[float, float, float] | None = None,
+                ninterp: int = 1,
                 flux: bool = False, gaussfit: bool = False
                 ) -> tuple[np.ndarray, np.ndarray, dict]:
         """Get a list of line profiles at given spatial coordinates.
@@ -383,6 +384,7 @@ class AstroData():
             xlist (list, optional): Offset from center. Defaults to [].
             ylist (list, optional): Offset from center. Defaults to [].
             ellipse (list, optional): [major, minor, pa]. For average. Defaults to None.
+            ninterp (int, optional): Number of points for interpolation. Defaults to 1.
             flux (bool, optional): Jy/beam to Jy. Defaults to False.
             gaussfit (bool, optional): Fit the profiles. Defaults to False.
 
@@ -397,7 +399,7 @@ class AstroData():
             xlist, ylist = coord2xy(coords, self.center) * 3600.
         nprof = len(xlist)
         v = self.v
-        data, xf, yf = filled2d(self.data, self.x, self.y, 8)
+        data, xf, yf = filled2d(self.data, self.x, self.y, ninterp)
         x, y = np.meshgrid(xf, yf)
         prof = np.empty((nprof, len(v)))
         if ellipse is None: ellipse = [[0, 0, 0]] * nprof
