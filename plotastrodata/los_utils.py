@@ -44,13 +44,13 @@ def polarvel2losvel(v_r: np.ndarray, v_theta: np.ndarray, v_phi: np.ndaray,
         v_phi (np.ndaray): The velocity component in the azimuthal angle direction.
         theta (np.ndarray): The polar angle in radian from the z-axis.
         phi (np.ndarray): The azimuthal angle in radian from the x-axis.
-        incl (float, optional): The inclination angle of the system in radian. i=0 means face-on. Defaults to 0.
+        incl (float, optional): The inclination angle of the system in degrees. i=0 means face-on. Defaults to 0.
 
     Returns:
         np.ndarray: The line-of-sight velocity.
     """
-    cos_i = np.cos(incl)
-    sin_i = np.sin(incl)
+    cos_i = np.cos(np.radians(incl))
+    sin_i = np.sin(np.radians(incl))
     cos_t = np.cos(theta)
     sin_t = np.sin(theta)
     cos_p = np.cos(phi)
