@@ -2,7 +2,7 @@ import numpy as np
 
 
 
-def obs2sys(xobs: np.dnarray, yobs: np.ndarray, zobs: np.ndarray,
+def obs2sys(xobs: np.ndarray, yobs: np.ndarray, zobs: np.ndarray,
             pa: float = 0, incl: float = 0, polar: bool = False) -> np.ndarray:
     """Convert observed coordinates to system coordinates.
 
