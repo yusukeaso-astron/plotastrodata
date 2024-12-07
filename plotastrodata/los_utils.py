@@ -7,7 +7,7 @@ def obs2sys(xobs: np.ndarray, yobs: np.ndarray, zobs: np.ndarray,
     """Convert observed coordinates to system coordinates.
 
     Args:
-        xobs (np.dnarray): Observed x-coordinates. The distance to the east.
+        xobs (np.ndarray): Observed x-coordinates. The distance to the east.
         yobs (np.ndarray): Observed y-coordinates. The distance to the north.
         zobs (np.ndarray): Observed z-coordinates. The line-of-sight distance.
         pa (float, optional): Position angle of the system in degrees from yobs (north) to xobs (east). Defaults to 0.
@@ -34,14 +34,14 @@ def obs2sys(xobs: np.ndarray, yobs: np.ndarray, zobs: np.ndarray,
     else:
         return np.array([xsys, ysys, zsys])
 
-def polarvel2losvel(v_r: np.ndarray, v_theta: np.ndarray, v_phi: np.ndaray,
+def polarvel2losvel(v_r: np.ndarray, v_theta: np.ndarray, v_phi: np.ndarray,
                     theta: np.ndarray, phi: np.ndarray, incl: float = 0) -> np.ndarray:
     """Convert the polar velocities to the line-of-sight velocity.
 
     Args:
         v_r (np.ndarray): The velocity component in the radial direction.
         v_theta (np.ndarray): The velocity component in the polar angle direction.
-        v_phi (np.ndaray): The velocity component in the azimuthal angle direction.
+        v_phi (np.ndarray): The velocity component in the azimuthal angle direction.
         theta (np.ndarray): The polar angle in radian from the z-axis.
         phi (np.ndarray): The azimuthal angle in radian from the x-axis.
         incl (float, optional): The inclination angle of the system in degrees. i=0 means face-on. Defaults to 0.
