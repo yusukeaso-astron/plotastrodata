@@ -10,17 +10,17 @@ def obs2sys(xobs: np.dnarray, yobs: np.ndarray, zobs: np.ndarray,
         xobs (np.dnarray): Observed x-coordinates. The distance to the east.
         yobs (np.ndarray): Observed y-coordinates. The distance to the north.
         zobs (np.ndarray): Observed z-coordinates. The line-of-sight distance.
-        pa (float, optional): Position angle of the system in radian from yobs (north) to xobs (east). Defaults to 0.
-        incl (float, optional): Inclination of the system in radian. i=0 means face-on. Defaults to 0.
+        pa (float, optional): Position angle of the system in degrees from yobs (north) to xobs (east). Defaults to 0.
+        incl (float, optional): Inclination of the system in degrees. i=0 means face-on. Defaults to 0.
         polar (bool, optional): If True, the coordinates are in polar coordinates. Defaults to False.
 
     Returns:
         np.ndarray: System x, y, z coordinates or r, theta, phi coordinates. The polar coordinates are in radian.
     """
-    cos_pa = np.cos(pa)
-    sin_pa = np.sin(pa)
-    cos_incl = np.cos(incl)
-    sin_incl = np.sin(incl)
+    cos_pa = np.cos(np.radians(pa))
+    sin_pa = np.sin(np.radians(pa))
+    cos_incl = np.cos(np.radians(incl))
+    sin_incl = np.sin(np.radians(incl))
     
     xsys = cos_pa * xobs - sin_pa * yobs
     ysys = cos_incl * sin_pa * xobs + cos_incl * cos_pa * yobs + sin_incl * zobs
