@@ -4,7 +4,7 @@ import numpy as np
 
 def obs2sys(xobs: np.ndarray, yobs: np.ndarray, zobs: np.ndarray,
             pa: float = 0, incl: float = 0, polar: bool = False) -> np.ndarray:
-    """Convert observed coordinates to system coordinates.
+    """Convert observed coordinates to system coordinates. In the system coordinates, the observer is at the direction of (0, -sin i, cos i). The observer's +z (i.e., line-of-sight) is from the observer to the system. The system's x coordinate and the observer's x coordinate have opposite signs.
 
     Args:
         xobs (np.ndarray): Observed x-coordinates. The distance to the east.
@@ -12,7 +12,7 @@ def obs2sys(xobs: np.ndarray, yobs: np.ndarray, zobs: np.ndarray,
         zobs (np.ndarray): Observed z-coordinates. The line-of-sight distance.
         pa (float, optional): Position angle of the system in degrees from yobs (north) to xobs (east). Defaults to 0.
         incl (float, optional): Inclination of the system in degrees. i=0 means face-on. Defaults to 0.
-        polar (bool, optional): If True, the coordinates are in polar coordinates. Defaults to False.
+        polar (bool, optional): If True, the coordinates are in polar coordinates, where theta and phi are in radian. Defaults to False.
 
     Returns:
         np.ndarray: System x, y, z coordinates or r, theta, phi coordinates. The polar coordinates are in radian.
@@ -22,9 +22,9 @@ def obs2sys(xobs: np.ndarray, yobs: np.ndarray, zobs: np.ndarray,
     cos_incl = np.cos(np.radians(incl))
     sin_incl = np.sin(np.radians(incl))
     
-    xsys = cos_pa * xobs - sin_pa * yobs
+    xsys = -cos_pa * xobs + sin_pa * yobs
     ysys = cos_incl * sin_pa * xobs + cos_incl * cos_pa * yobs + sin_incl * zobs
-    zsys = -sin_incl * sin_pa * xobs - sin_incl * cos_pa * yobs + cos_incl * zobs
+    zsys = sin_incl * sin_pa * xobs + sin_incl * cos_pa * yobs - cos_incl * zobs
 
     if polar:
         r = np.sqrt(xsys**2 + ysys**2 + zsys**2)
@@ -36,7 +36,7 @@ def obs2sys(xobs: np.ndarray, yobs: np.ndarray, zobs: np.ndarray,
 
 def polarvel2losvel(v_r: np.ndarray, v_theta: np.ndarray, v_phi: np.ndarray,
                     theta: np.ndarray, phi: np.ndarray, incl: float = 0) -> np.ndarray:
-    """Convert the polar velocities to the line-of-sight velocity.
+    """Convert the polar velocities in the system's coordinates to the line-of-sight velocity in the observer's coordinates. In the system coordinates, the observer is at the direction of (0, -sin i, cos i). The observer's +z (i.e., line-of-sight) is from the observer to the system. The system's x coordinate and the observer's x coordinate have opposite signs.
 
     Args:
         v_r (np.ndarray): The velocity component in the radial direction.
@@ -56,7 +56,7 @@ def polarvel2losvel(v_r: np.ndarray, v_theta: np.ndarray, v_phi: np.ndarray,
     cos_p = np.cos(phi)
     sin_p = np.sin(phi)
     
-    v_los = (sin_i * sin_t * sin_p + cos_i * cos_t) * v_r \
-            + (sin_i * cos_t * sin_p - cos_i * sin_t) * v_theta \
+    v_los = (sin_i * sin_t * sin_p - cos_i * cos_t) * v_r \
+            + (sin_i * cos_t * sin_p + cos_i * sin_t) * v_theta \
             + sin_i * cos_p * v_phi
     return v_los
