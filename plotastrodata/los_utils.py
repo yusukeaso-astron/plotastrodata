@@ -4,7 +4,7 @@ import numpy as np
 
 def obs2sys(xobs: np.ndarray, yobs: np.ndarray, zobs: np.ndarray,
             pa: float = 0, incl: float = 0, polar: bool = False) -> np.ndarray:
-    """Convert observed coordinates to system coordinates. In the system coordinates, the observer is at the direction of (0, -sin i, cos i). The observer's +z (i.e., line-of-sight) is from the observer to the system. The system's x coordinate and the observer's x coordinate have opposite signs.
+    """Convert observed coordinates to system coordinates. In the system coordinates, the observer is at the direction of (0, -sin i, cos i). The observer's +z (i.e., line-of-sight) is from the observer to the system center. The system's x coordinate and the observer's x coordinate have opposite signs.
 
     Args:
         xobs (np.ndarray): Observed x-coordinates. The distance to the east.
