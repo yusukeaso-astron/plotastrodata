@@ -1,4 +1,9 @@
+import numpy as np
 import matplotlib.pyplot as plt
+
+
+
+# The following introduces a way for making an animation file of a given FITS cube.
 import matplotlib.animation as animation
 from plotastrodata.plot_utils import PlotAstroData as pad
 
@@ -33,3 +38,53 @@ Writer = animation.writers['ffmpeg']  # for mp4
 writer = Writer(fps=10, bitrate=128)  # frame per second
 ani.save('test_animation.mp4', writer=writer)
 #ani.save('test_animation.gif', writer=writer)
+plt.close()
+
+# The following introduces a way for plotting the projected morphology and the line-of-sight velocity of a streamer.
+from plotastrodata.los_utils import sys2obs, polarvel2losvel
+
+incl = 60
+phi0 = 0
+theta0 = 90
+
+xscale = np.sin(np.radians(theta0))**2
+vscale = 1 / np.sin(np.radians(theta0))
+
+xsys = np.linspace(0, 3 / xscale, 200)
+ysys = np.sqrt(2 * xsys + 1)
+zsys = np.zeros_like(xsys)
+
+r = np.hypot(xsys, ysys)
+theta = np.zeros_like(r) + np.pi / 2
+phi = np.arctan2(ysys, xsys)
+
+v_r = -np.sqrt(1 / r * (2 - 1 / r))
+v_theta = np.zeros_like(v_r)
+v_phi = 1 / r
+
+xsys = xsys * xscale
+ysys = ysys * xscale
+zsys = zsys * xscale
+
+v_r = v_r * vscale
+v_theta = v_theta * vscale
+v_phi = v_phi * vscale
+
+xobs, yobs, zobs = sys2obs(xsys=xsys, ysys=ysys, zsys=zsys,
+                           incl=incl, phi0=phi0, theta0=theta0)
+vlos = polarvel2losvel(v_r=v_r, v_theta=v_theta, v_phi=v_phi,
+                       theta=theta, phi=phi,
+                       incl=incl, phi0=phi0, theta0=theta0)
+
+fig = plt.figure()
+ax = fig.add_subplot(1, 1, 1)
+m = ax.scatter(xobs, yobs, c=vlos, cmap='coolwarm', vmin=-1.5, vmax=1.5)
+fig.colorbar(m, ax=ax, label=r'$V_\mathrm{los} / \sqrt{GM_{*}/r_{c}}$')
+ax.set_xlim(3, -3)
+ax.set_ylim(-3, 3)
+ax.set_aspect(1)
+ax.set_xlabel(r'$x / r_{c}$')
+ax.set_ylabel(r'$y / r_{c}$')
+ax.grid()
+fig.savefig('streamer.png')
+plt.close()
