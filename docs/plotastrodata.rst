@@ -36,6 +36,14 @@ plotastrodata.fitting\_utils module
    :undoc-members:
    :show-inheritance:
 
+plotastrodata.los\_utils module
+-------------------------------
+
+.. automodule:: plotastrodata.los_utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 plotastrodata.other\_utils module
 ---------------------------------
 
