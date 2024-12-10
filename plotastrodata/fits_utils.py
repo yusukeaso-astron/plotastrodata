@@ -5,8 +5,7 @@ from astropy import constants, units, wcs
 from plotastrodata.other_utils import coord2xy, xy2coord, estimate_rms, trim
 
 
-
-def Jy2K(header = None, bmaj: float | None = None, bmin: float | None = None,
+def Jy2K(header=None, bmaj: float | None = None, bmin: float | None = None,
          restfreq: float | None = None) -> float:
     """Calculate a conversion factor in the unit of K/Jy.
 
@@ -28,9 +27,12 @@ def Jy2K(header = None, bmaj: float | None = None, bmin: float | None = None,
             bmaj = bmin = header['CDELT1'] * np.sqrt(4*np.log(2)/np.pi) * 3600
             if header['CUNIT1'] == 'arcsec':
                 bmaj, bmin = bmaj / 3600, bmin / 3600
-        if 'RESTFREQ' in header: freq = header['RESTFREQ']
-        if 'RESTFRQ' in header: freq = header['RESTFRQ']
-    if restfreq is not None: freq = restfreq
+        if 'RESTFREQ' in header:
+            freq = header['RESTFREQ']
+        if 'RESTFRQ' in header:
+            freq = header['RESTFRQ']
+    if restfreq is not None:
+        freq = restfreq
     if freq is None:
         print('Please input restfreq.')
         return 1
@@ -42,7 +44,7 @@ def Jy2K(header = None, bmaj: float | None = None, bmin: float | None = None,
 
 class FitsData:
     """For practical treatment of data in a FITS file.
-    
+
     Args:
         fitsimage (str): Input FITS file name.
     """
@@ -60,7 +62,7 @@ class FitsData:
             area = b['BMAJ'] * b['BMIN']  # arcsec^2?
             imed = np.nanargmin(np.abs(area - np.nanmedian(area)))
             self.hdubeam = b['BMAJ'][imed], b['BMIN'][imed], b['BPA'][imed]
-        
+
     def gen_header(self) -> None:
         """Generate self.header. fits.open()[0].header.
         """
@@ -100,8 +102,10 @@ class FitsData:
             bmaj = self.get_header('BMAJ')
             bmin = self.get_header('BMIN')
             bpa = self.get_header('BPA')
-            if bmaj is not None: bmaj =  bmaj * 3600 * dist
-            if bmin is not None: bmin =  bmin * 3600 * dist
+            if bmaj is not None:
+                bmaj = bmaj * 3600 * dist
+            if bmin is not None:
+                bmin = bmin * 3600 * dist
         self.bmaj, self.bmin, self.bpa = bmaj, bmin, bpa
 
     def get_beam(self, dist: float = 1.) -> np.ndarray:
@@ -141,18 +145,22 @@ class FitsData:
         if not hasattr(self, 'hdu'):
             self.gen_hdu()
         h, d = self.hdu.header, self.hdu.data
-        if drop: d = np.squeeze(d)
-        if Tb: d *= Jy2K(header=h, restfreq=restfreq)
-        if log: d = np.log10(d.clip(np.min(d[d > 0]), None))
+        if drop:
+            d = np.squeeze(d)
+        if Tb:
+            d *= Jy2K(header=h, restfreq=restfreq)
+        if log:
+            d = np.log10(d.clip(np.min(d[d > 0]), None))
         self.data = d
-        
+
     def get_data(self, **kwargs) -> np.ndarray:
         """Output data. This method can take the arguments of gen_data().
 
         Returns:
             np.ndarray: data in the format of np.ndarray.
         """
-        if not hasattr(self, 'data'): self.gen_data(**kwargs)
+        if not hasattr(self, 'data'):
+            self.gen_data(**kwargs)
         return self.data
 
     def gen_grid(self, center: str | None = None, dist: float = 1.,
@@ -176,29 +184,36 @@ class FitsData:
             cx, cy = 0, 0
         # rest frequency
         if restfreq is None:
-            if 'RESTFRQ' in h: restfreq = h['RESTFRQ']
-            if 'RESTFREQ' in h: restfreq = h['RESTFREQ']
+            if 'RESTFRQ' in h:
+                restfreq = h['RESTFRQ']
+            if 'RESTFREQ' in h:
+                restfreq = h['RESTFREQ']
         self.x, self.y, self.v = None, None, None
         self.dx, self.dy, self.dv = None, None, None
+
         def get_list(i: int, crval=False) -> np.ndarray:
             s = np.arange(h[f'NAXIS{i:d}'])
             s = (s - h[f'CRPIX{i:d}'] + 1) * h[f'CDELT{i:d}']
-            if crval: s = s + h[f'CRVAL{i:d}']
+            if crval:
+                s = s + h[f'CRVAL{i:d}']
             return s
+
         def gen_x(s: np.ndarray) -> None:
             s = (s - cx) * dist
             if h['CUNIT1'].strip() in ['deg', 'DEG', 'degree', 'DEGREE']:
                 s *= 3600.
             self.x, self.dx = s, s[1] - s[0]
+
         def gen_y(s: np.ndarray) -> None:
             s = (s - cy) * dist
             if h['CUNIT2'].strip() in ['deg', 'DEG', 'degree', 'DEGREE']:
-                s *= 3600. 
+                s *= 3600.
             self.y, self.dy = s, s[1] - s[0]
+
         def gen_v(s: np.ndarray) -> None:
             if restfreq is None:
                 freq = np.mean(s)
-                print('restfreq is assumed to be the center.')            
+                print('restfreq is assumed to be the center.')
             else:
                 freq = restfreq
             if freq == 0:
@@ -206,13 +221,14 @@ class FitsData:
             else:
                 s = (1 - s / freq) * constants.c.to('km*s**(-1)').value - vsys
             self.v, self.dv = s, s[1] - s[0]
+
         if h['NAXIS'] > 0 and h['NAXIS1'] > 1:
-                gen_x(get_list(1))
+            gen_x(get_list(1))
         if h['NAXIS'] > 1 and h['NAXIS2'] > 1:
-                gen_v(get_list(2, True)) if pv else gen_y(get_list(2))
+            gen_v(get_list(2, True)) if pv else gen_y(get_list(2))
         if h['NAXIS'] > 2 and h['NAXIS3'] > 1:
-                gen_v(get_list(3, True))
-                    
+            gen_v(get_list(3, True))
+
     def get_grid(self, **kwargs) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Output the grids, [x, y, v]. This method can take the arguments of gen_grid().
 
@@ -278,7 +294,7 @@ def fits2data(fitsimage: str, Tb: bool = False, log: bool = False,
     bunit = fd.get_header('BUNIT')
     return fd.data, (fd.x, fd.y, fd.v), beam, bunit, rms
 
-    
+
 def data2fits(d: np.ndarray | None = None, h: dict = {},
               templatefits: str | None = None,
               fitsimage: str = 'test') -> None:
