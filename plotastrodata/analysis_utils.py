@@ -174,6 +174,7 @@ class AstroData():
     cfactor: float = 1
 
     def __post_init__(self):
+        n = 0
         if self.fitsimage is not None:
             if type(self.fitsimage) is not list:
                 n = 1
