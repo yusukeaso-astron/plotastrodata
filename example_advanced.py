@@ -8,7 +8,6 @@ from plotastrodata.los_utils import sys2obs, polarvel2losvel
 pre = 'testFITS/'
 nchans = 31
 
-
 def update_plot(i):
     f = pad(rmax=0.8, fitsimage=pre+'test3D.fits', vmin=-5, vmax=5, vskip=2,
             channelnumber=i, fig=fig)

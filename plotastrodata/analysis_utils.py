@@ -525,7 +525,7 @@ class AstroData():
 @dataclass
 class AstroFrame():
     """Parameter set to limit and reshape the data in the AstroData format.
-    
+
     Args:
         vmin (float, optional): Velocity at the upper left. Defaults to -1e10.
         vmax (float, optional): Velocity at the lower bottom. Defaults to 1e10.
@@ -564,15 +564,22 @@ class AstroFrame():
     swapxy: bool = False
     pv: bool = False
     quadrants: str | None = None
+
     def __post_init__(self):
         self.xdir = -1 if self.xflip else 1
         self.ydir = -1 if self.yflip else 1
-        if self.xmax is None: self.xmax = self.rmax
-        if self.xmin is None: self.xmin = -self.rmax
-        if self.ymax is None: self.ymax = self.rmax
-        if self.ymin is None: self.ymin = -self.rmax
-        if self.xdir == -1: self.xmin, self.xmax = self.xmax, self.xmin
-        if self.ydir == -1: self.ymin, self.ymax = self.ymax, self.ymin
+        if self.xmax is None:
+            self.xmax = self.rmax
+        if self.xmin is None:
+            self.xmin = -self.rmax
+        if self.ymax is None:
+            self.ymax = self.rmax
+        if self.ymin is None:
+            self.ymin = -self.rmax
+        if self.xdir == -1:
+            self.xmin, self.xmax = self.xmax, self.xmin
+        if self.ydir == -1:
+            self.ymin, self.ymax = self.ymax, self.ymin
         xlim = [self.xoff + self.xmin, self.xoff + self.xmax]
         ylim = [self.yoff + self.ymin, self.yoff + self.ymax]
         vlim = [self.vmin, self.vmax]
@@ -594,7 +601,7 @@ class AstroFrame():
             self.Ylim = [0, min(self.vmax - self.vsys, self.vsys - self.vmin)]
         if self.fitsimage is not None and self.center is None:
             self.center = FitsData(self.fitsimage).get_center()
-        
+
     def pos2xy(self, poslist: list[str | list[float, float]] = []) -> np.ndarray:
         """Text or relative to absolute coordinates.
 
@@ -605,7 +612,7 @@ class AstroFrame():
             np.ndarray: absolute coordinates.
          """
         if np.shape(poslist) == () \
-            or (np.shape(poslist) == (2,) 
+            or (np.shape(poslist) == (2,)
                 and type(poslist[0]) is not str):
             poslist = [poslist]
         x, y = [None] * len(poslist), [None] * len(poslist)
@@ -649,7 +656,8 @@ class AstroFrame():
             d.fitsheader = [d.fitsheader] * d.n
         grid0 = [d.x, d.y, d.v]
         for i in range(d.n):
-            if d.center[i] == 'common': d.center[i] = self.center
+            if d.center[i] == 'common':
+                d.center[i] = self.center
             grid = grid0
             if d.fitsimage[i] is not None:
                 fd = FitsData(d.fitsimage[i])

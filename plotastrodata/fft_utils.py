@@ -5,7 +5,6 @@ from plotastrodata.fits_utils import fits2data
 from plotastrodata.plot_utils import set_rcparams
 
 
-
 def shiftphase(F: np.ndarray, u: np.ndarray, xoff: float = 0) -> np.ndarray:
     """Shift the phase of 1D FFT by xoff.
 
@@ -52,7 +51,8 @@ def fftcentering(f: np.ndarray, x: np.ndarray | None = None,
         tuple: (F, u). F is FFT of f. u is a 1D array of the frequency coordinate.
     """
     nx = np.shape(f)[0]
-    if x is None: x = np.arange(nx)
+    if x is None:
+        x = np.arange(nx)
     X = x[0, :] if np.ndim(x) == 2 else x
     dx = X[1] - X[0]
     u = np.fft.fftshift(np.fft.fftfreq(nx, d=dx))
@@ -78,8 +78,10 @@ def fftcentering2(f: np.ndarray,
         tuple: (F, u, v). F is FFT of f. u and v are 1D arrays of the frequency coordinates.
     """
     ny, nx = np.shape(f)
-    if x is None: x = np.arange(nx)
-    if y is None: y = np.arange(ny)
+    if x is None:
+        x = np.arange(nx)
+    if y is None:
+        y = np.arange(ny)
     X = x[0, :] if np.ndim(x) == 2 else x
     Y = y[:, 0] if np.ndim(y) == 2 else y
     dx, dy = X[1] - X[0], Y[1] - Y[0]
@@ -106,13 +108,16 @@ def ifftcentering(F: np.ndarray, u: np.ndarray | None = None,
         tuple: (f, x). f is iFFT of F. x is a 1D array of the spatial coordinate.
     """
     nx = np.shape(F)[0]
-    if u is None: u = np.fft.fftshift(np.fft.fftfreq(nx, d=1))
+    if u is None:
+        u = np.fft.fftshift(np.fft.fftfreq(nx, d=1))
     x = (np.arange(nx) - (nx-1)/2.) / (u[1]-u[0]) / nx + xcenter
-    if x0 is not None: x = x - x[0] + x0
+    if x0 is not None:
+        x = x - x[0] + x0
     dx = x[1] - x[0]
     F = shiftphase(F, u=u, xoff=x[-1] + dx - xcenter)
     f = np.fft.ifft(np.fft.ifftshift(F))
-    if outreal: f = np.real(f)
+    if outreal:
+        f = np.real(f)
     return f, x
 
 
@@ -138,12 +143,16 @@ def ifftcentering2(F: np.ndarray,
         tuple: (f, x, y). f is iFFT of F. x and y are 1D arrays of the spatial coordinates.
     """
     ny, nx = np.shape(F)
-    if u is None: u = np.fft.fftshift(np.fft.fftfreq(nx, d=1))
-    if v is None: v = np.fft.fftshift(np.fft.fftfreq(ny, d=1))
+    if u is None:
+        u = np.fft.fftshift(np.fft.fftfreq(nx, d=1))
+    if v is None:
+        v = np.fft.fftshift(np.fft.fftfreq(ny, d=1))
     x = (np.arange(nx) - (nx-1)/2.) / (u[1]-u[0]) / nx + xcenter
     y = (np.arange(ny) - (ny-1)/2.) / (v[1]-v[0]) / ny + ycenter
-    if x0 is not None: x = x - x[0] + x0
-    if y0 is not None: y = y - y[0] + y0
+    if x0 is not None:
+        x = x - x[0] + x0
+    if y0 is not None:
+        y = y - y[0] + y0
     dx, dy = x[1] - x[0], y[1] - y[0]
     F = shiftphase(F, u, v, x[-1] + dx - xcenter, y[-1] + dy - ycenter)
     f = np.fft.ifft2(np.fft.ifftshift(F))
@@ -168,8 +177,10 @@ def zeropadding(f: np.ndarray, x: np.ndarray, y: np.ndarray,
     """
     nx, ny = len(x), len(y)
     dx, dy = x[1] - x[0], y[1] - y[0]
-    if dx < 0: xlim = [xlim[1], xlim[0]]
-    if dy < 0: ylim = [ylim[1], ylim[0]]
+    if dx < 0:
+        xlim = [xlim[1], xlim[0]]
+    if dy < 0:
+        ylim = [ylim[1], ylim[0]]
     nx0 = max(int((x[0] - xlim[0]) / dx), 0)
     nx1 = max(int((xlim[1] - x[-1]) / dx), 0)
     nxnew = nx0 + nx + nx1
@@ -245,11 +256,15 @@ def findindex(u: np.ndarray | None = None, v: np.ndarray | None = None,
     Returns:
         np.ndarray: Indicies or an array of indicies.
     """
-    if u is not None: Nu, du = len(u), u[1] - u[0]
-    if v is not None: Nv, dv = len(v), v[1] - v[0]
+    if u is not None:
+        Nu, du = len(u), u[1] - u[0]
+    if v is not None:
+        Nv, dv = len(v), v[1] - v[0]
     idx_u, idx_v = None, None
-    if uobs is not None: idx_u = np.round(uobs / du + Nu // 2).astype(np.int64)
-    if vobs is not None: idx_v = np.round(vobs / dv + Nv // 2).astype(np.int64)
+    if uobs is not None:
+        idx_u = np.round(uobs / du + Nu // 2).astype(np.int64)
+    if vobs is not None:
+        idx_v = np.round(vobs / dv + Nv // 2).astype(np.int64)
     if idx_u is not None and idx_v is not None:
         return np.array([idx_u, idx_v])
     if idx_u is not None:
