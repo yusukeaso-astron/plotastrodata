@@ -31,6 +31,7 @@ def Mrot3d(t: float, axis: int = 3) -> np.ndarray:
                  [0, 0, 1]]
     return m
 
+
 def obs2sys(xobs: np.ndarray, yobs: np.ndarray, zobs: np.ndarray,
             pa: float = 0, incl: float = 0, phi0: float = 0, theta0: float = 90,
             polar: bool = False) -> np.ndarray:
@@ -65,6 +66,7 @@ def obs2sys(xobs: np.ndarray, yobs: np.ndarray, zobs: np.ndarray,
     else:
         return x
 
+
 def sys2obs(xsys: np.ndarray, ysys: np.ndarray, zsys: np.ndarray,
             pa: float = 0, incl: float = 0, phi0: float = 0, theta0: float = 90,
             polar: bool = False) -> np.ndarray:
@@ -98,6 +100,7 @@ def sys2obs(xsys: np.ndarray, ysys: np.ndarray, zsys: np.ndarray,
     x = np.tensordot(Mrot3d(-pa, axis=3), x, axes=([1], [0]))
     return x
 
+
 def polarvel2losvel(v_r: np.ndarray, v_theta: np.ndarray, v_phi: np.ndarray,
                     theta: np.ndarray, phi: np.ndarray,
                     incl: float = 0, phi0: float = 0, theta0: float = 90) -> np.ndarray:
@@ -120,7 +123,7 @@ def polarvel2losvel(v_r: np.ndarray, v_theta: np.ndarray, v_phi: np.ndarray,
     sin_t = np.sin(theta)
     cos_p = np.cos(phi)
     sin_p = np.sin(phi)
-    
+
     A = np.array([[sin_t * cos_p, cos_t * cos_p, -sin_p],
                  [sin_t * sin_p, cos_t * sin_p, cos_p],
                  [cos_t, -sin_t, np.zeros_like(theta)]])

@@ -11,6 +11,8 @@ from multiprocessing import Pool
 global_bounds = None
 bar = None
 global_progressbar = True
+
+
 def logp(x: np.ndarray) -> float:
     """Log prior function made from the boundary (global_bounds) of fitting parameters.
 
@@ -22,13 +24,15 @@ def logp(x: np.ndarray) -> float:
     """
     if global_progressbar:
         bar.update(1)
-    if  np.all((global_bounds[0] < x) & (x < global_bounds[1])):
+    if np.all((global_bounds[0] < x) & (x < global_bounds[1])):
         return 0
     else:
         return -np.inf
 
+
 class PTEmceeCorner():
     warnings.simplefilter('ignore', RuntimeWarning)
+
     def __init__(self, bounds: np.ndarray, logl: object | None = None,
                  model: object | None = None,
                  xdata: np.ndarray | None = None, ydata: np.ndarray | None = None,
@@ -58,7 +62,7 @@ class PTEmceeCorner():
         self.logp = logp
         self.percent = percent
         self.ndata = 10000 if xdata is None else len(xdata)
-    
+
     def fit(self, nwalkersperdim: int = 2, ntemps: int = 1, nsteps: int = 1000,
             nburnin: int = 500, ntry: int = 1, pos0: np.ndarray | None = None,
             savechain: str | None = None, ncores: int = 1, grcheck: bool = False
@@ -85,14 +89,14 @@ class PTEmceeCorner():
             bar.set_description('Within the ranges')
 
         GR = [2] * self.dim
-        i =  0
+        i = 0
         while np.max(GR) > 1.25 and i < ntry:
             i += 1
             if pos0 is None:
                 pos0 = np.random.rand(ntemps, nwalkers, self.dim) \
                        * (self.bounds[1] - self.bounds[0]) + self.bounds[0]
-            pars = {'ntemps':ntemps, 'nwalkers':nwalkers, 'dim':self.dim,
-                    'logl':self.logl, 'logp':self.logp}
+            pars = {'ntemps': ntemps, 'nwalkers': nwalkers, 'dim': self.dim,
+                    'logl': self.logl, 'logp': self.logp}
             if ncores > 1:
                 with Pool(ncores) as pool:
                     sampler = ptemcee.Sampler(**pars, pool=pool)
@@ -102,14 +106,14 @@ class PTEmceeCorner():
                 sampler.run_mcmc(pos0, nsteps)
             samples = sampler.chain[0, :, nburnin:, :]  # temperature, walker, step, dim
             if grcheck:
-                ##### Gelman-Rubin statistics #####
+                # Gelman-Rubin statistics #
                 B = np.std(np.mean(samples, axis=1), axis=0)
                 W = np.mean(np.std(samples, axis=1), axis=0)
                 V = (len(samples[0]) - 1) / len(samples[0]) * W \
                     + (nwalkers + 1) / (nwalkers - 1) * B
                 d = self.ndata - self.dim - 1
                 GR = np.sqrt((d + 3) / (d + 1) * V / W)
-                ###################################
+                ###########################
             else:
                 GR = np.zeros(self.dim)
             if i == ntry - 1 and np.max(GR) > 1.25:
@@ -128,10 +132,10 @@ class PTEmceeCorner():
         self.phigh = np.percentile(s, self.percent[1], axis=0)
         if global_progressbar:
             print('')
-    
+
     def plotcorner(self, show: bool = False,
                    savefig: str | None = None, labels: list[float] | None = None,
-                   cornerrange: list [float] = None) -> None:
+                   cornerrange: list[float] = None) -> None:
         """Make the corner plot from self.samples.
 
         Args:
@@ -152,7 +156,7 @@ class PTEmceeCorner():
         if show:
             plt.show()
         plt.close()
-        
+
     def plotchain(self, show: bool = False, savefig: str = None,
                   labels: list = None, ylim: list = None):
         """Plot parameters as a function of steps using self.samples.
@@ -194,7 +198,7 @@ class PTEmceeCorner():
         if show:
             plt.show()
         plt.close()
-        
+
     def posteriorongrid(self, ngrid: list = 100, log: list[bool] = False, pcut: float = 0):
         """Calculate the posterior on a grid of ngrid x ngrid x ... x ngrid.
 
@@ -203,9 +207,9 @@ class PTEmceeCorner():
             log (list, optional): Whether to search in the logarithmic space. The percentile is counted in the linear space regardless of this option. Defaults to False.
             pcut (float, optional): Posterior is reset to be zero if it is below this cut off.
         """
-        if type(ngrid) == int:
+        if type(ngrid) is int:
             ngrid = [ngrid] * self.dim
-        if type(log) == bool:
+        if type(log) is bool:
             log = [log] * self.dim
         pargrid = []
         for a, b, c, d in zip(*global_bounds, ngrid, log):
@@ -235,9 +239,11 @@ class PTEmceeCorner():
         else:
             iopt = np.unravel_index(np.argmax(p), np.shape(p))[::-1]
             self.popt = [t[i] for t, i in zip(pargrid, iopt)]
+
             def getpercentile(percent: float):
                 idxmin = [np.argmin(np.abs(q - percent)) for q in p1dcum]
                 return np.array([t[i] for t, i in zip(pargrid, idxmin)])
+
             self.plow = getpercentile(self.percent[0] / 100)
             self.pmid = getpercentile(0.5)
             self.phigh = getpercentile(self.percent[1] / 100)
@@ -304,10 +310,10 @@ class PTEmceeCorner():
                                             sharex=sharex, sharey=sharey)
                     axis = tuple(np.delete(adim[::-1], [i, j]))
                     yy = np.sum(self.p * self.vol, axis=axis) \
-                         / np.sum(self.vol, axis=axis)
+                        / np.sum(self.vol, axis=axis)
                     ax[k].pcolormesh(x[j], x[i], yy, cmap=cmap)
                     ax[k].contour(x[j], x[i], yy, colors='k',
-                               levels=np.array(levels) * np.nanmax(yy))
+                                  levels=np.array(levels) * np.nanmax(yy))
                     ax[k].plot(self.popt[j], self.popt[i], 'o')
                     ax[k].axvline(self.popt[j])
                     ax[k].axhline(self.popt[i])
@@ -341,4 +347,4 @@ class PTEmceeCorner():
         results = dsampler.results
         evidence = np.exp(results.logz[-1])
         error = evidence * results.logzerr[-1]
-        return {'evidence':evidence, 'error':error}
+        return {'evidence': evidence, 'error': error}

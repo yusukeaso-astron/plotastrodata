@@ -7,7 +7,6 @@ from dataclasses import dataclass
 from plotastrodata.other_utils import coord2xy, xy2coord, listing
 from plotastrodata.analysis_utils import AstroData, AstroFrame
 
-
     
 plt.ioff()  # force to turn off interactive mode
 
@@ -260,7 +259,6 @@ def kwargs2AstroFrame(kw: dict) -> AstroFrame:
     for k in vars(f):
         if k in kw:
             tmp[k] = kw[k]
-            #del kw[k]
     f = AstroFrame(**tmp)
     return f
 
@@ -448,8 +446,8 @@ class PlotAstroData(AstroFrame):
         if not (patch in ['rectangle', 'ellipse']):
             print('Only patch=\'rectangle\' or \'ellipse\' supported. ')
             return -1
-        for x, y, width, height, angle\
-            in zip(*self.pos2xy(poslist), *listing(minlist, majlist, palist)):
+        for x, y, width, height, angle in zip(*self.pos2xy(poslist),
+                                              *listing(minlist, majlist, palist)):
             for ch, axnow in enumerate(self.ax):
                 if type(self.channelnumber) is int: ch = self.channelnumber
                 if not (ch in include_chan):
@@ -551,8 +549,7 @@ class PlotAstroData(AstroFrame):
             if not (ch in include_chan):
                 continue
             alist = np.radians(anglelist)
-            for x, y, a, r \
-                in zip(*self.pos2xy(poslist), *listing(alist, rlist)):
+            for x, y, a, r in zip(*self.pos2xy(poslist), *listing(alist, rlist)):
                 axnow.plot([x, x + r * np.sin(a)],
                            [y, y + r * np.cos(a)], **_kw)
 
@@ -851,20 +848,20 @@ class PlotAstroData(AstroFrame):
         if self.pv:
             offlabel = f'Offset {offunit}'
             vellabel = r'Velocity (km s$^{-1})$'
-            if not 'xlabel' in _kw:
+            if 'xlabel' not in _kw:
                 _kw['xlabel'] = vellabel if self.swapxy else offlabel
-            if not 'ylabel' in _kw:
+            if 'ylabel' not in _kw:
                 _kw['ylabel'] = offlabel if self.swapxy else vellabel
             _kw['samexy'] = False
         else:
             ralabel, declabel = f'R.A. {offunit}', f'Dec. {offunit}'
-            if not 'xlabel' in _kw:
+            if 'xlabel' not in _kw:
                 _kw['xlabel'] = declabel if self.swapxy else ralabel
-            if not 'ylabel' in _kw:
+            if 'ylabel' not in _kw:
                 _kw['ylabel'] = ralabel if self.swapxy else declabel
-        if not 'xlim' in _kw:
+        if 'xlim' not in _kw:
             _kw['xlim'] = self.Xlim
-        if not 'ylim' in _kw:
+        if 'ylim' not in _kw:
             _kw['ylim'] = self.Ylim
         pa2 = kwargs2PlotAxes2D(_kw)
         for ch, axnow in enumerate(self.ax):
@@ -910,8 +907,13 @@ class PlotAstroData(AstroFrame):
         if center is None: center = self.center
         if center is None: center = '00h00m00s 00d00m00s'
         dec = np.radians(coord2xy(center)[1])
-        get_sec = lambda x, i: x.split(' ')[i].split('m')[1].strip('s')
-        get_hmdm = lambda x, i: x.split(' ')[i].split('m')[0]
+
+        def get_sec(x, i):
+            return x.split(' ')[i].split('m')[1].strip('s')
+
+        def get_hmdm(x, i):
+            return x.split(' ')[i].split('m')[0]
+
         ra_s = get_sec(center, 0)
         dec_s = get_sec(center, 1)
         log2r = np.log10(2. * self.rmax)
@@ -1084,9 +1086,9 @@ def plotprofile(coords: list[str] | str = [],
         print('External ax is supported only when len(coords)=1.')
         ax = None
     ax = np.empty(nprof, dtype='object') if ax is None else [ax]
-    if not 'xlabel' in _kw:
+    if 'xlabel' not in _kw:
         _kw['xlabel'] = 'Velocity (km s$^{-1}$)'
-    if not 'xlim' in _kw:
+    if 'xlim' not in _kw:
         _kw['xlim'] = [v.min(), v.max()]
     _kw['samexy'] = False
     pa2d = kwargs2PlotAxes2D(_kw)
@@ -1157,11 +1159,11 @@ def plotslice(length: float, dx: float | None = None, pa: float = 0,
     set_rcparams()
     if fig is None: fig = plt.figure()
     if ax is None: ax = fig.add_subplot(1, 1, 1)
-    if not 'xlabel' in _kw:
+    if 'xlabel' not in _kw:
         _kw['xlabel'] = f'Offset ({xunit})'
-    if not 'ylabel' in _kw:
+    if 'ylabel' not in _kw:
         _kw['ylabel'] = f'Intensity ({yunit})'
-    if not 'xlim' in _kw:
+    if 'xlim' not in _kw:
         _kw['xlim'] = [r.min(), r.max()]
     _kw['samexy'] = False
     pa2d = kwargs2PlotAxes2D(_kw)

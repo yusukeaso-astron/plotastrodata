@@ -7,7 +7,6 @@ from scipy.optimize import curve_fit
 from scipy.special import erf
 
 
-
 def terminal(cmd: str, **kwargs) -> None:
     """Run a terminal command through subprocess.run.
 
@@ -28,7 +27,7 @@ def runpython(filename: str, **kwargs) -> None:
 
 def listing(*args) -> list:
     """Output a list of the input when the input is string or number.
-    
+
     Returns:
         list: With a single non-list input, the output is a list like ['a'], rather than [['a']].
     """
@@ -36,7 +35,8 @@ def listing(*args) -> list:
     b = [None] * len(args)
     for i, a in enumerate(args):
         b[i] = [a] if type(a) in (nums + [str]) else a
-    if len(args) == 1: b = b[0]
+    if len(args) == 1:
+        b = b[0]
     return b
 
 
@@ -68,7 +68,7 @@ def xy2coord(xy: list, coordorg: str = '00h00m00s 00d00m00s',
         coordorg (str): something like '01h23m45.6s 01d23m45.6s'. The origin of the relative (deg, deg). Defaults to '00h00m00s 00d00m00s'.
         frame (str): coordinate frame. Defaults to 'icrs'.
         frameorg (str): coordinate frame of the origin. Defaults to 'icrs'.
-        
+
     Returns:
         str: something like '01h23m45.6s 01d23m45.6s'. With multiple inputs, the output has the input shape.
     """
@@ -129,7 +129,7 @@ def estimate_rms(data: np.ndarray, sigma: float | str | None = 'hist') -> float:
     Args:
         data (np.ndarray): N-D array.
         sigma (float or str): One of the methods above. Defaults to 'hist'.
-        
+
     Returns:
         float: the estimated root mean square of noise.
     """
@@ -164,7 +164,7 @@ def estimate_rms(data: np.ndarray, sigma: float | str | None = 'hist') -> float:
     elif sigma == 'out':
         n, n0, n1 = data.copy(), len(data), len(data[0])
         n = np.moveaxis(n, [-2, -1], [0, 1])
-        n[n0//5 : n0*4//5, n1//5 : n1*4//5] = np.nan
+        n[n0//5: n0*4//5, n1//5: n1*4//5] = np.nan
         if np.all(np.isnan(n)):
             print('sigma=\'neg\' instead of \'out\' because'
                   + ' the outer region is filled with nan.')
@@ -214,7 +214,7 @@ def trim(data: np.ndarray | None = None, x: np.ndarray | None = None,
         vlim (list, optional): [vmin, vmax]. Defaults to None.
 
     Returns:
-        tuple: Trimmed (data, [x,y,v]). 
+        tuple: Trimmed (data, [x,y,v]).
     """
     xout, yout, vout, dataout = x, y, v, data
     i0 = j0 = k0 = 0
