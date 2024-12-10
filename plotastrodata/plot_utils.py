@@ -19,7 +19,7 @@ def set_rcparams(fontsize: int = 18, nancolor: str ='w',
         nancolor (str, optional): plt.rcParams['axes.facecolor']. Defaults to 'w'.
         dpi (int, optional): plt.rcParams['savefig.dpi']. Defaults to 256.
     """
-    #plt.rcParams['font.family'] = 'arial'
+    # plt.rcParams['font.family'] = 'arial'
     plt.rcParams['axes.facecolor'] = nancolor
     plt.rcParams['font.size'] = fontsize
     plt.rcParams['savefig.dpi'] = dpi
@@ -439,8 +439,8 @@ class PlotAstroData(AstroFrame):
             palist (list, optional): Position angle (north to east). Defaults to [].
             include_chan (list, optional): None means all. Defaults to None.
         """
-        _kw = {'facecolor':'none', 'edgecolor':'gray',
-               'linewidth':1.5, 'zorder':10}
+        _kw = {'facecolor': 'none', 'edgecolor': 'gray',
+               'linewidth': 1.5, 'zorder': 10}
         _kw.update(kwargs)
         if include_chan is None: include_chan = self.allchan
         if not (patch in ['rectangle', 'ellipse']):
@@ -496,8 +496,8 @@ class PlotAstroData(AstroFrame):
             poslist (list, optional): Text or relative. Defaults to [].
             include_chan (list, optional): None means all. Defaults to None.
         """
-        _kw = {'marker':'+', 'ms':10, 'mfc':'gray',
-               'mec':'gray', 'mew':2, 'alpha':1, 'zorder':10}
+        _kw = {'marker': '+', 'ms': 10, 'mfc': 'gray',
+               'mec': 'gray', 'mew': 2, 'alpha': 1, 'zorder': 10}
         _kw.update(kwargs)
         if include_chan is None: include_chan = self.allchan
         for ch, axnow in enumerate(self.ax):
@@ -517,8 +517,8 @@ class PlotAstroData(AstroFrame):
             slist (list, optional): List of text. Defaults to [].
             include_chan (list, optional): None means all. Defaults to None.
         """
-        _kw = {'color':'gray', 'fontsize':15, 'ha':'center',
-               'va':'center', 'zorder':10}
+        _kw = {'color': 'gray', 'fontsize': 15, 'ha': 'center',
+               'va': 'center', 'zorder': 10}
         _kw.update(kwargs)
         if include_chan is None: include_chan = self.allchan
         for ch, axnow in enumerate(self.ax):
@@ -540,8 +540,8 @@ class PlotAstroData(AstroFrame):
             rlist (list, optional): List of radius. Defaults to [].
             include_chan (list, optional): None means all. Defaults to None.
         """
-        _kw = {'color':'gray', 'linewidth':1.5,
-               'linestyle':'-', 'zorder':10}
+        _kw = {'color': 'gray', 'linewidth': 1.5,
+               'linestyle': '-', 'zorder': 10}
         _kw.update(kwargs)
         if include_chan is None: include_chan = self.allchan
         for ch, axnow in enumerate(self.ax):
@@ -565,8 +565,8 @@ class PlotAstroData(AstroFrame):
             rlist (list, optional): List of radius. Defaults to [].
             include_chan (list, optional): None means all. Defaults to None.
         """
-        _kw = {'color':'gray', 'width':0.012,
-               'headwidth':5, 'headlength':5, 'zorder':10}
+        _kw = {'color': 'gray', 'width': 0.012,
+               'headwidth': 5, 'headlength': 5, 'zorder': 10}
         _kw.update(kwargs)
         if include_chan is None: include_chan = self.allchan
         for ch, axnow in enumerate(self.ax):
@@ -583,7 +583,7 @@ class PlotAstroData(AstroFrame):
     def add_scalebar(self, length: float = 0, label: str = '',
                      color: str = 'gray', barpos: tuple[float, float] = (0.8, 0.12),
                      fontsize: float = None, linewidth: float = 3,
-                     bbox: dict = {'alpha':0}) -> None:
+                     bbox: dict = {'alpha': 0}) -> None:
         """Use Axes.text and Axes.plot of matplotlib.
 
         Args:
@@ -634,7 +634,7 @@ class PlotAstroData(AstroFrame):
             show_beam (bool, optional): Defaults to True.
             beamcolor (str, optional): Matplotlib color. Defaults to 'gray'.
         """
-        _kw = {'cmap':'cubehelix', 'alpha':1, 'edgecolors':'none', 'zorder':1}
+        _kw = {'cmap': 'cubehelix', 'alpha': 1, 'edgecolors': 'none', 'zorder': 1}
         _kw.update(kwargs)
         d = kwargs2AstroData(_kw)
         self.read(d, xskip, yskip)
@@ -705,7 +705,7 @@ class PlotAstroData(AstroFrame):
             show_beam (bool, optional): Defaults to True.
             beamcolor (str, optional): Matplotlib color. Defaults to 'gray'.
         """
-        _kw = {'colors':'gray', 'linewidths':1.0, 'zorder':2}
+        _kw = {'colors': 'gray', 'linewidths': 1.0, 'zorder': 2}
         _kw.update(kwargs)
         d = kwargs2AstroData(_kw)
         self.read(d, xskip, yskip)
@@ -751,9 +751,9 @@ class PlotAstroData(AstroFrame):
             show_beam (bool, optional): Defaults to True.
             beamcolor (str, optional): Matplotlib color. Defaults to 'gray'.
         """
-        _kw = {'angles':'xy', 'scale_units':'xy', 'color':'gray',
-               'pivot':'mid', 'headwidth':0, 'headlength':0,
-               'headaxislength':0, 'width':0.007, 'zorder':3}
+        _kw = {'angles': 'xy', 'scale_units': 'xy', 'color': 'gray',
+               'pivot': 'mid', 'headwidth': 0, 'headlength': 0,
+               'headaxislength': 0, 'width': 0.007, 'zorder': 3}
         _kw.update(kwargs)
         _kw['data'] = [amp, ang, stU, stQ]
         _kw['fitsimage'] = [ampfits, angfits, Ufits, Qfits]
@@ -877,13 +877,13 @@ class PlotAstroData(AstroFrame):
         if title is not None:
             if len(self.ax) > 1:
                 t = {'y':0.9}
-                t_in = {'t':title} if type(title) is str else title
+                t_in = {'t': title} if type(title) is str else title
                 t.update(t_in)
                 for i in range(self.npages):
                     fig = plt.figure(i)
                     fig.suptitle(**t)
             else:
-                t = {'label':title} if type(title) is str else title
+                t = {'label': title} if type(title) is str else title
                 axnow.set_title(**t)
             
     def set_axis_radec(self, center: str | None = None, 
@@ -973,14 +973,14 @@ class PlotAstroData(AstroFrame):
                     plt.figure(0).tight_layout()
         if title is not None:
             if len(self.ax) > 1:
-                t = {'y':0.9}
-                t_in = {'t':title} if type(title) is str else title
+                t = {'y': 0.9}
+                t_in = {'t': title} if type(title) is str else title
                 t.update(t_in)
                 for i in range(self.npages):
                     fig = plt.figure(i)
                     fig.suptitle(**t)
             else:
-                t = {'label':title} if type(title) is str else title
+                t = {'label': title} if type(title) is str else title
                 axnow.set_title(**t)
             
     def savefig(self, filename: str | None = None,
@@ -991,7 +991,7 @@ class PlotAstroData(AstroFrame):
             filename (str, optional): Output image file name. Defaults to None.
             show (bool, optional): True means doing plt.show(). Defaults to False.
         """
-        _kw = {'transparent':True, 'bbox_inches':'tight'}
+        _kw = {'transparent': True, 'bbox_inches': 'tight'}
         _kw.update(kwargs)
         for axnow in self.ax:
             axnow.set_xlim(*self.Xlim)
@@ -1050,11 +1050,11 @@ def plotprofile(coords: list[str] | str = [],
     Returns:
         tuple: (fig, ax), where ax is a list, if getfigax=True. Otherwise, no return.
     """
-    _kw = {'drawstyle':'steps-mid', 'color':'k'}
+    _kw = {'drawstyle': 'steps-mid', 'color': 'k'}
     _kw.update(kwargs)
-    _kwgauss = {'drawstyle':'default', 'color':'g'}
+    _kwgauss = {'drawstyle': 'default', 'color': 'g'}
     _kwgauss.update(gauss_kwargs)
-    savefig0 = {'bbox_inches':'tight', 'transparent':True}
+    savefig0 = {'bbox_inches': 'tight', 'transparent': True}
     if type(coords) is str:
         coords = [coords]
     vmin, vmax = _kw['xlim'] if 'xlim' in _kw else [-1e10, 1e10]
@@ -1103,7 +1103,7 @@ def plotprofile(coords: list[str] | str = [],
         pa2d.set_xyaxes(ax[i])
         if text is not None: ax[i].text(**text[i])
         if title is not None:
-            if type(title[i]) is str: title[i] = {'label':title[i]}
+            if type(title[i]) is str: title[i] = {'label': title[i]}
             ax[i].set_title(**title[i])
         if i <= nprof - ncols - 1:
             plt.setp(ax[i].get_xticklabels(), visible=False)
@@ -1111,7 +1111,7 @@ def plotprofile(coords: list[str] | str = [],
         return fig, ax
     fig.tight_layout()
     if savefig is not None:
-        s = {'fname':savefig} if type(savefig) is str else savefig
+        s = {'fname': savefig} if type(savefig) is str else savefig
         savefig0.update(s)
         fig.savefig(**savefig0)
     if show: plt.show()
@@ -1134,9 +1134,9 @@ def plotslice(length: float, dx: float | None = None, pa: float = 0,
         pa (float, optional): Degree. Position angle. Defaults to 0.
         fitsimage to show: same as in PlotAstroData.
     """
-    _kw = {'linestyle':'-', 'marker':'o'}
+    _kw = {'linestyle': '-', 'marker': 'o'}
     _kw.update(kwargs)
-    savefig0 = {'bbox_inches':'tight', 'transparent':True}
+    savefig0 = {'bbox_inches': 'tight', 'transparent': True}
     center = _kw['center'] if 'center' in _kw else None
     f = AstroFrame(rmax=length / 2, dist=dist, xoff=xoff, yoff=yoff,
                    xflip=xflip, yflip=yflip, center=center)
@@ -1175,7 +1175,7 @@ def plotslice(length: float, dx: float | None = None, pa: float = 0,
         return fig, ax
     fig.tight_layout()
     if savefig is not None:
-        s = {'fname':savefig} if type(savefig) is str else savefig
+        s = {'fname': savefig} if type(savefig) is str else savefig
         savefig0.update(s)
         fig.savefig(**savefig0)
     if show: plt.show()
