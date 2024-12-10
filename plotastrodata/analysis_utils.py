@@ -26,10 +26,10 @@ def to4dim(data: np.ndarray) -> np.ndarray:
     else:
         d = np.array(data)
     return d
-    
-    
+
+
 def quadrantmean(data: np.ndarray, x: np.ndarray, y: np.ndarray,
-                 quadrants: str ='13') -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+                 quadrants: str = '13') -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Take mean between 1st and 3rd (or 2nd and 4th) quadrants.
 
     Args:
@@ -44,7 +44,7 @@ def quadrantmean(data: np.ndarray, x: np.ndarray, y: np.ndarray,
     if np.ndim(data) != 2:
         print('data must be 2D.')
         return -1
-    
+
     dx, dy = x[1] - x[0], y[1] - y[0]
     nx = int(np.floor(max(np.abs(x[0]), np.abs(x[-1])) / dx))
     ny = int(np.floor(max(np.abs(y[0]), np.abs(y[-1])) / dy))
@@ -80,7 +80,7 @@ def RGIxy(y: np.ndarray, x: np.ndarray, data: np.ndarray,
     if not np.ndim(data) in [2, 3, 4]:
         print('data must be 2D, 3D, or 4D.')
         return -1
-    
+
     c4d = to4dim(data)
     c4d[np.isnan(c4d)] = 0
     f = [[RGI((y, x), c2d, bounds_error=False, fill_value=np.nan)
@@ -96,8 +96,8 @@ def RGIxy(y: np.ndarray, x: np.ndarray, data: np.ndarray,
 
 
 def RGIxyv(v: np.ndarray, y: np.ndarray, x: np.ndarray, data: np.ndarray,
-          vyxnew: tuple[np.ndarray, np.ndarray, np.ndarray] | None = None
-          ) -> object | np.ndarray:
+           vyxnew: tuple[np.ndarray, np.ndarray, np.ndarray] | None = None
+           ) -> object | np.ndarray:
     """RGI in the x-y-v space.
 
     Args:
@@ -113,7 +113,7 @@ def RGIxyv(v: np.ndarray, y: np.ndarray, x: np.ndarray, data: np.ndarray,
     if not np.ndim(data) in [3, 4]:
         print('data must be 3D or 4D.')
         return -1
-    
+
     c4d = to4dim(data)
     c4d[np.isnan(c4d)] = 0
     f = [RGI((v, y, x), c3d, bounds_error=False, fill_value=np.nan) for c3d in c4d]
@@ -142,7 +142,7 @@ def filled2d(data: np.ndarray, x: np.ndarray, y: np.ndarray, n: int = 1
     ynew = np.linspace(y[0], y[-1], n * (len(y) - 1) + 1)
     d = RGIxy(y, x, data, np.meshgrid(ynew, xnew, indexing='ij'))
     return d, xnew, ynew
-    
+
 
 @dataclass
 class AstroData():
@@ -172,6 +172,7 @@ class AstroData():
     center: str = 'common'
     restfreq: float | None = None
     cfactor: float = 1
+
     def __post_init__(self):
         if self.fitsimage is not None:
             if type(self.fitsimage) is not list:
@@ -226,7 +227,7 @@ class AstroData():
         if self.y is None:
             grid[1], grid[2] = grid[2], grid[1]
         _, self.v, self.y, self.x = grid
-            
+
     def centering(self, includexy: bool = True, includev: bool = False):
         """Spatial regridding to set the center at (x,y,v)=(0,0,0).
 
@@ -259,14 +260,14 @@ class AstroData():
             self.v = vnew
         else:
             print('No change because includexy=False and includev=False.')
-        
+
     def circularbeam(self):
         """Make the beam circular by convolving with 1D Gaussian
         """
         if None in self.beam:
             print('No beam.')
             return False
-        
+
         bmaj, bmin, bpa = self.beam
         self.rotate(-bpa)
         nx = len(self.x) if len(self.x) % 2 == 1 else len(self.x) - 1
@@ -282,7 +283,7 @@ class AstroData():
         self.rotate(bpa)
         self.beam[1] = self.beam[0]
         self.beam[2] = 0
-        
+
     def deproject(self, pa: float = 0, incl: float = 0):
         """Exapnd by a factor of 1/cos(incl) in the direction of pa+90 deg.
 
@@ -302,7 +303,8 @@ class AstroData():
             beta = np.dot(a, b)
             gamma = (np.dot(a, a) - np.dot(b, b)) / 2
             bpa_new = np.arctan(beta / gamma) / 2 * np.degrees(1)
-            if beta * bpa_new >= 0: bpa_new += 90
+            if beta * bpa_new >= 0:
+                bpa_new += 90
             Det = np.sqrt(beta**2 + gamma**2)
             bmaj_new = 1 / np.sqrt(alpha - Det)
             bmin_new = 1 / np.sqrt(alpha + Det)
@@ -317,13 +319,13 @@ class AstroData():
         hist, hbin = np.histogram(self.data, **kwargs)
         hbin = (hbin[:-1] + hbin[1:]) / 2
         return hbin, hist
-    
+
     def gaussfit2d(self, chan: int = None):
         """Fit a 2D Gaussian function to self.data.
-        
+
         Args:
             chan (int): The channel number where the 2D Gaussian is fitted. Defaults to None.
-            
+
         Returns:
             dict: The best parameter set (popt), the covariance set (pcov), the best 2D Gaussian array (model), and the residual from the model (residual).
         """
@@ -343,7 +345,7 @@ class AstroData():
                                p0=p0, bounds=bounds)
         model = gaussian2d((x, y), *popt)
         residual = d - model
-        return {'popt':popt, 'pcov':pcov, 'model':model, 'residual':residual}
+        return {'popt': popt, 'pcov': pcov, 'model': model, 'residual': residual}
 
     def mask(self, dataformask: np.ndarray = None,
              includepix: list[float, float] = [],
@@ -402,7 +404,8 @@ class AstroData():
         data, xf, yf = filled2d(self.data, self.x, self.y, ninterp)
         x, y = np.meshgrid(xf, yf)
         prof = np.empty((nprof, len(v)))
-        if ellipse is None: ellipse = [[0, 0, 0]] * nprof
+        if ellipse is None:
+            ellipse = [[0, 0, 0]] * nprof
         for i, (xc, yc, e) in enumerate(zip(xlist, ylist, ellipse)):
             major, minor, pa = e
             z = dot2d(Mrot(-pa), [y - yc, x - xc])
@@ -421,12 +424,14 @@ class AstroData():
             dxdy = np.abs((yf[1]-yf[0]) * (xf[1]-xf[0]))
             prof *= dxdy / Omega
         gfitres = {}
-        if gaussfit:    
+        if gaussfit:
             xmin, xmax = np.min(v), np.max(v)
             ymin, ymax = np.min(prof), np.max(prof)
             bounds = [[ymin, xmin, v[1] - v[0]], [ymax, xmax, xmax - xmin]]
+
             def gauss(x, p, c, w):
                 return p * np.exp(-4. * np.log(2.) * ((x - c) / w)**2)
+
             nprof = len(prof)
             best, error = [None] * nprof, [None] * nprof
             for i in range(nprof):
@@ -435,9 +440,9 @@ class AstroData():
                 print('Gauss (peak, center, FWHM):', popt)
                 print('Gauss uncertainties:', e)
                 best[i], error[i] = popt, e
-            gfitres = {'best':best, 'error':error}
+            gfitres = {'best': best, 'error': error}
         return v, prof, gfitres
-    
+
     def rotate(self, pa: float = 0):
         """Counter clockwise rotation with respect to the center.
 
@@ -448,7 +453,7 @@ class AstroData():
         self.data = RGIxy(self.y, self.x, self.data, yxnew)
         if self.beam[2] is not None:
             self.beam[2] = self.beam[2] + pa
-    
+
     def slice(self, length: float = 0, pa: float = 0,
               dx: float | None = None) -> np.ndarray:
         """Get 1D slice with given a length and a position-angle.
@@ -476,12 +481,12 @@ class AstroData():
         Returns:
             dict: Output that can be input to PlotAstroData.
         """
-        d = {'data':self.data, 'x':self.x, 'y':self.y, 'v':self.v,
-             'fitsimage':self.fitsimage, 'beam':self.beam, 'Tb':self.Tb,
-             'restfreq':self.restfreq, 'cfactor':self.cfactor,
-             'sigma':self.sigma, 'center':self.center}
+        d = {'data': self.data, 'x': self.x, 'y': self.y, 'v': self.v,
+             'fitsimage': self.fitsimage, 'beam': self.beam, 'Tb': self.Tb,
+             'restfreq': self.restfreq, 'cfactor': self.cfactor,
+             'sigma': self.sigma, 'center': self.center}
         return d
-   
+
     def writetofits(self, fitsimage: str = 'out.fits', header: dict = {}):
         """Write out the AstroData to a FITS file.
 
@@ -492,7 +497,7 @@ class AstroData():
         if self.y is None:
             print('writetofits does not support PV diagram yet.')
             return False
-        
+
         h = dict(**header)
         cx, cy = (0, 0) if self.center is None else coord2xy(self.center)
         h['NAXIS1'] = len(self.x)
@@ -508,14 +513,14 @@ class AstroData():
             h['NAXIS3'] = len(self.v)
             h['CRPIX3'] = i = np.argmin(np.abs(self.v)) + 1
             h['CRVAL3'] = (1 - self.v[i]/clight) * self.restfreq
-            h['CDELT3'] = (self.v[0]-self.v[1]) /clight*self.restfreq
+            h['CDELT3'] = (self.v[0]-self.v[1]) / clight * self.restfreq
         if None not in self.beam:
             h['BMAJ'] = self.beam[0] / 3600
             h['BMIN'] = self.beam[1] / 3600
             h['BPA'] = self.beam[2]
         data2fits(d=self.data, h=h, templatefits=self.fitsimage_org,
                   fitsimage=fitsimage)
-        
+
 
 @dataclass
 class AstroFrame():
@@ -618,18 +623,30 @@ class AstroFrame():
             d (AstroData): Dataclass for the add_* input.
             xskip, yskip (int): Spatial pixel skip. Defaults to 1.
         """
-        if type(d.fitsimage) is not list: d.fitsimage = [d.fitsimage] * d.n
-        if type(d.data) is not list: d.data = [d.data] * d.n
-        if np.ndim(d.beam) == 1: d.beam = [d.beam] * d.n
-        if type(d.Tb) is not list: d.Tb = [d.Tb] * d.n
-        if type(d.sigma) is not list: d.sigma = [d.sigma] * d.n
-        if type(d.center) is not list: d.center = [d.center] * d.n
-        if type(d.restfreq) is not list: d.restfreq = [d.restfreq] * d.n
-        if type(d.cfactor) is not list: d.cfactor = [d.cfactor] * d.n
-        if type(d.bunit) is not list: d.bunit = [d.bunit] * d.n
-        if type(d.fitsimage_org) is not list: d.fitsimage_org = [d.fitsimage_org] * d.n
-        if type(d.sigma_org) is not list: d.sigma_org = [d.sigma_org] * d.n
-        if type(d.fitsheader) is not list: d.fitsheader = [d.fitsheader] * d.n
+        if type(d.fitsimage) is not list:
+            d.fitsimage = [d.fitsimage] * d.n
+        if type(d.data) is not list:
+            d.data = [d.data] * d.n
+        if np.ndim(d.beam) == 1:
+            d.beam = [d.beam] * d.n
+        if type(d.Tb) is not list:
+            d.Tb = [d.Tb] * d.n
+        if type(d.sigma) is not list:
+            d.sigma = [d.sigma] * d.n
+        if type(d.center) is not list:
+            d.center = [d.center] * d.n
+        if type(d.restfreq) is not list:
+            d.restfreq = [d.restfreq] * d.n
+        if type(d.cfactor) is not list:
+            d.cfactor = [d.cfactor] * d.n
+        if type(d.bunit) is not list:
+            d.bunit = [d.bunit] * d.n
+        if type(d.fitsimage_org) is not list:
+            d.fitsimage_org = [d.fitsimage_org] * d.n
+        if type(d.sigma_org) is not list:
+            d.sigma_org = [d.sigma_org] * d.n
+        if type(d.fitsheader) is not list:
+            d.fitsheader = [d.fitsheader] * d.n
         grid0 = [d.x, d.y, d.v]
         for i in range(d.n):
             if d.center[i] == 'common': d.center[i] = self.center
@@ -685,9 +702,9 @@ class AstroFrame():
                     d.sigma[i] = d.sigma[i] * d.cfactor[i]
                 if d.Tb[i]:
                     dx = d.y[1] - d.y[0] if self.swapxy else d.x[1] - d.x[0]
-                    header = {'CDELT1':dx / 3600,
-                              'CUNIT1':'DEG',
-                              'RESTFREQ':d.restfreq[i]}
+                    header = {'CDELT1': dx / 3600,
+                              'CUNIT1': 'DEG',
+                              'RESTFREQ': d.restfreq[i]}
                     if None not in d.beam[i]:
                         header['BMAJ'] = d.beam[i][0] / 3600
                         header['BMIN'] = d.beam[i][1] / 3600
