@@ -20,7 +20,7 @@ p.add_marker('04h04m43.07s 26d18m56.20s')
 p.add_line([[0.5, 0.5], [0.6, 0.6]], anglelist=[60, 60], rlist=[0.5, 0.5])
 p.add_arrow([0.4, 0.4], anglelist=150, rlist=0.5)
 p.add_region('ellipse', [0.2, 0.8], majlist=0.4, minlist=0.2, palist=45)
-p.set_axis_radec(nticksminor=5, title={'label':'2D image', 'loc':'right'})
+p.set_axis_radec(nticksminor=5, title={'label' : '2D image', 'loc' : 'right'})
 p.savefig('test2D.png', show=True)
 
 # 3D case
@@ -34,12 +34,12 @@ p.add_scalebar(length=50 / 140, label='50 au')
 p.add_text([[0.3, 0.3]], slist=['text'], include_chan=[0,1,2])
 p.add_marker([0.7, 0.7])
 p.add_line([[0.5, 0.5], [0.6, 0.6]], anglelist=[60, 60], rlist=[0.5, 0.5],
-           include_chan=[6,7,8])
+           include_chan=[6, 7, 8])
 p.add_arrow([[0.4, 0.4]], anglelist=[150], rlist=[0.5],
-            include_chan=[9,10,11])
+            include_chan=[9, 10, 11])
 p.add_region('rectangle', [[0.2, 0.8]],
              majlist=[0.4], minlist=[0.2], palist=[45],
-             include_chan=[12,13,14])
+             include_chan=[12, 13, 14])
 p.set_axis(grid={}, title='3D channel maps')
 p.savefig('test3D.png', show=True)
 
@@ -74,7 +74,7 @@ p.add_marker('04h04m43.07s 26d18m56.20s')
 p.add_line([[0.5, 0.5], [0.6, 0.6]], anglelist=[60, 60], rlist=[0.5, 0.5])
 p.add_arrow([0.4, 0.4], anglelist=150, rlist=0.5)
 p.add_region('ellipse', [0.2, 0.8], majlist=0.4, minlist=0.2, palist=45)
-p.set_axis_radec(nticksminor=5, title={'label':'2D RGB', 'loc':'right'})
+p.set_axis_radec(nticksminor=5, title={'label' : '2D RGB', 'loc' : 'right'})
 p.savefig('test2Drgb.png', show=True)
 
 # Line profile
@@ -89,4 +89,4 @@ plotslice(length=1.6, pa=270, fitsimage=pre+'test2D.fits',
 
 # Rotatable 3D cube in html
 plot3d(rmax=0.8, vmin=-5, vmax=5, fitsimage=pre+'test3D.fits',
-       outname='test3D', levels=[3,6,9], show=False)
+       outname='test3D', levels=[3, 6, 9], show=False)
