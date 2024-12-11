@@ -7,8 +7,9 @@ from dataclasses import dataclass
 from plotastrodata.other_utils import coord2xy, xy2coord, listing
 from plotastrodata.analysis_utils import AstroData, AstroFrame
 
-    
+
 plt.ioff()  # force to turn off interactive mode
+
 
 def set_rcparams(fontsize: int = 18, nancolor: str ='w',
                  dpi: int = 256) -> None:
@@ -64,7 +65,7 @@ def logticks(ticks: list[float], lim: list[float, float]
 @dataclass
 class PlotAxes2D():
     """Use Axes.set_* to adjust x and y axes.
-    
+
     Args:
         samexy (bool, optional): True supports same ticks between x and y. Defaults to True.
         loglog (float, optional): If a float is given, plot on a log-log plane, and xim=(xmax / loglog, xmax) and so does ylim. Defaults to None.
@@ -99,6 +100,7 @@ class PlotAxes2D():
     yticksminor: list | int = None
     grid: dict | None = None
     aspect: float | None = None
+
     def set_xyaxes(self, ax):
         if self.loglog is not None:
             self.xscale = 'log'
@@ -179,11 +181,14 @@ def set_minmax(data: np.ndarray, stretch: str, stretchscale: float,
         rms = [rms]
         stretch = [stretch]
         stretchscale = [stretchscale]
-        if 'vmin' in kw: kw['vmin'] = [kw['vmin']]
-        if 'vmax' in kw: kw['vmax'] = [kw['vmax']]
+        if 'vmin' in kw:
+            kw['vmin'] = [kw['vmin']]
+        if 'vmax' in kw:
+            kw['vmax'] = [kw['vmax']]
     z = (data, stretch, stretchscale, rms)
     for i, (c, st, stsc, r) in enumerate(zip(*z)):
-        if stsc is None: stsc = r
+        if stsc is None:
+            stsc = r
         if st == 'log':
             if np.any(c > 0):
                 c = np.log10(c.clip(np.nanmin(c[c > 0]), None))
@@ -210,7 +215,7 @@ def set_minmax(data: np.ndarray, stretch: str, stretchscale: float,
             kw[m] = [None] * n
             for i, (c, st, _, r) in enumerate(zip(*z)):
                 if m == 'vmin':
-                    
+
                     kw[m][i] = np.log10(r) if st == 'log' else np.nanmin(c)
                 else:
                     kw[m][i] = np.nanmax(c)
@@ -284,7 +289,7 @@ def kwargs2PlotAxes2D(kw: dict) -> PlotAxes2D:
 
 class PlotAstroData(AstroFrame):
     """Make a figure from 2D/3D FITS files or 2D/3D arrays.
-    
+
     Basic rules --- For 3D data, a 1D velocity array or a FITS file
     with a velocity axis must be given to set up channels in each page.
     For 2D/3D data, the spatial center can be read from a FITS file
@@ -303,7 +308,7 @@ class PlotAstroData(AstroFrame):
     Position-velocity diagrams (pv=True) does not yet suppot region, line,
     arrow, and segment because the units of abscissa and ordinate
     are different.
-    
+
     kwargs is the arguments of AstroFrame to define plotting ranges.
 
     Args:
@@ -330,7 +335,8 @@ class PlotAstroData(AstroFrame):
         super().__init__(**kwargs)
         internalfig = fig is None
         internalax = ax is None
-        if type(channelnumber) is int: nrows = ncols = 1
+        if type(channelnumber) is int:
+            nrows = ncols = 1
         if self.fitsimage is not None:
             self.read(d := AstroData(fitsimage=self.fitsimage,
                                      restfreq=restfreq, sigma=None))
@@ -356,16 +362,20 @@ class PlotAstroData(AstroFrame):
             npages = int(np.ceil(nv / nrows / ncols))
             nchan = npages * nrows * ncols
             v = np.r_[v, v[-1] + (np.arange(nchan-nv)+1) * (v[1] - v[0])]
-            if type(channelnumber) is int: nchan = npages = 1
+            if type(channelnumber) is int:
+                nchan = npages = 1
+
         def nij2ch(n: int, i: int, j: int):
             return n*nrows*ncols + i*ncols + j
+
         def ch2nij(ch: int) -> tuple:
             n = ch // (nrows*ncols)
             i = (ch - n*nrows*ncols) // ncols
             j = ch % ncols
             return n, i, j
+
         if fontsize is None:
-            fontsize=18 if nchan == 1 else 12
+            fontsize = 18 if nchan == 1 else 12
         set_rcparams(fontsize=fontsize, nancolor=nancolor, dpi=dpi)
         ax = np.empty(nchan, dtype='object') if internalax else [ax]
         for ch in range(nchan):
@@ -397,6 +407,7 @@ class PlotAstroData(AstroFrame):
         self.allchan = np.arange(nchan if channelnumber is None else nv)
         self.bottomleft = nij2ch(np.arange(npages), nrows - 1, 0)
         self.channelnumber = channelnumber
+
         def vskipfill(c: np.ndarray, v_in: np.ndarray = None) -> np.ndarray:
             """Skip and fill channels with nan.
 
@@ -422,7 +433,7 @@ class PlotAstroData(AstroFrame):
             dnan = np.full(shape, d[0] * np.nan)
             return np.concatenate((d, dnan), axis=0)
         self.vskipfill = vskipfill
-        
+
     def add_region(self, patch: str = 'ellipse',
                    poslist: list[str | list[float, float]] = [],
                    majlist: list[float] = [], minlist: list[float] = [],
@@ -442,14 +453,16 @@ class PlotAstroData(AstroFrame):
         _kw = {'facecolor': 'none', 'edgecolor': 'gray',
                'linewidth': 1.5, 'zorder': 10}
         _kw.update(kwargs)
-        if include_chan is None: include_chan = self.allchan
+        if include_chan is None:
+            include_chan = self.allchan
         if not (patch in ['rectangle', 'ellipse']):
             print('Only patch=\'rectangle\' or \'ellipse\' supported. ')
             return -1
         for x, y, width, height, angle in zip(*self.pos2xy(poslist),
                                               *listing(minlist, majlist, palist)):
             for ch, axnow in enumerate(self.ax):
-                if type(self.channelnumber) is int: ch = self.channelnumber
+                if type(self.channelnumber) is int:
+                    ch = self.channelnumber
                 if not (ch in include_chan):
                     continue
                 if self.fig is None:
@@ -465,7 +478,7 @@ class PlotAstroData(AstroFrame):
                 p = p((xp, yp), width=width, height=height,
                       angle=angle * self.xdir, **_kw)
                 axnow.add_patch(p)
-                
+
     def add_beam(self,
                  beam: list[float | None, float | None, float | None] = [None, None, None],
                  beamcolor: str = 'gray',
@@ -480,14 +493,14 @@ class PlotAstroData(AstroFrame):
         if None in beam:
             print('No beam to plot.')
             return False
-        
+
         if poslist is None:
             poslist = [max(0.35 * beam[0] / self.rmax, 0.1)] * 2
         include_chan = self.bottomleft if self.channelnumber is None else self.allchan
         self.add_region('ellipse', poslist, *beam,
                         include_chan=include_chan,
                         facecolor=beamcolor, edgecolor=None)
-    
+
     def add_marker(self, poslist: list[str | list[float, float]] = [],
                    include_chan: list[int] | None = None, **kwargs) -> None:
         """Use Axes.plot of matplotlib.
@@ -499,17 +512,19 @@ class PlotAstroData(AstroFrame):
         _kw = {'marker': '+', 'ms': 10, 'mfc': 'gray',
                'mec': 'gray', 'mew': 2, 'alpha': 1, 'zorder': 10}
         _kw.update(kwargs)
-        if include_chan is None: include_chan = self.allchan
+        if include_chan is None:
+            include_chan = self.allchan
         for ch, axnow in enumerate(self.ax):
-            if type(self.channelnumber) is int: ch = self.channelnumber
+            if type(self.channelnumber) is int:
+                ch = self.channelnumber
             if not (ch in include_chan):
                 continue
             for x, y in zip(*self.pos2xy(poslist)):
                 axnow.plot(x, y, **_kw)
-            
+
     def add_text(self, poslist: list[str | list[float, float]] = [],
                  slist: list[str] = [],
-                 include_chan: list[int] = None, **kwargs) -> None:
+                 include_chan: list[int] | None = None, **kwargs) -> None:
         """Use Axes.text of matplotlib.
 
         Args:
@@ -520,9 +535,11 @@ class PlotAstroData(AstroFrame):
         _kw = {'color': 'gray', 'fontsize': 15, 'ha': 'center',
                'va': 'center', 'zorder': 10}
         _kw.update(kwargs)
-        if include_chan is None: include_chan = self.allchan
+        if include_chan is None:
+            include_chan = self.allchan
         for ch, axnow in enumerate(self.ax):
-            if type(self.channelnumber) is int: ch = self.channelnumber
+            if type(self.channelnumber) is int:
+                ch = self.channelnumber
             if not (ch in include_chan):
                 continue
             for x, y, s in zip(*self.pos2xy(poslist), listing(slist)):
@@ -530,7 +547,7 @@ class PlotAstroData(AstroFrame):
 
     def add_line(self, poslist: list[str | list[float, float]] = [],
                  anglelist: list[float] = [],
-                 rlist: list[float] = [], include_chan: list[int] = None,
+                 rlist: list[float] = [], include_chan: list[int] | None = None,
                  **kwargs) -> None:
         """Use Axes.plot of matplotlib.
 
@@ -543,9 +560,11 @@ class PlotAstroData(AstroFrame):
         _kw = {'color': 'gray', 'linewidth': 1.5,
                'linestyle': '-', 'zorder': 10}
         _kw.update(kwargs)
-        if include_chan is None: include_chan = self.allchan
+        if include_chan is None:
+            include_chan = self.allchan
         for ch, axnow in enumerate(self.ax):
-            if type(self.channelnumber) is int: ch = self.channelnumber
+            if type(self.channelnumber) is int:
+                ch = self.channelnumber
             if not (ch in include_chan):
                 continue
             alist = np.radians(anglelist)
@@ -555,7 +574,7 @@ class PlotAstroData(AstroFrame):
 
     def add_arrow(self, poslist: list[str | list[float, float]] = [],
                   anglelist: list[float] = [],
-                  rlist: list[float] = [], include_chan: list[int] = None,
+                  rlist: list[float] = [], include_chan: list[int] | None = None,
                   **kwargs) -> None:
         """Use Axes.quiver of matplotlib.
 
@@ -568,18 +587,19 @@ class PlotAstroData(AstroFrame):
         _kw = {'color': 'gray', 'width': 0.012,
                'headwidth': 5, 'headlength': 5, 'zorder': 10}
         _kw.update(kwargs)
-        if include_chan is None: include_chan = self.allchan
+        if include_chan is None:
+            include_chan = self.allchan
         for ch, axnow in enumerate(self.ax):
-            if type(self.channelnumber) is int: ch = self.channelnumber
+            if type(self.channelnumber) is int:
+                ch = self.channelnumber
             if not (ch in include_chan):
                 continue
             alist = np.radians(anglelist)
-            for x, y, a, r \
-                in zip(*self.pos2xy(poslist), *listing(alist, rlist)):
+            for x, y, a, r in zip(*self.pos2xy(poslist), *listing(alist, rlist)):
                 axnow.quiver(x, y, r * np.sin(a), r * np.cos(a),
                              angles='xy', scale_units='xy', scale=1,
                              **_kw)
-                
+
     def add_scalebar(self, length: float = 0, label: str = '',
                      color: str = 'gray', barpos: tuple[float, float] = (0.8, 0.12),
                      fontsize: float = None, linewidth: float = 3,
@@ -608,10 +628,10 @@ class PlotAstroData(AstroFrame):
             x, y = self.pos2xy([barpos[0], barpos[1] + 0.012])
             axnow.plot([x[0] - length/2., x[0] + length/2.], [y[0], y[0]],
                        '-', linewidth=linewidth, color=color)
-    
+
     def add_color(self, xskip: int = 1, yskip: int = 1,
                   stretch: str = 'linear',
-                  stretchscale: float = None,
+                  stretchscale: float | None = None,
                   stretchpower: float = 0,
                   show_cbar: bool = True, cblabel: str | None = None,
                   cbformat: float = '%.1e', cbticks: list[float] | None = None,
@@ -642,17 +662,20 @@ class PlotAstroData(AstroFrame):
         bunit = d.bunit
         self.beam = beam
         self.sigma = sigma
-        if stretchscale is None: stretchscale = sigma
+        if stretchscale is None:
+            stretchscale = sigma
         cmin_org = _kw['vmin'] if 'vmin' in _kw else sigma
         c = set_minmax(c, stretch, stretchscale, stretchpower, sigma, _kw)
         c = self.vskipfill(c, v)
-        if type(self.channelnumber) is int: c = [c[self.channelnumber]]
+        if type(self.channelnumber) is int:
+            c = [c[self.channelnumber]]
         for axnow, cnow in zip(self.ax, c):
             p = axnow.pcolormesh(x, y, cnow, **_kw)
         for ch in self.bottomleft:
             if not show_cbar:
                 break
-            if cblabel is None: cblabel = bunit
+            if cblabel is None:
+                cblabel = bunit
             if self.fig is None:
                 fig = plt.figure(ch // self.rowcol)
             else:
@@ -694,7 +717,7 @@ class PlotAstroData(AstroFrame):
             self.add_beam(beam, beamcolor)
 
     def add_contour(self, xskip: int = 1, yskip: int = 1,
-                    levels: list[float] = [-12,-6,-3,3,6,12,24,48,96,192,384],
+                    levels: list[float] = [-12, -6, -3, 3, 6, 12, 24, 48, 96, 192, 384],
                     show_beam: bool = True, beamcolor: str = 'gray',
                     **kwargs) -> None:
         """Use Axes.contour of matplotlib. kwargs must include the arguments of AstroData to specify the data to be plotted.
@@ -713,7 +736,8 @@ class PlotAstroData(AstroFrame):
         self.beam = beam
         self.sigma = sigma
         c = self.vskipfill(c, v)
-        if type(self.channelnumber) is int: c = [c[self.channelnumber]]
+        if type(self.channelnumber) is int:
+            c = [c[self.channelnumber]]
         for axnow, cnow in zip(self.ax, c):
             axnow.contour(x, y, cnow, np.sort(levels) * sigma, **_kw)
         if show_beam and not self.pv:
@@ -728,7 +752,7 @@ class PlotAstroData(AstroFrame):
                     stQ: list[np.ndarray] | None = None,
                     ampfactor: float = 1., angonly: bool = False,
                     rotation: float = 0.,
-                    cutoff: float = 3., 
+                    cutoff: float = 3.,
                     show_beam: bool = True, beamcolor: str = 'gray',
                     **kwargs) -> None:
         """Use Axes.quiver of matplotlib. kwargs must include the arguments of AstroData to specify the data to be plotted. fitsimage = [ampfits, angfits, Ufits, Qfits]. data = [amp, ang, stU, stQ].
@@ -769,8 +793,10 @@ class PlotAstroData(AstroFrame):
             ang = np.degrees(np.arctan2(stU, stQ) / 2.)
             amp = np.hypot(stU, stQ)
             amp[amp < cutoff * sigma] = np.nan
-        if amp is None: amp = np.ones_like(ang)
-        if angonly: amp = np.sign(amp)**2
+        if amp is None:
+            amp = np.ones_like(ang)
+        if angonly:
+            amp = np.sign(amp)**2
         amp = amp / np.nanmax(amp)
         U = ampfactor * amp * np.sin(np.radians(ang + rotation))
         V = ampfactor * amp * np.cos(np.radians(ang + rotation))
@@ -803,7 +829,7 @@ class PlotAstroData(AstroFrame):
             beamcolor (str, optional): Matplotlib color. Defaults to 'gray'.
         """
         from PIL import Image
-        
+
         _kw = {}
         _kw.update(kwargs)
         d = kwargs2AstroData(_kw)
@@ -812,7 +838,8 @@ class PlotAstroData(AstroFrame):
         self.beam = beam
         self.sigma = sigma
         for i in range(len(stretchscale)):
-            if stretchscale[i] is None: stretchscale[i] = sigma[i]
+            if stretchscale[i] is None:
+                stretchscale[i] = sigma[i]
         c = set_minmax(c, stretch, stretchscale, stretchpower, sigma, _kw)
         if not (np.shape(c[0]) == np.shape(c[1]) == np.shape(c[2])):
             print('RGB shapes mismatch. Skip add_rgb.')
@@ -835,7 +862,7 @@ class PlotAstroData(AstroFrame):
         if show_beam and not self.pv:
             for i in range(3):
                 self.add_beam(beam[i], beamcolor[i])
-    
+
     def set_axis(self, title: dict | str | None = None, **kwargs) -> None:
         """Use Axes.set_* of matplotlib. kwargs can include the arguments of PlotAxes2D to adjust x and y axis.
 
@@ -876,7 +903,7 @@ class PlotAstroData(AstroFrame):
                     plt.figure(0).tight_layout()
         if title is not None:
             if len(self.ax) > 1:
-                t = {'y':0.9}
+                t = {'y': 0.9}
                 t_in = {'t': title} if type(title) is str else title
                 t.update(t_in)
                 for i in range(self.npages):
@@ -885,8 +912,8 @@ class PlotAstroData(AstroFrame):
             else:
                 t = {'label': title} if type(title) is str else title
                 axnow.set_title(**t)
-            
-    def set_axis_radec(self, center: str | None = None, 
+
+    def set_axis_radec(self, center: str | None = None,
                        xlabel: str = 'R.A. (ICRS)',
                        ylabel: str = 'Dec. (ICRS)',
                        nticksminor: int = 2,
@@ -904,8 +931,10 @@ class PlotAstroData(AstroFrame):
         if self.rmax > 50.:
             print('WARNING: set_axis_radec() is not supported '
                   + 'with rmax>50 yet.')
-        if center is None: center = self.center
-        if center is None: center = '00h00m00s 00d00m00s'
+        if center is None:
+            center = self.center
+        if center is None:
+            center = '00h00m00s 00d00m00s'
         dec = np.radians(coord2xy(center)[1])
 
         def get_sec(x, i):
@@ -918,6 +947,7 @@ class PlotAstroData(AstroFrame):
         dec_s = get_sec(center, 1)
         log2r = np.log10(2. * self.rmax)
         n = np.array([-3, -2, -1, 0, 1, 2, 3])
+
         def makegrid(second, mode):
             second = float(second)
             if mode == 'ra':
@@ -947,14 +977,15 @@ class PlotAstroData(AstroFrame):
             tickvalues = xy2coord(xy, center)
             tickvalues = [float(get_sec(t, i)) for t in tickvalues]
             tickvalues = np.divmod(tickvalues, 1)
-            ticklabels = [f'{int(i):02d}{sec}' + f'{j:.{decimals:d}f}'[2:]
+            ticklabels = [f'{int(i):02d}{sec}' + f'{j:.{decimals:d}f}'[2: ]
                           for i, j in zip(*tickvalues)]
             return ticks, ticksminor, ticklabels
+
         xticks, xticksminor, xticklabels = makegrid(ra_s, 'ra')
         yticks, yticksminor, yticklabels = makegrid(dec_s, 'dec')
-        ra_hm  = get_hmdm(xy2coord([xticks[3] / 3600., 0], center), 0)
+        ra_hm = get_hmdm(xy2coord([xticks[3] / 3600., 0], center), 0)
         dec_dm = get_hmdm(xy2coord([0, yticks[3] / 3600.], center), 1)
-        ra_hm  = ra_hm.replace('h', r'$^{\rm h}$') + r'$^{\rm m}$'
+        ra_hm = ra_hm.replace('h', r'$^{\rm h}$') + r'$^{\rm m}$'
         dec_dm = dec_dm.replace('d', r'$^{\circ}$') + r'$^{\prime}$'
         xticklabels[3] = ra_hm + xticklabels[3]
         yticklabels[3] = dec_dm + '\n' + yticklabels[3]
@@ -982,7 +1013,7 @@ class PlotAstroData(AstroFrame):
             else:
                 t = {'label': title} if type(title) is str else title
                 axnow.set_title(**t)
-            
+
     def savefig(self, filename: str | None = None,
                 show: bool = False, **kwargs) -> None:
         """Use savefig of matplotlib.
@@ -1028,7 +1059,7 @@ def plotprofile(coords: list[str] | str = [],
                 gaussfit: bool = False, gauss_kwargs: dict = {},
                 title: list[str] | None = None, text: list[str] | None = None,
                 dist: float = 1., vsys: float = 0.,
-                nrows: int = 0, ncols: int = 1, fig = None, ax = None,
+                nrows: int = 0, ncols: int = 1, fig=None, ax=None,
                 getfigax: bool = False,
                 savefig: dict = None, show: bool = True,
                 **kwargs) -> tuple[object, object]:
@@ -1075,11 +1106,15 @@ def plotprofile(coords: list[str] | str = [],
         ylabel = 'Flux (Jy)'
     else:
         ylabel = d.bunit
-    if type(ylabel) is str: ylabel = [ylabel] * nprof
+    if type(ylabel) is str:
+        ylabel = [ylabel] * nprof
+
     def gauss(x, p, c, w):
         return p * np.exp(-4. * np.log(2.) * ((x - c) / w)**2)
+
     set_rcparams(20, 'w')
-    if ncols == 1: nrows = nprof
+    if ncols == 1:
+        nrows = nprof
     if fig is None:
         fig = plt.figure(figsize=(6 * ncols, 3 * nrows))
     if nprof > 1 and ax is not None:
@@ -1101,9 +1136,11 @@ def plotprofile(coords: list[str] | str = [],
         ax[i].hlines([0], v.min(), v.max(), linestyle='dashed', color='k')
         ax[i].set_ylabel(ylabel[i])
         pa2d.set_xyaxes(ax[i])
-        if text is not None: ax[i].text(**text[i])
+        if text is not None:
+            ax[i].text(**text[i])
         if title is not None:
-            if type(title[i]) is str: title[i] = {'label': title[i]}
+            if type(title[i]) is str:
+                title[i] = {'label': title[i]}
             ax[i].set_title(**title[i])
         if i <= nprof - ncols - 1:
             plt.setp(ax[i].get_xticklabels(), visible=False)
@@ -1114,8 +1151,9 @@ def plotprofile(coords: list[str] | str = [],
         s = {'fname': savefig} if type(savefig) is str else savefig
         savefig0.update(s)
         fig.savefig(**savefig0)
-    if show: plt.show()
-    plt.close()    
+    if show:
+        plt.show()
+    plt.close()
 
 
 def plotslice(length: float, dx: float | None = None, pa: float = 0,
@@ -1151,14 +1189,16 @@ def plotslice(length: float, dx: float | None = None, pa: float = 0,
     xunit = 'arcsec' if dist == 1 else 'au'
     yunit = 'K' if Tb else d.bunit
     yquantity = 'Tb' if Tb else 'intensity'
-        
+
     if txtfile is not None:
         np.savetxt(txtfile, np.c_[r, z],
                    header=f'x ({xunit}), {yquantity} ({yunit}); '
                    + f'positive x is pa={pa:.2f} deg.')
     set_rcparams()
-    if fig is None: fig = plt.figure()
-    if ax is None: ax = fig.add_subplot(1, 1, 1)
+    if fig is None:
+        fig = plt.figure()
+    if ax is None:
+        ax = fig.add_subplot(1, 1, 1)
     if 'xlabel' not in _kw:
         _kw['xlabel'] = f'Offset ({xunit})'
     if 'ylabel' not in _kw:
@@ -1178,11 +1218,12 @@ def plotslice(length: float, dx: float | None = None, pa: float = 0,
         s = {'fname': savefig} if type(savefig) is str else savefig
         savefig0.update(s)
         fig.savefig(**savefig0)
-    if show: plt.show()
-    plt.close()    
+    if show:
+        plt.show()
+    plt.close()
 
 
-def plot3d(levels: list[float] = [3,6,12], cmap: str = 'Jet',
+def plot3d(levels: list[float] = [3, 6, 12], cmap: str = 'Jet',
            xlabel: str = 'R.A. (arcsec)',
            ylabel: str = 'Dec. (arcsec)',
            vlabel: str = 'Velocity (km/s)',
@@ -1208,16 +1249,19 @@ def plot3d(levels: list[float] = [3,6,12], cmap: str = 'Jet',
     import plotly.offline as po
     import plotly.graph_objs as go
     from skimage import measure
-    
+
     f = kwargs2AstroFrame(kwargs)
     d = kwargs2AstroData(kwargs)
     f.read(d, xskip, yskip)
     volume, x, y, v, sigma = d.data, d.x, d.y, d.v, d.sigma
     dx, dy, dv = x[1] - x[0], y[1] - y[0], v[1] - v[0]
-    volume[np.isnan(volume)] = 0        
-    if dx < 0: x, dx, volume = x[::-1], -dx, volume[:, :, ::-1]
-    if dy < 0: y, dy, volume = y[::-1], -dy, volume[:, ::-1, :]
-    if dv < 0: v, dv, volume = v[::-1], -dv, volume[::-1, :, :]
+    volume[np.isnan(volume)] = 0
+    if dx < 0:
+        x, dx, volume = x[::-1], -dx, volume[:, :, ::-1]
+    if dy < 0:
+        y, dy, volume = y[::-1], -dy, volume[:, ::-1, :]
+    if dv < 0:
+        v, dv, volume = v[::-1], -dv, volume[::-1, :, :]
     s, ds = [x, y, v], [dx, dy, dv]
     deg = np.radians(1)
     xeye = -np.sin(eye_i * deg) * np.sin(eye_p * deg)
@@ -1234,7 +1278,8 @@ def plot3d(levels: list[float] = [3,6,12], cmap: str = 'Jet',
 
     data = []
     for lev in levels:
-        if lev * sigma > np.max(volume): continue
+        if lev * sigma > np.max(volume):
+            continue
         vertices, simplices, _, _ = measure.marching_cubes(volume, lev * sigma)
         Xg, Yg, Zg = [t[0] + i * dt for t, i, dt
                       in zip(s, vertices.T[::-1], ds)]
@@ -1250,9 +1295,9 @@ def plot3d(levels: list[float] = [3,6,12], cmap: str = 'Jet',
             Xe += [x[0] + dx * t[k % 3][2] for k in range(4)] + [None]
             Ye += [y[0] + dy * t[k % 3][1] for k in range(4)] + [None]
             Ze += [v[0] + dv * t[k % 3][0] for k in range(4)] + [None]
-        lines=dict(type='scatter3d', x=Xe, y=Ye, z=Ze,
-                   mode='lines', opacity=0.04, visible=True,
-                   name='', line=dict(color='rgb(0,0,0)', width=1))
+        lines = dict(type='scatter3d', x=Xe, y=Ye, z=Ze,
+                     mode='lines', opacity=0.04, visible=True,
+                     name='', line=dict(color='rgb(0,0,0)', width=1))
         data.append(lines)
 
     fig = dict(data=data, layout=layout)
