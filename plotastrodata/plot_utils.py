@@ -11,7 +11,7 @@ from plotastrodata.analysis_utils import AstroData, AstroFrame
 plt.ioff()  # force to turn off interactive mode
 
 
-def set_rcparams(fontsize: int = 18, nancolor: str ='w',
+def set_rcparams(fontsize: int = 18, nancolor: str = 'w',
                  dpi: int = 256) -> None:
     """Nice rcParams for figures.
 
@@ -742,7 +742,7 @@ class PlotAstroData(AstroFrame):
             axnow.contour(x, y, cnow, np.sort(levels) * sigma, **_kw)
         if show_beam and not self.pv:
             self.add_beam(beam, beamcolor)
-            
+
     def add_segment(self, ampfits: str = None, angfits: str = None,
                     Ufits: str = None, Qfits: str = None,
                     xskip: int = 1, yskip: int = 1,
@@ -977,7 +977,7 @@ class PlotAstroData(AstroFrame):
             tickvalues = xy2coord(xy, center)
             tickvalues = [float(get_sec(t, i)) for t in tickvalues]
             tickvalues = np.divmod(tickvalues, 1)
-            ticklabels = [f'{int(i):02d}{sec}' + f'{j:.{decimals:d}f}'[2: ]
+            ticklabels = [f'{int(i):02d}{sec}' + f'{j:.{decimals:d}f}'[2:]
                           for i, j in zip(*tickvalues)]
             return ticks, ticksminor, ticklabels
 
