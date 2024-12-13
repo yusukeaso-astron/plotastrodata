@@ -1,8 +1,9 @@
-numpy
-scipy
 astropy
-matplotlib
-ptemcee
 corner
 dynesty
-sphinx-rtd-theme
+matplotlib
+multiprocessing
+numpy
+ptemcee
+scipy
+tqdm
