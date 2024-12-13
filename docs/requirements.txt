@@ -6,4 +6,5 @@ multiprocessing
 numpy
 ptemcee
 scipy
+sphinx-rtd-theme
 tqdm
