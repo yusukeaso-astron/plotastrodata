@@ -48,6 +48,7 @@ plotastrodata can do the following things.
 * corner (only for fitting)
 * dynesty (only for fitting)
 * ffmpeg (only for movie)
+* ffmpeg-python (only for movie)
 * matplotlib
 * multiprocess (only for fitting)
 * numpy
