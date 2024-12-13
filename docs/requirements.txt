@@ -8,5 +8,5 @@ pillow
 plotly
 ptemcee
 scipy
-skiage
+skimage
 tqdm
