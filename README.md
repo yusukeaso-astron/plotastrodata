@@ -49,14 +49,14 @@ plotastrodata can do the following things.
 * dynesty (only for fitting)
 * ffmpeg (only for movie)
 * matplotlib
+* multiprocess (only for fitting)
 * numpy
-* PIL (only for RGB figures)
+* pillow (only for RGB figures)
 * plotly (only for html cube)
 * ptemcee (only for fitting)
-* re
+* scikit-image (only for html cube)
 * scipy
-* skimage (only for html cube)
-* warnings
+* tqdm (only for fitting)
 
  
 ## Installation
