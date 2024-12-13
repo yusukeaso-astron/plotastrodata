@@ -1,6 +1,5 @@
 astropy
 corner
-dataclass
 dynesty
 ffmpeg
 matplotlib
@@ -9,10 +8,6 @@ numpy
 pillow
 plotly
 ptemcee
-re
 scipy
-shlex
 skiage
-subprocess
 tqdm
-warnings
