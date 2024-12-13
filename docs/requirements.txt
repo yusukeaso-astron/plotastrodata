@@ -1,7 +1,6 @@
 astropy
 corner
 dynesty
-ffmpeg
 matplotlib
 multiprocess
 numpy
