@@ -3,7 +3,6 @@ corner
 dynesty
 ffmpeg
 matplotlib
-multiprocessing
 numpy
 pillow
 plotly
