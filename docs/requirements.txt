@@ -4,4 +4,5 @@ astropy
 matplotlib
 ptemcee
 corner
+dynesty
 sphinx-rtd-theme
