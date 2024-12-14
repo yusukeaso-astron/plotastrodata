@@ -11,17 +11,17 @@ or
 ```bash
 pip install plotastrodata
 ```
-The following is the way for manual installation. The file example.py will help to find how to use this package.
+The following is the way to install plotastrodata manually. The file example.py will help you find out how to use this package.
 ```bash
 git clone https://github.com/yusukeaso-astron/plotastrodata
 cd plotastrodata
 python example.py
 ```
-To keep the package updated, type the command below in the directory plotastrodata, always before you use.
+To keep the package updated, always type the command below in the directory plotastrodata before you use it.
 ```bash
 git pull
 ```
-Also, setting the path in .bashrc (or .zshrc etc.) will be useful.
+Also, setting the path in .bashrc (or .zshrc, etc.) will be useful.
 ```bash
 export PYTHONPATH=${PYTHONPATH}:/YOUR_PATH_TO/plotastrodata
 ```
@@ -75,7 +75,7 @@ git clone https://github.com/yusukeaso-astron/plotastrodata
  
 ## Note
 
-* For 3D data, a 1D velocity array or a FITS file with a velocity axis must be given to set up channels in each page.
+* For 3D data, a 1D velocity array or a FITS file with a velocity axis must be given to set up channels on each page.
 * For 2D/3D data, the spatial center can be read from a FITS file or manually given.
 * len(v)=1 (default) means to make a 2D figure.
 * Spatial lengths are in the unit of arcsec, or au if dist (!= 1) is given.
@@ -83,7 +83,7 @@ git clone https://github.com/yusukeaso-astron/plotastrodata
 * For region, line, arrow, label, and marker, a single input can be treated without a list, e.g., anglelist=60, as well as anglelist=[60].
 * Each element of poslist supposes a text coordinate like '01h23m45.6s 01d23m45.6s' or a list of relative x and y like [0.2, 0.3] (0 is left or bottom, 1 is right or top).
 * Parameters for original methods in matplotlib.axes.Axes can be used as kwargs; see the default kwargs0 for reference.
-* Position-velocity diagrams (pv=True) does not yet suppot region, line, arrow, and segment because the units of abscissa and ordinate are different.
+* Position-velocity diagrams (pv=True) do not yet support region, line, arrow, and segment because the units of abscissa and ordinate are different.
  
 ## Author
  
