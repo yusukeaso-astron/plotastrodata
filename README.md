@@ -4,7 +4,7 @@ Python package to make figures from radio astronomical data by astropy and matpl
 
 ## Demo and Usage
 For the installation, pip and conda are available.
-'''bash
+```bash
 conda install conda-forge::plotastrodata
 pip install plotastrodata
 '''
