@@ -7,11 +7,11 @@ For the installation, conda and are available.
 ```bash
 conda install conda-forge::plotastrodata
 ```
-and
+or
 ```bash
 pip install plotastrodata
 ```
-The file example.py will help to find how to use this package.
+The following is the way for manual installation. The file example.py will help to find how to use this package.
 ```bash
 git clone https://github.com/yusukeaso-astron/plotastrodata
 cd plotastrodata
