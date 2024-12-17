@@ -2,9 +2,11 @@ import subprocess
 import shlex
 import numpy as np
 from astropy.coordinates import SkyCoord
-from astropy import units, constants
+from astropy import units
 from scipy.optimize import curve_fit
 from scipy.special import erf
+
+from plotastrodata import const_utils as cu
 
 
 def terminal(cmd: str, **kwargs) -> None:
@@ -312,10 +314,7 @@ def BnuT(T: float = 30, nu: float = 230e9) -> float:
     Returns:
         float: Planck function in the SI units.
     """
-    hh = constants.h.si.value
-    cc = constants.c.si.value
-    k_B = constants.k_B.si.value
-    return 2 * hh * nu**3 / cc**2 / (np.exp(hh * nu / k_B / T) - 1)
+    return 2 * cu.h * nu**3 / cu.c**2 / (np.exp(cu.h * nu / cu.k_B / T) - 1)
 
 
 def JnuT(T: float = 30, nu: float = 230e9) -> float:
@@ -328,9 +327,7 @@ def JnuT(T: float = 30, nu: float = 230e9) -> float:
     Returns:
         float: Brightness temperature of Planck function in the unit of K.
     """
-    hh = constants.h.si.value
-    k_B = constants.k_B.si.value
-    return hh * nu / k_B / (np.exp(hh * nu / k_B / T) - 1)
+    return cu.h * nu / cu.k_B / (np.exp(cu.h * nu / cu.k_B / T) - 1)
 
 
 def gaussian2d(xy: np.ndarray,

@@ -1,4 +1,5 @@
 from plotastrodata.analysis_utils import AstroData, AstroFrame
+from plotastrodata import const_utils
 from plotastrodata.fft_utils import fftcentering2, ifftcentering2
 from plotastrodata.fits_utils import FitsData, fits2data, data2fits
 from plotastrodata.fitting_utils import PTEmceeCorner
