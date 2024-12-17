@@ -23,10 +23,10 @@ copyright = '2023, YusukeAso'
 author = 'YusukeAso'
 
 # The short X.Y version
-version = '0.0.1'
+version = '1.0.5'
 
 # The full version, including alpha/beta/rc tags
-release = '0.0.1'
+release = '1.0.5'
 
 
 # -- General configuration ---------------------------------------------------
