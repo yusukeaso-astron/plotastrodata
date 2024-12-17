@@ -105,6 +105,7 @@
     <span class="k">return</span> <span class="n">m</span></div>
 
 
+
 <div class="viewcode-block" id="obs2sys">
 <a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.los_utils.obs2sys">[docs]</a>
 <span class="k">def</span> <span class="nf">obs2sys</span><span class="p">(</span><span class="n">xobs</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">yobs</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">zobs</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
@@ -140,6 +141,7 @@
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">r</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">phi</span><span class="p">])</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">x</span></div>
+
 
 
 <div class="viewcode-block" id="sys2obs">
@@ -178,6 +180,7 @@
     <span class="k">return</span> <span class="n">x</span></div>
 
 
+
 <div class="viewcode-block" id="polarvel2losvel">
 <a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.los_utils.polarvel2losvel">[docs]</a>
 <span class="k">def</span> <span class="nf">polarvel2losvel</span><span class="p">(</span><span class="n">v_r</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">v_theta</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">v_phi</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
@@ -202,7 +205,7 @@
     <span class="n">sin_t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span>
     <span class="n">cos_p</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">phi</span><span class="p">)</span>
     <span class="n">sin_p</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">phi</span><span class="p">)</span>
-    
+
     <span class="n">A</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="n">sin_t</span> <span class="o">*</span> <span class="n">cos_p</span><span class="p">,</span> <span class="n">cos_t</span> <span class="o">*</span> <span class="n">cos_p</span><span class="p">,</span> <span class="o">-</span><span class="n">sin_p</span><span class="p">],</span>
                  <span class="p">[</span><span class="n">sin_t</span> <span class="o">*</span> <span class="n">sin_p</span><span class="p">,</span> <span class="n">cos_t</span> <span class="o">*</span> <span class="n">sin_p</span><span class="p">,</span> <span class="n">cos_p</span><span class="p">],</span>
                  <span class="p">[</span><span class="n">cos_t</span><span class="p">,</span> <span class="o">-</span><span class="n">sin_t</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">theta</span><span class="p">)]])</span>

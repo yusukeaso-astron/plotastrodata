@@ -12,6 +12,14 @@ plotastrodata.analysis\_utils module
    :undoc-members:
    :show-inheritance:
 
+plotastrodata.const\_utils module
+---------------------------------
+
+.. automodule:: plotastrodata.const_utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 plotastrodata.fft\_utils module
 -------------------------------
 
