@@ -81,3 +81,4 @@ quecto = 1e-30
 # Others
 mumol = 2.37 * m_p  # kg; Kauffmann et al. 2008, for sound speed
 muH2 = 2.8 * m_p  # kg; Kauffmann et al. 2008, for mass-H2 conversion
+c_kms = constants.c.to('km*s**(-1)').value

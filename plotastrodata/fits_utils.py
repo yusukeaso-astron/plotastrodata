@@ -1,8 +1,9 @@
 import numpy as np
 from astropy.io import fits
-from astropy import constants, units, wcs
+from astropy import units, wcs
 
 from plotastrodata.other_utils import coord2xy, xy2coord, estimate_rms, trim
+from plotastrodata import const_utils as cu
 
 
 def Jy2K(header=None, bmaj: float | None = None, bmin: float | None = None,
@@ -219,7 +220,7 @@ class FitsData:
             if freq == 0:
                 print('v is frequency because restfreq=0.')
             else:
-                s = (1 - s / freq) * constants.c.to('km*s**(-1)').value - vsys
+                s = (1 - s / freq) * cu.c_kms - vsys
             self.v, self.dv = s, s[1] - s[0]
 
         if h['NAXIS'] > 0 and h['NAXIS1'] > 1:

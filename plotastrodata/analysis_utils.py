@@ -3,11 +3,11 @@ from dataclasses import dataclass
 from scipy.interpolate import RegularGridInterpolator as RGI
 from scipy.optimize import curve_fit
 from scipy.signal import convolve
-from astropy import constants
 
 from plotastrodata.other_utils import (coord2xy, rel2abs, estimate_rms, trim,
                                        Mfac, Mrot, dot2d, gaussian2d)
 from plotastrodata.fits_utils import FitsData, data2fits, Jy2K
+from plotastrodata import const_utils as cu
 
 
 def to4dim(data: np.ndarray) -> np.ndarray:
@@ -510,11 +510,10 @@ class AstroData():
         h['CRVAL2'] = cy
         h['CDELT2'] = (self.y[1] - self.y[0]) / 3600
         if self.v is not None:
-            clight = constants.c.to('km*s**(-1)').value
             h['NAXIS3'] = len(self.v)
             h['CRPIX3'] = i = np.argmin(np.abs(self.v)) + 1
-            h['CRVAL3'] = (1 - self.v[i]/clight) * self.restfreq
-            h['CDELT3'] = (self.v[0]-self.v[1]) / clight * self.restfreq
+            h['CRVAL3'] = (1 - self.v[i]/cu.c_kms) * self.restfreq
+            h['CDELT3'] = (self.v[0]-self.v[1]) / cu.c_kms * self.restfreq
         if None not in self.beam:
             h['BMAJ'] = self.beam[0] / 3600
             h['BMIN'] = self.beam[1] / 3600
