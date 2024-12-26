@@ -217,10 +217,38 @@ class FitsData:
                 print('restfreq is assumed to be the center.')
             else:
                 freq = restfreq
-            if freq == 0:
-                print('v is frequency because restfreq=0.')
-            else:
-                s = (1 - s / freq) * cu.c_kms - vsys
+
+            vaxis = '2' if pv else '3'
+            key = f'CUNIT{vaxis}'
+            cunitv = h[key]
+            match cunitv:
+                case 'Hz':
+                    if freq == 0:
+                        print('v is frequency because restfreq=0.')
+                    else:
+                        s = (1 - s / freq) * cu.c_kms - vsys
+                case 'HZ':
+                    if freq == 0:
+                        print('v is frequency because restfreq=0.')
+                    else:
+                        s = (1 - s / freq) * cu.c_kms - vsys
+                case 'm/s':
+                    print(f'{key}=\'m/s\' was found.')
+                    s = s * 1e-3 - vsys
+                case 'M/S':
+                    print(f'{key}=\'M/S\' was found.')
+                    s = s * 1e-3 - vsys
+                case 'km/s':
+                    print(f'{key}=\'km/s\' was found.')
+                    s = s - vsys
+                case 'KM/S':
+                    print(f'{key}=\'KM/S\' was found.')
+                    s = s - vsys
+                case _:
+                    print(f'Unknown CUNIT3 {cunitv} was found.'
+                          + ' v is read as is.')
+                    s = s - vsys
+            
             self.v, self.dv = s, s[1] - s[0]
 
         if h['NAXIS'] > 0 and h['NAXIS1'] > 1:
