@@ -1315,6 +1315,18 @@ def plot3d(levels: list[float] = [3, 6, 12],
     def plot_on_wall(sign: int, axis: int, **kwargs):
         if kwargs == {}:
             return
+
+        match axis:
+            case 2:
+                shape = np.shape(d.data[:, :, 0])
+            case 1:
+                shape = np.shape(d.data[:, 0, :])
+            case 0:
+                shape = np.shape(d.data[0, :, :])
+        if np.shape(kwargs['data']) != shape:
+            print('The shape of the 2D data is inconsistent with the shape of the 3D data.')
+            return
+
         _kw = {'levels': [3, 6, 12, 24, 48, 96, 192, 384],
               'sigma': 'hist', 'cmap': 'Jet', 'alpha': 0.3}
         _kw.update(kwargs)
