@@ -1234,7 +1234,7 @@ def plot3d(levels: list[float] = [3, 6, 12],
            yplus: dict = {}, yminus: dict = {},
            vplus: dict = {}, vminus: dict = {},
            outname: str = 'plot3d', show: bool = False,
-           return_data_layout = False,
+           return_data_layout: bool = False,
            **kwargs) -> None:
     """Use Plotly. kwargs must include the arguments of AstroData to specify the data to be plotted. kwargs must include the arguments of AstroFrame to specify the ranges and so on for plotting.
 
