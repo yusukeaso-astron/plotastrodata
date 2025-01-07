@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse, Rectangle
 from dataclasses import dataclass
 
-from plotastrodata.other_utils import coord2xy, xy2coord, listing
+from plotastrodata.other_utils import coord2xy, xy2coord, listing, estimate_rms
 from plotastrodata.analysis_utils import AstroData, AstroFrame
 
 
@@ -1223,19 +1223,25 @@ def plotslice(length: float, dx: float | None = None, pa: float = 0,
     plt.close()
 
 
-def plot3d(levels: list[float] = [3, 6, 12], cmap: str = 'Jet',
+def plot3d(levels: list[float] = [3, 6, 12],
+           cmap: str = 'Jet', alpha: float = 0.08,
            xlabel: str = 'R.A. (arcsec)',
            ylabel: str = 'Dec. (arcsec)',
            vlabel: str = 'Velocity (km/s)',
            xskip: int = 1, yskip: int = 1,
            eye_p: float = 0, eye_i: float = 180,
+           xplus: dict = {}, xminus: dict = {},
+           yplus: dict = {}, yminus: dict = {},
+           vplus: dict = {}, vminus: dict = {},
            outname: str = 'plot3d', show: bool = False,
-           **kwargs) -> None:
+           return_data_layout: bool = False,
+           **kwargs) -> None | dict:
     """Use Plotly. kwargs must include the arguments of AstroData to specify the data to be plotted. kwargs must include the arguments of AstroFrame to specify the ranges and so on for plotting.
 
     Args:
         levels (list, optional): Contour levels. Defaults to [3,6,12].
         cmap (str, optional): Color map name. Defaults to 'Jet'.
+        alpha (float, optional): opacity in plotly. Defaults to 0.08.
         xlabel (str, optional): Defaults to 'R.A. (arcsec)'.
         ylabel (str, optional): Defaults to 'Dec. (arcsec)'.
         vlabel (str, optional): Defaults to 'Velocity (km/s)'.
@@ -1243,10 +1249,19 @@ def plot3d(levels: list[float] = [3, 6, 12], cmap: str = 'Jet',
         yskip (int, optional): Number of pixel to skip. Defaults to 1.
         eye_p (float, optional): Azimuthal angle of camera. Defaults to 0.
         eye_i (float, optional): Inclination angle of camera. Defaults to 180.
+        xplus (dict, optional): 2D data to be plotted on the y-v plane at the positive edge of x. This dictionary must have a key of data and can have keys of levels, sigma, cmap, and alpha. Defaults to {}.
+        xminus (dict, optional): See xplus. Defaults to {}.
+        yplus (dict, optional): See xplus. Defaults to {}.
+        yminus (dict, optional): See xplus. Defaults to {}.
+        vplus (dict, optional): See xplus. Defaults to {}.
+        vminus (dict, optional): See xplus. Defaults to {}.
         outname (str, optional): Output file name. Defaults to 'plot3d'.
-        show (bool, optional): auto_open in plotly. Defaults to False.
+        show (bool, optional): auto_play in plotly. Defaults to False.
+        return_data_layout (bool, optional): Whether to return data and layout for plotly.graph_objs.Figure. Defaults to False.
+
+    Returns:
+        dict: {'data': data, 'layout': layout}, if return_data_layout=True. Otherwise, no return.
     """
-    import plotly.offline as po
     import plotly.graph_objs as go
     from skimage import measure
 
@@ -1288,7 +1303,7 @@ def plot3d(levels: list[float] = [3, 6, 12], cmap: str = 'Jet',
                     intensity=Zg * 0 + lev,
                     colorscale=cmap, reversescale=False,
                     cmin=np.min(levels), cmax=np.max(levels),
-                    opacity=0.08, name='', showscale=False)
+                    opacity=alpha, name='', showscale=False)
         data.append(mesh)
         Xe, Ye, Ze = [], [], []
         for t in vertices[simplices]:
@@ -1300,5 +1315,69 @@ def plot3d(levels: list[float] = [3, 6, 12], cmap: str = 'Jet',
                      name='', line=dict(color='rgb(0,0,0)', width=1))
         data.append(lines)
 
-    fig = dict(data=data, layout=layout)
-    po.plot(fig, filename=outname + '.html', auto_open=show)
+    def plot_on_wall(sign: int, axis: int, **kwargs):
+        if kwargs == {}:
+            return
+
+        match axis:
+            case 2:
+                shape = np.shape(d.data[:, :, 0])
+            case 1:
+                shape = np.shape(d.data[:, 0, :])
+            case 0:
+                shape = np.shape(d.data[0, :, :])
+        if np.shape(kwargs['data']) != shape:
+            print('The shape of the 2D data is inconsistent with the shape of the 3D data.')
+            return
+
+        _kw = {'levels': [3, 6, 12, 24, 48, 96, 192, 384],
+               'sigma': 'hist', 'cmap': 'Jet', 'alpha': 0.3}
+        _kw.update(kwargs)
+        volume = _kw['data']
+        levels = _kw['levels']
+        cmap = _kw['cmap']
+        alpha = _kw['alpha']
+        sigma = estimate_rms(data=volume, sigma=_kw['sigma'])
+        volume[np.isnan(volume)] = 0
+        a = int(sign == -1)
+        b = int(sign == 1)
+        volume = np.moveaxis([volume * a, volume * b], 0, axis)
+        if d.x[1] - d.x[0] < 0:
+            volume = volume[:, :, ::-1]
+        if d.y[1] - d.y[0] < 0:
+            volume = volume[:, ::-1, :]
+        if d.v[1] - d.v[0] < 0:
+            volume = volume[::-1, :, :]
+        for lev in levels:
+            if lev * sigma > np.max(volume):
+                continue
+            vertices, simplices, _, _ = measure.marching_cubes(volume, lev * sigma)
+            Xg, Yg, Zg = [t[0] + i * dt for t, i, dt
+                          in zip(s, vertices.T[::-1], ds)]
+            match axis:
+                case 2:
+                    Xg = Xg * 0 + (x[-1] if sign == 1 else x[0])
+                case 1:
+                    Yg = Yg * 0 + (y[-1] if sign == 1 else y[0])
+                case 0:
+                    Zg = Zg * 0 + (v[-1] if sign == 1 else v[0])
+            i, j, k = simplices.T
+            mesh2d = dict(type='mesh3d', x=Xg, y=Yg, z=Zg,
+                          i=i, j=j, k=k,
+                          intensity=Zg * 0 + lev,
+                          colorscale=cmap, reversescale=False,
+                          cmin=np.min(levels), cmax=np.max(levels),
+                          opacity=alpha, name='', showscale=False)
+            data.append(mesh2d)
+
+    klist = [xplus, xminus, yplus, yminus, vplus, vminus]
+    slist = [1, -1, 1, -1, 1, -1]
+    alist = [2, 2, 1, 1, 0, 0]
+    for kw, sign, axis in zip(klist, slist, alist):
+        plot_on_wall(sign=sign, axis=axis, **kw)
+
+    if return_data_layout:
+        return {'data': data, 'layout': layout}
+    else:
+        fig = go.Figure(data=data, layout=layout)
+        fig.write_html(file=outname + '.html', auto_play=show)
