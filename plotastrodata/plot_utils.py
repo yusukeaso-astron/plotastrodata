@@ -1235,7 +1235,7 @@ def plot3d(levels: list[float] = [3, 6, 12],
            vplus: dict = {}, vminus: dict = {},
            outname: str = 'plot3d', show: bool = False,
            return_data_layout: bool = False,
-           **kwargs) -> None:
+           **kwargs) -> None | dict:
     """Use Plotly. kwargs must include the arguments of AstroData to specify the data to be plotted. kwargs must include the arguments of AstroFrame to specify the ranges and so on for plotting.
 
     Args:
@@ -1258,6 +1258,9 @@ def plot3d(levels: list[float] = [3, 6, 12],
         outname (str, optional): Output file name. Defaults to 'plot3d'.
         show (bool, optional): auto_play in plotly. Defaults to False.
         return_data_layout (bool, optional): Whether to return data and layout for plotly.graph_objs.Figure. Defaults to False.
+
+    Returns:
+        dict: {'data': data, 'layout': layout}, if return_data_layout=True. Otherwise, no return.
     """
     import plotly.graph_objs as go
     from skimage import measure
