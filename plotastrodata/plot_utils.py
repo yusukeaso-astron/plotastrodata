@@ -1328,7 +1328,7 @@ def plot3d(levels: list[float] = [3, 6, 12],
             return
 
         _kw = {'levels': [3, 6, 12, 24, 48, 96, 192, 384],
-              'sigma': 'hist', 'cmap': 'Jet', 'alpha': 0.3}
+               'sigma': 'hist', 'cmap': 'Jet', 'alpha': 0.3}
         _kw.update(kwargs)
         volume = _kw['data']
         levels = _kw['levels']
