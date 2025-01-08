@@ -348,7 +348,7 @@ class AstroData():
         residual = d - model
         return {'popt': popt, 'pcov': pcov, 'model': model, 'residual': residual}
 
-    def mask(self, dataformask: np.ndarray = None,
+    def mask(self, dataformask: np.ndarray | None = None,
              includepix: list[float, float] = [],
              excludepix: list[float, float] = []):
         """Mask self.data using a 2D or 3D array of dataformask.
