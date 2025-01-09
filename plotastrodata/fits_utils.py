@@ -53,7 +53,7 @@ class FitsData:
         self.fitsimage = fitsimage
 
     def gen_hdu(self) -> None:
-        """Generate self.hdu. fits.open()[0].
+        """Generate self.hdu.fits.open()[0].
         """
         hdu = fits.open(self.fitsimage)
         self.hdu = hdu[0]
