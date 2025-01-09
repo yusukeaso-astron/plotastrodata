@@ -53,7 +53,7 @@ class FitsData:
         self.fitsimage = fitsimage
 
     def gen_hdu(self) -> None:
-        """Generate self.hdu.fits.open()[0].
+        """Generate self.hdu, which is astropy,io.fits.open()[0].
         """
         hdu = fits.open(self.fitsimage)
         self.hdu = hdu[0]
@@ -65,7 +65,7 @@ class FitsData:
             self.hdubeam = b['BMAJ'][imed], b['BMIN'][imed], b['BPA'][imed]
 
     def gen_header(self) -> None:
-        """Generate self.header. fits.open()[0].header.
+        """Generate self.header., which is astropy.io.fits.open()[0].header.
         """
         if not hasattr(self, 'hdu'):
             self.gen_hdu()
