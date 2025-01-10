@@ -198,6 +198,7 @@ class AstroData():
         self.fitsimage_org = None
         self.sigma_org = None
         self.fitsheader = None
+        self.pv = False
 
     def binning(self, width: list[int, int, int] = [1, 1, 1]):
         """Binning up neighboring pixels in the v, y, and x domain.
@@ -210,8 +211,6 @@ class AstroData():
         size = list(np.shape(d))
         newsize = size // np.array(width, dtype=int)
         grid = [None, self.v, self.y, self.x]
-        if self.y is None:
-            grid[1], grid[2] = grid[2], grid[1]  # for PV diagram
         for n in range(4):
             if width[n] == 1:
                 continue
@@ -225,8 +224,6 @@ class AstroData():
             grid[n] = t / width[n]
             d = np.moveaxis(newdata, 0, n) / width[n]
         self.data = np.squeeze(d)
-        if self.y is None:
-            grid[1], grid[2] = grid[2], grid[1]
         _, self.v, self.y, self.x = grid
 
     def centering(self, includexy: bool = True, includev: bool = False):
@@ -495,11 +492,11 @@ class AstroData():
             fitsimage (str, optional): Output FITS file name. Defaults to 'out.fits'.
             header (dict, optional): Header dictionary. Defaults to {}.
         """
-        if self.y is None:
+        if self.pv:
             print('writetofits does not support PV diagram yet.')
-            return False
+            return
 
-        h = dict(**header)
+        h = {}
         cx, cy = (0, 0) if self.center is None else coord2xy(self.center)
         h['NAXIS1'] = len(self.x)
         h['CRPIX1'] = np.argmin(np.abs(self.x)) + 1
@@ -518,7 +515,11 @@ class AstroData():
             h['BMAJ'] = self.beam[0] / 3600
             h['BMIN'] = self.beam[1] / 3600
             h['BPA'] = self.beam[2]
-        data2fits(d=self.data, h=h, templatefits=self.fitsimage_org,
+        h0 = header
+        for k in h:
+            if k not in h0:
+                h0[k] = h[k]
+        data2fits(d=self.data, h=h0, templatefits=self.fitsimage_org,
                   fitsimage=fitsimage)
 
 
@@ -654,6 +655,8 @@ class AstroFrame():
             d.sigma_org = [d.sigma_org] * d.n
         if type(d.fitsheader) is not list:
             d.fitsheader = [d.fitsheader] * d.n
+        if type(d.pv) is not list:
+            d.pv = [d.pv] * d.n
         grid0 = [d.x, d.y, d.v]
         for i in range(d.n):
             if d.center[i] == 'common':
@@ -680,6 +683,7 @@ class AstroFrame():
                 d.beam[i] = fd.get_beam(dist=self.dist)
                 d.bunit[i] = d.fitsheader[i]['BUNIT']
             if d.data[i] is not None:
+                d.pv[i] = self.pv
                 d.sigma_org[i] = d.sigma[i]
                 d.sigma[i] = estimate_rms(d.data[i], d.sigma[i])
                 d.data[i], grid = trim(data=d.data[i],
@@ -736,3 +740,4 @@ class AstroFrame():
             d.fitsimage_org = d.fitsimage_org[0]
             d.sigma_org = d.sigma_org[0]
             d.fitsheader = d.fitsheader[0]
+            d.pv = d.pv[0]
