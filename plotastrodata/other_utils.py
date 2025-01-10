@@ -124,6 +124,10 @@ def coord2xy(coords: str | list, coordorg: str = '00h00m00s 00d00m00s',
         frameorg = frame
     if frame is None and frameorg is None:
         frame = frameorg = 'icrs'
+    if frame != frameorg:
+        frame = frameorg
+        print('Different frame and frameorg are not supported by coord2xy yet.',
+              frameorg, 'is used.')
     clist = SkyCoord(coords, frame=frame)
     c0 = SkyCoord(coordorg, frame=frameorg)
     xy = c0.spherical_offsets_to(clist)
