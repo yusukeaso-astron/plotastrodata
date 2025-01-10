@@ -52,21 +52,27 @@ def _getframe(coord: str, s: str = '') -> tuple:
     Returns:
         tuple: updated coord and frame. frame is FK5(equinox='J2000), FK4(equinox='B1950'), or 'icrs'.
     """
-    if len(s := coord.split()) == 3:
-        coord = f'{s[1]} {s[2]}'
-        if 'J2000' in s[0]:
+    if len(c := coord.split()) == 3:
+        coord = f'{c[1]} {c[2]}'
+        if 'J2000' in c[0]:
             print(f'J2000 found in coord{s}. FK5(J2000) is used.')
             frame = FK5(equinox='J2000')
-        elif 'B1950' in s[0]:
+        elif 'FK5' in c[0]:
+            print(f'FK5 found in coord{s}. FK5(J2000) is used.')
+            frame = FK5(equinox='J2000')
+        elif 'B1950' in c[0]:
             print(f'B1950 found in coord{s}. FK4(B1950) is used.')
             frame = FK4(equinox='B1950')
-        elif 'ICRS' in s[0]:
+        elif 'FK4' in c[0]:
+            print(f'FK4 found in coord{s}. FK4(B1950) is used.')
+            frame = FK4(equinox='B1950')
+        elif 'ICRS' in c[0]:
             frame = 'icrs'
         else:
             print(f'Unknown equinox found in coord{s}. ICRS is used')
             frame = 'icrs'
     else:
-        frame = 'icrs'
+        frame = None
     return coord, frame
 
 
@@ -104,14 +110,20 @@ def coord2xy(coords: str | list, coordorg: str = '00h00m00s 00d00m00s',
     Returns:
         np.ndarray: [(array of) alphas, (array of) deltas] in degree. The shape of alphas and deltas is the input shape. With a single input, the output is [alpha0, delta0].
     """
+    coordorg, frameorg_c = _getframe(coordorg, 'org')
+    frameorg = frameorg_c if frameorg is None else _updateframe(frameorg)
     if type(coords) is list:
         for i in range(len(coords)):
             coords[i], frame_c = _getframe(coords[i])
     else:
         coords, frame_c = _getframe(coords)
     frame = frame_c if frame is None else _updateframe(frame)
-    coordorg, frameorg_c = _getframe(coordorg, 'org')
-    frameorg = frameorg_c if frameorg is None else _updateframe(frameorg)
+    if frame is None and frameorg is not None:
+        frame = frameorg
+    if frame is not None and frameorg is None:
+        frameorg = frame
+    if frame is None and frameorg is None:
+        frame = frameorg = 'icrs'
     clist = SkyCoord(coords, frame=frame)
     c0 = SkyCoord(coordorg, frame=frameorg)
     xy = c0.spherical_offsets_to(clist)
@@ -134,7 +146,9 @@ def xy2coord(xy: list, coordorg: str = '00h00m00s 00d00m00s',
     """
     coordorg, frameorg_c = _getframe(coordorg, 'org')
     frameorg = frameorg_c if frameorg is None else _updateframe(frameorg)
-    frame = 'icrs' if frame is None else _updateframe(frame)
+    if frameorg is None:
+        frameorg = 'icrs'
+    frame = frameorg if frame is None else _updateframe(frame)
     c0 = SkyCoord(coordorg, frame=frameorg)
     coords = c0.spherical_offsets_by(*xy * units.degree)
     coords = coords.transform_to(frame=frame)

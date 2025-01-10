@@ -130,7 +130,11 @@ class FitsData:
         """
         ra_deg = self.get_header('CRVAL1')
         dec_deg = self.get_header('CRVAL2')
-        return xy2coord([ra_deg, dec_deg])
+        radesys = self.get_header('RADESYS')
+        a = xy2coord([ra_deg, dec_deg])
+        if radesys is not None:
+            a = f'{radesys} {a}'
+        return a
 
     def gen_data(self, Tb: bool = False, log: bool = False,
                  drop: bool = True, restfreq: float = None) -> None:
@@ -180,6 +184,9 @@ class FitsData:
         # spatial center
         if center is not None:
             c0 = xy2coord([h['CRVAL1'], h['CRVAL2']])
+            if 'RADESYS' in h:
+                radesys = h['RADESYS']
+                c0 = f'{radesys}  {c0}'
             cx, cy = coord2xy(center, c0)
         else:
             cx, cy = 0, 0
@@ -233,19 +240,19 @@ class FitsData:
                     else:
                         s = (1 - s / freq) * cu.c_kms - vsys
                 case 'm/s':
-                    print(f'{key}=\'m/s\' was found.')
+                    print(f'{key}=\'m/s\' found.')
                     s = s * 1e-3 - vsys
                 case 'M/S':
-                    print(f'{key}=\'M/S\' was found.')
+                    print(f'{key}=\'M/S\' found.')
                     s = s * 1e-3 - vsys
                 case 'km/s':
-                    print(f'{key}=\'km/s\' was found.')
+                    print(f'{key}=\'km/s\' found.')
                     s = s - vsys
                 case 'KM/S':
-                    print(f'{key}=\'KM/S\' was found.')
+                    print(f'{key}=\'KM/S\' found.')
                     s = s - vsys
                 case _:
-                    print(f'Unknown CUNIT3 {cunitv} was found.'
+                    print(f'Unknown CUNIT3 {cunitv} found.'
                           + ' v is read as is.')
                     s = s - vsys
             
@@ -348,7 +355,7 @@ def data2fits(d: np.ndarray | None = None, h: dict = {},
     header = w.to_header()
     hdu = fits.PrimaryHDU(d, header=header)
     for k in _h:
-        if not ('COMMENT' in k or 'HISTORY' in k):
+        if not ('COMMENT' in k or 'HISTORY' in k) and _h[k] is not None:
             hdu.header[k] = _h[k]
     hdu = fits.HDUList([hdu])
     hdu.writeto(fitsimage.replace('.fits', '') + '.fits', overwrite=True)
