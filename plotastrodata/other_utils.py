@@ -55,16 +55,12 @@ def _getframe(coord: str, s: str = '') -> tuple:
     if len(c := coord.split()) == 3:
         coord = f'{c[1]} {c[2]}'
         if 'J2000' in c[0]:
-            print(f'J2000 found in coord{s}. FK5(J2000) is used.')
             frame = FK5(equinox='J2000')
         elif 'FK5' in c[0]:
-            print(f'FK5 found in coord{s}. FK5(J2000) is used.')
             frame = FK5(equinox='J2000')
         elif 'B1950' in c[0]:
-            print(f'B1950 found in coord{s}. FK4(B1950) is used.')
             frame = FK4(equinox='B1950')
         elif 'FK4' in c[0]:
-            print(f'FK4 found in coord{s}. FK4(B1950) is used.')
             frame = FK4(equinox='B1950')
         elif 'ICRS' in c[0]:
             frame = 'icrs'
