@@ -184,6 +184,9 @@ class FitsData:
         # spatial center
         if center is not None:
             c0 = xy2coord([h['CRVAL1'], h['CRVAL2']])
+            if 'RADESYS' in h:
+                radesys = h['RADESYS']
+                c0 = f'{radesys}  {c0}'
             cx, cy = coord2xy(center, c0)
         else:
             cx, cy = 0, 0
