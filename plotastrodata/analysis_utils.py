@@ -211,8 +211,6 @@ class AstroData():
         size = list(np.shape(d))
         newsize = size // np.array(width, dtype=int)
         grid = [None, self.v, self.y, self.x]
-        if self.y is None:
-            grid[1], grid[2] = grid[2], grid[1]  # for PV diagram
         for n in range(4):
             if width[n] == 1:
                 continue
@@ -226,8 +224,6 @@ class AstroData():
             grid[n] = t / width[n]
             d = np.moveaxis(newdata, 0, n) / width[n]
         self.data = np.squeeze(d)
-        if self.y is None:
-            grid[1], grid[2] = grid[2], grid[1]
         _, self.v, self.y, self.x = grid
 
     def centering(self, includexy: bool = True, includev: bool = False):
@@ -498,7 +494,7 @@ class AstroData():
         """
         if self.pv:
             print('writetofits does not support PV diagram yet.')
-            return False
+            return
 
         h = {}
         cx, cy = (0, 0) if self.center is None else coord2xy(self.center)
