@@ -1,7 +1,7 @@
 import subprocess
 import shlex
 import numpy as np
-from astropy.coordinates import SkyCoord
+from astropy.coordinates import SkyCoord, FK5, FK4
 from astropy import units
 from scipy.optimize import curve_fit
 from scipy.special import erf
@@ -42,19 +42,50 @@ def listing(*args) -> list:
     return b
 
 
+def _updateframe(equinox: str | None = None, s: str = ''):
+    """Internal function for linking J2000 to FK5 and B1950 to FK4.
+
+    Args:
+        equinox (str | None, optional): 'J2000' or 'B1950'. None will be ignored. Defaults to None.
+        s (str, optional): To distinguish equinox and equinoxorg. Defaults to ''.
+
+    Returns:
+        frame: astropy.coordinates.FK5(equinox='J2000') or FK4(equinox='B1950').
+    """
+    if equinox is None:
+        return
+    elif 'J2000' in equinox:
+        print(f'J2000 found in equinox{s}. FK5(J2000) is used.')
+        return FK5(equinox='J2000')
+    elif 'B1950' in equinox:
+        print(f'B1950 found in equinox{s}. FK4(B1950) is used.')
+        return FK4(equinox='B1950')
+    else:
+        print('Unknown equinox, ignored.')
+        return
+
+
 def coord2xy(coords: str, coordorg: str = '00h00m00s 00d00m00s',
-             frame: str = 'icrs', frameorg: str = 'icrs') -> np.ndarray:
+             frame: str = 'icrs', frameorg: str = 'icrs',
+             equinox: str | None = None, equinoxorg: str | None = None
+             ) -> np.ndarray:
     """Transform R.A.-Dec. to relative (deg, deg).
 
     Args:
         coords (str): something like '01h23m45.6s 01d23m45.6s'. The input can be a list of str in an arbitrary shape.
-        coordorg (str): something like '01h23m45.6s 01d23m45.6s'. The origin of the relative (deg, deg). Defaults to '00h00m00s 00d00m00s'.
-        frame (str): coordinate frame. Defaults to 'icrs'.
-        frameorg (str): coordinate frame of the origin. Defaults to 'icrs'.
+        coordorg (str, optional): something like '01h23m45.6s 01d23m45.6s'. The origin of the relative (deg, deg). Defaults to '00h00m00s 00d00m00s'.
+        frame (str, optional): coordinate frame. Defaults to 'icrs'.
+        frameorg (str, optional): coordinate frame of the origin. Defaults to 'icrs'.
+        equinox (str, optional): equinox of coords. If this includes 'J2000', automatically frame=FK5(equinox='J2000'). If this includes 'B1950', automatically frame=FK4(equinox='B1950'). Defaults to None.
+        equinoxorg (str, optional): equinox of coordorg. If this includes 'J2000', automatically frame=FK5(equinox='J2000'). If this includes 'B1950', automatically frame=FK4(equinox='B1950'). Defaults to None.
 
     Returns:
         np.ndarray: [(array of) alphas, (array of) deltas] in degree. The shape of alphas and deltas is the input shape. With a single input, the output is [alpha0, delta0].
     """
+    if equinox is not None:
+        frame = _updateframe(equinox)
+    if equinoxorg is not None:
+        frameorg = _updateframe(equinoxorg, 'org')
     clist = SkyCoord(coords, frame=frame)
     c0 = SkyCoord(coordorg, frame=frameorg)
     xy = c0.spherical_offsets_to(clist)
@@ -62,7 +93,9 @@ def coord2xy(coords: str, coordorg: str = '00h00m00s 00d00m00s',
 
 
 def xy2coord(xy: list, coordorg: str = '00h00m00s 00d00m00s',
-             frame: str = 'icrs', frameorg: str = 'icrs') -> str:
+             frame: str = 'icrs', frameorg: str = 'icrs',
+             equinox: str | None = None, equinoxorg: str | None = None
+             ) -> str:
     """Transform relative (deg, deg) to R.A.-Dec.
 
     Args:
@@ -70,10 +103,16 @@ def xy2coord(xy: list, coordorg: str = '00h00m00s 00d00m00s',
         coordorg (str): something like '01h23m45.6s 01d23m45.6s'. The origin of the relative (deg, deg). Defaults to '00h00m00s 00d00m00s'.
         frame (str): coordinate frame. Defaults to 'icrs'.
         frameorg (str): coordinate frame of the origin. Defaults to 'icrs'.
+        equinox (str, optional): equinox of coords. If this includes 'J2000', automatically frame=FK5(equinox='J2000'). If this includes 'B1950', automatically frame=FK4(equinox='B1950'). Defaults to None.
+        equinoxorg (str, optional): equinox of coordorg. If this includes 'J2000', automatically frame=FK5(equinox='J2000'). If this includes 'B1950', automatically frame=FK4(equinox='B1950'). Defaults to None.
 
     Returns:
         str: something like '01h23m45.6s 01d23m45.6s'. With multiple inputs, the output has the input shape.
     """
+    if equinox is not None:
+        frame = _updateframe(equinox)
+    if equinoxorg is not None:
+        frameorg = _updateframe(equinoxorg, 'org')
     c0 = SkyCoord(coordorg, frame=frameorg)
     coords = c0.spherical_offsets_by(*xy * units.degree)
     coords = coords.transform_to(frame=frame)
