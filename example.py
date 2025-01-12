@@ -6,10 +6,10 @@ from plotastrodata.plot_utils import plotprofile, plotslice, plot3d
 pre = 'testFITS/'
 
 # 2D case
-p = pad(rmax=0.8, center='04h04m43.07s 26d18m56.20s')
 d = AstroData(fitsimage=pre+'test2D.fits', Tb=True, sigma=5e-3)
-f = AstroFrame(rmax=0.8, center='04h04m43.07s 26d18m56.20s')
+f = AstroFrame(rmax=0.8, center='B1950 04h01m40.57s +26d10m47.297s')
 f.read(d)
+p = pad(rmax=0.8, center='ICRS 04h04m43.07s 26d18m56.20s')
 p.add_color(**d.todict(), cblabel='Tb (K)')
 p.add_contour(fitsimage=pre+'test2D_2.fits', colors='r', sigma=5e-3)
 p.add_contour(fitsimage=pre+'test2D.fits', xskip=2, yskip=2, sigma=5e-3)

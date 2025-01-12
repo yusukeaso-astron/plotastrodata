@@ -935,6 +935,8 @@ class PlotAstroData(AstroFrame):
             center = self.center
         if center is None:
             center = '00h00m00s 00d00m00s'
+        if len(csplit := center.split()) == 3:
+            center = f'{csplit[1]} {csplit[2]}'
         dec = np.radians(coord2xy(center)[1])
 
         def get_sec(x, i):

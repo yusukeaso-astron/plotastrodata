@@ -130,7 +130,11 @@ class FitsData:
         """
         ra_deg = self.get_header('CRVAL1')
         dec_deg = self.get_header('CRVAL2')
-        return xy2coord([ra_deg, dec_deg])
+        radesys = self.get_header('RADESYS')
+        a = xy2coord([ra_deg, dec_deg])
+        if radesys is not None:
+            a = f'{radesys} {a}'
+        return a
 
     def gen_data(self, Tb: bool = False, log: bool = False,
                  drop: bool = True, restfreq: float = None) -> None:
@@ -180,6 +184,9 @@ class FitsData:
         # spatial center
         if center is not None:
             c0 = xy2coord([h['CRVAL1'], h['CRVAL2']])
+            if 'RADESYS' in h:
+                radesys = h['RADESYS']
+                c0 = f'{radesys}  {c0}'
             cx, cy = coord2xy(center, c0)
         else:
             cx, cy = 0, 0
