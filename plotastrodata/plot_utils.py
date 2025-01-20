@@ -771,7 +771,6 @@ class PlotAstroData(AstroFrame):
             angonly (bool, optional): True means amp=1 for all. Defaults to False.
             rotation (float, optional): Segment angle is ang + rotation. Defaults to 0..
             cutoff (float, optional): Used when amp and ang are calculated from Stokes U and Q. In the unit of sigma. Defaults to 3..
-            sigma (str or float, optional): Noise level or method for measuring it. Defaults to 'out'.
             show_beam (bool, optional): Defaults to True.
             beamcolor (str, optional): Matplotlib color. Defaults to 'gray'.
         """
