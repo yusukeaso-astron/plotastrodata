@@ -642,7 +642,7 @@ class PlotAstroData(AstroFrame):
 
         Args:
             xskip, yskip (int, optional): Spatial pixel skip. Defaults to 1.
-            stretch (str, optional): 'log' means the mapped data are logarithmic. 'asinh' means the mapped data are arc sin hyperbolic. Defaults to 'linear'.
+            stretch (str, optional): 'log' means the mapped data are logarithmic. 'asinh' means the mapped data are arc sin hyperbolic. 'power' means the mapped data are power-law (see also stretchpower). Defaults to 'linear'.
             stretchscale (float, optional): color scale is asinh(data / stretchscale). Defaults to None.
             stretchpower (float, optional): color scale is ((data / vmin)**(1 - stretchpower) - 1) / (1 - stretchpower) / ln(10). 0 means the linear scale. 1 means the logarithmic scale. Defaults to 0.
             show_cbar (bool, optional): Show color bar. Defaults to True.
