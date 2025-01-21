@@ -599,7 +599,7 @@ class AstroFrame():
             self.Ylim = xlim if self.swapxy else ylim
         if self.quadrants is not None:
             self.Xlim = [0, self.rmax]
-            self.Ylim = [0, min(self.vmax - self.vsys, self.vsys - self.vmin)]
+            self.Ylim = [0, min(self.vmax, -self.vmin)]
         if self.fitsimage is not None and self.center is None:
             self.center = FitsData(self.fitsimage).get_center()
 
