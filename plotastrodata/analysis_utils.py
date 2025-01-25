@@ -3,7 +3,6 @@ from dataclasses import dataclass
 from scipy.interpolate import RegularGridInterpolator as RGI
 from scipy.optimize import curve_fit
 from scipy.signal import convolve
-from collections.abc import Callable
 
 from plotastrodata.other_utils import (coord2xy, rel2abs, estimate_rms, trim,
                                        Mfac, Mrot, dot2d, gaussian2d)
