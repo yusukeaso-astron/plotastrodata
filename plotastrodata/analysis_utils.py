@@ -327,9 +327,17 @@ class AstroData():
         """
         d = self.data if chan is None else self.data[chan]
         x, y = np.meshgrid(self.x, self.y)
+        if None not in self.beam:
+            dx = self.x[1] - self.x[0]
+            dy = self.y[1] - self.y[0]
+            Omega = np.pi * self.beam[0] * self.beam[1] / 4 / np.log(2)
+            pixelperbeam = Omega / np.abs(dx * dy)
+        else:
+            pixelperbeam = 1.
 
         def logl(p):
-            return -0.5 * np.sum((model(p, x, y) - d)**2) / self.sigma**2
+            rss = np.nansum((model(p, x, y) - d)**2)
+            return -0.5 * rss / self.sigma**2 / pixelperbeam
         
         mcmc = PTEmceeCorner(bounds=bounds, logl=logl, progressbar=progressbar)
         kwargs_fit0 = {}
