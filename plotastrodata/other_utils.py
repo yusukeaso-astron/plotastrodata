@@ -419,6 +419,6 @@ def gaussian2d(xy: np.ndarray,
     Returns:
         g (np.ndarray): 2D numpy array.
     """
-    s, t = dot2d(Mrot(pa), [xy[1] - yo, xy[0] - xo])
+    s, t = dot2d(Mrot(-pa), [xy[1] - yo, xy[0] - xo])
     g = amplitude * np.exp2(-4 * ((s / fwhm_major)**2 + (t / fwhm_minor)**2))
     return g

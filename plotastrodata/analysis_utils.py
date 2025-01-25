@@ -8,6 +8,7 @@ from plotastrodata.other_utils import (coord2xy, rel2abs, estimate_rms, trim,
                                        Mfac, Mrot, dot2d, gaussian2d)
 from plotastrodata.fits_utils import FitsData, data2fits, Jy2K
 from plotastrodata import const_utils as cu
+from plotastrodata.fitting_utils import PTEmceeCorner
 
 
 def to4dim(data: np.ndarray) -> np.ndarray:
@@ -308,17 +309,46 @@ class AstroData():
             bmin_new = 1 / np.sqrt(alpha + Det)
             self.beam = np.array([bmaj_new, bmin_new, bpa_new])
 
-    def histogram(self, **kwargs) -> tuple:
-        """Output histogram of self.data using numpy.histogram. This method can take the arguments of numpy.histogram.
+    def fit2d(self, model: object, bounds: np.ndarray, progressbar: bool = False,
+              kwargs_fit: dict = {}, kwargs_plotcorner: dict = {},
+              chan: int | None = None):
+        """Fit a given 2D model function to self.data.
+
+        Args:
+            model (function): The model function in the form of f(par, x, y).
+            bounds (np.ndarray): bounds for fitting_utils.PTEmceeCorner.
+            progressbar (bool, optional): progressbar for fitting_utils.PTEmceeCorner. Defaults to False.
+            kwargs_fit (dict, optional): Arguments for fitting_utils.PTEmceeCorner.fit.
+            kwargs_plotcorner (dict, optional): Arguments for fitting_utils.PTEmceeCorner.plotcorner.
+            chan (int, optional): The channel number where the 2D model is fitted. Defaults to None.
 
         Returns:
-            tuple: (bins, histogram)
+            dict: The parameter sets (popt, plow, pmid, and phigh), the best 2D model array (model), and the residual from the model (residual).
         """
-        hist, hbin = np.histogram(self.data, **kwargs)
-        hbin = (hbin[:-1] + hbin[1:]) / 2
-        return hbin, hist
+        d = self.data if chan is None else self.data[chan]
+        x, y = np.meshgrid(self.x, self.y)
 
-    def gaussfit2d(self, chan: int = None):
+        def logl(p):
+            return -0.5 * np.sum((model(p, x, y) - d)**2) / self.sigma**2
+        
+        mcmc = PTEmceeCorner(bounds=bounds, logl=logl, progressbar=progressbar)
+        kwargs_fit0 = {}
+        kwargs_fit0.update(kwargs_fit)
+        mcmc.fit(**kwargs_fit0)
+        kwargs_plotcorner0 = {'show': False, 'savefig': None}
+        kwargs_plotcorner0.update(kwargs_plotcorner)
+        if kwargs_plotcorner0['show'] or kwargs_plotcorner0['savefig'] is not None:
+            mcmc.plotcorner(**kwargs_plotcorner0)
+        popt = mcmc.popt
+        plow = mcmc.plow
+        pmid = mcmc.pmid
+        phigh = mcmc.phigh
+        modelopt = model(popt, x, y)
+        residual = d - modelopt
+        return {'popt': popt, 'plow': plow, 'pmid': pmid, 'phigh': phigh,
+                'model': modelopt, 'residual': residual}
+
+    def gaussfit2d(self, chan: int | None = None):
         """Fit a 2D Gaussian function to self.data.
 
         Args:
@@ -330,20 +360,32 @@ class AstroData():
         d = self.data if chan is None else self.data[chan]
         x = self.x
         y = self.y
-        p0 = (np.max(d), np.median(x), np.median(y), 1, 1, 0)
+        ds = np.min([np.abs(x[1] - x[0]), np.abs(y[1] - y[0])])
+        p0 = (np.max(d), np.median(x), np.median(y), 5 * ds, 5 * ds, 0)
         amax = np.max(np.abs(d))
         xmin = np.min(x)
         xmax = np.max(x)
         ymin = np.min(y)
         ymax = np.max(y)
-        bounds = [[-amax, xmin, ymin, np.abs(x[1] - x[0]), np.abs(y[1] - y[0]), -90],
-                  [amax, xmax, ymax, xmax - xmin, ymax - ymin, 90]]
+        smax = np.max([xmax - xmin, ymax - ymin])
+        bounds = [[-amax, xmin, ymin, ds, ds, -90],
+                  [amax, xmax, ymax, smax, smax, 90]]
         x, y = np.meshgrid(x, y)
         popt, pcov = curve_fit(gaussian2d, (x.ravel(), y.ravel()), d.ravel(),
                                p0=p0, bounds=bounds)
         model = gaussian2d((x, y), *popt)
         residual = d - model
         return {'popt': popt, 'pcov': pcov, 'model': model, 'residual': residual}
+
+    def histogram(self, **kwargs) -> tuple:
+        """Output histogram of self.data using numpy.histogram. This method can take the arguments of numpy.histogram.
+
+        Returns:
+            tuple: (bins, histogram)
+        """
+        hist, hbin = np.histogram(self.data, **kwargs)
+        hbin = (hbin[:-1] + hbin[1:]) / 2
+        return hbin, hist
 
     def mask(self, dataformask: np.ndarray | None = None,
              includepix: list[float, float] = [],
@@ -690,7 +732,7 @@ class AstroFrame():
                                        x=grid[0], y=grid[1], v=grid[2],
                                        xlim=self.xlim, ylim=self.ylim,
                                        vlim=self.vlim, pv=self.pv)
-                if grid[2] is not None and grid[2][1] < grid[2][0]:
+                if grid[2] is not None and len(grid[2]) > 1 and grid[2][1] < grid[2][0]:
                     d.data[i], grid[2] = d.data[i][::-1], grid[2][::-1]
                     print('Inverted velocity.')
                 d.v = grid[2]
