@@ -3,11 +3,13 @@ from dataclasses import dataclass
 from scipy.interpolate import RegularGridInterpolator as RGI
 from scipy.optimize import curve_fit
 from scipy.signal import convolve
+from collections.abc import Callable
 
 from plotastrodata.other_utils import (coord2xy, rel2abs, estimate_rms, trim,
                                        Mfac, Mrot, dot2d, gaussian2d)
 from plotastrodata.fits_utils import FitsData, data2fits, Jy2K
 from plotastrodata import const_utils as cu
+from plotastrodata.fitting_utils import PTEmceeCorner
 
 
 def to4dim(data: np.ndarray) -> np.ndarray:
@@ -308,17 +310,45 @@ class AstroData():
             bmin_new = 1 / np.sqrt(alpha + Det)
             self.beam = np.array([bmaj_new, bmin_new, bpa_new])
 
-    def histogram(self, **kwargs) -> tuple:
-        """Output histogram of self.data using numpy.histogram. This method can take the arguments of numpy.histogram.
+    def fit2d(self, model: object, bounds: np.ndarray,
+              kwargs_fit: dict = {}, kwargs_plotcorner: dict = {},
+              chan: int | None = None):
+        """Fit a 2D model function to self.data.
+
+        Args:
+            model (function): The model function in the form of f(par, x, y).
+            bounds (np.ndarray): bounds for fitting_utils.PTEmceeCorner.
+            kwargs_fit (dict, optional): Arguments for fitting_utils.PTEmceeCorner.fit.
+            kwargs_plotcorner (dict, optional): Arguments for fitting_utils.PTEmceeCorner.plotcorner.
+            chan (int, optional): The channel number where the 2D Gaussian is fitted. Defaults to None.
 
         Returns:
-            tuple: (bins, histogram)
+            dict: The parameter sets (popt, plow, pmid, and phigh), the best 2D model array (model), and the residual from the model (residual).
         """
-        hist, hbin = np.histogram(self.data, **kwargs)
-        hbin = (hbin[:-1] + hbin[1:]) / 2
-        return hbin, hist
+        d = self.data if chan is None else self.data[chan]
+        x, y = np.meshgrid(self.x, self.y)
 
-    def gaussfit2d(self, chan: int = None):
+        def logl(p):
+            return -0.5 * np.sum((model(p, x, y) - d)**2) / d.sigma**2
+        
+        mcmc = PTEmceeCorner(bounds=bounds, logl=logl, progressbar=True)
+        kwargs_fit0 = {}
+        kwargs_fit0.update(kwargs_fit)
+        mcmc.fit(**kwargs_fit0)
+        kwargs_plotcorner0 = {'show': False, 'savefig': None}
+        kwargs_plotcorner0.update(kwargs_plotcorner)
+        if kwargs_plotcorner0['show'] or kwargs_plotcorner0['savefig'] is not None:
+            mcmc.plotcorner(**kwargs_plotcorner0)
+        popt = mcmc.popt
+        plow = mcmc.plow
+        pmid = mcmc.pmid
+        phigh = mcmc.phigh
+        modelopt = model(popt, x, y)
+        residual = d - modelopt
+        return {'popt': popt, 'plow': plow, 'pmid': pmid, 'phigh': phigh,
+                'model': modelopt, 'residual': residual}
+
+    def gaussfit2d(self, chan: int | None = None):
         """Fit a 2D Gaussian function to self.data.
 
         Args:
@@ -344,6 +374,16 @@ class AstroData():
         model = gaussian2d((x, y), *popt)
         residual = d - model
         return {'popt': popt, 'pcov': pcov, 'model': model, 'residual': residual}
+
+    def histogram(self, **kwargs) -> tuple:
+        """Output histogram of self.data using numpy.histogram. This method can take the arguments of numpy.histogram.
+
+        Returns:
+            tuple: (bins, histogram)
+        """
+        hist, hbin = np.histogram(self.data, **kwargs)
+        hbin = (hbin[:-1] + hbin[1:]) / 2
+        return hbin, hist
 
     def mask(self, dataformask: np.ndarray | None = None,
              includepix: list[float, float] = [],
