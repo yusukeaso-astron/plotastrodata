@@ -312,7 +312,7 @@ class AstroData():
     def fit2d(self, model: object, bounds: np.ndarray, progressbar: bool = False,
               kwargs_fit: dict = {}, kwargs_plotcorner: dict = {},
               chan: int | None = None):
-        """Fit a 2D model function to self.data.
+        """Fit a given 2D model function to self.data.
 
         Args:
             model (function): The model function in the form of f(par, x, y).
@@ -320,7 +320,7 @@ class AstroData():
             progressbar (bool, optional): progressbar for fitting_utils.PTEmceeCorner. Defaults to False.
             kwargs_fit (dict, optional): Arguments for fitting_utils.PTEmceeCorner.fit.
             kwargs_plotcorner (dict, optional): Arguments for fitting_utils.PTEmceeCorner.plotcorner.
-            chan (int, optional): The channel number where the 2D Gaussian is fitted. Defaults to None.
+            chan (int, optional): The channel number where the 2D model is fitted. Defaults to None.
 
         Returns:
             dict: The parameter sets (popt, plow, pmid, and phigh), the best 2D model array (model), and the residual from the model (residual).
