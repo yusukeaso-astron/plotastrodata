@@ -329,7 +329,7 @@ class AstroData():
         x, y = np.meshgrid(self.x, self.y)
 
         def logl(p):
-            return -0.5 * np.sum((model(p, x, y) - d)**2) / d.sigma**2
+            return -0.5 * np.sum((model(p, x, y) - d)**2) / self.sigma**2
         
         mcmc = PTEmceeCorner(bounds=bounds, logl=logl, progressbar=True)
         kwargs_fit0 = {}
