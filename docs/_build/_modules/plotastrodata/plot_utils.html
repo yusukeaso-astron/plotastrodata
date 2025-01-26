@@ -5,15 +5,15 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>plotastrodata.plot_utils &mdash; plotastrodata 0.0.1 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=92fd9be5" />
+  <title>plotastrodata.plot_utils &mdash; plotastrodata 1.1.3 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=d45e8c67"></script>
-      <script src="../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../_static/documentation_options.js?v=cb7bf70b"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -69,14 +69,14 @@
            <div itemprop="articleBody">
              
   <h1>Source code for plotastrodata.plot_utils</h1><div class="highlight"><pre>
-<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">matplotlib</span> <span class="k">as</span> <span class="nn">mpl</span>
-<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
-<span class="kn">from</span> <span class="nn">matplotlib.patches</span> <span class="kn">import</span> <span class="n">Ellipse</span><span class="p">,</span> <span class="n">Rectangle</span>
-<span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mpl</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib.patches</span><span class="w"> </span><span class="kn">import</span> <span class="n">Ellipse</span><span class="p">,</span> <span class="n">Rectangle</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
 
-<span class="kn">from</span> <span class="nn">plotastrodata.other_utils</span> <span class="kn">import</span> <span class="n">coord2xy</span><span class="p">,</span> <span class="n">xy2coord</span><span class="p">,</span> <span class="n">listing</span>
-<span class="kn">from</span> <span class="nn">plotastrodata.analysis_utils</span> <span class="kn">import</span> <span class="n">AstroData</span><span class="p">,</span> <span class="n">AstroFrame</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">plotastrodata.other_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">coord2xy</span><span class="p">,</span> <span class="n">xy2coord</span><span class="p">,</span> <span class="n">listing</span><span class="p">,</span> <span class="n">estimate_rms</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">plotastrodata.analysis_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">AstroData</span><span class="p">,</span> <span class="n">AstroFrame</span>
 
 
 <span class="n">plt</span><span class="o">.</span><span class="n">ioff</span><span class="p">()</span>  <span class="c1"># force to turn off interactive mode</span>
@@ -84,7 +84,7 @@
 
 <div class="viewcode-block" id="set_rcparams">
 <a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.plot_utils.set_rcparams">[docs]</a>
-<span class="k">def</span> <span class="nf">set_rcparams</span><span class="p">(</span><span class="n">fontsize</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">18</span><span class="p">,</span> <span class="n">nancolor</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;w&#39;</span><span class="p">,</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">set_rcparams</span><span class="p">(</span><span class="n">fontsize</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">18</span><span class="p">,</span> <span class="n">nancolor</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;w&#39;</span><span class="p">,</span>
                  <span class="n">dpi</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">256</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Nice rcParams for figures.</span>
 
@@ -116,7 +116,7 @@
 
 <div class="viewcode-block" id="logticks">
 <a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.plot_utils.logticks">[docs]</a>
-<span class="k">def</span> <span class="nf">logticks</span><span class="p">(</span><span class="n">ticks</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">lim</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">logticks</span><span class="p">(</span><span class="n">ticks</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">lim</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span>
              <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Make nice ticks for a log axis.</span>
 
@@ -142,7 +142,7 @@
 <div class="viewcode-block" id="PlotAxes2D">
 <a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.plot_utils.PlotAxes2D">[docs]</a>
 <span class="nd">@dataclass</span>
-<span class="k">class</span> <span class="nc">PlotAxes2D</span><span class="p">():</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">PlotAxes2D</span><span class="p">():</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Use Axes.set_* to adjust x and y axes.</span>
 
 <span class="sd">    Args:</span>
@@ -182,7 +182,7 @@
 
 <div class="viewcode-block" id="PlotAxes2D.set_xyaxes">
 <a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.plot_utils.PlotAxes2D.set_xyaxes">[docs]</a>
-    <span class="k">def</span> <span class="nf">set_xyaxes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_xyaxes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="p">):</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">loglog</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">xscale</span> <span class="o">=</span> <span class="s1">&#39;log&#39;</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">yscale</span> <span class="o">=</span> <span class="s1">&#39;log&#39;</span>
@@ -245,7 +245,7 @@
 
 <div class="viewcode-block" id="set_minmax">
 <a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.plot_utils.set_minmax">[docs]</a>
-<span class="k">def</span> <span class="nf">set_minmax</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">stretch</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">stretchscale</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">set_minmax</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">stretch</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">stretchscale</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
                <span class="n">stretchpower</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
                <span class="n">rms</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">kw</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Set vmin and vmax for color pcolormesh and RGB maps.</span>
@@ -315,7 +315,7 @@
 
 <div class="viewcode-block" id="kwargs2AstroData">
 <a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.plot_utils.kwargs2AstroData">[docs]</a>
-<span class="k">def</span> <span class="nf">kwargs2AstroData</span><span class="p">(</span><span class="n">kw</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AstroData</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">kwargs2AstroData</span><span class="p">(</span><span class="n">kw</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AstroData</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get AstroData and remove its arguments from kwargs.</span>
 
 <span class="sd">    Args:</span>
@@ -341,7 +341,7 @@
 
 <div class="viewcode-block" id="kwargs2AstroFrame">
 <a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.plot_utils.kwargs2AstroFrame">[docs]</a>
-<span class="k">def</span> <span class="nf">kwargs2AstroFrame</span><span class="p">(</span><span class="n">kw</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AstroFrame</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">kwargs2AstroFrame</span><span class="p">(</span><span class="n">kw</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AstroFrame</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get AstroFrame from kwargs.</span>
 
 <span class="sd">    Args:</span>
@@ -362,7 +362,7 @@
 
 <div class="viewcode-block" id="kwargs2PlotAxes2D">
 <a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.plot_utils.kwargs2PlotAxes2D">[docs]</a>
-<span class="k">def</span> <span class="nf">kwargs2PlotAxes2D</span><span class="p">(</span><span class="n">kw</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PlotAxes2D</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">kwargs2PlotAxes2D</span><span class="p">(</span><span class="n">kw</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PlotAxes2D</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get PlotAxes2D and remove its arguments from kwargs.</span>
 
 <span class="sd">    Args:</span>
@@ -384,7 +384,7 @@
 
 <div class="viewcode-block" id="PlotAstroData">
 <a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.plot_utils.PlotAstroData">[docs]</a>
-<span class="k">class</span> <span class="nc">PlotAstroData</span><span class="p">(</span><span class="n">AstroFrame</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">PlotAstroData</span><span class="p">(</span><span class="n">AstroFrame</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Make a figure from 2D/3D FITS files or 2D/3D arrays.</span>
 
 <span class="sd">    Basic rules --- For 3D data, a 1D velocity array or a FITS file</span>
@@ -423,7 +423,7 @@
 <span class="sd">        fig (optional): External plt.figure(). Defaults to None.</span>
 <span class="sd">        ax (optional): External fig.add_subplot(). Defaults to None.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">]),</span> <span class="n">vskip</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">]),</span> <span class="n">vskip</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
                  <span class="n">veldigit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="n">restfreq</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                  <span class="n">channelnumber</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">nrows</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span> <span class="n">ncols</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">6</span><span class="p">,</span>
                  <span class="n">fontsize</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">nancolor</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">dpi</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">256</span><span class="p">,</span>
@@ -462,10 +462,10 @@
             <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">channelnumber</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">int</span><span class="p">:</span>
                 <span class="n">nchan</span> <span class="o">=</span> <span class="n">npages</span> <span class="o">=</span> <span class="mi">1</span>
 
-        <span class="k">def</span> <span class="nf">nij2ch</span><span class="p">(</span><span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">i</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">j</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">nij2ch</span><span class="p">(</span><span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">i</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">j</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
             <span class="k">return</span> <span class="n">n</span><span class="o">*</span><span class="n">nrows</span><span class="o">*</span><span class="n">ncols</span> <span class="o">+</span> <span class="n">i</span><span class="o">*</span><span class="n">ncols</span> <span class="o">+</span> <span class="n">j</span>
 
-        <span class="k">def</span> <span class="nf">ch2nij</span><span class="p">(</span><span class="n">ch</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">ch2nij</span><span class="p">(</span><span class="n">ch</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
             <span class="n">n</span> <span class="o">=</span> <span class="n">ch</span> <span class="o">//</span> <span class="p">(</span><span class="n">nrows</span><span class="o">*</span><span class="n">ncols</span><span class="p">)</span>
             <span class="n">i</span> <span class="o">=</span> <span class="p">(</span><span class="n">ch</span> <span class="o">-</span> <span class="n">n</span><span class="o">*</span><span class="n">nrows</span><span class="o">*</span><span class="n">ncols</span><span class="p">)</span> <span class="o">//</span> <span class="n">ncols</span>
             <span class="n">j</span> <span class="o">=</span> <span class="n">ch</span> <span class="o">%</span> <span class="n">ncols</span>
@@ -505,7 +505,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">bottomleft</span> <span class="o">=</span> <span class="n">nij2ch</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">npages</span><span class="p">),</span> <span class="n">nrows</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">channelnumber</span> <span class="o">=</span> <span class="n">channelnumber</span>
 
-        <span class="k">def</span> <span class="nf">vskipfill</span><span class="p">(</span><span class="n">c</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">v_in</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">vskipfill</span><span class="p">(</span><span class="n">c</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">v_in</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
 <span class="w">            </span><span class="sd">&quot;&quot;&quot;Skip and fill channels with nan.</span>
 
 <span class="sd">            Args:</span>
@@ -533,7 +533,7 @@
 
 <div class="viewcode-block" id="PlotAstroData.add_region">
 <a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.plot_utils.PlotAstroData.add_region">[docs]</a>
-    <span class="k">def</span> <span class="nf">add_region</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">patch</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;ellipse&#39;</span><span class="p">,</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_region</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">patch</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;ellipse&#39;</span><span class="p">,</span>
                    <span class="n">poslist</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[],</span>
                    <span class="n">majlist</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">[],</span> <span class="n">minlist</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">[],</span>
                    <span class="n">palist</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">[],</span>
@@ -581,7 +581,7 @@
 
 <div class="viewcode-block" id="PlotAstroData.add_beam">
 <a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.plot_utils.PlotAstroData.add_beam">[docs]</a>
-    <span class="k">def</span> <span class="nf">add_beam</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_beam</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                  <span class="n">beam</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span>
                  <span class="n">beamcolor</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;gray&#39;</span><span class="p">,</span>
                  <span class="n">poslist</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -606,7 +606,7 @@
 
 <div class="viewcode-block" id="PlotAstroData.add_marker">
 <a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.plot_utils.PlotAstroData.add_marker">[docs]</a>
-    <span class="k">def</span> <span class="nf">add_marker</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">poslist</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[],</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_marker</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">poslist</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[],</span>
                    <span class="n">include_chan</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Use Axes.plot of matplotlib.</span>
 
@@ -630,7 +630,7 @@
 
 <div class="viewcode-block" id="PlotAstroData.add_text">
 <a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.plot_utils.PlotAstroData.add_text">[docs]</a>
-    <span class="k">def</span> <span class="nf">add_text</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">poslist</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[],</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_text</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">poslist</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[],</span>
                  <span class="n">slist</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[],</span>
                  <span class="n">include_chan</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Use Axes.text of matplotlib.</span>
@@ -656,7 +656,7 @@
 
 <div class="viewcode-block" id="PlotAstroData.add_line">
 <a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.plot_utils.PlotAstroData.add_line">[docs]</a>
-    <span class="k">def</span> <span class="nf">add_line</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">poslist</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[],</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_line</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">poslist</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[],</span>
                  <span class="n">anglelist</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">[],</span>
                  <span class="n">rlist</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">[],</span> <span class="n">include_chan</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                  <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -686,7 +686,7 @@
 
 <div class="viewcode-block" id="PlotAstroData.add_arrow">
 <a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.plot_utils.PlotAstroData.add_arrow">[docs]</a>
-    <span class="k">def</span> <span class="nf">add_arrow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">poslist</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[],</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_arrow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">poslist</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[],</span>
                   <span class="n">anglelist</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">[],</span>
                   <span class="n">rlist</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">[],</span> <span class="n">include_chan</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                   <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -717,7 +717,7 @@
 
 <div class="viewcode-block" id="PlotAstroData.add_scalebar">
 <a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.plot_utils.PlotAstroData.add_scalebar">[docs]</a>
-    <span class="k">def</span> <span class="nf">add_scalebar</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">length</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_scalebar</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">length</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
                      <span class="n">color</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;gray&#39;</span><span class="p">,</span> <span class="n">barpos</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.12</span><span class="p">),</span>
                      <span class="n">fontsize</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">linewidth</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
                      <span class="n">bbox</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;alpha&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">})</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -749,7 +749,7 @@
 
 <div class="viewcode-block" id="PlotAstroData.add_color">
 <a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.plot_utils.PlotAstroData.add_color">[docs]</a>
-    <span class="k">def</span> <span class="nf">add_color</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xskip</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">yskip</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_color</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xskip</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">yskip</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
                   <span class="n">stretch</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;linear&#39;</span><span class="p">,</span>
                   <span class="n">stretchscale</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                   <span class="n">stretchpower</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
@@ -762,7 +762,7 @@
 
 <span class="sd">        Args:</span>
 <span class="sd">            xskip, yskip (int, optional): Spatial pixel skip. Defaults to 1.</span>
-<span class="sd">            stretch (str, optional): &#39;log&#39; means the mapped data are logarithmic. &#39;asinh&#39; means the mapped data are arc sin hyperbolic. Defaults to &#39;linear&#39;.</span>
+<span class="sd">            stretch (str, optional): &#39;log&#39; means the mapped data are logarithmic. &#39;asinh&#39; means the mapped data are arc sin hyperbolic. &#39;power&#39; means the mapped data are power-law (see also stretchpower). Defaults to &#39;linear&#39;.</span>
 <span class="sd">            stretchscale (float, optional): color scale is asinh(data / stretchscale). Defaults to None.</span>
 <span class="sd">            stretchpower (float, optional): color scale is ((data / vmin)**(1 - stretchpower) - 1) / (1 - stretchpower) / ln(10). 0 means the linear scale. 1 means the logarithmic scale. Defaults to 0.</span>
 <span class="sd">            show_cbar (bool, optional): Show color bar. Defaults to True.</span>
@@ -839,7 +839,7 @@
 
 <div class="viewcode-block" id="PlotAstroData.add_contour">
 <a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.plot_utils.PlotAstroData.add_contour">[docs]</a>
-    <span class="k">def</span> <span class="nf">add_contour</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xskip</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">yskip</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_contour</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xskip</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">yskip</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
                     <span class="n">levels</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="mi">12</span><span class="p">,</span> <span class="o">-</span><span class="mi">6</span><span class="p">,</span> <span class="o">-</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">24</span><span class="p">,</span> <span class="mi">48</span><span class="p">,</span> <span class="mi">96</span><span class="p">,</span> <span class="mi">192</span><span class="p">,</span> <span class="mi">384</span><span class="p">],</span>
                     <span class="n">show_beam</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">beamcolor</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;gray&#39;</span><span class="p">,</span>
                     <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -869,7 +869,7 @@
 
 <div class="viewcode-block" id="PlotAstroData.add_segment">
 <a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.plot_utils.PlotAstroData.add_segment">[docs]</a>
-    <span class="k">def</span> <span class="nf">add_segment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ampfits</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">angfits</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_segment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ampfits</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">angfits</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                     <span class="n">Ufits</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">Qfits</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                     <span class="n">xskip</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">yskip</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
                     <span class="n">amp</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -897,7 +897,6 @@
 <span class="sd">            angonly (bool, optional): True means amp=1 for all. Defaults to False.</span>
 <span class="sd">            rotation (float, optional): Segment angle is ang + rotation. Defaults to 0..</span>
 <span class="sd">            cutoff (float, optional): Used when amp and ang are calculated from Stokes U and Q. In the unit of sigma. Defaults to 3..</span>
-<span class="sd">            sigma (str or float, optional): Noise level or method for measuring it. Defaults to &#39;out&#39;.</span>
 <span class="sd">            show_beam (bool, optional): Defaults to True.</span>
 <span class="sd">            beamcolor (str, optional): Matplotlib color. Defaults to &#39;gray&#39;.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -940,7 +939,7 @@
 
 <div class="viewcode-block" id="PlotAstroData.add_rgb">
 <a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.plot_utils.PlotAstroData.add_rgb">[docs]</a>
-    <span class="k">def</span> <span class="nf">add_rgb</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xskip</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">yskip</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_rgb</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xskip</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">yskip</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
                 <span class="n">stretch</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;linear&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="mi">3</span><span class="p">,</span>
                 <span class="n">stretchscale</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="mi">3</span><span class="p">,</span>
                 <span class="n">stretchpower</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
@@ -951,13 +950,13 @@
 
 <span class="sd">        Args:</span>
 <span class="sd">            xskip, yskip (int, optional): Spatial pixel skip. Defaults to 1.</span>
-<span class="sd">            stretch (str, optional): &#39;log&#39; means the mapped data are logarithmic. &#39;asinh&#39; means the mapped data are arc sin hyperbolic. Defaults to &#39;linear&#39;.</span>
+<span class="sd">            stretch (str, optional): &#39;log&#39; means the mapped data are logarithmic. &#39;asinh&#39; means the mapped data are arc sin hyperbolic. &#39;power&#39; means the mapped data are power-law (see also stretchpower). Defaults to &#39;linear&#39;.</span>
 <span class="sd">            stretchscale (float, optional): color scale is asinh(data / stretchscale). Defaults to None.</span>
 <span class="sd">            stretchpower (float, optional): color scale is ((data / vmin)**(1 - stretchpower) - 1) / (1 - stretchpower) / ln(10). 0 means the linear scale. 1 means the logarithmic scale. Defaults to 0.</span>
 <span class="sd">            show_beam (bool, optional): Defaults to True.</span>
 <span class="sd">            beamcolor (str, optional): Matplotlib color. Defaults to &#39;gray&#39;.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">PIL</span> <span class="kn">import</span> <span class="n">Image</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">PIL</span><span class="w"> </span><span class="kn">import</span> <span class="n">Image</span>
 
         <span class="n">_kw</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="n">_kw</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
@@ -995,7 +994,7 @@
 
 <div class="viewcode-block" id="PlotAstroData.set_axis">
 <a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.plot_utils.PlotAstroData.set_axis">[docs]</a>
-    <span class="k">def</span> <span class="nf">set_axis</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">title</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_axis</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">title</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Use Axes.set_* of matplotlib. kwargs can include the arguments of PlotAxes2D to adjust x and y axis.</span>
 
 <span class="sd">        Args:</span>
@@ -1048,7 +1047,7 @@
 
 <div class="viewcode-block" id="PlotAstroData.set_axis_radec">
 <a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.plot_utils.PlotAstroData.set_axis_radec">[docs]</a>
-    <span class="k">def</span> <span class="nf">set_axis_radec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">center</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_axis_radec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">center</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                        <span class="n">xlabel</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;R.A. (ICRS)&#39;</span><span class="p">,</span>
                        <span class="n">ylabel</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;Dec. (ICRS)&#39;</span><span class="p">,</span>
                        <span class="n">nticksminor</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
@@ -1070,12 +1069,14 @@
             <span class="n">center</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">center</span>
         <span class="k">if</span> <span class="n">center</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">center</span> <span class="o">=</span> <span class="s1">&#39;00h00m00s 00d00m00s&#39;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">csplit</span> <span class="o">:=</span> <span class="n">center</span><span class="o">.</span><span class="n">split</span><span class="p">())</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="n">center</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">csplit</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">csplit</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span>
         <span class="n">dec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">coord2xy</span><span class="p">(</span><span class="n">center</span><span class="p">)[</span><span class="mi">1</span><span class="p">])</span>
 
-        <span class="k">def</span> <span class="nf">get_sec</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">get_sec</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
             <span class="k">return</span> <span class="n">x</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">)[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;m&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39;s&#39;</span><span class="p">)</span>
 
-        <span class="k">def</span> <span class="nf">get_hmdm</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">get_hmdm</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
             <span class="k">return</span> <span class="n">x</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">)[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;m&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
 
         <span class="n">ra_s</span> <span class="o">=</span> <span class="n">get_sec</span><span class="p">(</span><span class="n">center</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
@@ -1083,7 +1084,7 @@
         <span class="n">log2r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="mf">2.</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">rmax</span><span class="p">)</span>
         <span class="n">n</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mi">3</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
 
-        <span class="k">def</span> <span class="nf">makegrid</span><span class="p">(</span><span class="n">second</span><span class="p">,</span> <span class="n">mode</span><span class="p">):</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">makegrid</span><span class="p">(</span><span class="n">second</span><span class="p">,</span> <span class="n">mode</span><span class="p">):</span>
             <span class="n">second</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">second</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;ra&#39;</span><span class="p">:</span>
                 <span class="n">scale</span><span class="p">,</span> <span class="n">factor</span><span class="p">,</span> <span class="n">sec</span> <span class="o">=</span> <span class="mf">1.5</span><span class="p">,</span> <span class="mi">15</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">dec</span><span class="p">),</span> <span class="sa">r</span><span class="s1">&#39;$^{\rm s}$&#39;</span>
@@ -1152,7 +1153,7 @@
 
 <div class="viewcode-block" id="PlotAstroData.savefig">
 <a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.plot_utils.PlotAstroData.savefig">[docs]</a>
-    <span class="k">def</span> <span class="nf">savefig</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">savefig</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                 <span class="n">show</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Use savefig of matplotlib.</span>
 
@@ -1180,7 +1181,7 @@
 
 <div class="viewcode-block" id="PlotAstroData.get_figax">
 <a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.plot_utils.PlotAstroData.get_figax">[docs]</a>
-    <span class="k">def</span> <span class="nf">get_figax</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">object</span><span class="p">,</span> <span class="nb">object</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_figax</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">object</span><span class="p">,</span> <span class="nb">object</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Output the external fig and ax after plotting.</span>
 
 <span class="sd">        Returns:</span>
@@ -1196,7 +1197,7 @@
 
 <div class="viewcode-block" id="plotprofile">
 <a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.plot_utils.plotprofile">[docs]</a>
-<span class="k">def</span> <span class="nf">plotprofile</span><span class="p">(</span><span class="n">coords</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="p">[],</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">plotprofile</span><span class="p">(</span><span class="n">coords</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="p">[],</span>
                 <span class="n">xlist</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">[],</span> <span class="n">ylist</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">[],</span>
                 <span class="n">ellipse</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                 <span class="n">ninterp</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
@@ -1254,7 +1255,7 @@
     <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">ylabel</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">str</span><span class="p">:</span>
         <span class="n">ylabel</span> <span class="o">=</span> <span class="p">[</span><span class="n">ylabel</span><span class="p">]</span> <span class="o">*</span> <span class="n">nprof</span>
 
-    <span class="k">def</span> <span class="nf">gauss</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">w</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">gauss</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">w</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">p</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mf">4.</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mf">2.</span><span class="p">)</span> <span class="o">*</span> <span class="p">((</span><span class="n">x</span> <span class="o">-</span> <span class="n">c</span><span class="p">)</span> <span class="o">/</span> <span class="n">w</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
 
     <span class="n">set_rcparams</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span>
@@ -1304,7 +1305,7 @@
 
 <div class="viewcode-block" id="plotslice">
 <a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.plot_utils.plotslice">[docs]</a>
-<span class="k">def</span> <span class="nf">plotslice</span><span class="p">(</span><span class="n">length</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">dx</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">pa</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">plotslice</span><span class="p">(</span><span class="n">length</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">dx</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">pa</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
               <span class="n">dist</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">xoff</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">yoff</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
               <span class="n">xflip</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">yflip</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
               <span class="n">txtfile</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -1374,19 +1375,25 @@
 
 <div class="viewcode-block" id="plot3d">
 <a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.plot_utils.plot3d">[docs]</a>
-<span class="k">def</span> <span class="nf">plot3d</span><span class="p">(</span><span class="n">levels</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">12</span><span class="p">],</span> <span class="n">cmap</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;Jet&#39;</span><span class="p">,</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">plot3d</span><span class="p">(</span><span class="n">levels</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">12</span><span class="p">],</span>
+           <span class="n">cmap</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;Jet&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.08</span><span class="p">,</span>
            <span class="n">xlabel</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;R.A. (arcsec)&#39;</span><span class="p">,</span>
            <span class="n">ylabel</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;Dec. (arcsec)&#39;</span><span class="p">,</span>
            <span class="n">vlabel</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;Velocity (km/s)&#39;</span><span class="p">,</span>
            <span class="n">xskip</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">yskip</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
            <span class="n">eye_p</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">eye_i</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">180</span><span class="p">,</span>
+           <span class="n">xplus</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{},</span> <span class="n">xminus</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{},</span>
+           <span class="n">yplus</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{},</span> <span class="n">yminus</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{},</span>
+           <span class="n">vplus</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{},</span> <span class="n">vminus</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{},</span>
            <span class="n">outname</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;plot3d&#39;</span><span class="p">,</span> <span class="n">show</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-           <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+           <span class="n">return_data_layout</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+           <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Use Plotly. kwargs must include the arguments of AstroData to specify the data to be plotted. kwargs must include the arguments of AstroFrame to specify the ranges and so on for plotting.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        levels (list, optional): Contour levels. Defaults to [3,6,12].</span>
 <span class="sd">        cmap (str, optional): Color map name. Defaults to &#39;Jet&#39;.</span>
+<span class="sd">        alpha (float, optional): opacity in plotly. Defaults to 0.08.</span>
 <span class="sd">        xlabel (str, optional): Defaults to &#39;R.A. (arcsec)&#39;.</span>
 <span class="sd">        ylabel (str, optional): Defaults to &#39;Dec. (arcsec)&#39;.</span>
 <span class="sd">        vlabel (str, optional): Defaults to &#39;Velocity (km/s)&#39;.</span>
@@ -1394,12 +1401,21 @@
 <span class="sd">        yskip (int, optional): Number of pixel to skip. Defaults to 1.</span>
 <span class="sd">        eye_p (float, optional): Azimuthal angle of camera. Defaults to 0.</span>
 <span class="sd">        eye_i (float, optional): Inclination angle of camera. Defaults to 180.</span>
+<span class="sd">        xplus (dict, optional): 2D data to be plotted on the y-v plane at the positive edge of x. This dictionary must have a key of data and can have keys of levels, sigma, cmap, and alpha. Defaults to {}.</span>
+<span class="sd">        xminus (dict, optional): See xplus. Defaults to {}.</span>
+<span class="sd">        yplus (dict, optional): See xplus. Defaults to {}.</span>
+<span class="sd">        yminus (dict, optional): See xplus. Defaults to {}.</span>
+<span class="sd">        vplus (dict, optional): See xplus. Defaults to {}.</span>
+<span class="sd">        vminus (dict, optional): See xplus. Defaults to {}.</span>
 <span class="sd">        outname (str, optional): Output file name. Defaults to &#39;plot3d&#39;.</span>
-<span class="sd">        show (bool, optional): auto_open in plotly. Defaults to False.</span>
+<span class="sd">        show (bool, optional): auto_play in plotly. Defaults to False.</span>
+<span class="sd">        return_data_layout (bool, optional): Whether to return data and layout for plotly.graph_objs.Figure. Defaults to False.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        dict: {&#39;data&#39;: data, &#39;layout&#39;: layout}, if return_data_layout=True. Otherwise, no return.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">import</span> <span class="nn">plotly.offline</span> <span class="k">as</span> <span class="nn">po</span>
-    <span class="kn">import</span> <span class="nn">plotly.graph_objs</span> <span class="k">as</span> <span class="nn">go</span>
-    <span class="kn">from</span> <span class="nn">skimage</span> <span class="kn">import</span> <span class="n">measure</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">plotly.graph_objs</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">go</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">skimage</span><span class="w"> </span><span class="kn">import</span> <span class="n">measure</span>
 
     <span class="n">f</span> <span class="o">=</span> <span class="n">kwargs2AstroFrame</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
     <span class="n">d</span> <span class="o">=</span> <span class="n">kwargs2AstroData</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
@@ -1439,7 +1455,7 @@
                     <span class="n">intensity</span><span class="o">=</span><span class="n">Zg</span> <span class="o">*</span> <span class="mi">0</span> <span class="o">+</span> <span class="n">lev</span><span class="p">,</span>
                     <span class="n">colorscale</span><span class="o">=</span><span class="n">cmap</span><span class="p">,</span> <span class="n">reversescale</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                     <span class="n">cmin</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">levels</span><span class="p">),</span> <span class="n">cmax</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">levels</span><span class="p">),</span>
-                    <span class="n">opacity</span><span class="o">=</span><span class="mf">0.08</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">showscale</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                    <span class="n">opacity</span><span class="o">=</span><span class="n">alpha</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">showscale</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
         <span class="n">data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mesh</span><span class="p">)</span>
         <span class="n">Xe</span><span class="p">,</span> <span class="n">Ye</span><span class="p">,</span> <span class="n">Ze</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">vertices</span><span class="p">[</span><span class="n">simplices</span><span class="p">]:</span>
@@ -1451,8 +1467,72 @@
                      <span class="n">name</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">line</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s1">&#39;rgb(0,0,0)&#39;</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
         <span class="n">data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span>
 
-    <span class="n">fig</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">layout</span><span class="o">=</span><span class="n">layout</span><span class="p">)</span>
-    <span class="n">po</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="n">outname</span> <span class="o">+</span> <span class="s1">&#39;.html&#39;</span><span class="p">,</span> <span class="n">auto_open</span><span class="o">=</span><span class="n">show</span><span class="p">)</span></div>
+    <span class="k">def</span><span class="w"> </span><span class="nf">plot_on_wall</span><span class="p">(</span><span class="n">sign</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">axis</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">kwargs</span> <span class="o">==</span> <span class="p">{}:</span>
+            <span class="k">return</span>
+
+        <span class="k">match</span> <span class="n">axis</span><span class="p">:</span>
+            <span class="k">case</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="n">shape</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">data</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">])</span>
+            <span class="k">case</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">shape</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">data</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">,</span> <span class="p">:])</span>
+            <span class="k">case</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">shape</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:])</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">])</span> <span class="o">!=</span> <span class="n">shape</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;The shape of the 2D data is inconsistent with the shape of the 3D data.&#39;</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="n">_kw</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;levels&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">24</span><span class="p">,</span> <span class="mi">48</span><span class="p">,</span> <span class="mi">96</span><span class="p">,</span> <span class="mi">192</span><span class="p">,</span> <span class="mi">384</span><span class="p">],</span>
+               <span class="s1">&#39;sigma&#39;</span><span class="p">:</span> <span class="s1">&#39;hist&#39;</span><span class="p">,</span> <span class="s1">&#39;cmap&#39;</span><span class="p">:</span> <span class="s1">&#39;Jet&#39;</span><span class="p">,</span> <span class="s1">&#39;alpha&#39;</span><span class="p">:</span> <span class="mf">0.3</span><span class="p">}</span>
+        <span class="n">_kw</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">volume</span> <span class="o">=</span> <span class="n">_kw</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span>
+        <span class="n">levels</span> <span class="o">=</span> <span class="n">_kw</span><span class="p">[</span><span class="s1">&#39;levels&#39;</span><span class="p">]</span>
+        <span class="n">cmap</span> <span class="o">=</span> <span class="n">_kw</span><span class="p">[</span><span class="s1">&#39;cmap&#39;</span><span class="p">]</span>
+        <span class="n">alpha</span> <span class="o">=</span> <span class="n">_kw</span><span class="p">[</span><span class="s1">&#39;alpha&#39;</span><span class="p">]</span>
+        <span class="n">sigma</span> <span class="o">=</span> <span class="n">estimate_rms</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">volume</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="n">_kw</span><span class="p">[</span><span class="s1">&#39;sigma&#39;</span><span class="p">])</span>
+        <span class="n">volume</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">volume</span><span class="p">)]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">a</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">sign</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">b</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">sign</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">volume</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">moveaxis</span><span class="p">([</span><span class="n">volume</span> <span class="o">*</span> <span class="n">a</span><span class="p">,</span> <span class="n">volume</span> <span class="o">*</span> <span class="n">b</span><span class="p">],</span> <span class="mi">0</span><span class="p">,</span> <span class="n">axis</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">d</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">d</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">volume</span> <span class="o">=</span> <span class="n">volume</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">d</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">d</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">volume</span> <span class="o">=</span> <span class="n">volume</span><span class="p">[:,</span> <span class="p">::</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">:]</span>
+        <span class="k">if</span> <span class="n">d</span><span class="o">.</span><span class="n">v</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">d</span><span class="o">.</span><span class="n">v</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">volume</span> <span class="o">=</span> <span class="n">volume</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>
+        <span class="k">for</span> <span class="n">lev</span> <span class="ow">in</span> <span class="n">levels</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">lev</span> <span class="o">*</span> <span class="n">sigma</span> <span class="o">&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">volume</span><span class="p">):</span>
+                <span class="k">continue</span>
+            <span class="n">vertices</span><span class="p">,</span> <span class="n">simplices</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">measure</span><span class="o">.</span><span class="n">marching_cubes</span><span class="p">(</span><span class="n">volume</span><span class="p">,</span> <span class="n">lev</span> <span class="o">*</span> <span class="n">sigma</span><span class="p">)</span>
+            <span class="n">Xg</span><span class="p">,</span> <span class="n">Yg</span><span class="p">,</span> <span class="n">Zg</span> <span class="o">=</span> <span class="p">[</span><span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">i</span> <span class="o">*</span> <span class="n">dt</span> <span class="k">for</span> <span class="n">t</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">dt</span>
+                          <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">vertices</span><span class="o">.</span><span class="n">T</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">ds</span><span class="p">)]</span>
+            <span class="k">match</span> <span class="n">axis</span><span class="p">:</span>
+                <span class="k">case</span> <span class="mi">2</span><span class="p">:</span>
+                    <span class="n">Xg</span> <span class="o">=</span> <span class="n">Xg</span> <span class="o">*</span> <span class="mi">0</span> <span class="o">+</span> <span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="n">sign</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="k">case</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">Yg</span> <span class="o">=</span> <span class="n">Yg</span> <span class="o">*</span> <span class="mi">0</span> <span class="o">+</span> <span class="p">(</span><span class="n">y</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="n">sign</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">y</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="k">case</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">Zg</span> <span class="o">=</span> <span class="n">Zg</span> <span class="o">*</span> <span class="mi">0</span> <span class="o">+</span> <span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="n">sign</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">v</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">k</span> <span class="o">=</span> <span class="n">simplices</span><span class="o">.</span><span class="n">T</span>
+            <span class="n">mesh2d</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s1">&#39;mesh3d&#39;</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">Xg</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">Yg</span><span class="p">,</span> <span class="n">z</span><span class="o">=</span><span class="n">Zg</span><span class="p">,</span>
+                          <span class="n">i</span><span class="o">=</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="o">=</span><span class="n">j</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span>
+                          <span class="n">intensity</span><span class="o">=</span><span class="n">Zg</span> <span class="o">*</span> <span class="mi">0</span> <span class="o">+</span> <span class="n">lev</span><span class="p">,</span>
+                          <span class="n">colorscale</span><span class="o">=</span><span class="n">cmap</span><span class="p">,</span> <span class="n">reversescale</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                          <span class="n">cmin</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">levels</span><span class="p">),</span> <span class="n">cmax</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">levels</span><span class="p">),</span>
+                          <span class="n">opacity</span><span class="o">=</span><span class="n">alpha</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">showscale</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="n">data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mesh2d</span><span class="p">)</span>
+
+    <span class="n">klist</span> <span class="o">=</span> <span class="p">[</span><span class="n">xplus</span><span class="p">,</span> <span class="n">xminus</span><span class="p">,</span> <span class="n">yplus</span><span class="p">,</span> <span class="n">yminus</span><span class="p">,</span> <span class="n">vplus</span><span class="p">,</span> <span class="n">vminus</span><span class="p">]</span>
+    <span class="n">slist</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">alist</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">kw</span><span class="p">,</span> <span class="n">sign</span><span class="p">,</span> <span class="n">axis</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">klist</span><span class="p">,</span> <span class="n">slist</span><span class="p">,</span> <span class="n">alist</span><span class="p">):</span>
+        <span class="n">plot_on_wall</span><span class="p">(</span><span class="n">sign</span><span class="o">=</span><span class="n">sign</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">return_data_layout</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="n">data</span><span class="p">,</span> <span class="s1">&#39;layout&#39;</span><span class="p">:</span> <span class="n">layout</span><span class="p">}</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">fig</span> <span class="o">=</span> <span class="n">go</span><span class="o">.</span><span class="n">Figure</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">layout</span><span class="o">=</span><span class="n">layout</span><span class="p">)</span>
+        <span class="n">fig</span><span class="o">.</span><span class="n">write_html</span><span class="p">(</span><span class="n">file</span><span class="o">=</span><span class="n">outname</span> <span class="o">+</span> <span class="s1">&#39;.html&#39;</span><span class="p">,</span> <span class="n">auto_play</span><span class="o">=</span><span class="n">show</span><span class="p">)</span></div>
 
 </pre></div>
 
