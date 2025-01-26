@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import emcee
 import ptemcee
 import corner
 from dynesty import DynamicNestedSampler as DNS
@@ -65,8 +66,8 @@ class PTEmceeCorner():
 
     def fit(self, nwalkersperdim: int = 2, ntemps: int = 1, nsteps: int = 1000,
             nburnin: int = 500, ntry: int = 1, pos0: np.ndarray | None = None,
-            savechain: str | None = None, ncores: int = 1, grcheck: bool = False
-            ) -> None:
+            savechain: str | None = None, ncores: int = 1, grcheck: bool = False,
+            pt: bool = False) -> None:
         """Perform a Markov Chain Monte Carlo (MCMC) fitting process using the ptemcee library, which is a parallel tempering version of the emcee package, and make a corner plot of the samples using the corner package.
 
         Args:
@@ -79,11 +80,15 @@ class PTEmceeCorner():
             savechain (str, optional): File name of the chain in format of .npy. Defaults to None.
             ncores (int, optional): Number of cores for multiprocessing.Pool. ncores=1 does not use multiprocessing. Defaults to 1.
             grcheck (bool, optional): Whether to check Gelman-Rubin statistics. Defaults to False.
+            pt (bool, optional): Whether to use ptemcee; otherwise, emcee is used. Defaults to False.
         """
         global bar
         if nwalkersperdim < 2:
             print(f'nwalkersperdim < 2 is not allowed. Use 2 instead of {nwalkersperdim:d}.')
         nwalkers = max(nwalkersperdim, 2) * self.dim  # must be even and >= 2 * dim
+        if ntemps > 1 and not pt:
+            print('ntemps > 1 is supported only with pt=True. Set pt=True.')
+            pt = True
         if global_progressbar:
             bar = tqdm(total=ntry * ntemps * nwalkers * (nsteps + 1) // ncores)
             bar.set_description('Within the ranges')
@@ -98,13 +103,28 @@ class PTEmceeCorner():
             pars = {'ntemps': ntemps, 'nwalkers': nwalkers, 'dim': self.dim,
                     'logl': self.logl, 'logp': self.logp}
             if ncores > 1:
+                print('ncores > 1 is supported only with pt=True. Set pt=True.')
+                pt = True
                 with Pool(ncores) as pool:
                     sampler = ptemcee.Sampler(**pars, pool=pool)
                     sampler.run_mcmc(pos0, nsteps)
             else:
-                sampler = ptemcee.Sampler(**pars)
-                sampler.run_mcmc(pos0, nsteps)
-            samples = sampler.chain[0, :, nburnin:, :]  # temperature, walker, step, dim
+                if pt:
+                    sampler = ptemcee.Sampler(**pars)
+                    sampler.run_mcmc(pos0, nsteps)
+                    samples = sampler.chain[0, :, nburnin:, :]  # temperature, walker, step, dim
+                else:
+                    pars_emcee = dict(**pars)
+                    del pars_emcee['ntemps']
+                    pars_emcee['ndim'] = pars['dim']
+                    del pars_emcee['dim']
+                    log_prob_fn = lambda x: pars['logp'](x) + pars['logl'](x)
+                    pars_emcee['log_prob_fn'] = log_prob_fn
+                    del pars_emcee['logl']
+                    del pars_emcee['logp']
+                    sampler = emcee.EnsembleSampler(**pars_emcee)
+                    sampler.run_mcmc(pos0[0], nsteps)
+                    samples = sampler.chain[:, nburnin:, :]  # walker, step, dim
             if grcheck:
                 # Gelman-Rubin statistics #
                 B = np.std(np.mean(samples, axis=1), axis=0)
@@ -122,9 +142,14 @@ class PTEmceeCorner():
         self.samples = samples
         if savechain is not None:
             np.save(savechain.replace('.npy', '') + '.npy', samples)
-        lnps = sampler.logprobability[0]  # [0] is in the temperature axis.
-        idx_best = np.unravel_index(np.argmax(lnps), lnps.shape)
-        self.popt = sampler.chain[0][idx_best]
+        if pt:
+            lnps = sampler.logprobability[0]  # [0] is in the temperature axis.
+            idx_best = np.unravel_index(np.argmax(lnps), lnps.shape)
+            self.popt = sampler.chain[0][idx_best]  # [0] is in the temperature axis.
+        else:
+            lnps = sampler.lnprobability
+            idx_best = np.unravel_index(np.argmax(lnps), lnps.shape)
+            self.popt = sampler.chain[idx_best]
         self.lnps = lnps[:, nburnin:]
         s = samples.reshape((-1, self.dim))
         self.plow = np.percentile(s, self.percent[0], axis=0)
@@ -199,7 +224,8 @@ class PTEmceeCorner():
             plt.show()
         plt.close()
 
-    def posteriorongrid(self, ngrid: list = 100, log: list[bool] = False, pcut: float = 0):
+    def posteriorongrid(self, ngrid: list[int] | int = 100,
+                        log: list[bool] | bool = False, pcut: float = 0):
         """Calculate the posterior on a grid of ngrid x ngrid x ... x ngrid.
 
         Args:
