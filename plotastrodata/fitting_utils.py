@@ -114,7 +114,13 @@ class PTEmceeCorner():
                     sampler.run_mcmc(pos0, nsteps)
                 samples = sampler.chain[0, :, nburnin:, :]  # temperature, walker, step, dim
             else:
-                log_prob_fn = lambda x: self.logp(x) + self.logl(x)
+                if ncores > 1:
+                    print('Use logl as log_prob_fn to avoid function-in-function.')
+                    log_prob_fn = self.logl
+                else:
+                    def log_prob_fn(x):
+                        return self.logp(x) + self.logl(x)
+
                 pars = {'nwalkers': nwalkers, 'ndim': self.dim,
                         'log_prob_fn': log_prob_fn}
                 if ncores > 1:
