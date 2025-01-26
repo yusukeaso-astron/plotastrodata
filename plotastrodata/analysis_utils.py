@@ -8,7 +8,7 @@ from plotastrodata.other_utils import (coord2xy, rel2abs, estimate_rms, trim,
                                        Mfac, Mrot, dot2d, gaussian2d)
 from plotastrodata.fits_utils import FitsData, data2fits, Jy2K
 from plotastrodata import const_utils as cu
-from plotastrodata.fitting_utils import PTEmceeCorner
+from plotastrodata.fitting_utils import EmceeCorner
 
 
 def to4dim(data: np.ndarray) -> np.ndarray:
@@ -316,10 +316,10 @@ class AstroData():
 
         Args:
             model (function): The model function in the form of f(par, x, y).
-            bounds (np.ndarray): bounds for fitting_utils.PTEmceeCorner.
-            progressbar (bool, optional): progressbar for fitting_utils.PTEmceeCorner. Defaults to False.
-            kwargs_fit (dict, optional): Arguments for fitting_utils.PTEmceeCorner.fit.
-            kwargs_plotcorner (dict, optional): Arguments for fitting_utils.PTEmceeCorner.plotcorner.
+            bounds (np.ndarray): bounds for fitting_utils.EmceeCorner.
+            progressbar (bool, optional): progressbar for fitting_utils.EmceeCorner. Defaults to False.
+            kwargs_fit (dict, optional): Arguments for fitting_utils.EmceeCorner.fit.
+            kwargs_plotcorner (dict, optional): Arguments for fitting_utils.EmceeCorner.plotcorner.
             chan (int, optional): The channel number where the 2D model is fitted. Defaults to None.
 
         Returns:
@@ -338,8 +338,8 @@ class AstroData():
         def logl(p):
             rss = np.nansum((model(p, x, y) - d)**2)
             return -0.5 * rss / self.sigma**2 / pixelperbeam
-        
-        mcmc = PTEmceeCorner(bounds=bounds, logl=logl, progressbar=progressbar)
+
+        mcmc = EmceeCorner(bounds=bounds, logl=logl, progressbar=progressbar)
         kwargs_fit0 = {}
         kwargs_fit0.update(kwargs_fit)
         mcmc.fit(**kwargs_fit0)

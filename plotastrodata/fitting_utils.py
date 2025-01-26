@@ -31,7 +31,7 @@ def logp(x: np.ndarray) -> float:
         return -np.inf
 
 
-class PTEmceeCorner():
+class EmceeCorner():
     warnings.simplefilter('ignore', RuntimeWarning)
 
     def __init__(self, bounds: np.ndarray, logl: object | None = None,
