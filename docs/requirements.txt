@@ -1,6 +1,7 @@
 astropy
 corner
 dynesty
+emcee
 matplotlib
 multiprocess
 numpy
