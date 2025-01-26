@@ -87,7 +87,7 @@ class PTEmceeCorner():
             print(f'nwalkersperdim < 2 is not allowed. Use 2 instead of {nwalkersperdim:d}.')
         nwalkers = max(nwalkersperdim, 2) * self.dim  # must be even and >= 2 * dim
         if ntemps > 1 and not pt:
-            print('ntemps > 1 is supported only with pt=True. Set pt=True.')
+            print('ntemps>1 is supported only with pt=True. Set pt=True.')
             pt = True
         if global_progressbar:
             bar = tqdm(total=ntry * ntemps * nwalkers * (nsteps + 1) // ncores)
@@ -100,31 +100,31 @@ class PTEmceeCorner():
             if pos0 is None:
                 pos0 = np.random.rand(ntemps, nwalkers, self.dim) \
                        * (self.bounds[1] - self.bounds[0]) + self.bounds[0]
-            pars = {'ntemps': ntemps, 'nwalkers': nwalkers, 'dim': self.dim,
-                    'logl': self.logl, 'logp': self.logp}
-            if ncores > 1:
-                print('ncores > 1 is supported only with pt=True. Set pt=True.')
-                pt = True
-                with Pool(ncores) as pool:
-                    sampler = ptemcee.Sampler(**pars, pool=pool)
-                    sampler.run_mcmc(pos0, nsteps)
-            else:
-                if pt:
+                if not pt:
+                    pos0 = pos0[0]
+            if pt:
+                pars = {'ntemps': ntemps, 'nwalkers': nwalkers, 'dim': self.dim,
+                        'logl': self.logl, 'logp': self.logp}
+                if ncores > 1:
+                    with Pool(ncores) as pool:
+                        sampler = ptemcee.Sampler(**pars, pool=pool)
+                        sampler.run_mcmc(pos0, nsteps)
+                else:
                     sampler = ptemcee.Sampler(**pars)
                     sampler.run_mcmc(pos0, nsteps)
-                    samples = sampler.chain[0, :, nburnin:, :]  # temperature, walker, step, dim
+                samples = sampler.chain[0, :, nburnin:, :]  # temperature, walker, step, dim
+            else:
+                log_prob_fn = lambda x: self.logp(x) + self.logl(x)
+                pars = {'nwalkers': nwalkers, 'ndim': self.dim,
+                        'log_prob_fn': log_prob_fn}
+                if ncores > 1:
+                    with Pool(ncores) as pool:
+                        sampler = emcee.EnsembleSampler(**pars, pool=pool)
+                        sampler.run_mcmc(pos0, nsteps)
                 else:
-                    pars_emcee = dict(**pars)
-                    del pars_emcee['ntemps']
-                    pars_emcee['ndim'] = pars['dim']
-                    del pars_emcee['dim']
-                    log_prob_fn = lambda x: pars['logp'](x) + pars['logl'](x)
-                    pars_emcee['log_prob_fn'] = log_prob_fn
-                    del pars_emcee['logl']
-                    del pars_emcee['logp']
-                    sampler = emcee.EnsembleSampler(**pars_emcee)
-                    sampler.run_mcmc(pos0[0], nsteps)
-                    samples = sampler.chain[:, nburnin:, :]  # walker, step, dim
+                    sampler = emcee.EnsembleSampler(**pars)
+                    sampler.run_mcmc(pos0, nsteps)
+                samples = sampler.chain[:, nburnin:, :]  # walker, step, dim
             if grcheck:
                 # Gelman-Rubin statistics #
                 B = np.std(np.mean(samples, axis=1), axis=0)
