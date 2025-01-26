@@ -79,7 +79,7 @@
                                        <span class="n">Mfac</span><span class="p">,</span> <span class="n">Mrot</span><span class="p">,</span> <span class="n">dot2d</span><span class="p">,</span> <span class="n">gaussian2d</span><span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">plotastrodata.fits_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">FitsData</span><span class="p">,</span> <span class="n">data2fits</span><span class="p">,</span> <span class="n">Jy2K</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">plotastrodata</span><span class="w"> </span><span class="kn">import</span> <span class="n">const_utils</span> <span class="k">as</span> <span class="n">cu</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">plotastrodata.fitting_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">PTEmceeCorner</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">plotastrodata.fitting_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">EmceeCorner</span>
 
 
 <div class="viewcode-block" id="to4dim">
@@ -418,10 +418,10 @@
 
 <span class="sd">        Args:</span>
 <span class="sd">            model (function): The model function in the form of f(par, x, y).</span>
-<span class="sd">            bounds (np.ndarray): bounds for fitting_utils.PTEmceeCorner.</span>
-<span class="sd">            progressbar (bool, optional): progressbar for fitting_utils.PTEmceeCorner. Defaults to False.</span>
-<span class="sd">            kwargs_fit (dict, optional): Arguments for fitting_utils.PTEmceeCorner.fit.</span>
-<span class="sd">            kwargs_plotcorner (dict, optional): Arguments for fitting_utils.PTEmceeCorner.plotcorner.</span>
+<span class="sd">            bounds (np.ndarray): bounds for fitting_utils.EmceeCorner.</span>
+<span class="sd">            progressbar (bool, optional): progressbar for fitting_utils.EmceeCorner. Defaults to False.</span>
+<span class="sd">            kwargs_fit (dict, optional): Arguments for fitting_utils.EmceeCorner.fit.</span>
+<span class="sd">            kwargs_plotcorner (dict, optional): Arguments for fitting_utils.EmceeCorner.plotcorner.</span>
 <span class="sd">            chan (int, optional): The channel number where the 2D model is fitted. Defaults to None.</span>
 
 <span class="sd">        Returns:</span>
@@ -440,8 +440,8 @@
         <span class="k">def</span><span class="w"> </span><span class="nf">logl</span><span class="p">(</span><span class="n">p</span><span class="p">):</span>
             <span class="n">rss</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nansum</span><span class="p">((</span><span class="n">model</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span> <span class="o">-</span> <span class="n">d</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
             <span class="k">return</span> <span class="o">-</span><span class="mf">0.5</span> <span class="o">*</span> <span class="n">rss</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">sigma</span><span class="o">**</span><span class="mi">2</span> <span class="o">/</span> <span class="n">pixelperbeam</span>
-        
-        <span class="n">mcmc</span> <span class="o">=</span> <span class="n">PTEmceeCorner</span><span class="p">(</span><span class="n">bounds</span><span class="o">=</span><span class="n">bounds</span><span class="p">,</span> <span class="n">logl</span><span class="o">=</span><span class="n">logl</span><span class="p">,</span> <span class="n">progressbar</span><span class="o">=</span><span class="n">progressbar</span><span class="p">)</span>
+
+        <span class="n">mcmc</span> <span class="o">=</span> <span class="n">EmceeCorner</span><span class="p">(</span><span class="n">bounds</span><span class="o">=</span><span class="n">bounds</span><span class="p">,</span> <span class="n">logl</span><span class="o">=</span><span class="n">logl</span><span class="p">,</span> <span class="n">progressbar</span><span class="o">=</span><span class="n">progressbar</span><span class="p">)</span>
         <span class="n">kwargs_fit0</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="n">kwargs_fit0</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs_fit</span><span class="p">)</span>
         <span class="n">mcmc</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs_fit0</span><span class="p">)</span>

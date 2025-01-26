@@ -105,9 +105,9 @@
 
 
 
-<div class="viewcode-block" id="PTEmceeCorner">
-<a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.fitting_utils.PTEmceeCorner">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">PTEmceeCorner</span><span class="p">():</span>
+<div class="viewcode-block" id="EmceeCorner">
+<a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.fitting_utils.EmceeCorner">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">EmceeCorner</span><span class="p">():</span>
     <span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s1">&#39;ignore&#39;</span><span class="p">,</span> <span class="ne">RuntimeWarning</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bounds</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">logl</span><span class="p">:</span> <span class="nb">object</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -140,8 +140,8 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">percent</span> <span class="o">=</span> <span class="n">percent</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">ndata</span> <span class="o">=</span> <span class="mi">10000</span> <span class="k">if</span> <span class="n">xdata</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">len</span><span class="p">(</span><span class="n">xdata</span><span class="p">)</span>
 
-<div class="viewcode-block" id="PTEmceeCorner.fit">
-<a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.fitting_utils.PTEmceeCorner.fit">[docs]</a>
+<div class="viewcode-block" id="EmceeCorner.fit">
+<a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.fitting_utils.EmceeCorner.fit">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nwalkersperdim</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="n">ntemps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">nsteps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">,</span>
             <span class="n">nburnin</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">500</span><span class="p">,</span> <span class="n">ntry</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">pos0</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
             <span class="n">savechain</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">ncores</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">grcheck</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -192,7 +192,13 @@
                     <span class="n">sampler</span><span class="o">.</span><span class="n">run_mcmc</span><span class="p">(</span><span class="n">pos0</span><span class="p">,</span> <span class="n">nsteps</span><span class="p">)</span>
                 <span class="n">samples</span> <span class="o">=</span> <span class="n">sampler</span><span class="o">.</span><span class="n">chain</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="n">nburnin</span><span class="p">:,</span> <span class="p">:]</span>  <span class="c1"># temperature, walker, step, dim</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">log_prob_fn</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">logp</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">logl</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">ncores</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Use logl as log_prob_fn to avoid function-in-function.&#39;</span><span class="p">)</span>
+                    <span class="n">log_prob_fn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">logl</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">def</span><span class="w"> </span><span class="nf">log_prob_fn</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+                        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">logp</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">logl</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
                 <span class="n">pars</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;nwalkers&#39;</span><span class="p">:</span> <span class="n">nwalkers</span><span class="p">,</span> <span class="s1">&#39;ndim&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">,</span>
                         <span class="s1">&#39;log_prob_fn&#39;</span><span class="p">:</span> <span class="n">log_prob_fn</span><span class="p">}</span>
                 <span class="k">if</span> <span class="n">ncores</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
@@ -237,8 +243,8 @@
             <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="PTEmceeCorner.plotcorner">
-<a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.fitting_utils.PTEmceeCorner.plotcorner">[docs]</a>
+<div class="viewcode-block" id="EmceeCorner.plotcorner">
+<a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.fitting_utils.EmceeCorner.plotcorner">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">plotcorner</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">show</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
                    <span class="n">savefig</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">labels</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                    <span class="n">cornerrange</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -264,8 +270,8 @@
         <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
 
 
-<div class="viewcode-block" id="PTEmceeCorner.plotchain">
-<a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.fitting_utils.PTEmceeCorner.plotchain">[docs]</a>
+<div class="viewcode-block" id="EmceeCorner.plotchain">
+<a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.fitting_utils.EmceeCorner.plotchain">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">plotchain</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">show</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">savefig</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                   <span class="n">labels</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">ylim</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Plot parameters as a function of steps using self.samples.</span>
@@ -309,8 +315,8 @@
         <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
 
 
-<div class="viewcode-block" id="PTEmceeCorner.posteriorongrid">
-<a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.fitting_utils.PTEmceeCorner.posteriorongrid">[docs]</a>
+<div class="viewcode-block" id="EmceeCorner.posteriorongrid">
+<a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.fitting_utils.EmceeCorner.posteriorongrid">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">posteriorongrid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ngrid</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span>
                         <span class="n">log</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">|</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">pcut</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate the posterior on a grid of ngrid x ngrid x ... x ngrid.</span>
@@ -367,8 +373,8 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">evidence</span> <span class="o">=</span> <span class="n">evidence</span></div>
 
 
-<div class="viewcode-block" id="PTEmceeCorner.plotongrid">
-<a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.fitting_utils.PTEmceeCorner.plotongrid">[docs]</a>
+<div class="viewcode-block" id="EmceeCorner.plotongrid">
+<a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.fitting_utils.EmceeCorner.plotongrid">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">plotongrid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">show</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">savefig</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                    <span class="n">labels</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">cornerrange</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                    <span class="n">cmap</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;binary&#39;</span><span class="p">,</span> <span class="n">levels</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.001</span><span class="p">,</span> <span class="mf">0.01</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -452,8 +458,8 @@
             <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div>
 
 
-<div class="viewcode-block" id="PTEmceeCorner.getDNSevidence">
-<a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.fitting_utils.PTEmceeCorner.getDNSevidence">[docs]</a>
+<div class="viewcode-block" id="EmceeCorner.getDNSevidence">
+<a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.fitting_utils.EmceeCorner.getDNSevidence">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">getDNSevidence</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate the Bayesian evidence for a model using dynamic nested sampling through dynesty.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
