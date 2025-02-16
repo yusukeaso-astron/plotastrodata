@@ -356,11 +356,12 @@ class PlotAstroData(AstroFrame):
             else:
                 v = v[:k1]
         if self.pv or v is None or len(v) == 1:
-            nv = nrows = ncols = npages = nchan = 1
+            nv = nrows = ncols = npages = nchan = nchanplot = 1
         else:
             nv = len(v := v[::vskip])
             npages = int(np.ceil(nv / nrows / ncols))
             nchan = npages * nrows * ncols
+            nchanplot = len(v)
             v = np.r_[v, v[-1] + (np.arange(nchan-nv)+1) * (v[1] - v[0])]
             if type(channelnumber) is int:
                 nchan = npages = 1
@@ -397,9 +398,10 @@ class PlotAstroData(AstroFrame):
             if nchan > 1 or type(channelnumber) is int:
                 fig.subplots_adjust(hspace=0, wspace=0, right=0.87, top=0.87)
                 vellabel = v[ch] if channelnumber is None else v[channelnumber]
-                ax[ch].text(0.9 * self.rmax, 0.7 * self.rmax,
-                            rf'${vellabel:.{veldigit:d}f}$', color='black',
-                            backgroundcolor='white', zorder=20)
+                if ch < nchanplot:
+                    ax[ch].text(0.9 * self.rmax, 0.7 * self.rmax,
+                                rf'${vellabel:.{veldigit:d}f}$', color='black',
+                                backgroundcolor='white', zorder=20)
         self.fig = None if internalfig else fig
         self.ax = ax
         self.rowcol = nrows * ncols
