@@ -161,6 +161,7 @@ class AstroData():
         center (str, optional): Text coordinates. 'common' means initialized value. Defaults to 'common'.
         restfreq (float, optional): Used for velocity and brightness T. Defaults to None.
         cfactor (float, optional): Output data times cfactor. Defaults to 1.
+        pvpa (float, optional): Position angle of the PV cut. Defaults to None.
     """
     data: np.ndarray | None = None
     x: np.ndarray | None = None
@@ -173,6 +174,7 @@ class AstroData():
     center: str = 'common'
     restfreq: float | None = None
     cfactor: float = 1
+    pvpa: float | None = None
 
     def __post_init__(self):
         n = 0
@@ -707,6 +709,8 @@ class AstroFrame():
             d.fitsheader = [d.fitsheader] * d.n
         if type(d.pv) is not list:
             d.pv = [d.pv] * d.n
+        if type(d.pvpa) is not list:
+            d.pvpa = [d.pvpa] * d.n
         grid0 = [d.x, d.y, d.v]
         for i in range(d.n):
             if d.center[i] == 'common':
@@ -791,3 +795,4 @@ class AstroFrame():
             d.sigma_org = d.sigma_org[0]
             d.fitsheader = d.fitsheader[0]
             d.pv = d.pv[0]
+            d.pvpa = d.pvpa[0]

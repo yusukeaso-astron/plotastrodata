@@ -47,8 +47,8 @@ p.savefig('test3D.png', show=True)
 # PV case
 p = pad(rmax=0.8, pv=True, swapxy=True, vmin=-5, vmax=5, figsize=(6, 7))
 p.add_color(fitsimage=pre+'testPV.fits', Tb=True, cblabel='Tb (K)',
-            cblocation='top')
-p.add_contour(fitsimage=pre+'testPV.fits', colors='r', sigma=1e-3)
+            cblocation='top', pvpa=60)
+p.add_contour(fitsimage=pre+'testPV.fits', colors='r', sigma=1e-3, pvpa=60)
 p.add_text([0.3, 0.3], slist='text')
 p.add_marker([[0.5, 0.5]])
 p.set_axis(title='PV diagram')
@@ -56,8 +56,8 @@ p.savefig('testPV.png', show=True)
 
 # log log PV case
 p = pad(rmax=0.8 * 140, pv=True, quadrants='13', vmin=-5, vmax=5, dist=140)
-p.add_color(fitsimage=pre+'testPV.fits', Tb=True, cblabel='Tb (K)')
-p.add_contour(fitsimage=pre+'testPV.fits', colors='r', sigma=1e-3)
+p.add_color(fitsimage=pre+'testPV.fits', Tb=True, cblabel='Tb (K)', show_beam=False)
+p.add_contour(fitsimage=pre+'testPV.fits', colors='r', sigma=1e-3, show_beam=False)
 p.set_axis(title='loglog PV diagram', loglog=20)
 p.savefig('testloglogPV.png', show=True)
 
