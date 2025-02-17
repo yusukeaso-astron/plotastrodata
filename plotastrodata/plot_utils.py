@@ -484,22 +484,41 @@ class PlotAstroData(AstroFrame):
     def add_beam(self,
                  beam: list[float | None, float | None, float | None] = [None, None, None],
                  beamcolor: str = 'gray',
-                 poslist: list[str | list[float, float]] | None = None) -> None:
+                 poslist: list[str | list[float, float]] | None = None,
+                 dv: float | None = None, pvpa: float | None = None) -> None:
         """Use add_region().
 
         Args:
             beam (list, optional): [bmaj, bmin, bpa]. Defaults to [None, None, None].
             beamcolor (str, optional): matplotlib color. Defaults to 'gray'.
             poslist (list, optional): text or relative. Defaults to None.
+            dv (float, optional): velocity resolution for a PV diagram. Defaults to None.
+            pvpa (float, optional): position angle of the PV cut in the unit of degrees. Defaults to None.
         """
         if None in beam:
             print('No beam to plot.')
             return False
 
-        if poslist is None:
-            poslist = [max(0.35 * beam[0] / self.rmax, 0.1)] * 2
         include_chan = self.bottomleft if self.channelnumber is None else self.allchan
-        self.add_region('ellipse', poslist, *beam,
+        if self.pv:
+            if pvpa is None:
+                pvpa = 0
+                print('pvpa is not specified. pvpa=0 is assumed.')
+            p = np.radians(beam[2] - pvpa)
+            b = 1 / np.hypot(np.cos(p) / beam[0], np.sin(p) / beam[1]) / self.rmax
+            beam = np.array([b, dv])
+            if poslist is None:
+                poslist = [max(0.35 * b, 0.1), 0.1]
+            if self.swapxy:
+                poslist = np.transpose(poslist)
+                beam = np.transpose(beam)
+            beam = np.append(beam, 0)
+            patch = 'rectangle'
+        else:
+            if poslist is None:
+                poslist = [max(0.35 * beam[0] / self.rmax, 0.1)] * 2
+            patch = 'ellipse'
+        self.add_region(patch, poslist, *beam,
                         include_chan=include_chan,
                         facecolor=beamcolor, edgecolor=None)
 
@@ -715,8 +734,10 @@ class PlotAstroData(AstroFrame):
                     ticklin = 1 + (1 - stretchpower) * np.log(10) * t
                     ticklin = cmin_org * ticklin**(1 / (1 - stretchpower))
                 cb.set_ticklabels([f'{d:{cbformat[1:]}}' for d in ticklin])
-        if show_beam and not self.pv:
-            self.add_beam(beam, beamcolor)
+        if show_beam:
+            dv = v[1] - v[0] if self.pv else None
+            self.add_beam(beam=beam, beamcolor=beamcolor,
+                          dv=dv, pvpa=d.pvpa)
 
     def add_contour(self, xskip: int = 1, yskip: int = 1,
                     levels: list[float] = [-12, -6, -3, 3, 6, 12, 24, 48, 96, 192, 384],
@@ -742,8 +763,10 @@ class PlotAstroData(AstroFrame):
             c = [c[self.channelnumber]]
         for axnow, cnow in zip(self.ax, c):
             axnow.contour(x, y, cnow, np.sort(levels) * sigma, **_kw)
-        if show_beam and not self.pv:
-            self.add_beam(beam, beamcolor)
+        if show_beam:
+            dv = v[1] - v[0] if self.pv else None
+            self.add_beam(beam=beam, beamcolor=beamcolor,
+                          dv=dv, pvpa=d.pvpa)
 
     def add_segment(self, ampfits: str = None, angfits: str = None,
                     Ufits: str = None, Qfits: str = None,
@@ -809,8 +832,10 @@ class PlotAstroData(AstroFrame):
         _kw['scale'] = 1 if len(x) == 1 else 1. / np.abs(x[1] - x[0])
         for axnow, unow, vnow in zip(self.ax, U, V):
             axnow.quiver(x, y, unow, vnow, **_kw)
-        if show_beam and not self.pv:
-            self.add_beam(beam, beamcolor)
+        if show_beam:
+            dv = v[1] - v[0] if self.pv else None
+            self.add_beam(beam=beam, beamcolor=beamcolor,
+                          dv=dv, pvpa=d.pvpa)
 
     def add_rgb(self, xskip: int = 1, yskip: int = 1,
                 stretch: list[str, str, str] = ['linear'] * 3,
@@ -860,9 +885,11 @@ class PlotAstroData(AstroFrame):
                     im.putpixel((i, j), value)
             axnow.imshow(im, extent=[x[0], x[-1], y[0], y[-1]])
             axnow.set_aspect(np.abs((x[-1]-x[0]) / (y[-1]-y[0])))
-        if show_beam and not self.pv:
+        if show_beam:
+            dv = v[1] - v[0] if self.pv else None
             for i in range(3):
-                self.add_beam(beam[i], beamcolor[i])
+                self.add_beam(beam=beam[i], beamcolor=beamcolor[i],
+                              dv=dv, pvpa=d.pvpa[i])
 
     def set_axis(self, title: dict | str | None = None, **kwargs) -> None:
         """Use Axes.set_* of matplotlib. kwargs can include the arguments of PlotAxes2D to adjust x and y axis.
