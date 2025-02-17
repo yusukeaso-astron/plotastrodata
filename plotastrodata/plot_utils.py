@@ -501,8 +501,8 @@ class PlotAstroData(AstroFrame):
         include_chan = self.bottomleft if self.channelnumber is None else self.allchan
         if self.pv:
             if pvpa is None:
-                pvpa = 0
-                print('pvpa is not specified. pvpa=0 is assumed.')
+                pvpa = beam[0]
+                print('pvpa is not specified. pvpa=bmaj is assumed.')
             p = np.radians(beam[2] - pvpa)
             b = 1 / np.hypot(np.cos(p) / beam[0], np.sin(p) / beam[1]) / self.rmax
             b = np.array([b, dv])
