@@ -255,7 +255,7 @@ class FitsData:
                     print(f'Unknown CUNIT3 {cunitv} found.'
                           + ' v is read as is.')
                     s = s - vsys
-            
+
             self.v, self.dv = s, s[1] - s[0]
 
         if h['NAXIS'] > 0 and h['NAXIS1'] > 1:
