@@ -378,15 +378,15 @@ class PlotAstroData(AstroFrame):
             fontsize = 18 if nchan == 1 else 12
         set_rcparams(fontsize=fontsize, nancolor=nancolor, dpi=dpi)
         ax = np.empty(nchan, dtype='object') if internalax else [ax]
+        if figsize is None:
+            sqrt_a = (self.ymax - self.ymin) / (self.xmax - self.xmin)
+            sqrt_a = np.sqrt(np.abs(sqrt_a))
+            if nchan == 1:
+                figsize = (7 / sqrt_a, 5 * sqrt_a)
+            else:
+                figsize = (ncols * 2 / sqrt_a, max(nrows*2, 3) * sqrt_a)
         for ch in range(nchan):
             n, i, j = ch2nij(ch)
-            if figsize is None:
-                sqrt_a = (self.ymax - self.ymin) / (self.xmax - self.xmin)
-                sqrt_a = np.sqrt(np.abs(sqrt_a))
-                if nchan == 1:
-                    figsize = (7 / sqrt_a, 5 * sqrt_a)
-                else:
-                    figsize = (ncols * 2 / sqrt_a, max(nrows*2, 3) * sqrt_a)
             if internalfig:
                 fig = plt.figure(n, figsize=figsize)
             sharex = ax[nij2ch(n, i - 1, j)] if i > 0 else None
@@ -396,8 +396,8 @@ class PlotAstroData(AstroFrame):
                                          sharex=sharex, sharey=sharey)
             if nchan > 1 or type(channelnumber) is int:
                 fig.subplots_adjust(hspace=0, wspace=0, right=0.87, top=0.87)
-                vellabel = v[ch] if channelnumber is None else v[channelnumber]
                 if ch < nv:
+                    vellabel = v[ch] if channelnumber is None else v[channelnumber]
                     ax[ch].text(0.9 * self.rmax, 0.7 * self.rmax,
                                 rf'${vellabel:.{veldigit:d}f}$', color='black',
                                 backgroundcolor='white', zorder=20)
