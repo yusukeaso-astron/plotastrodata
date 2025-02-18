@@ -36,7 +36,7 @@ def Jy2K(header=None, bmaj: float | None = None, bmin: float | None = None,
         freq = restfreq
     if freq is None:
         print('Please input restfreq.')
-        return 1
+        return
     omega = bmaj * bmin * units.arcsec**2 * np.pi / 4. / np.log(2.)
     equiv = units.brightness_temperature(freq * units.Hz, beam_area=omega)
     T = (1 * units.Jy / units.beam).to(units.K, equivalencies=equiv)

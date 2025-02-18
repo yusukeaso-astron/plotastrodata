@@ -450,7 +450,7 @@ class PlotAstroData(AstroFrame):
             include_chan = self.allchan
         if not (patch in ['rectangle', 'ellipse']):
             print('Only patch=\'rectangle\' or \'ellipse\' supported. ')
-            return -1
+            return
         for x, y, width, height, angle in zip(*self.pos2xy(poslist),
                                               *listing(minlist, majlist, palist)):
             for ch, axnow in enumerate(self.ax):
@@ -620,7 +620,7 @@ class PlotAstroData(AstroFrame):
         """
         if length == 0 or label == '':
             print('Please input length and label.')
-            return -1
+            return
         if fontsize is None:
             fontsize = 20 if len(self.ax) == 1 else 15
         for ch, axnow in enumerate(self.ax):
@@ -851,7 +851,7 @@ class PlotAstroData(AstroFrame):
         c = set_minmax(c, stretch, stretchscale, stretchpower, sigma, _kw)
         if not (np.shape(c[0]) == np.shape(c[1]) == np.shape(c[2])):
             print('RGB shapes mismatch. Skip add_rgb.')
-            return -1
+            return
 
         for i in range(3):
             c[i] = (c[i] - _kw['vmin'][i]) \
@@ -1056,7 +1056,7 @@ class PlotAstroData(AstroFrame):
         """
         if len(self.ax) > 1:
             print('get_figax is not supported with channel maps')
-            return -1
+            return
         return self.fig, self.ax[0]
 
 
@@ -1192,7 +1192,7 @@ def plotslice(length: float, dx: float | None = None, pa: float = 0,
     f.read(d)
     if np.ndim(d.data) > 2:
         print('Only 2D map is supported.')
-        return -1
+        return
 
     r, z = d.slice(length=length, pa=pa, dx=dx)
     xunit = 'arcsec' if dist == 1 else 'au'
