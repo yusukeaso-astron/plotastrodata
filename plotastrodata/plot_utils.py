@@ -475,14 +475,14 @@ class PlotAstroData(AstroFrame):
     def add_beam(self,
                  beam: list[float | None, float | None, float | None] = [None, None, None],
                  beamcolor: str = 'gray',
-                 poslist: list[str | list[float, float]] | None = None,
+                 beampos: list[float, float] | None = None,
                  dv: float | None = None, pvpa: float | None = None) -> None:
         """Use add_region().
 
         Args:
             beam (list, optional): [bmaj, bmin, bpa]. Defaults to [None, None, None].
             beamcolor (str, optional): matplotlib color. Defaults to 'gray'.
-            poslist (list, optional): text or relative. Defaults to None.
+            beampos (list, optional): relative position. Defaults to None.
             dv (float, optional): velocity resolution for a PV diagram. Defaults to None.
             pvpa (float, optional): position angle of the PV cut in the unit of degrees. Defaults to None.
         """
@@ -498,38 +498,42 @@ class PlotAstroData(AstroFrame):
             p = np.radians(beam[2] - pvpa)
             b = 1 / np.hypot(np.cos(p) / beam[0], np.sin(p) / beam[1]) / self.rmax
             b = np.array([b, dv])
-            if poslist is None:
-                poslist = [max(0.35 * b[0], 0.1), 0.1]
+            if beampos is None:
+                beampos = [max(0.35 * b[0], 0.1), 0.1]
             if self.swapxy:
-                poslist = np.transpose(poslist)
+                beampos = np.transpose(beampos)
                 b = np.transpose(b)
             b = np.append(b, 0)
             patch = 'rectangle'
         else:
-            if poslist is None:
-                poslist = [max(0.35 * beam[0] / self.rmax, 0.1)] * 2
+            if beampos is None:
+                beampos = [max(0.35 * beam[0] / self.rmax, 0.1)] * 2
             b = beam
             patch = 'ellipse'
-        self.add_region(patch, poslist, *b,
+        self.add_region(patch=patch, poslist=beampos,
+                        majlist=b[0], minlist=b[1], palist=b[2],
                         include_chan=include_chan,
                         facecolor=beamcolor, edgecolor=None)
 
-    def _beam(self, show_beam: bool, beamcolor: str | list[str], d: AstroData):
+    def _beam(self, show_beam: bool, beamcolor: str | list[str],
+              beampos: list[float, float] | None, d: AstroData) -> None:
         """Internal wrapper of add_beam().
 
         Args:
             show_beam (bool): Whether to show the beam(s).
             beamcolor (str | list[str]): Color name.
+            beampos (list): Relative position.
             d (AstroData): For reading the velocity resolution, beam, and pvpa.
         """
         if show_beam:
             dv = d.v[1] - d.v[0] if self.pv else None
             c = type(beamcolor) is list
-            beam = d.beam if c else [d.beam]
-            bc = beamcolor if c else [beamcolor]
-            pvpa = d.pvpa if c else [d.pvpa]
-            for i in range(len(bc)):
-                self.add_beam(beam=beam[i], beamcolor=bc[i], dv=dv, pvpa=pvpa[i])
+            blist = d.beam if c or np.ndim(d.beam) == 2 else [d.beam]
+            bclist = beamcolor if c else [beamcolor]
+            bplist = beampos if c else [beampos]
+            palist = d.pvpa if c else [d.pvpa]
+            for b, bc, bp, pa in zip(blist, bclist, bplist, palist):
+                self.add_beam(beam=b, beamcolor=bc, beampos=bp, dv=dv, pvpa=pa)
 
     def add_marker(self, poslist: list[str | list[float, float]] = [],
                    include_chan: list[int] | None = None, **kwargs) -> None:
@@ -667,7 +671,7 @@ class PlotAstroData(AstroFrame):
                   cbformat: float = '%.1e', cbticks: list[float] | None = None,
                   cbticklabels: list[str] | None = None, cblocation: str = 'right',
                   show_beam: bool = True, beamcolor: str = 'gray',
-                  **kwargs) -> None:
+                  beampos: list[float, float] | None = None, **kwargs) -> None:
         """Use Axes.pcolormesh of matplotlib. kwargs must include the arguments of AstroData to specify the data to be plotted.
 
         Args:
@@ -683,6 +687,7 @@ class PlotAstroData(AstroFrame):
             cblocation (str, optional): 'left', 'top', 'left', 'right'. Only for 2D images. Defaults to 'right'.
             show_beam (bool, optional): Defaults to True.
             beamcolor (str, optional): Matplotlib color. Defaults to 'gray'.
+            beampos (list, optional): Relative position. Defaults to None.
         """
         _kw = {'cmap': 'cubehelix', 'alpha': 1, 'edgecolors': 'none', 'zorder': 1}
         _kw.update(kwargs)
@@ -743,12 +748,12 @@ class PlotAstroData(AstroFrame):
                     ticklin = 1 + (1 - stretchpower) * np.log(10) * t
                     ticklin = cmin_org * ticklin**(1 / (1 - stretchpower))
                 cb.set_ticklabels([f'{d:{cbformat[1:]}}' for d in ticklin])
-        self._beam(show_beam, beamcolor, d)
+        self._beam(show_beam, beamcolor, beampos, d)
 
     def add_contour(self, xskip: int = 1, yskip: int = 1,
                     levels: list[float] = [-12, -6, -3, 3, 6, 12, 24, 48, 96, 192, 384],
                     show_beam: bool = True, beamcolor: str = 'gray',
-                    **kwargs) -> None:
+                    beampos: list[float, float] | None = None, **kwargs) -> None:
         """Use Axes.contour of matplotlib. kwargs must include the arguments of AstroData to specify the data to be plotted.
 
         Args:
@@ -756,6 +761,7 @@ class PlotAstroData(AstroFrame):
             levels (list, optional): Contour levels in the unit of sigma. Defaults to [-12,-6,-3,3,6,12,24,48,96,192,384].
             show_beam (bool, optional): Defaults to True.
             beamcolor (str, optional): Matplotlib color. Defaults to 'gray'.
+            beampos (list, optional): Relative position. Defaults to None.
         """
         _kw = {'colors': 'gray', 'linewidths': 1.0, 'zorder': 2}
         _kw.update(kwargs)
@@ -769,7 +775,7 @@ class PlotAstroData(AstroFrame):
             c = [c[self.channelnumber]]
         for axnow, cnow in zip(self.ax, c):
             axnow.contour(x, y, cnow, np.sort(levels) * sigma, **_kw)
-        self._beam(show_beam, beamcolor, d)
+        self._beam(show_beam, beamcolor, beampos, d)
 
     def add_segment(self, ampfits: str = None, angfits: str = None,
                     Ufits: str = None, Qfits: str = None,
@@ -782,7 +788,7 @@ class PlotAstroData(AstroFrame):
                     rotation: float = 0.,
                     cutoff: float = 3.,
                     show_beam: bool = True, beamcolor: str = 'gray',
-                    **kwargs) -> None:
+                    beampos: list[float, float] | None = None, **kwargs) -> None:
         """Use Axes.quiver of matplotlib. kwargs must include the arguments of AstroData to specify the data to be plotted. fitsimage = [ampfits, angfits, Ufits, Qfits]. data = [amp, ang, stU, stQ].
 
         Args:
@@ -801,6 +807,7 @@ class PlotAstroData(AstroFrame):
             cutoff (float, optional): Used when amp and ang are calculated from Stokes U and Q. In the unit of sigma. Defaults to 3..
             show_beam (bool, optional): Defaults to True.
             beamcolor (str, optional): Matplotlib color. Defaults to 'gray'.
+            beampos (list, optional): Relative position. Defaults to None.
         """
         _kw = {'angles': 'xy', 'scale_units': 'xy', 'color': 'gray',
                'pivot': 'mid', 'headwidth': 0, 'headlength': 0,
@@ -835,7 +842,7 @@ class PlotAstroData(AstroFrame):
         _kw['scale'] = 1 if len(x) == 1 else 1. / np.abs(x[1] - x[0])
         for axnow, unow, vnow in zip(self.ax, U, V):
             axnow.quiver(x, y, unow, vnow, **_kw)
-        self._beam(show_beam, [beamcolor] * 2, d)
+        self._beam(show_beam, beamcolor, beampos, d)
 
     def add_rgb(self, xskip: int = 1, yskip: int = 1,
                 stretch: list[str, str, str] = ['linear'] * 3,
@@ -843,6 +850,7 @@ class PlotAstroData(AstroFrame):
                 stretchpower: float = 0,
                 show_beam: bool = True,
                 beamcolor: list[str, str, str] = ['red', 'green', 'blue'],
+                beampos: list[list[float, float] | None] = [None, None, None],
                 **kwargs) -> None:
         """Use PIL.Image and imshow of matplotlib. kwargs must include the arguments of AstroData to specify the data to be plotted. A three-element array ([red, green, blue]) is supposed for all arguments, except for xskip, yskip and show_beam, including vmax and vmin.
 
@@ -852,7 +860,8 @@ class PlotAstroData(AstroFrame):
             stretchscale (float, optional): color scale is asinh(data / stretchscale). Defaults to None.
             stretchpower (float, optional): color scale is ((data / vmin)**(1 - stretchpower) - 1) / (1 - stretchpower) / ln(10). 0 means the linear scale. 1 means the logarithmic scale. Defaults to 0.
             show_beam (bool, optional): Defaults to True.
-            beamcolor (str, optional): Matplotlib color. Defaults to 'gray'.
+            beamcolor (list, optional): Matplotlib color. Defaults to ['red', 'green', 'blue'].
+            beampos (list, optional): Relative position. Defaults to None.
         """
         from PIL import Image
 
@@ -885,7 +894,7 @@ class PlotAstroData(AstroFrame):
                     im.putpixel((i, j), value)
             axnow.imshow(im, extent=[x[0], x[-1], y[0], y[-1]])
             axnow.set_aspect(np.abs((x[-1]-x[0]) / (y[-1]-y[0])))
-        self._beam(show_beam, beamcolor, d)
+        self._beam(show_beam, beamcolor, beampos, d)
 
     def set_axis(self, title: dict | str | None = None, **kwargs) -> None:
         """Use Axes.set_* of matplotlib. kwargs can include the arguments of PlotAxes2D to adjust x and y axis.
