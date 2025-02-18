@@ -44,7 +44,7 @@ def quadrantmean(data: np.ndarray, x: np.ndarray, y: np.ndarray,
     """
     if np.ndim(data) != 2:
         print('data must be 2D.')
-        return -1
+        return
 
     dx, dy = x[1] - x[0], y[1] - y[0]
     nx = int(np.floor(max(np.abs(x[0]), np.abs(x[-1])) / dx))
@@ -80,7 +80,7 @@ def RGIxy(y: np.ndarray, x: np.ndarray, data: np.ndarray,
     """
     if not np.ndim(data) in [2, 3, 4]:
         print('data must be 2D, 3D, or 4D.')
-        return -1
+        return
 
     c4d = to4dim(data)
     c4d[np.isnan(c4d)] = 0
@@ -113,7 +113,7 @@ def RGIxyv(v: np.ndarray, y: np.ndarray, x: np.ndarray, data: np.ndarray,
     """
     if not np.ndim(data) in [3, 4]:
         print('data must be 3D or 4D.')
-        return -1
+        return
 
     c4d = to4dim(data)
     c4d[np.isnan(c4d)] = 0
@@ -268,7 +268,7 @@ class AstroData():
         """
         if None in self.beam:
             print('No beam.')
-            return False
+            return
 
         bmaj, bmin, bpa = self.beam
         self.rotate(-bpa)
@@ -417,7 +417,7 @@ class AstroData():
             mask = dataformask
         if np.shape(self.data) != np.shape(mask):
             print('The dataformask has a different shape.')
-            return False
+            return
 
         if len(includepix) == 2:
             self.data[(mask < includepix[0]) + (includepix[1] < mask)] = np.nan
@@ -446,7 +446,7 @@ class AstroData():
         """
         if np.ndim(self.data) != 3 or self.v is None:
             print('Data must be 3D with the v, y, and x axes.')
-            return False
+            return
 
         if len(coords) > 0:
             xlist, ylist = coord2xy(coords, self.center) * 3600.
