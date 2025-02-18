@@ -779,7 +779,7 @@ class AstroFrame():
                         header['BMIN'] = d.beam[i][1] / 3600
                     d.data[i] = d.data[i] * Jy2K(header=header)
                     d.sigma[i] = d.sigma[i] * Jy2K(header=header)
-                if self.pv:
+                if self.pv and None not in d.beam[i]:
                     bmaj, bmin, bpa = d.beam_org[i] = d.beam[i]
                     if d.pvpa[i] is None:
                         d.pvpa[i] = bmaj
