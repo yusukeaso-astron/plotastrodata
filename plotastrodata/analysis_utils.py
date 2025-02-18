@@ -200,6 +200,7 @@ class AstroData():
         self.bunit = ''
         self.fitsimage_org = None
         self.sigma_org = None
+        self.beam_org = None
         self.fitsheader = None
         self.pv = False
 
@@ -705,6 +706,8 @@ class AstroFrame():
             d.fitsimage_org = [d.fitsimage_org] * d.n
         if type(d.sigma_org) is not list:
             d.sigma_org = [d.sigma_org] * d.n
+        if type(d.beam_org) is not list:
+            d.beam_org = [d.beam_org] * d.n
         if type(d.fitsheader) is not list:
             d.fitsheader = [d.fitsheader] * d.n
         if type(d.pv) is not list:
@@ -776,6 +779,14 @@ class AstroFrame():
                         header['BMIN'] = d.beam[i][1] / 3600
                     d.data[i] = d.data[i] * Jy2K(header=header)
                     d.sigma[i] = d.sigma[i] * Jy2K(header=header)
+                if self.pv:
+                    bmaj, bmin, bpa = d.beam_org[i] = d.beam[i]
+                    if d.pvpa[i] is None:
+                        d.pvpa[i] = bmaj
+                        print('pvpa is not specified. pvpa=bmaj is assumed.')
+                    p = np.radians(bpa - d.pvpa[i])
+                    b = 1 / np.hypot(np.cos(p) / bmaj, np.sin(p) / bmin)
+                    d.beam[i] = np.array([b, d.v[1] - d.v[0], 0])
             d.Tb[i] = False
             d.cfactor[i] = 1
             if d.fitsimage[i] is not None:
@@ -793,6 +804,7 @@ class AstroFrame():
             d.bunit = d.bunit[0]
             d.fitsimage_org = d.fitsimage_org[0]
             d.sigma_org = d.sigma_org[0]
+            d.beam_org = d.beam_org[0]
             d.fitsheader = d.fitsheader[0]
             d.pv = d.pv[0]
             d.pvpa = d.pvpa[0]

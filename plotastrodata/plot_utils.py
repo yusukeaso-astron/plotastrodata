@@ -475,65 +475,35 @@ class PlotAstroData(AstroFrame):
     def add_beam(self,
                  beam: list[float | None, float | None, float | None] = [None, None, None],
                  beamcolor: str = 'gray',
-                 beampos: list[float, float] | None = None,
-                 dv: float | None = None, pvpa: float | None = None) -> None:
-        """Use add_region().
+                 beampos: list[float, float] | None = None) -> None:
+        """Use add_region(). All the arguments may be a list of each format.
 
         Args:
             beam (list, optional): [bmaj, bmin, bpa]. Defaults to [None, None, None].
             beamcolor (str, optional): matplotlib color. Defaults to 'gray'.
-            beampos (list, optional): relative position. Defaults to None.
-            dv (float, optional): velocity resolution for a PV diagram. Defaults to None.
-            pvpa (float, optional): position angle of the PV cut in the unit of degrees. Defaults to None.
+            beampos (list, optional): Relative position. Defaults to None.
         """
-        if None in beam:
-            print('No beam to plot.')
-            return False
-
         include_chan = self.bottomleft if self.channelnumber is None else self.allchan
-        if self.pv:
-            if pvpa is None:
-                pvpa = beam[0]
-                print('pvpa is not specified. pvpa=bmaj is assumed.')
-            p = np.radians(beam[2] - pvpa)
-            b = 1 / np.hypot(np.cos(p) / beam[0], np.sin(p) / beam[1]) / self.rmax
-            b = np.array([b, dv])
-            if beampos is None:
-                beampos = [max(0.35 * b[0], 0.1), 0.1]
+        patch = 'rectangle' if self.pv else 'ellipse'
+        blist = [beam] if np.ndim(beam) == 1 else beam
+        n = len(blist)
+        bclist = beamcolor if type(beamcolor) is list else [beamcolor] * n
+        bplist = beampos if beampos == [None] * 3 or np.ndim(beampos) == 2 else [beampos] * n
+        for (bmaj, bmin, bpa), bc, bp in zip(blist, bclist, bplist):
+            if None in [bmaj, bmin, bpa]:
+                print('No beam to plot.')
+                continue
+            a = max(0.35 * bmaj / self.rmax, 0.1)
+            if bp is None:
+                bp = [a, 0.1 if self.pv else a]
             if self.swapxy:
-                beampos = np.transpose(beampos)
-                b = np.transpose(b)
-            b = np.append(b, 0)
-            patch = 'rectangle'
-        else:
-            if beampos is None:
-                beampos = [max(0.35 * beam[0] / self.rmax, 0.1)] * 2
-            b = beam
-            patch = 'ellipse'
-        self.add_region(patch=patch, poslist=beampos,
-                        majlist=b[0], minlist=b[1], palist=b[2],
-                        include_chan=include_chan,
-                        facecolor=beamcolor, edgecolor=None)
-
-    def _beam(self, show_beam: bool, beamcolor: str | list[str],
-              beampos: list[float, float] | None, d: AstroData) -> None:
-        """Internal wrapper of add_beam().
-
-        Args:
-            show_beam (bool): Whether to show the beam(s).
-            beamcolor (str | list[str]): Color name.
-            beampos (list): Relative position.
-            d (AstroData): For reading the velocity resolution, beam, and pvpa.
-        """
-        if show_beam:
-            dv = d.v[1] - d.v[0] if self.pv else None
-            c = type(beamcolor) is list
-            blist = d.beam if c or np.ndim(d.beam) == 2 else [d.beam]
-            bclist = beamcolor if c else [beamcolor]
-            bplist = beampos if c else [beampos]
-            palist = d.pvpa if c else [d.pvpa]
-            for b, bc, bp, pa in zip(blist, bclist, bplist, palist):
-                self.add_beam(beam=b, beamcolor=bc, beampos=bp, dv=dv, pvpa=pa)
+                bp = np.transpose(bp)
+                if self.pv:
+                    bmaj, bmin = bmin, bmaj
+            self.add_region(patch=patch, poslist=bp,
+                            majlist=bmaj, minlist=bmin, palist=bpa,
+                            include_chan=include_chan,
+                            facecolor=bc, edgecolor=None)
 
     def add_marker(self, poslist: list[str | list[float, float]] = [],
                    include_chan: list[int] | None = None, **kwargs) -> None:
@@ -748,7 +718,8 @@ class PlotAstroData(AstroFrame):
                     ticklin = 1 + (1 - stretchpower) * np.log(10) * t
                     ticklin = cmin_org * ticklin**(1 / (1 - stretchpower))
                 cb.set_ticklabels([f'{d:{cbformat[1:]}}' for d in ticklin])
-        self._beam(show_beam, beamcolor, beampos, d)
+        if show_beam:
+            self.add_beam(beam=beam, beamcolor=beamcolor, beampos=beampos)
 
     def add_contour(self, xskip: int = 1, yskip: int = 1,
                     levels: list[float] = [-12, -6, -3, 3, 6, 12, 24, 48, 96, 192, 384],
@@ -775,7 +746,8 @@ class PlotAstroData(AstroFrame):
             c = [c[self.channelnumber]]
         for axnow, cnow in zip(self.ax, c):
             axnow.contour(x, y, cnow, np.sort(levels) * sigma, **_kw)
-        self._beam(show_beam, beamcolor, beampos, d)
+        if show_beam:
+            self.add_beam(beam=beam, beamcolor=beamcolor, beampos=beampos)
 
     def add_segment(self, ampfits: str = None, angfits: str = None,
                     Ufits: str = None, Qfits: str = None,
@@ -820,8 +792,8 @@ class PlotAstroData(AstroFrame):
         c, x, y, v, beam, sigma = d.data, d.x, d.y, d.v, d.beam, d.sigma
         amp, ang, stU, stQ = c
         sigmaU, sigmaQ = sigma[2:]
-        self.beam = beam
         beam = [beam[i] for i in range(4) if beam[i][0] is not None][0]
+        self.beam = beam
         if stU is not None and stQ is not None:
             self.sigma = sigma = (sigmaU + sigmaQ) / 2.
             ang = np.degrees(np.arctan2(stU, stQ) / 2.)
@@ -842,7 +814,8 @@ class PlotAstroData(AstroFrame):
         _kw['scale'] = 1 if len(x) == 1 else 1. / np.abs(x[1] - x[0])
         for axnow, unow, vnow in zip(self.ax, U, V):
             axnow.quiver(x, y, unow, vnow, **_kw)
-        self._beam(show_beam, beamcolor, beampos, d)
+        if show_beam:
+            self.add_beam(beam=beam, beamcolor=beamcolor, beampos=beampos)
 
     def add_rgb(self, xskip: int = 1, yskip: int = 1,
                 stretch: list[str, str, str] = ['linear'] * 3,
@@ -894,7 +867,8 @@ class PlotAstroData(AstroFrame):
                     im.putpixel((i, j), value)
             axnow.imshow(im, extent=[x[0], x[-1], y[0], y[-1]])
             axnow.set_aspect(np.abs((x[-1]-x[0]) / (y[-1]-y[0])))
-        self._beam(show_beam, beamcolor, beampos, d)
+        if show_beam:
+            self.add_beam(beam=beam, beamcolor=beamcolor, beampos=beampos)
 
     def set_axis(self, title: dict | str | None = None, **kwargs) -> None:
         """Use Axes.set_* of matplotlib. kwargs can include the arguments of PlotAxes2D to adjust x and y axis.
