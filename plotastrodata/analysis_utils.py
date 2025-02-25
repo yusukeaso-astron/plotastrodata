@@ -786,7 +786,7 @@ class AstroFrame():
                         print('pvpa is not specified. pvpa=bmaj is assumed.')
                     p = np.radians(bpa - d.pvpa[i])
                     b = 1 / np.hypot(np.cos(p) / bmaj, np.sin(p) / bmin)
-                    d.beam[i] = np.array([b, d.v[1] - d.v[0], 0])
+                    d.beam[i] = np.array([d.v[1] - d.v[0], b, 0])
             d.Tb[i] = False
             d.cfactor[i] = 1
             if d.fitsimage[i] is not None:
