@@ -118,12 +118,14 @@ class PlotAxes2D():
             ax.set_aspect(1)
         if self.xticks is None:
             self.xticks = ax.get_xticks()
+            if self.xscale == 'log':
+                self.xticks, self.xticklabels \
+                    = logticks(self.xticks, self.xlim)
         if self.yticks is None:
             self.yticks = ax.get_yticks()
-        if self.xscale == 'log':
-            self.xticks, self.xticklabels = logticks(self.xticks, self.xlim)
-        if self.yscale == 'log':
-            self.yticks, self.yticklabels = logticks(self.yticks, self.ylim)
+            if self.yscale == 'log':
+                self.yticks, self.yticklabels \
+                    = logticks(self.yticks, self.ylim)
         ax.set_xticks(self.xticks)
         ax.set_yticks(self.yticks)
         if self.xticksminor is not None:
