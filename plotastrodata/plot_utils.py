@@ -500,8 +500,7 @@ class PlotAstroData(AstroFrame):
                 bp = [a, 0.1 if self.pv else a]
             if self.swapxy:
                 bp = np.transpose(bp)
-                if self.pv:
-                    bmaj, bmin = bmin, bmaj
+                bpa = 90 - bpa
             self.add_region(patch=patch, poslist=bp,
                             majlist=bmaj, minlist=bmin, palist=bpa,
                             include_chan=include_chan,
