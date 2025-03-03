@@ -80,9 +80,9 @@ class PlotAxes2D():
         xticklabels (list, optional): Defaults to None.
         yticklabels (list, optional): Defaults to None.
         xticksminor (list or int, optional): If int, int times more than xticks. Defaults to None.
-        yticksminor (list ot int, optional): Defaults to None. If int, int times more than xticks. Defaults to None.
+        yticksminor (list or int, optional): Defaults to None. If int, int times more than xticks. Defaults to None.
         grid (dict, optional): True means merely grid(). Defaults to None.
-        aspect (float, optional): Defaults to None.
+        aspect (dict or float, optional): Defaults to None.
     """
     samexy: bool = True
     loglog: bool | None = None
@@ -99,7 +99,7 @@ class PlotAxes2D():
     xticksminor: list | int = None
     yticksminor: list | int = None
     grid: dict | None = None
-    aspect: float | None = None
+    aspect: dict | float | None = None
 
     def set_xyaxes(self, ax):
         if self.loglog is not None:
@@ -159,7 +159,10 @@ class PlotAxes2D():
         if self.grid is not None:
             ax.grid(**({} if self.grid is True else self.grid))
         if self.aspect is not None:
-            ax.set_aspect(self.aspect)
+            if type(self.aspect) is dict:
+                ax.set_aspect(**self.aspect)
+            else:
+                ax.set_aspect(self.aspect)
 
 
 def set_minmax(data: np.ndarray, stretch: str, stretchscale: float,
