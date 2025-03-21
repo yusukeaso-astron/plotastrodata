@@ -748,7 +748,7 @@ class AstroFrame():
                                    restfreq=d.restfreq[i], vsys=self.vsys,
                                    pv=self.pv)
                 d.beam[i] = fd.get_beam(dist=self.dist)
-                d.bunit[i] = d.fitsheader[i]['BUNIT']
+                d.bunit[i] = fd.get_header('BUNIT')
             if d.data[i] is not None:
                 d.pv[i] = self.pv
                 d.sigma_org[i] = d.sigma[i]

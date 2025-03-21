@@ -128,6 +128,13 @@ class FitsData:
         Returns:
             str: The central coordinates.
         """
+        cunit1 = self.get_header('CUNIT1').strip()
+        cunit2 = self.get_header('CUNIT2').strip()
+        good = (cunit1 in ['deg', 'DEG', 'degree', 'DEGREE']
+                and cunit2 in ['deg', 'DEG', 'degree', 'DEGREE'])
+        if not good:
+            print(f'CUNIT1=\'{cunit1}\' and CUNIT2=\'{cunit2}\'. \'center\' is ignored.')
+            return None
         ra_deg = self.get_header('CRVAL1')
         dec_deg = self.get_header('CRVAL2')
         radesys = self.get_header('RADESYS')
