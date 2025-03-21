@@ -65,8 +65,8 @@ def quadrantmean(data: np.ndarray, x: np.ndarray, y: np.ndarray,
 
 
 def RGIxy(y: np.ndarray, x: np.ndarray, data: np.ndarray,
-          yxnew: tuple[np.ndarray, np.ndarray] | None = None
-          ) -> object | np.ndarray:
+          yxnew: tuple[np.ndarray, np.ndarray] | None = None,
+          **kwargs) -> object | np.ndarray:
     """RGI for x and y at each channel.
 
     Args:
@@ -82,9 +82,12 @@ def RGIxy(y: np.ndarray, x: np.ndarray, data: np.ndarray,
         print('data must be 2D, 3D, or 4D.')
         return
 
+    _kw = {'bounds_error': False, 'fill_value': np.nan,
+           'method': 'linear'}
+    _kw.update(kwargs)
     c4d = to4dim(data)
     c4d[np.isnan(c4d)] = 0
-    f = [[RGI((y, x), c2d, bounds_error=False, fill_value=np.nan)
+    f = [[RGI((y, x), c2d, **_kw)
           for c2d in c3d] for c3d in c4d]
     if yxnew is None:
         if len(f) == 1:
@@ -97,8 +100,8 @@ def RGIxy(y: np.ndarray, x: np.ndarray, data: np.ndarray,
 
 
 def RGIxyv(v: np.ndarray, y: np.ndarray, x: np.ndarray, data: np.ndarray,
-           vyxnew: tuple[np.ndarray, np.ndarray, np.ndarray] | None = None
-           ) -> object | np.ndarray:
+           vyxnew: tuple[np.ndarray, np.ndarray, np.ndarray] | None = None,
+           **kwargs) -> object | np.ndarray:
     """RGI in the x-y-v space.
 
     Args:
@@ -115,9 +118,12 @@ def RGIxyv(v: np.ndarray, y: np.ndarray, x: np.ndarray, data: np.ndarray,
         print('data must be 3D or 4D.')
         return
 
+    _kw = {'bounds_error': False, 'fill_value': np.nan,
+           'method': 'linear'}
+    _kw.update(kwargs)
     c4d = to4dim(data)
     c4d[np.isnan(c4d)] = 0
-    f = [RGI((v, y, x), c3d, bounds_error=False, fill_value=np.nan) for c3d in c4d]
+    f = [RGI((v, y, x), c3d, **_kw) for c3d in c4d]
     if vyxnew is None:
         if len(f) == 1:
             f = f[0]
@@ -126,8 +132,8 @@ def RGIxyv(v: np.ndarray, y: np.ndarray, x: np.ndarray, data: np.ndarray,
         return np.squeeze([f3d(tuple(vyxnew)) for f3d in f])
 
 
-def filled2d(data: np.ndarray, x: np.ndarray, y: np.ndarray, n: int = 1
-             ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def filled2d(data: np.ndarray, x: np.ndarray, y: np.ndarray, n: int = 1,
+             **kwargs) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Fill 2D data, 1D x, and 1D y by a factor of n using RGI.
 
     Args:
@@ -141,7 +147,8 @@ def filled2d(data: np.ndarray, x: np.ndarray, y: np.ndarray, n: int = 1
     """
     xnew = np.linspace(x[0], x[-1], n * (len(x) - 1) + 1)
     ynew = np.linspace(y[0], y[-1], n * (len(y) - 1) + 1)
-    d = RGIxy(y, x, data, np.meshgrid(ynew, xnew, indexing='ij'))
+    d = RGIxy(y, x, data, np.meshgrid(ynew, xnew, indexing='ij'),
+              **kwargs)
     return d, xnew, ynew
 
 
@@ -230,7 +237,8 @@ class AstroData():
         self.data = np.squeeze(d)
         _, self.v, self.y, self.x = grid
 
-    def centering(self, includexy: bool = True, includev: bool = False):
+    def centering(self, includexy: bool = True, includev: bool = False,
+                  **kwargs):
         """Spatial regridding to set the center at (x,y,v)=(0,0,0).
 
         Args:
@@ -244,11 +252,13 @@ class AstroData():
             vnew = self.v - self.v[np.argmin(np.abs(self.v))]
         if includexy and includev:
             self.data = RGIxyv(self.v, self.y, self.x, self.data,
-                               np.meshgrid(vnew, ynew, xnew, indexing='ij'))
+                               np.meshgrid(vnew, ynew, xnew, indexing='ij'),
+                               **kwargs)
             self.v, self.y, self.x = vnew, ynew, xnew
         elif includexy:
             self.data = RGIxy(self.y, self.x, self.data,
-                              np.meshgrid(ynew, xnew, indexing='ij'))
+                              np.meshgrid(ynew, xnew, indexing='ij'),
+                              **kwargs)
             self.y, self.x = ynew, xnew
         elif includev:
             nx, ny, nv = len(self.x), len(self.y), len(self.v)
@@ -286,7 +296,7 @@ class AstroData():
         self.beam[1] = self.beam[0]
         self.beam[2] = 0
 
-    def deproject(self, pa: float = 0, incl: float = 0):
+    def deproject(self, pa: float = 0, incl: float = 0, **kwargs):
         """Exapnd by a factor of 1/cos(incl) in the direction of pa+90 deg.
 
         Args:
@@ -296,7 +306,7 @@ class AstroData():
         ci = np.cos(np.radians(incl))
         A = np.linalg.multi_dot([Mrot(pa), Mfac(1, ci), Mrot(-pa)])
         yxnew = dot2d(A, np.meshgrid(self.y, self.x, indexing='ij'))
-        self.data = RGIxy(self.y, self.x, self.data, yxnew)
+        self.data = RGIxy(self.y, self.x, self.data, yxnew, **kwargs)
         if None not in self.beam:
             bmaj, bmin, bpa = self.beam
             a, b = np.linalg.multi_dot([Mfac(1/bmaj, 1/bmin), Mrot(pa-bpa),
@@ -494,19 +504,19 @@ class AstroData():
             gfitres = {'best': best, 'error': error}
         return v, prof, gfitres
 
-    def rotate(self, pa: float = 0):
+    def rotate(self, pa: float = 0, **kwargs):
         """Counter clockwise rotation with respect to the center.
 
         Args:
             pa (float, optional): Position angle in the unit of degree. Defaults to 0.
         """
         yxnew = dot2d(Mrot(-pa), np.meshgrid(self.y, self.x, indexing='ij'))
-        self.data = RGIxy(self.y, self.x, self.data, yxnew)
+        self.data = RGIxy(self.y, self.x, self.data, yxnew, **kwargs)
         if self.beam[2] is not None:
             self.beam[2] = self.beam[2] + pa
 
     def slice(self, length: float = 0, pa: float = 0,
-              dx: float | None = None) -> np.ndarray:
+              dx: float | None = None, **kwargs) -> np.ndarray:
         """Get 1D slice with given a length and a position-angle.
 
         Args:
@@ -523,7 +533,7 @@ class AstroData():
         r = np.linspace(-n, n, 2 * n + 1) * dx
         pa_rad = np.radians(pa)
         yg, xg = r * np.cos(pa_rad), r * np.sin(pa_rad)
-        z = RGIxy(self.y, self.x, self.data, (yg, xg))
+        z = RGIxy(self.y, self.x, self.data, (yg, xg), **kwargs)
         return np.array([r, z])
 
     def todict(self) -> dict:
