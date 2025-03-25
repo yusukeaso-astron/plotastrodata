@@ -51,16 +51,16 @@ def quadrantmean(data: np.ndarray, x: np.ndarray, y: np.ndarray,
     ny = int(np.floor(max(np.abs(y[0]), np.abs(y[-1])) / dy))
     xnew = np.linspace(-nx * dx, nx * dx, 2 * nx + 1)
     ynew = np.linspace(-ny * dy, ny * dy, 2 * ny + 1)
-    Xnew, Ynew = np.meshgrid(x, y)
-    if quadrants == '13':
-        f = RGI((y, x), data, bounds_error=False, fill_value=np.nan)
-        datanew = f((Ynew, Xnew))
-    elif quadrants == '24':
-        f = RGI((y, -x), data, bounds_error=False, fill_value=np.nan)
+    Xnew, Ynew = np.meshgrid(xnew, ynew)
+    if quadrants in ['13', '24']:
+        s = 1 if quadrants == '13' else -1
+        f = RGI((y, s * x), data, bounds_error=False, fill_value=np.nan)
         datanew = f((Ynew, Xnew))
     else:
         print('quadrants must be \'13\' or \'24\'.')
     datanew = (datanew + datanew[::-1, ::-1]) / 2.
+    print(np.shape(datanew), np.shape(xnew), np.shape(ynew))
+    print(np.shape(datanew[ny:, nx:]), np.shape(xnew[nx:]), np.shape(ynew[ny:]))
     return datanew[ny:, nx:], xnew[nx:], ynew[ny:]
 
 
