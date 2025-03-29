@@ -11,7 +11,7 @@ dependencies:
   - emcee
   - matplotlib
   - multiprocess
-  - numpy
+  - numpy>=2.0
   - pillow
   - plotly
   - ptemcee
