@@ -964,9 +964,9 @@ class PlotAstroData(AstroFrame):
         def makegrid(second, mode):
             second = float(second)
             if mode == 'ra':
-                scale, factor, sec = 1.5, 15 * np.cos(dec), r'$^{\rm s}$'
+                scale, factor, sec = 1.5, 15 * np.cos(dec), r'$^\mathrm{s}$'
             else:
-                scale, factor, sec = 0.5, 1, r'$^{\rm \prime\prime}$'
+                scale, factor, sec = 0.5, 1, r'$^{\prime\prime}$'
             sec = r'.$\hspace{-0.4}$' + sec
             dorder = log2r - scale - (order := np.floor(log2r - scale))
             if 0.00 < dorder <= 0.33:
@@ -998,7 +998,7 @@ class PlotAstroData(AstroFrame):
         yticks, yticksminor, yticklabels = makegrid(dec_s, 'dec')
         ra_hm = get_hmdm(xy2coord([xticks[3] / 3600., 0], center), 0)
         dec_dm = get_hmdm(xy2coord([0, yticks[3] / 3600.], center), 1)
-        ra_hm = ra_hm.replace('h', r'$^{\rm h}$') + r'$^{\rm m}$'
+        ra_hm = ra_hm.replace('h', r'$^\mathrm{h}$') + r'$^\mathrm{m}$'
         dec_dm = dec_dm.replace('d', r'$^{\circ}$') + r'$^{\prime}$'
         xticklabels[3] = ra_hm + xticklabels[3]
         yticklabels[3] = dec_dm + '\n' + yticklabels[3]

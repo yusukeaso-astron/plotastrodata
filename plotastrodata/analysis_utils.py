@@ -59,8 +59,6 @@ def quadrantmean(data: np.ndarray, x: np.ndarray, y: np.ndarray,
     else:
         print('quadrants must be \'13\' or \'24\'.')
     datanew = (datanew + datanew[::-1, ::-1]) / 2.
-    print(np.shape(datanew), np.shape(xnew), np.shape(ynew))
-    print(np.shape(datanew[ny:, nx:]), np.shape(xnew[nx:]), np.shape(ynew[ny:]))
     return datanew[ny:, nx:], xnew[nx:], ynew[ny:]
 
 
@@ -759,7 +757,7 @@ class AstroFrame():
                                        vlim=self.vlim, pv=self.pv)
                 if grid[2] is not None and len(grid[2]) > 1 and grid[2][1] < grid[2][0]:
                     d.data[i], grid[2] = d.data[i][::-1], grid[2][::-1]
-                    print('Inverted velocity.')
+                    print('Velocity has been inverted.')
                 d.v = grid[2]
                 grid = grid[:3:2] if self.pv else grid[:2]
                 if self.swapxy:
