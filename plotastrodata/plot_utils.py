@@ -57,7 +57,7 @@ def logticks(ticks: list[float], lim: list[float, float]
     order = int(np.floor((np.log10(lim[1]))))
     b = (lim[1] // 10**order) * 10**order
     b = np.round(b, max(-order, 0))
-    newticks = np.sort(np.r_[a, ticks, b])
+    newticks = np.sort(np.unique(np.r_[a, ticks, b]))
     newlabels = [str(t if t < 1 else int(t)) for t in newticks]
     return newticks, newlabels
 
@@ -874,6 +874,31 @@ class PlotAstroData(AstroFrame):
         if show_beam:
             self.add_beam(beam=beam, beamcolor=beamcolor, beampos=beampos)
 
+    def _set_axis_shared(self, pa2: PlotAxes2D, title):
+        for ch, axnow in enumerate(self.ax):
+            pa2.set_xyaxes(axnow)
+            self.Xlim = pa2.xlim
+            self.Ylim = pa2.ylim
+            if not (ch in self.bottomleft):
+                plt.setp(axnow.get_xticklabels(), visible=False)
+                plt.setp(axnow.get_yticklabels(), visible=False)
+                axnow.set_xlabel('')
+                axnow.set_ylabel('')
+            if len(self.ax) == 1:
+                if self.fig is None:
+                    plt.figure(0).tight_layout()
+        if title is not None:
+            if len(self.ax) > 1:
+                t = {'y': 0.9}
+                t_in = {'t': title} if type(title) is str else title
+                t.update(t_in)
+                for i in range(self.npages):
+                    fig = plt.figure(i)
+                    fig.suptitle(**t)
+            else:
+                t = {'label': title} if type(title) is str else title
+                axnow.set_title(**t)
+
     def set_axis(self, title: dict | str | None = None, **kwargs) -> None:
         """Use Axes.set_* of matplotlib. kwargs can include the arguments of PlotAxes2D to adjust x and y axis.
 
@@ -902,27 +927,7 @@ class PlotAstroData(AstroFrame):
         if 'ylim' not in _kw:
             _kw['ylim'] = self.Ylim
         pa2 = kwargs2PlotAxes2D(_kw)
-        for ch, axnow in enumerate(self.ax):
-            pa2.set_xyaxes(axnow)
-            if not (ch in self.bottomleft):
-                plt.setp(axnow.get_xticklabels(), visible=False)
-                plt.setp(axnow.get_yticklabels(), visible=False)
-                axnow.set_xlabel('')
-                axnow.set_ylabel('')
-            if len(self.ax) == 1:
-                if self.fig is None:
-                    plt.figure(0).tight_layout()
-        if title is not None:
-            if len(self.ax) > 1:
-                t = {'y': 0.9}
-                t_in = {'t': title} if type(title) is str else title
-                t.update(t_in)
-                for i in range(self.npages):
-                    fig = plt.figure(i)
-                    fig.suptitle(**t)
-            else:
-                t = {'label': title} if type(title) is str else title
-                axnow.set_title(**t)
+        self._set_axis_shared(pa2=pa2, title=title)
 
     def set_axis_radec(self, center: str | None = None,
                        xlabel: str = 'R.A. (ICRS)',
@@ -1005,27 +1010,7 @@ class PlotAstroData(AstroFrame):
         pa2 = PlotAxes2D(True, None, 'linear', 'linear', self.Xlim, self.Ylim,
                          xlabel, ylabel, xticks, yticks, xticklabels,
                          yticklabels, xticksminor, yticksminor, grid)
-        for ch, axnow in enumerate(self.ax):
-            pa2.set_xyaxes(axnow)
-            if not (ch in self.bottomleft):
-                plt.setp(axnow.get_xticklabels(), visible=False)
-                plt.setp(axnow.get_yticklabels(), visible=False)
-                axnow.set_xlabel('')
-                axnow.set_ylabel('')
-            if len(self.ax) == 1:
-                if self.fig is None:
-                    plt.figure(0).tight_layout()
-        if title is not None:
-            if len(self.ax) > 1:
-                t = {'y': 0.9}
-                t_in = {'t': title} if type(title) is str else title
-                t.update(t_in)
-                for i in range(self.npages):
-                    fig = plt.figure(i)
-                    fig.suptitle(**t)
-            else:
-                t = {'label': title} if type(title) is str else title
-                axnow.set_title(**t)
+        self._set_axis_shared(pa2=pa2, title=title)
 
     def savefig(self, filename: str | None = None,
                 show: bool = False, **kwargs) -> None:
