@@ -575,9 +575,14 @@ class AstroData():
             if fhd is not None and isdeg(fhd['CUNIT2']):
                 h['CDELT2'] = h['CDELT2'] / 3600
         if None not in self.beam:
-            h['BMAJ'] = self.beam[0] / 3600
-            h['BMIN'] = self.beam[1] / 3600
-            h['BPA'] = self.beam[2]
+            if self.pv:
+                h['BMAJ'] = self.beam_org[0] / 3600
+                h['BMIN'] = self.beam_org[1] / 3600
+                h['BPA'] = self.beam_org[2]
+            else:    
+                h['BMAJ'] = self.beam[0] / 3600
+                h['BMIN'] = self.beam[1] / 3600
+                h['BPA'] = self.beam[2]
         h0 = header
         for k in h:
             if k not in h0:
