@@ -610,7 +610,7 @@ class PlotAstroData(AstroFrame):
 
     def add_scalebar(self, length: float = 0, label: str = '',
                      color: str = 'gray', barpos: tuple[float, float] = (0.8, 0.12),
-                     fontsize: float = None, linewidth: float = 3,
+                     fontsize: float | None = None, linewidth: float = 3,
                      bbox: dict = {'alpha': 0}) -> None:
         """Use Axes.text and Axes.plot of matplotlib.
 
@@ -622,8 +622,8 @@ class PlotAstroData(AstroFrame):
             fontsize (float, optional): None means 15 if one channel else 20. Defaults to None.
             linewidth (float, optional): Width of the bar. Defaults to 3.
         """
-        if length == 0 or label == '':
-            print('Please input length and label.')
+        if length == 0:
+            print('Please input length to add_scalebar().')
             return
         if fontsize is None:
             fontsize = 20 if len(self.ax) == 1 else 15
