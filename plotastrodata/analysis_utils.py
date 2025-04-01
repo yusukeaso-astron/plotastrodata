@@ -583,11 +583,8 @@ class AstroData():
                 h['BMAJ'] = self.beam[0] / 3600
                 h['BMIN'] = self.beam[1] / 3600
                 h['BPA'] = self.beam[2]
-        h0 = header
-        for k in h:
-            if k not in h0:
-                h0[k] = h[k]
-        data2fits(d=self.data, h=h0, templatefits=self.fitsimage_org,
+        h.update(header)
+        data2fits(d=self.data, h=h, templatefits=self.fitsimage_org,
                   fitsimage=fitsimage)
 
 
