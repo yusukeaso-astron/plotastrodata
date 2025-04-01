@@ -55,8 +55,8 @@ def isdeg(s: str) -> bool:
         return s.strip() in ['deg', 'DEG', 'degree', 'DEGREE']
     else:
         return False
-    
-    
+
+
 def _getframe(coord: str, s: str = '') -> tuple:
     """Internal function to pick up the frame name from the coordinates.
 

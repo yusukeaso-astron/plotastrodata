@@ -561,7 +561,7 @@ class AstroData():
         h['CRVAL1'] = cx
         h['CDELT1'] = self.x[1] - self.x[0]
         if fhd is not None and isdeg(fhd['CUNIT1']):
-                h['CDELT1'] = h['CDELT1'] / 3600
+            h['CDELT1'] = h['CDELT1'] / 3600
         vaxis = '2' if self.pv else '3'
         h[f'NAXIS{vaxis}'] = len(self.v)
         h[f'CRPIX{vaxis}'] = i = np.argmin(np.abs(self.v)) + 1
@@ -573,7 +573,7 @@ class AstroData():
             h['CRVAL2'] = cy
             h['CDELT2'] = self.y[1] - self.y[0]
             if fhd is not None and isdeg(fhd['CUNIT2']):
-                    h['CDELT2'] = h['CDELT2'] / 3600
+                h['CDELT2'] = h['CDELT2'] / 3600
         if None not in self.beam:
             h['BMAJ'] = self.beam[0] / 3600
             h['BMIN'] = self.beam[1] / 3600
