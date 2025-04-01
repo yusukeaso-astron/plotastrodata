@@ -874,7 +874,13 @@ class PlotAstroData(AstroFrame):
         if show_beam:
             self.add_beam(beam=beam, beamcolor=beamcolor, beampos=beampos)
 
-    def _set_axis_shared(self, pa2: PlotAxes2D, title):
+    def _set_axis_shared(self, pa2: PlotAxes2D, title: dict | str | None):
+        """Internal method used in set_axis() and set_axis_radec().
+
+        Args:
+            pa2 (PlotAxes2D): This is instantiated in set_axis() or set_axis_radec().
+            title (dict | str | None): str means set_title(str) for 2D or fig.suptitle(str) for 3D. Defaults to None.
+        """
         for ch, axnow in enumerate(self.ax):
             pa2.set_xyaxes(axnow)
             self.Xlim = pa2.xlim
@@ -903,7 +909,7 @@ class PlotAstroData(AstroFrame):
         """Use Axes.set_* of matplotlib. kwargs can include the arguments of PlotAxes2D to adjust x and y axis.
 
         Args:
-            title (dict, optional): str means set_title(str) for 2D or fig.suptitle(str) for 3D. Defaults to None.
+            title (dict | str | None): str means set_title(str) for 2D or fig.suptitle(str) for 3D. Defaults to None.
         """
         _kw = {}
         _kw.update(kwargs)
@@ -934,7 +940,7 @@ class PlotAstroData(AstroFrame):
                        ylabel: str = 'Dec. (ICRS)',
                        nticksminor: int = 2,
                        grid: dict | None = None, title: dict | None = None) -> None:
-        """Use ax.set_* of matplotlib.
+        """Use Axes.set_* of matplotlib. kwargs can include the arguments of PlotAxes2D to adjust x and y axis.
 
         Args:
             center (str, optional): Defaults to None, initial one.
@@ -942,7 +948,7 @@ class PlotAstroData(AstroFrame):
             ylabel (str, optional): Defaults to 'Dec. (ICRS)'.
             nticksminor (int, optional): Interval ratio of major and minor ticks. Defaults to 2.
             grid (dict, optional): True means merely grid(). Defaults to None.
-            title (dict, optional): str means set_title(str) for 2D or fig.suptitle(str) for 3D. Defaults to None.
+            title (dict | str | None): str means set_title(str) for 2D or fig.suptitle(str) for 3D. Defaults to None.
         """
         if self.rmax > 50.:
             print('WARNING: set_axis_radec() is not supported '
