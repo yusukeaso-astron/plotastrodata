@@ -5,7 +5,7 @@ from scipy.optimize import curve_fit
 from scipy.signal import convolve
 
 from plotastrodata.other_utils import (coord2xy, rel2abs, estimate_rms, trim,
-                                       Mfac, Mrot, dot2d, gaussian2d)
+                                       isdeg, Mfac, Mrot, dot2d, gaussian2d)
 from plotastrodata.fits_utils import FitsData, data2fits, Jy2K
 from plotastrodata import const_utils as cu
 from plotastrodata.fitting_utils import EmceeCorner
@@ -553,25 +553,27 @@ class AstroData():
             fitsimage (str, optional): Output FITS file name. Defaults to 'out.fits'.
             header (dict, optional): Header dictionary. Defaults to {}.
         """
-        if self.pv:
-            print('writetofits does not support PV diagram yet.')
-            return
-
+        fhd = self.fitsheader
         h = {}
-        cx, cy = (0, 0) if self.center is None else coord2xy(self.center)
+        cx, cy = (0, 0) if self.pv or self.center is None else coord2xy(self.center)
         h['NAXIS1'] = len(self.x)
         h['CRPIX1'] = np.argmin(np.abs(self.x)) + 1
         h['CRVAL1'] = cx
-        h['CDELT1'] = (self.x[1] - self.x[0]) / 3600
-        h['NAXIS2'] = len(self.y)
-        h['CRPIX2'] = np.argmin(np.abs(self.y)) + 1
-        h['CRVAL2'] = cy
-        h['CDELT2'] = (self.y[1] - self.y[0]) / 3600
-        if self.v is not None:
-            h['NAXIS3'] = len(self.v)
-            h['CRPIX3'] = i = np.argmin(np.abs(self.v)) + 1
-            h['CRVAL3'] = (1 - self.v[i]/cu.c_kms) * self.restfreq
-            h['CDELT3'] = (self.v[0]-self.v[1]) / cu.c_kms * self.restfreq
+        h['CDELT1'] = self.x[1] - self.x[0]
+        if fhd is not None and isdeg(fhd['CUNIT1']):
+                h['CDELT1'] = h['CDELT1'] / 3600
+        vaxis = '2' if self.pv else '3'
+        h[f'NAXIS{vaxis}'] = len(self.v)
+        h[f'CRPIX{vaxis}'] = i = np.argmin(np.abs(self.v)) + 1
+        h[f'CRVAL{vaxis}'] = (1 - self.v[i]/cu.c_kms) * self.restfreq
+        h[f'CDELT{vaxis}'] = (self.v[0]-self.v[1]) / cu.c_kms * self.restfreq
+        if not self.pv:
+            h['NAXIS2'] = len(self.y)
+            h['CRPIX2'] = np.argmin(np.abs(self.y)) + 1
+            h['CRVAL2'] = cy
+            h['CDELT2'] = self.y[1] - self.y[0]
+            if fhd is not None and isdeg(fhd['CUNIT2']):
+                    h['CDELT2'] = h['CDELT2'] / 3600
         if None not in self.beam:
             h['BMAJ'] = self.beam[0] / 3600
             h['BMIN'] = self.beam[1] / 3600

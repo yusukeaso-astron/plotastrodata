@@ -2,7 +2,8 @@ import numpy as np
 from astropy.io import fits
 from astropy import units, wcs
 
-from plotastrodata.other_utils import coord2xy, xy2coord, estimate_rms, trim
+from plotastrodata.other_utils import (coord2xy, xy2coord,
+                                       estimate_rms, trim, isdeg)
 from plotastrodata import const_utils as cu
 
 
@@ -128,11 +129,9 @@ class FitsData:
         Returns:
             str: The central coordinates.
         """
-        cunit1 = self.get_header('CUNIT1').strip()
-        cunit2 = self.get_header('CUNIT2').strip()
-        good = (cunit1 in ['deg', 'DEG', 'degree', 'DEGREE']
-                and cunit2 in ['deg', 'DEG', 'degree', 'DEGREE'])
-        if not good:
+        cunit1 = self.get_header('CUNIT1')
+        cunit2 = self.get_header('CUNIT2')
+        if not (isdeg(cunit1) and isdeg(cunit2)):
             print(f'CUNIT1=\'{cunit1}\' and CUNIT2=\'{cunit2}\'. \'center\' is ignored.')
             return None
         ra_deg = self.get_header('CRVAL1')
@@ -215,13 +214,13 @@ class FitsData:
 
         def gen_x(s: np.ndarray) -> None:
             s = (s - cx) * dist
-            if h['CUNIT1'].strip() in ['deg', 'DEG', 'degree', 'DEGREE']:
+            if isdeg(h['CUNIT1']):
                 s *= 3600.
             self.x, self.dx = s, s[1] - s[0]
 
         def gen_y(s: np.ndarray) -> None:
             s = (s - cy) * dist
-            if h['CUNIT2'].strip() in ['deg', 'DEG', 'degree', 'DEGREE']:
+            if isdeg(h['CUNIT2']):
                 s *= 3600.
             self.y, self.dy = s, s[1] - s[0]
 

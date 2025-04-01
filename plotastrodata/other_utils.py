@@ -42,6 +42,21 @@ def listing(*args) -> list:
     return b
 
 
+def isdeg(s: str) -> bool:
+    """Whether the given string means degree.
+
+    Args:
+        s (str): The string to be checked.
+
+    Returns:
+        bool: Whether the given string means degree.
+    """
+    if type(s) is str:
+        return s.strip() in ['deg', 'DEG', 'degree', 'DEGREE']
+    else:
+        return False
+    
+    
 def _getframe(coord: str, s: str = '') -> tuple:
     """Internal function to pick up the frame name from the coordinates.
 
