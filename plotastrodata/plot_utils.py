@@ -857,16 +857,16 @@ class PlotAstroData(AstroFrame):
             print('RGB shapes mismatch. Skip add_rgb.')
             return
 
-        for i in range(3):
-            c[i] = (c[i] - _kw['vmin'][i]) \
-                   / (_kw['vmax'][i] - _kw['vmin'][i]) * 255
+        for i, (cmin, cmax) in enumerate(zip(_kw['vmin'], _kw['vmax'])):
+            if cmax > cmin:
+                c[i] = (c[i] - cmin) / (cmax - cmin) * 255
             c[i] = self.vskipfill(c[i], v)
-        size = np.shape(c[0][0])
-        for axnow, red, green, blue in zip(self.ax, *c):
-            im = Image.new('RGB', size[::-1], (128, 128, 128))
-            rgb = [red[::-1, :], green[::-1, :], blue[::-1, :]]
-            for j in range(size[0]):
-                for i in range(size[1]):
+        size = np.shape(c[0][0])[::-1]
+        c = np.moveaxis(c, 1, 0)[:, :, ::-self.ydir, ::-self.xdir]
+        for axnow, rgb in zip(self.ax, c):
+            im = Image.new('RGB', size, (128, 128, 128))
+            for j in range(size[1]):
+                for i in range(size[0]):
                     value = tuple(int(a[j, i]) for a in rgb)
                     im.putpixel((i, j), value)
             axnow.imshow(im, extent=[x[0], x[-1], y[0], y[-1]])
