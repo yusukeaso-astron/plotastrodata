@@ -1052,7 +1052,9 @@ class PlotAstroData(AstroFrame):
         if len(self.ax) > 1:
             print('get_figax is not supported with channel maps')
             return
-        return self.fig, self.ax[0]
+
+        fig = plt.figure(0) if self.fig is None else self.fig
+        return fig, self.ax[0]
 
 
 def plotprofile(coords: list[str] | str = [],
