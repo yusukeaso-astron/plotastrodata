@@ -564,8 +564,9 @@ class AstroData():
             h['CDELT1'] = h['CDELT1'] / 3600
         vaxis = '2' if self.pv else '3'
         h[f'NAXIS{vaxis}'] = len(self.v)
-        h[f'CRPIX{vaxis}'] = i = np.argmin(np.abs(self.v)) + 1
-        h[f'CRVAL{vaxis}'] = (1 - self.v[i]/cu.c_kms) * self.restfreq
+        k_vmin = np.argmin(np.abs(self.v))
+        h[f'CRPIX{vaxis}'] = k_vmin + 1
+        h[f'CRVAL{vaxis}'] = (1 - self.v[k_vmin]/cu.c_kms) * self.restfreq
         h[f'CDELT{vaxis}'] = (self.v[0]-self.v[1]) / cu.c_kms * self.restfreq
         if not self.pv:
             h['NAXIS2'] = len(self.y)
