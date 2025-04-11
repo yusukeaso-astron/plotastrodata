@@ -319,7 +319,6 @@ class FitsData:
             self.data = datanew
             print('Data values were interpolated for WCS rotation.')
             
-
     def get_grid(self, **kwargs) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Output the grids, [x, y, v]. This method can take the arguments of gen_grid().
 

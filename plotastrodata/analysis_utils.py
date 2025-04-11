@@ -667,6 +667,7 @@ class AstroFrame():
                 grid = fd.get_grid(center=d.center[i], dist=self.dist,
                                    restfreq=d.restfreq[i], vsys=self.vsys,
                                    pv=self.pv)
+                d.center[i] = fd.get_center()  # for WCS rotation
                 d.beam[i] = fd.get_beam(dist=self.dist)
                 d.bunit[i] = fd.get_header('BUNIT')
             if d.data[i] is not None:
@@ -705,8 +706,8 @@ class AstroFrame():
                               'CUNIT1': 'DEG',
                               'RESTFREQ': d.restfreq[i]}
                     if None not in d.beam[i]:
-                        header['BMAJ'] = d.beam[i][0] / 3600
-                        header['BMIN'] = d.beam[i][1] / 3600
+                        header['BMAJ'] = d.beam[i][0] / 3600 / self.dist
+                        header['BMIN'] = d.beam[i][1] / 3600 / self.dist
                     d.data[i] = d.data[i] * Jy2K(header=header)
                     d.sigma[i] = d.sigma[i] * Jy2K(header=header)
                 if self.pv and None not in d.beam[i]:
