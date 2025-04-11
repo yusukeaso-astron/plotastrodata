@@ -497,7 +497,7 @@ class AstroData():
                 h['BMAJ'] = self.beam_org[0] / 3600
                 h['BMIN'] = self.beam_org[1] / 3600
                 h['BPA'] = self.beam_org[2]
-            else:    
+            else:
                 h['BMAJ'] = self.beam[0] / 3600
                 h['BMIN'] = self.beam[1] / 3600
                 h['BPA'] = self.beam[2]

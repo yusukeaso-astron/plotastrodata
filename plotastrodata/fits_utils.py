@@ -219,7 +219,7 @@ class FitsData:
             sin_rho = np.sin(crota2)
             cos_rho = np.cos(crota2)
             cdelt1 = cd11 * cos_rho + cd21 * sin_rho
-            cdelt2 = -cd12 * sin_rho + cd22 * cos_rho 
+            cdelt2 = -cd12 * sin_rho + cd22 * cos_rho
             crota2 = np.degrees(crota2)
             h['CDELT1'] = cdelt1
             h['CDELT2'] = cdelt2
@@ -294,7 +294,7 @@ class FitsData:
             gen_v(get_list(2, True)) if pv else gen_y(get_list(2))
         if h['NAXIS'] > 2 and h['NAXIS3'] > 1:
             gen_v(get_list(3, True))
-            
+
         if self.wcsrot:
             data = self.get_data()
             self.header['CRPIX1'] = ic = len(self.x) // 2
@@ -318,7 +318,7 @@ class FitsData:
                             data, (ynew, xnew))
             self.data = datanew
             print('Data values were interpolated for WCS rotation.')
-            
+
     def get_grid(self, **kwargs) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Output the grids, [x, y, v]. This method can take the arguments of gen_grid().
 
