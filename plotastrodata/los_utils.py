@@ -1,35 +1,6 @@
 import numpy as np
 
-
-def Mrot3d(t: float, axis: int = 3) -> np.ndarray:
-    """3D rotation matrix around a specified axis.
-
-    This function creates a 3x3 rotation matrix for rotating coordinates around
-    the x-axis (axis=1), y-axis (axis=2), or z-axis (axis=3) by t degrees.
-
-    Args:
-        t (float): Rotation angle in degrees.
-        axis (int, optional): Axis to rotate around - 1 for x-axis, 2 for y-axis, 3 for z-axis. Defaults to 3.
-
-    Returns:
-        np.ndarray: 3x3 rotation matrix that rotates coordinates around the specified axis by t degrees.
-    """
-    cos_t = np.cos(np.radians(t))
-    sin_t = np.sin(np.radians(t))
-    match axis:
-        case  1:
-            m = [[1, 0, 0],
-                 [0, cos_t, -sin_t],
-                 [0, sin_t, cos_t]]
-        case 2:
-            m = [[cos_t, 0, sin_t],
-                 [0, 1, 0],
-                 [-sin_t, 0, cos_t]]
-        case 3:
-            m = [[cos_t, -sin_t, 0],
-                 [sin_t, cos_t, 0],
-                 [0, 0, 1]]
-    return m
+from plotastrodata.matrix_utils import Mrot3d
 
 
 def obs2sys(xobs: np.ndarray, yobs: np.ndarray, zobs: np.ndarray,

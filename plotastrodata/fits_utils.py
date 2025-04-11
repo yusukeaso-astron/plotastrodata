@@ -2,8 +2,10 @@ import numpy as np
 from astropy.io import fits
 from astropy import units, wcs
 
-from plotastrodata.other_utils import (coord2xy, xy2coord,
-                                       estimate_rms, trim, isdeg)
+from plotastrodata.coord_utils import coord2xy, xy2coord
+from plotastrodata.matrix_utils import dot2d
+from plotastrodata.other_utils import (estimate_rms, trim, isdeg,
+                                       RGIxy)
 from plotastrodata import const_utils as cu
 
 
@@ -204,6 +206,28 @@ class FitsData:
                 restfreq = h['RESTFREQ']
         self.x, self.y, self.v = None, None, None
         self.dx, self.dy, self.dv = None, None, None
+        # WCS rotation (Calabretta & Greisen 2002, Astronomy & Astrophysics, 395, 1077)
+        self.wcsrot = False
+        cdij = ['CD1_1', 'CD1_2', 'CD2_1', 'CD2_2']
+        if np.all([s in list(h.keys()) for s in cdij]):
+            self.wcsrot = True
+            cd11, cd12, cd21, cd22 = [h[s] for s in cdij]
+            cdelt1cdelt2 = cd11 * cd22 - cd12 * cd21
+            sin_2rho = 2 * cd21 * cd22 / cdelt1cdelt2
+            cos_2rho = (cd11 * cd22 + cd12 * cd21) / cdelt1cdelt2
+            crota2 = np.arctan2(sin_2rho, cos_2rho) / 2.
+            sin_rho = np.sin(crota2)
+            cos_rho = np.cos(crota2)
+            cdelt1 = cd11 * cos_rho + cd21 * sin_rho
+            cdelt2 = -cd12 * sin_rho + cd22 * cos_rho 
+            crota2 = np.degrees(crota2)
+            h['CDELT1'] = cdelt1
+            h['CDELT2'] = cdelt2
+            del h['CD1_1']
+            del h['CD1_2']
+            del h['CD2_1']
+            del h['CD2_2']
+            print(f'WCS rotation was found (CROTA2 = {crota2:f} deg).')
 
         def get_list(i: int, crval=False) -> np.ndarray:
             s = np.arange(h[f'NAXIS{i:d}'])
@@ -270,7 +294,31 @@ class FitsData:
             gen_v(get_list(2, True)) if pv else gen_y(get_list(2))
         if h['NAXIS'] > 2 and h['NAXIS3'] > 1:
             gen_v(get_list(3, True))
-
+            
+        if self.wcsrot:
+            data = self.get_data()
+            self.header['CRPIX1'] = ic = len(self.x) // 2
+            self.header['CRPIX2'] = jc = len(self.y) // 2
+            xc = self.x[ic] / self.dx
+            yc = self.y[jc] / self.dy
+            Mcd = [[cd11, cd12], [cd21, cd22]]
+            xc, yc = dot2d(Mcd, [xc, yc])
+            newcenter = xy2coord(xy=[xc, yc], coordorg=self.get_center())
+            xc, yc = coord2xy(coords=newcenter, coordorg='00h00m00s 00d00m00s')
+            self.header['CRVAL1'] = xc
+            self.header['CRVAL2'] = yc
+            self.x = self.x - self.x[ic]
+            self.y = self.y - self.y[jc]
+            x = self.x / (3600 if isdeg(h['CUNIT1']) else 1)
+            y = self.y / (3600 if isdeg(h['CUNIT2']) else 1)
+            X, Y = np.meshgrid(x, y)
+            cdinv = np.linalg.inv([[cd11, cd12], [cd21, cd22]])
+            xnew, ynew = dot2d(cdinv, [X, Y])
+            datanew = RGIxy(self.y / self.dy, self.x / self.dx,
+                            data, (ynew, xnew))
+            self.data = datanew
+            print('Data values were interpolated for WCS rotation.')
+            
     def get_grid(self, **kwargs) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Output the grids, [x, y, v]. This method can take the arguments of gen_grid().
 
