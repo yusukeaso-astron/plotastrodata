@@ -69,39 +69,12 @@
            <div itemprop="articleBody">
              
   <h1>Source code for plotastrodata.other_utils</h1><div class="highlight"><pre>
-<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">shlex</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">astropy.coordinates</span><span class="w"> </span><span class="kn">import</span> <span class="n">SkyCoord</span><span class="p">,</span> <span class="n">FK5</span><span class="p">,</span> <span class="n">FK4</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">astropy</span><span class="w"> </span><span class="kn">import</span> <span class="n">units</span>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">scipy.optimize</span><span class="w"> </span><span class="kn">import</span> <span class="n">curve_fit</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">scipy.special</span><span class="w"> </span><span class="kn">import</span> <span class="n">erf</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy.interpolate</span><span class="w"> </span><span class="kn">import</span> <span class="n">RegularGridInterpolator</span> <span class="k">as</span> <span class="n">RGI</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">plotastrodata</span><span class="w"> </span><span class="kn">import</span> <span class="n">const_utils</span> <span class="k">as</span> <span class="n">cu</span>
-
-
-<div class="viewcode-block" id="terminal">
-<a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.other_utils.terminal">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">terminal</span><span class="p">(</span><span class="n">cmd</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Run a terminal command through subprocess.run.</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">        cmd (str): Terminal command.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">shlex</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">cmd</span><span class="p">),</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
-
-
-
-<div class="viewcode-block" id="runpython">
-<a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.other_utils.runpython">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">runpython</span><span class="p">(</span><span class="n">filename</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Run a python file.</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">        filename (str): Python file name.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">terminal</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;python </span><span class="si">{</span><span class="n">filename</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
-
+<span class="kn">from</span><span class="w"> </span><span class="nn">plotastrodata.matrix_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">Mrot</span><span class="p">,</span> <span class="n">dot2d</span>
 
 
 <div class="viewcode-block" id="listing">
@@ -122,161 +95,21 @@
 
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_getframe</span><span class="p">(</span><span class="n">coord</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">s</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Internal function to pick up the frame name from the coordinates.</span>
+<div class="viewcode-block" id="isdeg">
+<a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.other_utils.isdeg">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">isdeg</span><span class="p">(</span><span class="n">s</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Whether the given string means degree.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        coord (str): something like &quot;J2000 01h23m45.6s 01d23m45.6s&quot;</span>
-<span class="sd">        s (str, optional): To distinguish coord and coordorg. Defaults to &#39;&#39;.</span>
+<span class="sd">        s (str): The string to be checked.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        tuple: updated coord and frame. frame is FK5(equinox=&#39;J2000), FK4(equinox=&#39;B1950&#39;), or &#39;icrs&#39;.</span>
+<span class="sd">        bool: Whether the given string means degree.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">c</span> <span class="o">:=</span> <span class="n">coord</span><span class="o">.</span><span class="n">split</span><span class="p">())</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
-        <span class="n">coord</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">c</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">c</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span>
-        <span class="k">if</span> <span class="s1">&#39;J2000&#39;</span> <span class="ow">in</span> <span class="n">c</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
-            <span class="n">frame</span> <span class="o">=</span> <span class="n">FK5</span><span class="p">(</span><span class="n">equinox</span><span class="o">=</span><span class="s1">&#39;J2000&#39;</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="s1">&#39;FK5&#39;</span> <span class="ow">in</span> <span class="n">c</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
-            <span class="n">frame</span> <span class="o">=</span> <span class="n">FK5</span><span class="p">(</span><span class="n">equinox</span><span class="o">=</span><span class="s1">&#39;J2000&#39;</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="s1">&#39;B1950&#39;</span> <span class="ow">in</span> <span class="n">c</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
-            <span class="n">frame</span> <span class="o">=</span> <span class="n">FK4</span><span class="p">(</span><span class="n">equinox</span><span class="o">=</span><span class="s1">&#39;B1950&#39;</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="s1">&#39;FK4&#39;</span> <span class="ow">in</span> <span class="n">c</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
-            <span class="n">frame</span> <span class="o">=</span> <span class="n">FK4</span><span class="p">(</span><span class="n">equinox</span><span class="o">=</span><span class="s1">&#39;B1950&#39;</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="s1">&#39;ICRS&#39;</span> <span class="ow">in</span> <span class="n">c</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
-            <span class="n">frame</span> <span class="o">=</span> <span class="s1">&#39;icrs&#39;</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Unknown equinox found in coord</span><span class="si">{</span><span class="n">s</span><span class="si">}</span><span class="s1">. ICRS is used&#39;</span><span class="p">)</span>
-            <span class="n">frame</span> <span class="o">=</span> <span class="s1">&#39;icrs&#39;</span>
+    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">s</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;deg&#39;</span><span class="p">,</span> <span class="s1">&#39;DEG&#39;</span><span class="p">,</span> <span class="s1">&#39;degree&#39;</span><span class="p">,</span> <span class="s1">&#39;DEGREE&#39;</span><span class="p">]</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">frame</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="k">return</span> <span class="n">coord</span><span class="p">,</span> <span class="n">frame</span>
-
-
-<span class="k">def</span><span class="w"> </span><span class="nf">_updateframe</span><span class="p">(</span><span class="n">frame</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Internal function to str frame to astropy frame.</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">        frame (str): _description_</span>
-
-<span class="sd">    Returns:</span>
-<span class="sd">        str: frame as is, FK5(equinox=&#39;J2000&#39;), FK4(equinox=&#39;B1950&#39;), or &#39;icrs&#39;.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="s1">&#39;ICRS&#39;</span> <span class="ow">in</span> <span class="n">frame</span><span class="p">:</span>
-        <span class="n">a</span> <span class="o">=</span> <span class="s1">&#39;icrs&#39;</span>
-    <span class="k">elif</span> <span class="s1">&#39;J2000&#39;</span> <span class="ow">in</span> <span class="n">frame</span> <span class="ow">or</span> <span class="s1">&#39;FK5&#39;</span> <span class="ow">in</span> <span class="n">frame</span><span class="p">:</span>
-        <span class="n">a</span> <span class="o">=</span> <span class="n">FK5</span><span class="p">(</span><span class="n">equinox</span><span class="o">=</span><span class="s1">&#39;J2000&#39;</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="s1">&#39;B1950&#39;</span> <span class="ow">in</span> <span class="n">frame</span> <span class="ow">or</span> <span class="s1">&#39;FK4&#39;</span> <span class="ow">in</span> <span class="n">frame</span><span class="p">:</span>
-        <span class="n">a</span> <span class="o">=</span> <span class="n">FK4</span><span class="p">(</span><span class="n">equinox</span><span class="o">=</span><span class="s1">&#39;B1950&#39;</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">a</span> <span class="o">=</span> <span class="n">frame</span>
-    <span class="k">return</span> <span class="n">a</span>
-
-
-<div class="viewcode-block" id="coord2xy">
-<a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.other_utils.coord2xy">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">coord2xy</span><span class="p">(</span><span class="n">coords</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">,</span> <span class="n">coordorg</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;00h00m00s 00d00m00s&#39;</span><span class="p">,</span>
-             <span class="n">frame</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">frameorg</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-             <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Transform R.A.-Dec. to relative (deg, deg).</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">        coords (str, list): something like &#39;01h23m45.6s 01d23m45.6s&#39;. The input can be a list of str in an arbitrary shape.</span>
-<span class="sd">        coordorg (str, optional): something like &#39;01h23m45.6s 01d23m45.6s&#39;. The origin of the relative (deg, deg). Defaults to &#39;00h00m00s 00d00m00s&#39;.</span>
-<span class="sd">        frame (str, optional): coordinate frame. Defaults to None.</span>
-<span class="sd">        frameorg (str, optional): coordinate frame of the origin. Defaults to None.</span>
-
-<span class="sd">    Returns:</span>
-<span class="sd">        np.ndarray: [(array of) alphas, (array of) deltas] in degree. The shape of alphas and deltas is the input shape. With a single input, the output is [alpha0, delta0].</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">coordorg</span><span class="p">,</span> <span class="n">frameorg_c</span> <span class="o">=</span> <span class="n">_getframe</span><span class="p">(</span><span class="n">coordorg</span><span class="p">,</span> <span class="s1">&#39;org&#39;</span><span class="p">)</span>
-    <span class="n">frameorg</span> <span class="o">=</span> <span class="n">frameorg_c</span> <span class="k">if</span> <span class="n">frameorg</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">_updateframe</span><span class="p">(</span><span class="n">frameorg</span><span class="p">)</span>
-    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">coords</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">list</span><span class="p">:</span>
-        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">coords</span><span class="p">)):</span>
-            <span class="n">coords</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">frame_c</span> <span class="o">=</span> <span class="n">_getframe</span><span class="p">(</span><span class="n">coords</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">coords</span><span class="p">,</span> <span class="n">frame_c</span> <span class="o">=</span> <span class="n">_getframe</span><span class="p">(</span><span class="n">coords</span><span class="p">)</span>
-    <span class="n">frame</span> <span class="o">=</span> <span class="n">frame_c</span> <span class="k">if</span> <span class="n">frame</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">_updateframe</span><span class="p">(</span><span class="n">frame</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">frame</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">frameorg</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">frame</span> <span class="o">=</span> <span class="n">frameorg</span>
-    <span class="k">if</span> <span class="n">frame</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">frameorg</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">frameorg</span> <span class="o">=</span> <span class="n">frame</span>
-    <span class="k">if</span> <span class="n">frame</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">frameorg</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">frame</span> <span class="o">=</span> <span class="n">frameorg</span> <span class="o">=</span> <span class="s1">&#39;icrs&#39;</span>
-    <span class="n">clist</span> <span class="o">=</span> <span class="n">SkyCoord</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="n">frame</span><span class="p">)</span>
-    <span class="n">c0</span> <span class="o">=</span> <span class="n">SkyCoord</span><span class="p">(</span><span class="n">coordorg</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="n">frameorg</span><span class="p">)</span>
-    <span class="n">c0</span> <span class="o">=</span> <span class="n">c0</span><span class="o">.</span><span class="n">transform_to</span><span class="p">(</span><span class="n">frame</span><span class="o">=</span><span class="n">frame</span><span class="p">)</span>
-    <span class="n">xy</span> <span class="o">=</span> <span class="n">c0</span><span class="o">.</span><span class="n">spherical_offsets_to</span><span class="p">(</span><span class="n">clist</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">xy</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">degree</span><span class="p">,</span> <span class="n">xy</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">degree</span><span class="p">])</span></div>
-
-
-
-<div class="viewcode-block" id="xy2coord">
-<a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.other_utils.xy2coord">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">xy2coord</span><span class="p">(</span><span class="n">xy</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">coordorg</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;00h00m00s 00d00m00s&#39;</span><span class="p">,</span>
-             <span class="n">frame</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">frameorg</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-             <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Transform relative (deg, deg) to R.A.-Dec.</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">        xy (list): [(array of) alphas, (array of) deltas] in degree. alphas and deltas can have an arbitrary shape.</span>
-<span class="sd">        coordorg (str): something like &#39;01h23m45.6s 01d23m45.6s&#39;. The origin of the relative (deg, deg). Defaults to &#39;00h00m00s 00d00m00s&#39;.</span>
-<span class="sd">        frame (str): coordinate frame. Defaults to None.</span>
-<span class="sd">        frameorg (str): coordinate frame of the origin. Defaults to None.</span>
-
-<span class="sd">    Returns:</span>
-<span class="sd">        str: something like &#39;01h23m45.6s 01d23m45.6s&#39;. With multiple inputs, the output has the input shape.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">coordorg</span><span class="p">,</span> <span class="n">frameorg_c</span> <span class="o">=</span> <span class="n">_getframe</span><span class="p">(</span><span class="n">coordorg</span><span class="p">,</span> <span class="s1">&#39;org&#39;</span><span class="p">)</span>
-    <span class="n">frameorg</span> <span class="o">=</span> <span class="n">frameorg_c</span> <span class="k">if</span> <span class="n">frameorg</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">_updateframe</span><span class="p">(</span><span class="n">frameorg</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">frameorg</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">frameorg</span> <span class="o">=</span> <span class="s1">&#39;icrs&#39;</span>
-    <span class="n">frame</span> <span class="o">=</span> <span class="n">frameorg</span> <span class="k">if</span> <span class="n">frame</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">_updateframe</span><span class="p">(</span><span class="n">frame</span><span class="p">)</span>
-    <span class="n">c0</span> <span class="o">=</span> <span class="n">SkyCoord</span><span class="p">(</span><span class="n">coordorg</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="n">frameorg</span><span class="p">)</span>
-    <span class="n">coords</span> <span class="o">=</span> <span class="n">c0</span><span class="o">.</span><span class="n">spherical_offsets_by</span><span class="p">(</span><span class="o">*</span><span class="n">xy</span> <span class="o">*</span> <span class="n">units</span><span class="o">.</span><span class="n">degree</span><span class="p">)</span>
-    <span class="n">coords</span> <span class="o">=</span> <span class="n">coords</span><span class="o">.</span><span class="n">transform_to</span><span class="p">(</span><span class="n">frame</span><span class="o">=</span><span class="n">frame</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">coords</span><span class="o">.</span><span class="n">to_string</span><span class="p">(</span><span class="s1">&#39;hmsdms&#39;</span><span class="p">)</span></div>
-
-
-
-<div class="viewcode-block" id="rel2abs">
-<a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.other_utils.rel2abs">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">rel2abs</span><span class="p">(</span><span class="n">xrel</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">yrel</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
-            <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Transform relative coordinates to absolute ones.</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">        xrel (float): 0 &lt;= xrel &lt;= 1. 0 and 1 correspond to x[0] and x[-1], respectively. Arbitrary shape.</span>
-<span class="sd">        yrel (float): same as xrel.</span>
-<span class="sd">        x (np.ndarray): [x0, x0+dx, x0+2dx, ...]</span>
-<span class="sd">        y (np.ndarray): [y0, y0+dy, y0+2dy, ...]</span>
-
-<span class="sd">    Returns:</span>
-<span class="sd">        np.ndarray: [xabs, yabs]. Each has the input&#39;s shape.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">xabs</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.</span> <span class="o">-</span> <span class="n">xrel</span><span class="p">)</span><span class="o">*</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">xrel</span><span class="o">*</span><span class="n">x</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-    <span class="n">yabs</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.</span> <span class="o">-</span> <span class="n">yrel</span><span class="p">)</span><span class="o">*</span><span class="n">y</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">yrel</span><span class="o">*</span><span class="n">y</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">xabs</span><span class="p">,</span> <span class="n">yabs</span><span class="p">])</span></div>
-
-
-
-<div class="viewcode-block" id="abs2rel">
-<a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.other_utils.abs2rel">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">abs2rel</span><span class="p">(</span><span class="n">xabs</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">yabs</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
-            <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Transform absolute coordinates to relative ones.</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">        xabs (float): In the same frame of x.</span>
-<span class="sd">        yabs (float): In the same frame of y.</span>
-<span class="sd">        x (np.ndarray): [x0, x0+dx, x0+2dx, ...]</span>
-<span class="sd">        y (np.ndarray): [y0, y0+dy, y0+2dy, ...]</span>
-
-<span class="sd">    Returns:</span>
-<span class="sd">        ndarray: [xrel, yrel]. Each has the input&#39;s shape. 0 &lt;= xrel, yrel &lt;= 1. 0 and 1 correspond to x[0] and x[-1], respectively.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">xrel</span> <span class="o">=</span> <span class="p">(</span><span class="n">xabs</span> <span class="o">-</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">/</span> <span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-    <span class="n">yrel</span> <span class="o">=</span> <span class="p">(</span><span class="n">yabs</span> <span class="o">-</span> <span class="n">y</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">/</span> <span class="p">(</span><span class="n">y</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">y</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">xrel</span><span class="p">,</span> <span class="n">yrel</span><span class="p">])</span></div>
+        <span class="k">return</span> <span class="kc">False</span></div>
 
 
 
@@ -432,86 +265,98 @@
 
 
 
-<div class="viewcode-block" id="Mfac">
-<a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.other_utils.Mfac">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">Mfac</span><span class="p">(</span><span class="n">f0</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">f1</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;2 x 2 matrix for (x,y) --&gt; (f0 * x, f1 * y).</span>
+<div class="viewcode-block" id="to4dim">
+<a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.other_utils.to4dim">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">to4dim</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Change a 2D, 3D, or 4D array to a 4D array.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        f0 (float, optional): Defaults to 1.</span>
-<span class="sd">        f1 (float, optional): Defaults to 1.</span>
+<span class="sd">        data (np.ndarray): Input data. 2D, 3D, or 4D.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        np.ndarray: Matrix for the multiplication.</span>
+<span class="sd">        np.ndarray: Output 4D array.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="n">f0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">f1</span><span class="p">]])</span></div>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">ndim</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="n">data</span><span class="p">]])</span>
+    <span class="k">elif</span> <span class="n">np</span><span class="o">.</span><span class="n">ndim</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">data</span><span class="p">])</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">d</span></div>
 
 
 
-<div class="viewcode-block" id="Mrot">
-<a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.other_utils.Mrot">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">Mrot</span><span class="p">(</span><span class="n">pa</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;2 x 2 matrix for rotation.</span>
+<div class="viewcode-block" id="RGIxy">
+<a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.other_utils.RGIxy">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">RGIxy</span><span class="p">(</span><span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+          <span class="n">yxnew</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+          <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">object</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;RGI for x and y at each channel.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        pa (float, optional): How many degrees are the image rotated by. Defaults to 0.</span>
+<span class="sd">        y (np.ndarray): 1D array. Second coordinate.</span>
+<span class="sd">        x (np.ndarray): 1D array. First coordinate.</span>
+<span class="sd">        data (np.ndarray): 2D, 3D, or 4D array.</span>
+<span class="sd">        yxnew (tuple, optional): (ynew, xnew), where ynew and xnew are 1D or 2D arrays. Defaults to None.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        np.ndarray: Matrix for the rotation.</span>
+<span class="sd">        np.ndarray: The RGI function or the interpolated array.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">p</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">pa</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">p</span><span class="p">),</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">p</span><span class="p">)],</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">p</span><span class="p">),</span>  <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">p</span><span class="p">)]])</span></div>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">ndim</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">]:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;data must be 2D, 3D, or 4D.&#39;</span><span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="n">_kw</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;bounds_error&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s1">&#39;fill_value&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span>
+           <span class="s1">&#39;method&#39;</span><span class="p">:</span> <span class="s1">&#39;linear&#39;</span><span class="p">}</span>
+    <span class="n">_kw</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="n">c4d</span> <span class="o">=</span> <span class="n">to4dim</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="n">c4d</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">c4d</span><span class="p">)]</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="p">[[</span><span class="n">RGI</span><span class="p">((</span><span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">),</span> <span class="n">c2d</span><span class="p">,</span> <span class="o">**</span><span class="n">_kw</span><span class="p">)</span>
+          <span class="k">for</span> <span class="n">c2d</span> <span class="ow">in</span> <span class="n">c3d</span><span class="p">]</span> <span class="k">for</span> <span class="n">c3d</span> <span class="ow">in</span> <span class="n">c4d</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">yxnew</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">f</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">f</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">f</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">squeeze</span><span class="p">([[</span><span class="n">f2d</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="n">yxnew</span><span class="p">))</span> <span class="k">for</span> <span class="n">f2d</span> <span class="ow">in</span> <span class="n">f3d</span><span class="p">]</span> <span class="k">for</span> <span class="n">f3d</span> <span class="ow">in</span> <span class="n">f</span><span class="p">])</span></div>
 
 
 
-<div class="viewcode-block" id="dot2d">
-<a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.other_utils.dot2d">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">dot2d</span><span class="p">(</span><span class="n">M</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]],</span>
-          <span class="n">a</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;To maltiply a 2 x 2 matrix to (x,y) with arrays of x and y.</span>
+<div class="viewcode-block" id="RGIxyv">
+<a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.other_utils.RGIxyv">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">RGIxyv</span><span class="p">(</span><span class="n">v</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+           <span class="n">vyxnew</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+           <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">object</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;RGI in the x-y-v space.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        M (np.ndarray, optional): 2 x 2 matrix. Defaults to [[1, 0], [0, 1]].</span>
-<span class="sd">        a (np.ndarray, optional): 2D vector (of 1D arrays). Defaults to [0].</span>
+<span class="sd">        v (np.ndarray): 1D array. Third coordinate.</span>
+<span class="sd">        y (np.ndarray): 1D array. Second coordinate.</span>
+<span class="sd">        x (np.ndarray): 1D array. First coordinate.</span>
+<span class="sd">        data (np.ndarray): 3D or 4D array.</span>
+<span class="sd">        vyxnew (tuple, optional): (vnew, ynew, xnew), where vnew, ynew, and xnew are 1D or 2D arrays. Defaults to None.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        np.ndarray: The 2D vector after the matrix multiplied.</span>
+<span class="sd">        np.ndarray: The RGI function or the interpolated array.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">x</span> <span class="o">=</span> <span class="n">M</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">+</span> <span class="n">M</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
-    <span class="n">y</span> <span class="o">=</span> <span class="n">M</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">+</span> <span class="n">M</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
-    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">])</span></div>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">ndim</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">]:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;data must be 3D or 4D.&#39;</span><span class="p">)</span>
+        <span class="k">return</span>
 
-
-
-<div class="viewcode-block" id="BnuT">
-<a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.other_utils.BnuT">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">BnuT</span><span class="p">(</span><span class="n">T</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">30</span><span class="p">,</span> <span class="n">nu</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">230e9</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Planck function.</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">        T (float, optional): Temperature in the unit of K. Defaults to 30.</span>
-<span class="sd">        nu (float, optional): Frequency in the unit of Hz. Defaults to 230e9.</span>
-
-<span class="sd">    Returns:</span>
-<span class="sd">        float: Planck function in the SI units.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">cu</span><span class="o">.</span><span class="n">h</span> <span class="o">*</span> <span class="n">nu</span><span class="o">**</span><span class="mi">3</span> <span class="o">/</span> <span class="n">cu</span><span class="o">.</span><span class="n">c</span><span class="o">**</span><span class="mi">2</span> <span class="o">/</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">cu</span><span class="o">.</span><span class="n">h</span> <span class="o">*</span> <span class="n">nu</span> <span class="o">/</span> <span class="n">cu</span><span class="o">.</span><span class="n">k_B</span> <span class="o">/</span> <span class="n">T</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span></div>
-
-
-
-<div class="viewcode-block" id="JnuT">
-<a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.other_utils.JnuT">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">JnuT</span><span class="p">(</span><span class="n">T</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">30</span><span class="p">,</span> <span class="n">nu</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">230e9</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Brightness templerature from the Planck function.</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">        T (float, optional): Temperature in the unit of K. Defaults to 30.</span>
-<span class="sd">        nu (float, optional): Frequency in the unit of Hz. Defaults to 230e9.</span>
-
-<span class="sd">    Returns:</span>
-<span class="sd">        float: Brightness temperature of Planck function in the unit of K.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">cu</span><span class="o">.</span><span class="n">h</span> <span class="o">*</span> <span class="n">nu</span> <span class="o">/</span> <span class="n">cu</span><span class="o">.</span><span class="n">k_B</span> <span class="o">/</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">cu</span><span class="o">.</span><span class="n">h</span> <span class="o">*</span> <span class="n">nu</span> <span class="o">/</span> <span class="n">cu</span><span class="o">.</span><span class="n">k_B</span> <span class="o">/</span> <span class="n">T</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span></div>
+    <span class="n">_kw</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;bounds_error&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s1">&#39;fill_value&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span>
+           <span class="s1">&#39;method&#39;</span><span class="p">:</span> <span class="s1">&#39;linear&#39;</span><span class="p">}</span>
+    <span class="n">_kw</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="n">c4d</span> <span class="o">=</span> <span class="n">to4dim</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="n">c4d</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">c4d</span><span class="p">)]</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="p">[</span><span class="n">RGI</span><span class="p">((</span><span class="n">v</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">),</span> <span class="n">c3d</span><span class="p">,</span> <span class="o">**</span><span class="n">_kw</span><span class="p">)</span> <span class="k">for</span> <span class="n">c3d</span> <span class="ow">in</span> <span class="n">c4d</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">vyxnew</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">f</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">f</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">squeeze</span><span class="p">([</span><span class="n">f3d</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="n">vyxnew</span><span class="p">))</span> <span class="k">for</span> <span class="n">f3d</span> <span class="ow">in</span> <span class="n">f</span><span class="p">])</span></div>
 
 
 

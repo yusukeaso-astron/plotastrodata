@@ -5,15 +5,15 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>plotastrodata.los_utils &mdash; plotastrodata 0.0.1 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=92fd9be5" />
+  <title>plotastrodata.los_utils &mdash; plotastrodata 1.1.3 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=d45e8c67"></script>
-      <script src="../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../_static/documentation_options.js?v=cb7bf70b"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -69,46 +69,14 @@
            <div itemprop="articleBody">
              
   <h1>Source code for plotastrodata.los_utils</h1><div class="highlight"><pre>
-<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
-
-<div class="viewcode-block" id="Mrot3d">
-<a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.los_utils.Mrot3d">[docs]</a>
-<span class="k">def</span> <span class="nf">Mrot3d</span><span class="p">(</span><span class="n">t</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">axis</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;3D rotation matrix around a specified axis.</span>
-
-<span class="sd">    This function creates a 3x3 rotation matrix for rotating coordinates around</span>
-<span class="sd">    the x-axis (axis=1), y-axis (axis=2), or z-axis (axis=3) by t degrees.</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">        t (float): Rotation angle in degrees.</span>
-<span class="sd">        axis (int, optional): Axis to rotate around - 1 for x-axis, 2 for y-axis, 3 for z-axis. Defaults to 3.</span>
-
-<span class="sd">    Returns:</span>
-<span class="sd">        np.ndarray: 3x3 rotation matrix that rotates coordinates around the specified axis by t degrees.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">cos_t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">t</span><span class="p">))</span>
-    <span class="n">sin_t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">t</span><span class="p">))</span>
-    <span class="k">match</span> <span class="n">axis</span><span class="p">:</span>
-        <span class="k">case</span>  <span class="mi">1</span><span class="p">:</span>
-            <span class="n">m</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
-                 <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">cos_t</span><span class="p">,</span> <span class="o">-</span><span class="n">sin_t</span><span class="p">],</span>
-                 <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">sin_t</span><span class="p">,</span> <span class="n">cos_t</span><span class="p">]]</span>
-        <span class="k">case</span> <span class="mi">2</span><span class="p">:</span>
-            <span class="n">m</span> <span class="o">=</span> <span class="p">[[</span><span class="n">cos_t</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">sin_t</span><span class="p">],</span>
-                 <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
-                 <span class="p">[</span><span class="o">-</span><span class="n">sin_t</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">cos_t</span><span class="p">]]</span>
-        <span class="k">case</span> <span class="mi">3</span><span class="p">:</span>
-            <span class="n">m</span> <span class="o">=</span> <span class="p">[[</span><span class="n">cos_t</span><span class="p">,</span> <span class="o">-</span><span class="n">sin_t</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
-                 <span class="p">[</span><span class="n">sin_t</span><span class="p">,</span> <span class="n">cos_t</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
-                 <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]]</span>
-    <span class="k">return</span> <span class="n">m</span></div>
-
+<span class="kn">from</span><span class="w"> </span><span class="nn">plotastrodata.matrix_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">Mrot3d</span>
 
 
 <div class="viewcode-block" id="obs2sys">
 <a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.los_utils.obs2sys">[docs]</a>
-<span class="k">def</span> <span class="nf">obs2sys</span><span class="p">(</span><span class="n">xobs</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">yobs</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">zobs</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">obs2sys</span><span class="p">(</span><span class="n">xobs</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">yobs</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">zobs</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
             <span class="n">pa</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">incl</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">phi0</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">theta0</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">90</span><span class="p">,</span>
             <span class="n">polar</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert observed coordinates to system coordinates. In the system coordinates, the observer is at the direction of (0, -sin i, cos i). The observer&#39;s +z (i.e., line-of-sight) is from the observer to the system center. The system&#39;s x coordinate and the observer&#39;s x coordinate have opposite signs.</span>
@@ -146,7 +114,7 @@
 
 <div class="viewcode-block" id="sys2obs">
 <a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.los_utils.sys2obs">[docs]</a>
-<span class="k">def</span> <span class="nf">sys2obs</span><span class="p">(</span><span class="n">xsys</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">ysys</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">zsys</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">sys2obs</span><span class="p">(</span><span class="n">xsys</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">ysys</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">zsys</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
             <span class="n">pa</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">incl</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">phi0</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">theta0</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">90</span><span class="p">,</span>
             <span class="n">polar</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert system coordinates to observed coordinates. In the system coordinates, the observer is at the direction of (0, -sin i, cos i). The observer&#39;s +z (i.e., line-of-sight) is from the observer to the system center. The system&#39;s x coordinate and the observer&#39;s x coordinate have opposite signs.</span>
@@ -183,7 +151,7 @@
 
 <div class="viewcode-block" id="polarvel2losvel">
 <a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.los_utils.polarvel2losvel">[docs]</a>
-<span class="k">def</span> <span class="nf">polarvel2losvel</span><span class="p">(</span><span class="n">v_r</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">v_theta</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">v_phi</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">polarvel2losvel</span><span class="p">(</span><span class="n">v_r</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">v_theta</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">v_phi</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
                     <span class="n">theta</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">phi</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
                     <span class="n">incl</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">phi0</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">theta0</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">90</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert the polar velocities in the system&#39;s coordinates to the line-of-sight velocity in the observer&#39;s coordinates. In the system coordinates, the observer is at the direction of (0, -sin i, cos i). The observer&#39;s +z (i.e., line-of-sight) is from the observer to the system. The system&#39;s x coordinate and the observer&#39;s x coordinate have opposite signs.</span>
