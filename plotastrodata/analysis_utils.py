@@ -4,29 +4,14 @@ from scipy.interpolate import RegularGridInterpolator as RGI
 from scipy.optimize import curve_fit
 from scipy.signal import convolve
 
-from plotastrodata.other_utils import (coord2xy, rel2abs, estimate_rms, trim,
-                                       isdeg, Mfac, Mrot, dot2d, gaussian2d)
+from plotastrodata.coord_utils import coord2xy, rel2abs
+from plotastrodata.matrix_utils import Mfac, Mrot, dot2d
+from plotastrodata.other_utils import (estimate_rms, trim,
+                                       gaussian2d,
+                                       RGIxy, RGIxyv, to4dim)
 from plotastrodata.fits_utils import FitsData, data2fits, Jy2K
 from plotastrodata import const_utils as cu
 from plotastrodata.fitting_utils import EmceeCorner
-
-
-def to4dim(data: np.ndarray) -> np.ndarray:
-    """Change a 2D, 3D, or 4D array to a 4D array.
-
-    Args:
-        data (np.ndarray): Input data. 2D, 3D, or 4D.
-
-    Returns:
-        np.ndarray: Output 4D array.
-    """
-    if np.ndim(data) == 2:
-        d = np.array([[data]])
-    elif np.ndim(data) == 3:
-        d = np.array([data])
-    else:
-        d = np.array(data)
-    return d
 
 
 def quadrantmean(data: np.ndarray, x: np.ndarray, y: np.ndarray,
@@ -60,74 +45,6 @@ def quadrantmean(data: np.ndarray, x: np.ndarray, y: np.ndarray,
         print('quadrants must be \'13\' or \'24\'.')
     datanew = (datanew + datanew[::-1, ::-1]) / 2.
     return datanew[ny:, nx:], xnew[nx:], ynew[ny:]
-
-
-def RGIxy(y: np.ndarray, x: np.ndarray, data: np.ndarray,
-          yxnew: tuple[np.ndarray, np.ndarray] | None = None,
-          **kwargs) -> object | np.ndarray:
-    """RGI for x and y at each channel.
-
-    Args:
-        y (np.ndarray): 1D array. Second coordinate.
-        x (np.ndarray): 1D array. First coordinate.
-        data (np.ndarray): 2D, 3D, or 4D array.
-        yxnew (tuple, optional): (ynew, xnew), where ynew and xnew are 1D or 2D arrays. Defaults to None.
-
-    Returns:
-        np.ndarray: The RGI function or the interpolated array.
-    """
-    if not np.ndim(data) in [2, 3, 4]:
-        print('data must be 2D, 3D, or 4D.')
-        return
-
-    _kw = {'bounds_error': False, 'fill_value': np.nan,
-           'method': 'linear'}
-    _kw.update(kwargs)
-    c4d = to4dim(data)
-    c4d[np.isnan(c4d)] = 0
-    f = [[RGI((y, x), c2d, **_kw)
-          for c2d in c3d] for c3d in c4d]
-    if yxnew is None:
-        if len(f) == 1:
-            f = f[0]
-        if len(f) == 1:
-            f = f[0]
-        return f
-    else:
-        return np.squeeze([[f2d(tuple(yxnew)) for f2d in f3d] for f3d in f])
-
-
-def RGIxyv(v: np.ndarray, y: np.ndarray, x: np.ndarray, data: np.ndarray,
-           vyxnew: tuple[np.ndarray, np.ndarray, np.ndarray] | None = None,
-           **kwargs) -> object | np.ndarray:
-    """RGI in the x-y-v space.
-
-    Args:
-        v (np.ndarray): 1D array. Third coordinate.
-        y (np.ndarray): 1D array. Second coordinate.
-        x (np.ndarray): 1D array. First coordinate.
-        data (np.ndarray): 3D or 4D array.
-        vyxnew (tuple, optional): (vnew, ynew, xnew), where vnew, ynew, and xnew are 1D or 2D arrays. Defaults to None.
-
-    Returns:
-        np.ndarray: The RGI function or the interpolated array.
-    """
-    if not np.ndim(data) in [3, 4]:
-        print('data must be 3D or 4D.')
-        return
-
-    _kw = {'bounds_error': False, 'fill_value': np.nan,
-           'method': 'linear'}
-    _kw.update(kwargs)
-    c4d = to4dim(data)
-    c4d[np.isnan(c4d)] = 0
-    f = [RGI((v, y, x), c3d, **_kw) for c3d in c4d]
-    if vyxnew is None:
-        if len(f) == 1:
-            f = f[0]
-        return f
-    else:
-        return np.squeeze([f3d(tuple(vyxnew)) for f3d in f])
 
 
 def filled2d(data: np.ndarray, x: np.ndarray, y: np.ndarray, n: int = 1,

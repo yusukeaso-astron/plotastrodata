@@ -2,8 +2,9 @@ import numpy as np
 from astropy.io import fits
 from astropy import units, wcs
 
-from plotastrodata.other_utils import (coord2xy, xy2coord,
-                                       estimate_rms, trim, isdeg)
+from plotastrodata.coord_utils import coord2xy, xy2coord
+from plotastrodata.other_utils import (estimate_rms, trim, isdeg,
+                                       RGIxy)
 from plotastrodata import const_utils as cu
 
 
@@ -204,6 +205,13 @@ class FitsData:
                 restfreq = h['RESTFREQ']
         self.x, self.y, self.v = None, None, None
         self.dx, self.dy, self.dv = None, None, None
+        # WCS rotation check
+        cdmat = [f'CD{i:d}_{j:d}' for i in [1, 2] for j in [1, 2]]
+        if np.all([s in list(h.keys()) for s in cdmat]):
+            print('WCS rotation was found.')
+            cd11, cd12, cd21, cd22 = [h[s] for s in cdmat]
+            h['CDELT1'] = np.hypot(cd11, cd21)
+            h['CDELT2'] = np.hypot(cd12, cd22)
 
         def get_list(i: int, crval=False) -> np.ndarray:
             s = np.arange(h[f'NAXIS{i:d}'])

@@ -1,30 +1,7 @@
-import subprocess
-import shlex
 import numpy as np
-from astropy.coordinates import SkyCoord, FK5, FK4
-from astropy import units
 from scipy.optimize import curve_fit
 from scipy.special import erf
-
-from plotastrodata import const_utils as cu
-
-
-def terminal(cmd: str, **kwargs) -> None:
-    """Run a terminal command through subprocess.run.
-
-    Args:
-        cmd (str): Terminal command.
-    """
-    subprocess.run(shlex.split(cmd), **kwargs)
-
-
-def runpython(filename: str, **kwargs) -> None:
-    """Run a python file.
-
-    Args:
-        filename (str): Python file name.
-    """
-    terminal(f'python {filename}', **kwargs)
+from scipy.interpolate import RegularGridInterpolator as RGI
 
 
 def listing(*args) -> list:
@@ -55,152 +32,6 @@ def isdeg(s: str) -> bool:
         return s.strip() in ['deg', 'DEG', 'degree', 'DEGREE']
     else:
         return False
-
-
-def _getframe(coord: str, s: str = '') -> tuple:
-    """Internal function to pick up the frame name from the coordinates.
-
-    Args:
-        coord (str): something like "J2000 01h23m45.6s 01d23m45.6s"
-        s (str, optional): To distinguish coord and coordorg. Defaults to ''.
-
-    Returns:
-        tuple: updated coord and frame. frame is FK5(equinox='J2000), FK4(equinox='B1950'), or 'icrs'.
-    """
-    if len(c := coord.split()) == 3:
-        coord = f'{c[1]} {c[2]}'
-        if 'J2000' in c[0]:
-            frame = FK5(equinox='J2000')
-        elif 'FK5' in c[0]:
-            frame = FK5(equinox='J2000')
-        elif 'B1950' in c[0]:
-            frame = FK4(equinox='B1950')
-        elif 'FK4' in c[0]:
-            frame = FK4(equinox='B1950')
-        elif 'ICRS' in c[0]:
-            frame = 'icrs'
-        else:
-            print(f'Unknown equinox found in coord{s}. ICRS is used')
-            frame = 'icrs'
-    else:
-        frame = None
-    return coord, frame
-
-
-def _updateframe(frame: str) -> str:
-    """Internal function to str frame to astropy frame.
-
-    Args:
-        frame (str): _description_
-
-    Returns:
-        str: frame as is, FK5(equinox='J2000'), FK4(equinox='B1950'), or 'icrs'.
-    """
-    if 'ICRS' in frame:
-        a = 'icrs'
-    elif 'J2000' in frame or 'FK5' in frame:
-        a = FK5(equinox='J2000')
-    elif 'B1950' in frame or 'FK4' in frame:
-        a = FK4(equinox='B1950')
-    else:
-        a = frame
-    return a
-
-
-def coord2xy(coords: str | list, coordorg: str = '00h00m00s 00d00m00s',
-             frame: str | None = None, frameorg: str | None = None,
-             ) -> np.ndarray:
-    """Transform R.A.-Dec. to relative (deg, deg).
-
-    Args:
-        coords (str, list): something like '01h23m45.6s 01d23m45.6s'. The input can be a list of str in an arbitrary shape.
-        coordorg (str, optional): something like '01h23m45.6s 01d23m45.6s'. The origin of the relative (deg, deg). Defaults to '00h00m00s 00d00m00s'.
-        frame (str, optional): coordinate frame. Defaults to None.
-        frameorg (str, optional): coordinate frame of the origin. Defaults to None.
-
-    Returns:
-        np.ndarray: [(array of) alphas, (array of) deltas] in degree. The shape of alphas and deltas is the input shape. With a single input, the output is [alpha0, delta0].
-    """
-    coordorg, frameorg_c = _getframe(coordorg, 'org')
-    frameorg = frameorg_c if frameorg is None else _updateframe(frameorg)
-    if type(coords) is list:
-        for i in range(len(coords)):
-            coords[i], frame_c = _getframe(coords[i])
-    else:
-        coords, frame_c = _getframe(coords)
-    frame = frame_c if frame is None else _updateframe(frame)
-    if frame is None and frameorg is not None:
-        frame = frameorg
-    if frame is not None and frameorg is None:
-        frameorg = frame
-    if frame is None and frameorg is None:
-        frame = frameorg = 'icrs'
-    clist = SkyCoord(coords, frame=frame)
-    c0 = SkyCoord(coordorg, frame=frameorg)
-    c0 = c0.transform_to(frame=frame)
-    xy = c0.spherical_offsets_to(clist)
-    return np.array([xy[0].degree, xy[1].degree])
-
-
-def xy2coord(xy: list, coordorg: str = '00h00m00s 00d00m00s',
-             frame: str | None = None, frameorg: str | None = None,
-             ) -> str:
-    """Transform relative (deg, deg) to R.A.-Dec.
-
-    Args:
-        xy (list): [(array of) alphas, (array of) deltas] in degree. alphas and deltas can have an arbitrary shape.
-        coordorg (str): something like '01h23m45.6s 01d23m45.6s'. The origin of the relative (deg, deg). Defaults to '00h00m00s 00d00m00s'.
-        frame (str): coordinate frame. Defaults to None.
-        frameorg (str): coordinate frame of the origin. Defaults to None.
-
-    Returns:
-        str: something like '01h23m45.6s 01d23m45.6s'. With multiple inputs, the output has the input shape.
-    """
-    coordorg, frameorg_c = _getframe(coordorg, 'org')
-    frameorg = frameorg_c if frameorg is None else _updateframe(frameorg)
-    if frameorg is None:
-        frameorg = 'icrs'
-    frame = frameorg if frame is None else _updateframe(frame)
-    c0 = SkyCoord(coordorg, frame=frameorg)
-    coords = c0.spherical_offsets_by(*xy * units.degree)
-    coords = coords.transform_to(frame=frame)
-    return coords.to_string('hmsdms')
-
-
-def rel2abs(xrel: float, yrel: float,
-            x: np.ndarray, y: np.ndarray) -> np.ndarray:
-    """Transform relative coordinates to absolute ones.
-
-    Args:
-        xrel (float): 0 <= xrel <= 1. 0 and 1 correspond to x[0] and x[-1], respectively. Arbitrary shape.
-        yrel (float): same as xrel.
-        x (np.ndarray): [x0, x0+dx, x0+2dx, ...]
-        y (np.ndarray): [y0, y0+dy, y0+2dy, ...]
-
-    Returns:
-        np.ndarray: [xabs, yabs]. Each has the input's shape.
-    """
-    xabs = (1. - xrel)*x[0] + xrel*x[-1]
-    yabs = (1. - yrel)*y[0] + yrel*y[-1]
-    return np.array([xabs, yabs])
-
-
-def abs2rel(xabs: float, yabs: float,
-            x: np.ndarray, y: np.ndarray) -> np.ndarray:
-    """Transform absolute coordinates to relative ones.
-
-    Args:
-        xabs (float): In the same frame of x.
-        yabs (float): In the same frame of y.
-        x (np.ndarray): [x0, x0+dx, x0+2dx, ...]
-        y (np.ndarray): [y0, y0+dy, y0+2dy, ...]
-
-    Returns:
-        ndarray: [xrel, yrel]. Each has the input's shape. 0 <= xrel, yrel <= 1. 0 and 1 correspond to x[0] and x[-1], respectively.
-    """
-    xrel = (xabs - x[0]) / (x[-1] - x[0])
-    yrel = (yabs - y[0]) / (y[-1] - y[0])
-    return np.array([xrel, yrel])
 
 
 def estimate_rms(data: np.ndarray, sigma: float | str | None = 'hist') -> float:
@@ -349,72 +180,90 @@ def trim(data: np.ndarray | None = None, x: np.ndarray | None = None,
     return dataout, [xout, yout, vout]
 
 
-def Mfac(f0: float = 1, f1: float = 1) -> np.ndarray:
-    """2 x 2 matrix for (x,y) --> (f0 * x, f1 * y).
+def to4dim(data: np.ndarray) -> np.ndarray:
+    """Change a 2D, 3D, or 4D array to a 4D array.
 
     Args:
-        f0 (float, optional): Defaults to 1.
-        f1 (float, optional): Defaults to 1.
+        data (np.ndarray): Input data. 2D, 3D, or 4D.
 
     Returns:
-        np.ndarray: Matrix for the multiplication.
+        np.ndarray: Output 4D array.
     """
-    return np.array([[f0, 0], [0, f1]])
+    if np.ndim(data) == 2:
+        d = np.array([[data]])
+    elif np.ndim(data) == 3:
+        d = np.array([data])
+    else:
+        d = np.array(data)
+    return d
 
 
-def Mrot(pa: float = 0) -> np.ndarray:
-    """2 x 2 matrix for rotation.
+def RGIxy(y: np.ndarray, x: np.ndarray, data: np.ndarray,
+          yxnew: tuple[np.ndarray, np.ndarray] | None = None,
+          **kwargs) -> object | np.ndarray:
+    """RGI for x and y at each channel.
 
     Args:
-        pa (float, optional): How many degrees are the image rotated by. Defaults to 0.
+        y (np.ndarray): 1D array. Second coordinate.
+        x (np.ndarray): 1D array. First coordinate.
+        data (np.ndarray): 2D, 3D, or 4D array.
+        yxnew (tuple, optional): (ynew, xnew), where ynew and xnew are 1D or 2D arrays. Defaults to None.
 
     Returns:
-        np.ndarray: Matrix for the rotation.
+        np.ndarray: The RGI function or the interpolated array.
     """
-    p = np.radians(pa)
-    return np.array([[np.cos(p), -np.sin(p)], [np.sin(p),  np.cos(p)]])
+    if not np.ndim(data) in [2, 3, 4]:
+        print('data must be 2D, 3D, or 4D.')
+        return
+
+    _kw = {'bounds_error': False, 'fill_value': np.nan,
+           'method': 'linear'}
+    _kw.update(kwargs)
+    c4d = to4dim(data)
+    c4d[np.isnan(c4d)] = 0
+    f = [[RGI((y, x), c2d, **_kw)
+          for c2d in c3d] for c3d in c4d]
+    if yxnew is None:
+        if len(f) == 1:
+            f = f[0]
+        if len(f) == 1:
+            f = f[0]
+        return f
+    else:
+        return np.squeeze([[f2d(tuple(yxnew)) for f2d in f3d] for f3d in f])
 
 
-def dot2d(M: np.ndarray = [[1, 0], [0, 1]],
-          a: np.ndarray = [0, 0]) -> np.ndarray:
-    """To maltiply a 2 x 2 matrix to (x,y) with arrays of x and y.
+def RGIxyv(v: np.ndarray, y: np.ndarray, x: np.ndarray, data: np.ndarray,
+           vyxnew: tuple[np.ndarray, np.ndarray, np.ndarray] | None = None,
+           **kwargs) -> object | np.ndarray:
+    """RGI in the x-y-v space.
 
     Args:
-        M (np.ndarray, optional): 2 x 2 matrix. Defaults to [[1, 0], [0, 1]].
-        a (np.ndarray, optional): 2D vector (of 1D arrays). Defaults to [0].
+        v (np.ndarray): 1D array. Third coordinate.
+        y (np.ndarray): 1D array. Second coordinate.
+        x (np.ndarray): 1D array. First coordinate.
+        data (np.ndarray): 3D or 4D array.
+        vyxnew (tuple, optional): (vnew, ynew, xnew), where vnew, ynew, and xnew are 1D or 2D arrays. Defaults to None.
 
     Returns:
-        np.ndarray: The 2D vector after the matrix multiplied.
+        np.ndarray: The RGI function or the interpolated array.
     """
-    x = M[0, 0] * np.array(a[0]) + M[0, 1] * np.array(a[1])
-    y = M[1, 0] * np.array(a[0]) + M[1, 1] * np.array(a[1])
-    return np.array([x, y])
+    if not np.ndim(data) in [3, 4]:
+        print('data must be 3D or 4D.')
+        return
 
-
-def BnuT(T: float = 30, nu: float = 230e9) -> float:
-    """Planck function.
-
-    Args:
-        T (float, optional): Temperature in the unit of K. Defaults to 30.
-        nu (float, optional): Frequency in the unit of Hz. Defaults to 230e9.
-
-    Returns:
-        float: Planck function in the SI units.
-    """
-    return 2 * cu.h * nu**3 / cu.c**2 / (np.exp(cu.h * nu / cu.k_B / T) - 1)
-
-
-def JnuT(T: float = 30, nu: float = 230e9) -> float:
-    """Brightness templerature from the Planck function.
-
-    Args:
-        T (float, optional): Temperature in the unit of K. Defaults to 30.
-        nu (float, optional): Frequency in the unit of Hz. Defaults to 230e9.
-
-    Returns:
-        float: Brightness temperature of Planck function in the unit of K.
-    """
-    return cu.h * nu / cu.k_B / (np.exp(cu.h * nu / cu.k_B / T) - 1)
+    _kw = {'bounds_error': False, 'fill_value': np.nan,
+           'method': 'linear'}
+    _kw.update(kwargs)
+    c4d = to4dim(data)
+    c4d[np.isnan(c4d)] = 0
+    f = [RGI((v, y, x), c3d, **_kw) for c3d in c4d]
+    if vyxnew is None:
+        if len(f) == 1:
+            f = f[0]
+        return f
+    else:
+        return np.squeeze([f3d(tuple(vyxnew)) for f3d in f])
 
 
 def gaussian2d(xy: np.ndarray,
