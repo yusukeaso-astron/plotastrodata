@@ -219,10 +219,14 @@ class FitsData:
             sin_rho = np.sin(crota2)
             cos_rho = np.cos(crota2)
             cdelt1 = cd11 * cos_rho + cd21 * sin_rho
-            cdelt2 = cd22 * cos_rho - cd12 * sin_rho
+            cdelt2 = -cd12 * sin_rho + cd22 * cos_rho 
             crota2 = np.degrees(crota2)
             h['CDELT1'] = cdelt1
             h['CDELT2'] = cdelt2
+            del h['CD1_1']
+            del h['CD1_2']
+            del h['CD2_1']
+            del h['CD2_2']
             print(f'WCS rotation was found (CROTA2 = {crota2:f} deg).')
 
         def get_list(i: int, crval=False) -> np.ndarray:
