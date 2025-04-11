@@ -206,22 +206,20 @@ class FitsData:
                 restfreq = h['RESTFREQ']
         self.x, self.y, self.v = None, None, None
         self.dx, self.dy, self.dv = None, None, None
-        # WCS rotation check (Calabretta & Greisen 2002, Astronomy & Astrophysics, 395, 1077)
+        # WCS rotation (Calabretta & Greisen 2002, Astronomy & Astrophysics, 395, 1077)
         self.wcsrot = False
         cdmat = ['CD1_1', 'CD1_2', 'CD2_1', 'CD2_2']
         if np.all([s in list(h.keys()) for s in cdmat]):
             self.wcsrot = True
             cd11, cd12, cd21, cd22 = [h[s] for s in cdmat]
-            abs1 = np.hypot(cd11, cd21)
-            abs2 = np.hypot(cd12, cd22)
-            sgn12 = np.sign(cd11 * cd22 - cd12 * cd21)
-            crota2 = np.arctan2(sgn12 * cd12, cd22)
-            cos_c = np.cos(crota2)
-            sin_c = np.sin(crota2)
-            sgn1 = cd11 / abs1 * cos_c + cd12 / abs2 * sin_c
-            sgn2 = cd22 / abs2 * cos_c - cd21 / abs1 * sin_c
-            cdelt1 = sgn1 * abs1
-            cdelt2 = sgn2 * abs2
+            cdelt1cdelt2 = cd11 * cd22 - cd12 * cd21
+            sin_2rho = 2 * cd21 * cd22 / cdelt1cdelt2
+            cos_2rho = (cd11 * cd22 + cd12 * cd21) / cdelt1cdelt2
+            crota2 = np.arctan2(sin_2rho, cos_2rho) / 2.
+            sin_rho = np.sin(crota2)
+            cos_rho = np.cos(crota2)
+            cdelt1 = cd11 * cos_rho + cd21 * sin_rho
+            cdelt2 = cd22 * cos_rho - cd12 * sin_rho
             crota2 = np.degrees(crota2)
             h['CDELT1'] = cdelt1
             h['CDELT2'] = cdelt2
