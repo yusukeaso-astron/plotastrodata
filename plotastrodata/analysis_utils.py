@@ -7,7 +7,7 @@ from scipy.signal import convolve
 from plotastrodata.coord_utils import coord2xy, rel2abs
 from plotastrodata.matrix_utils import Mfac, Mrot, dot2d
 from plotastrodata.other_utils import (estimate_rms, trim,
-                                       gaussian2d,
+                                       gaussian2d, isdeg,
                                        RGIxy, RGIxyv, to4dim)
 from plotastrodata.fits_utils import FitsData, data2fits, Jy2K
 from plotastrodata import const_utils as cu

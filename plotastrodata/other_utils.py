@@ -3,6 +3,8 @@ from scipy.optimize import curve_fit
 from scipy.special import erf
 from scipy.interpolate import RegularGridInterpolator as RGI
 
+from plotastrodata.matrix_utils import Mrot, dot2d
+
 
 def listing(*args) -> list:
     """Output a list of the input when the input is string or number.
