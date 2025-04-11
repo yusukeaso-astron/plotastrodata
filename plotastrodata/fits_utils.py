@@ -208,10 +208,10 @@ class FitsData:
         self.dx, self.dy, self.dv = None, None, None
         # WCS rotation (Calabretta & Greisen 2002, Astronomy & Astrophysics, 395, 1077)
         self.wcsrot = False
-        cdmat = ['CD1_1', 'CD1_2', 'CD2_1', 'CD2_2']
-        if np.all([s in list(h.keys()) for s in cdmat]):
+        cdij = ['CD1_1', 'CD1_2', 'CD2_1', 'CD2_2']
+        if np.all([s in list(h.keys()) for s in cdij]):
             self.wcsrot = True
-            cd11, cd12, cd21, cd22 = [h[s] for s in cdmat]
+            cd11, cd12, cd21, cd22 = [h[s] for s in cdij]
             cdelt1cdelt2 = cd11 * cd22 - cd12 * cd21
             sin_2rho = 2 * cd21 * cd22 / cdelt1cdelt2
             cos_2rho = (cd11 * cd22 + cd12 * cd21) / cdelt1cdelt2
@@ -293,6 +293,18 @@ class FitsData:
             
         if self.wcsrot:
             data = self.get_data()
+            self.header['CRPIX1'] = ic = len(self.x) // 2
+            self.header['CRPIX2'] = jc = len(self.y) // 2
+            xc = self.x[ic] / self.dx
+            yc = self.y[jc] / self.dy
+            Mcd = [[cd11, cd12], [cd21, cd22]]
+            xc, yc = dot2d(Mcd, [xc, yc])
+            newcenter = xy2coord(xy=[xc, yc], coordorg=self.get_center())
+            xc, yc = coord2xy(coords=newcenter, coordorg='00h00m00s 00d00m00s')
+            self.header['CRVAL1'] = xc
+            self.header['CRVAL2'] = yc
+            self.x = self.x - self.x[ic]
+            self.y = self.y - self.y[jc]
             x = self.x / (3600 if isdeg(h['CUNIT1']) else 1)
             y = self.y / (3600 if isdeg(h['CUNIT2']) else 1)
             X, Y = np.meshgrid(x, y)

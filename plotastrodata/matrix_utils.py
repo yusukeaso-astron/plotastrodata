@@ -38,8 +38,8 @@ def dot2d(M: np.ndarray = [[1, 0], [0, 1]],
     Returns:
         np.ndarray: The 2D vector after the matrix multiplied.
     """
-    x = M[0, 0] * np.array(a[0]) + M[0, 1] * np.array(a[1])
-    y = M[1, 0] * np.array(a[0]) + M[1, 1] * np.array(a[1])
+    x = M[0][0] * np.array(a[0]) + M[0][1] * np.array(a[1])
+    y = M[1][0] * np.array(a[0]) + M[1][1] * np.array(a[1])
     return np.array([x, y])
 
 
