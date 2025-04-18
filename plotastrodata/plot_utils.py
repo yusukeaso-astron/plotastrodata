@@ -1000,8 +1000,9 @@ class PlotAstroData(AstroFrame):
             else:
                 xy, i = [ticks * 0, ticks / 3600.], 1
             tickvalues = xy2coord(xy, center)
-            tickvalues = [float(get_sec(t, i)) for t in tickvalues]
-            tickvalues = np.divmod(tickvalues, 1)
+            tickvalues = np.array([float(get_sec(t, i)) for t in tickvalues])
+            tickvalues = np.divmod(tickvalues + 1e-7, 1)
+            tickvalues = (tickvalues[0] % 60, tickvalues[1])
             ticklabels = [f'{int(i):02d}{sec}' + f'{j:.{decimals:d}f}'[2:]
                           for i, j in zip(*tickvalues)]
             return ticks, ticksminor, ticklabels
