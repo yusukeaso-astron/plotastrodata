@@ -667,7 +667,8 @@ class AstroFrame():
                 grid = fd.get_grid(center=d.center[i], dist=self.dist,
                                    restfreq=d.restfreq[i], vsys=self.vsys,
                                    pv=self.pv)
-                d.center[i] = fd.get_center()  # for WCS rotation
+                if fd.wcsrot:
+                    d.center[i] = fd.get_center()  # for WCS rotation
                 d.beam[i] = fd.get_beam(dist=self.dist)
                 d.bunit[i] = fd.get_header('BUNIT')
             if d.data[i] is not None:
