@@ -675,6 +675,11 @@ class AstroFrame():
                 d.pv[i] = self.pv
                 d.sigma_org[i] = d.sigma[i]
                 d.sigma[i] = estimate_rms(d.data[i], d.sigma[i])
+                if (not d.pv[i] and self.center is not None 
+                    and self.center != d.center[i]):
+                    xyoff = coord2xy(self.center, d.center[i]) * 3600
+                    grid[:2] = grid[:2] - xyoff[:, np.newaxis]
+                    d.center[i] = self.center
                 d.data[i], grid = trim(data=d.data[i],
                                        x=grid[0], y=grid[1], v=grid[2],
                                        xlim=self.xlim, ylim=self.ylim,
