@@ -961,12 +961,17 @@ class PlotAstroData(AstroFrame):
         def get_sec(x, i):
             return x.split(' ')[i].split('m')[1].strip('s')
 
+        def get_min(x, i):
+            s = 'h' if i == 0 else 'd'
+            return x.split(' ')[i].split(s)[1].split('m')[0]
+
         def get_hmdm(x, i):
             return x.split(' ')[i].split('m')[0] + 'm'
 
-        if self.rmax > 60.:
-            ra_s = np.floor(float(get_sec(center, 0)))
-            dec_s = np.floor(float(get_sec(center, 1)) * 0.1) * 10
+        on_min_scale = self.rmax >= 60.0
+        if on_min_scale:
+            ra_s = np.floor(float(get_sec(center, 0)) / 5) * 5
+            dec_s = 0.0
             ra = get_hmdm(center, 0) + f'{ra_s:.1f}s'
             dec = get_hmdm(center, 1) + f'{dec_s:.1f}s'
             center = f'{ra} {dec}'
@@ -977,11 +982,15 @@ class PlotAstroData(AstroFrame):
 
         def makegrid(second, mode):
             second = float(second)
-            if mode == 'ra':
-                scale, factor, sec = 1.5, 15 * np.cos(dec), r'$^\mathrm{s}$'
+            is_dec = mode == 'dec'
+            scale = 0.5 if is_dec else 1.5
+            factor = 1 if is_dec else 15 * np.cos(dec)
+            no_sec = on_min_scale and is_dec
+            if no_sec:
+                unit = r'$^{\prime}$' if is_dec else r'$^\mathrm{m}$'
             else:
-                scale, factor, sec = 0.5, 1, r'$^{\prime\prime}$'
-            sec = r'.$\hspace{-0.4}$' + sec
+                unit = r'$^{\prime\prime}$' if is_dec else r'$^\mathrm{s}$'
+                unit = r'.$\hspace{-0.4}$' + unit
             dorder = log2r - scale - (order := np.floor(log2r - scale))
             if 0.00 < dorder <= 0.33:
                 g = 1
@@ -1002,10 +1011,11 @@ class PlotAstroData(AstroFrame):
             else:
                 xy, i = [ticks * 0, ticks / 3600.], 1
             tickvalues = xy2coord(xy, center)
-            tickvalues = np.array([float(get_sec(t, i)) for t in tickvalues])
+            _get = get_min if no_sec else get_sec
+            tickvalues = np.array([float(_get(t, i)) for t in tickvalues])
             tickvalues = np.divmod(tickvalues + 1e-7, 1)
             tickvalues = (tickvalues[0] % 60, tickvalues[1])
-            ticklabels = [f'{int(i):02d}{sec}' + f'{j:.{decimals:d}f}'[2:]
+            ticklabels = [f'{int(i):02d}{unit}' + f'{j:.{decimals:d}f}'[2:]
                           for i, j in zip(*tickvalues)]
             return ticks, ticksminor, ticklabels
 
@@ -1015,6 +1025,8 @@ class PlotAstroData(AstroFrame):
         yticks, yticksminor, yticklabels = makegrid(dec_s, 'dec')
         ra_hm = get_hmdm(xy2coord([xticks[3] / 3600., 0], center), 0)
         dec_dm = get_hmdm(xy2coord([0, yticks[3] / 3600.], center), 1)
+        if on_min_scale:
+            dec_dm = dec_dm.split('d')[0] + 'd'
         trans = {'h': r'$^\mathrm{h}$', 'm': r'$^\mathrm{m}$'}
         ra_hm = ra_hm.translate(str.maketrans(trans))
         trans = {'d': r'$^{\circ}$', 'm': r'$^{\prime}$'}
