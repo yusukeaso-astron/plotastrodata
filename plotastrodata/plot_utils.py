@@ -951,25 +951,27 @@ class PlotAstroData(AstroFrame):
             grid (dict, optional): True means merely grid(). Defaults to None.
             title (dict | str | None): str means set_title(str) for 2D or fig.suptitle(str) for 3D. Defaults to None.
         """
-        if self.rmax > 50.:
-            print('WARNING: set_axis_radec() is not supported '
-                  + 'with rmax>50 yet.')
         if center is None:
             center = self.center
         if center is None:
             center = '00h00m00s 00d00m00s'
         if len(csplit := center.split()) == 3:
             center = f'{csplit[1]} {csplit[2]}'
-        dec = np.radians(coord2xy(center)[1])
 
         def get_sec(x, i):
             return x.split(' ')[i].split('m')[1].strip('s')
 
         def get_hmdm(x, i):
-            return x.split(' ')[i].split('m')[0]
+            return x.split(' ')[i].split('m')[0] + 'm'
 
-        ra_s = get_sec(center, 0)
-        dec_s = get_sec(center, 1)
+        if self.rmax > 60.:
+            ra_s = np.floor(float(get_sec(center, 0)))
+            dec_s = np.floor(float(get_sec(center, 1)) * 0.1) * 10
+            ra = get_hmdm(center, 0) + f'{ra_s:.1f}s'
+            dec = get_hmdm(center, 1) + f'{dec_s:.1f}s'
+            center = f'{ra} {dec}'
+
+        dec = np.radians(coord2xy(center)[1])
         log2r = np.log10(2. * self.rmax)
         n = np.array([-3, -2, -1, 0, 1, 2, 3])
 
@@ -1007,12 +1009,16 @@ class PlotAstroData(AstroFrame):
                           for i, j in zip(*tickvalues)]
             return ticks, ticksminor, ticklabels
 
+        ra_s = get_sec(center, 0)
+        dec_s = get_sec(center, 1)
         xticks, xticksminor, xticklabels = makegrid(ra_s, 'ra')
         yticks, yticksminor, yticklabels = makegrid(dec_s, 'dec')
         ra_hm = get_hmdm(xy2coord([xticks[3] / 3600., 0], center), 0)
         dec_dm = get_hmdm(xy2coord([0, yticks[3] / 3600.], center), 1)
-        ra_hm = ra_hm.replace('h', r'$^\mathrm{h}$') + r'$^\mathrm{m}$'
-        dec_dm = dec_dm.replace('d', r'$^{\circ}$') + r'$^{\prime}$'
+        trans = {'h': r'$^\mathrm{h}$', 'm': r'$^\mathrm{m}$'}
+        ra_hm = ra_hm.translate(str.maketrans(trans))
+        trans = {'d': r'$^{\circ}$', 'm': r'$^{\prime}$'}
+        dec_dm = dec_dm.translate(str.maketrans(trans))
         xticklabels[3] = ra_hm + xticklabels[3]
         yticklabels[3] = dec_dm + '\n' + yticklabels[3]
         pa2 = PlotAxes2D(True, None, 'linear', 'linear', self.Xlim, self.Ylim,
