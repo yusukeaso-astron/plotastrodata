@@ -189,23 +189,6 @@ class FitsData:
             pv (bool, optional): Mode for position-velocity diagram. Defaults to False.
         """
         h = self.get_header()
-        # spatial center
-        if center is not None:
-            c0 = xy2coord([h['CRVAL1'], h['CRVAL2']])
-            if 'RADESYS' in h:
-                radesys = h['RADESYS']
-                c0 = f'{radesys}  {c0}'
-            cx, cy = coord2xy(center, c0)
-        else:
-            cx, cy = 0, 0
-        # rest frequency
-        if restfreq is None:
-            if 'RESTFRQ' in h:
-                restfreq = h['RESTFRQ']
-            if 'RESTFREQ' in h:
-                restfreq = h['RESTFREQ']
-        self.x, self.y, self.v = None, None, None
-        self.dx, self.dy, self.dv = None, None, None
         # WCS rotation (Calabretta & Greisen 2002, Astronomy & Astrophysics, 395, 1077)
         self.wcsrot = False
         cdij = ['CD1_1', 'CD1_2', 'CD2_1', 'CD2_2']
@@ -228,6 +211,23 @@ class FitsData:
             del h['CD2_1']
             del h['CD2_2']
             print(f'WCS rotation was found (CROTA2 = {crota2:f} deg).')
+        # spatial center
+        if center is None or self.wcsrot:
+            cx, cy = 0, 0
+        else:
+            c0 = xy2coord([h['CRVAL1'], h['CRVAL2']])
+            if 'RADESYS' in h:
+                radesys = h['RADESYS']
+                c0 = f'{radesys}  {c0}'
+            cx, cy = coord2xy(center, c0)
+        # rest frequency
+        if restfreq is None:
+            if 'RESTFRQ' in h:
+                restfreq = h['RESTFRQ']
+            if 'RESTFREQ' in h:
+                restfreq = h['RESTFREQ']
+        self.x, self.y, self.v = None, None, None
+        self.dx, self.dy, self.dv = None, None, None
 
         def get_list(i: int, crval=False) -> np.ndarray:
             s = np.arange(h[f'NAXIS{i:d}'])
