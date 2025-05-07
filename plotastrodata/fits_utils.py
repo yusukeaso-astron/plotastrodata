@@ -195,10 +195,18 @@ class FitsData:
         if np.all([s in list(h.keys()) for s in cdij]):
             self.wcsrot = True
             cd11, cd12, cd21, cd22 = [h[s] for s in cdij]
-            cdelt1cdelt2 = cd11 * cd22 - cd12 * cd21
-            sin_2rho = 2 * cd21 * cd22 / cdelt1cdelt2
-            cos_2rho = (cd11 * cd22 + cd12 * cd21) / cdelt1cdelt2
-            crota2 = np.arctan2(sin_2rho, cos_2rho) / 2.
+            if cd21 == 0:
+                rho_a = 0
+            else:
+                rho_a = np.arctan2(np.abs(cd21), np.sign(cd21) * cd11)
+            if cd12 == 0:
+                rho_b = 0
+            else:
+                rho_b = np.arctan2(np.abs(cd12), -np.sign(cd12) * cd22)
+            if (drho := np.abs(np.degrees(rho_a - rho_b))) > 1.0:
+                print('Angles from (CD21, CD11) and (CD12, CD22)'
+                      + f' are different by {drho:.2} degrees.')
+            crota2 = (rho_a + rho_b) / 2.
             sin_rho = np.sin(crota2)
             cos_rho = np.cos(crota2)
             cdelt1 = cd11 * cos_rho + cd21 * sin_rho
