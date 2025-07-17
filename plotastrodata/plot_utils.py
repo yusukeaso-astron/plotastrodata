@@ -481,7 +481,8 @@ class PlotAstroData(AstroFrame):
     def add_beam(self,
                  beam: list[float | None, float | None, float | None] = [None, None, None],
                  beamcolor: str = 'gray',
-                 beampos: list[float, float] | None = None) -> None:
+                 beampos: list[float, float] | None = None,
+                 **kwargs) -> None:
         """Use add_region(). All the arguments may be a list of each format.
 
         Args:
@@ -505,10 +506,12 @@ class PlotAstroData(AstroFrame):
             if self.swapxy:
                 bp = np.transpose(bp)
                 bpa = 90 - bpa
+            _kw = {'facecolor': bc, 'edgecolor': None}
+            _kw.update(kwargs)
             self.add_region(patch=patch, poslist=bp,
                             majlist=bmaj, minlist=bmin, palist=bpa,
                             include_chan=include_chan,
-                            facecolor=bc, edgecolor=None)
+                            **_kw)
 
     def add_marker(self, poslist: list[str | list[float, float]] = [],
                    include_chan: list[int] | None = None, **kwargs) -> None:
@@ -646,7 +649,9 @@ class PlotAstroData(AstroFrame):
                   cbformat: float = '%.1e', cbticks: list[float] | None = None,
                   cbticklabels: list[str] | None = None, cblocation: str = 'right',
                   show_beam: bool = True, beamcolor: str = 'gray',
-                  beampos: list[float, float] | None = None, **kwargs) -> None:
+                  beampos: list[float, float] | None = None,
+                  beam_kwargs: dict = {},
+                  **kwargs) -> None:
         """Use Axes.pcolormesh of matplotlib. kwargs must include the arguments of AstroData to specify the data to be plotted.
 
         Args:
@@ -663,6 +668,7 @@ class PlotAstroData(AstroFrame):
             show_beam (bool, optional): Defaults to True.
             beamcolor (str, optional): Matplotlib color. Defaults to 'gray'.
             beampos (list, optional): Relative position. Defaults to None.
+            beam_kwargs (dict, optional): Keyword arguments for add_beam(). Defaults to {}.
         """
         _kw = {'cmap': 'cubehelix', 'alpha': 1, 'edgecolors': 'none', 'zorder': 1}
         _kw.update(kwargs)
@@ -724,12 +730,15 @@ class PlotAstroData(AstroFrame):
                     ticklin = cmin_org * ticklin**(1 / (1 - stretchpower))
                 cb.set_ticklabels([f'{d:{cbformat[1:]}}' for d in ticklin])
         if show_beam:
-            self.add_beam(beam=beam, beamcolor=beamcolor, beampos=beampos)
+            self.add_beam(beam=beam, beamcolor=beamcolor, beampos=beampos,
+                          **beam_kwargs)
 
     def add_contour(self, xskip: int = 1, yskip: int = 1,
                     levels: list[float] = [-12, -6, -3, 3, 6, 12, 24, 48, 96, 192, 384],
                     show_beam: bool = True, beamcolor: str = 'gray',
-                    beampos: list[float, float] | None = None, **kwargs) -> None:
+                    beampos: list[float, float] | None = None,
+                    beam_kwargs: dict = {},
+                    **kwargs) -> None:
         """Use Axes.contour of matplotlib. kwargs must include the arguments of AstroData to specify the data to be plotted.
 
         Args:
@@ -738,6 +747,7 @@ class PlotAstroData(AstroFrame):
             show_beam (bool, optional): Defaults to True.
             beamcolor (str, optional): Matplotlib color. Defaults to 'gray'.
             beampos (list, optional): Relative position. Defaults to None.
+            beam_kwargs (dict, optional): Keyword arguments for add_beam(). Defaults to {}.
         """
         _kw = {'colors': 'gray', 'linewidths': 1.0, 'zorder': 2}
         _kw.update(kwargs)
@@ -752,7 +762,8 @@ class PlotAstroData(AstroFrame):
         for axnow, cnow in zip(self.ax, c):
             axnow.contour(x, y, cnow, np.sort(levels) * sigma, **_kw)
         if show_beam:
-            self.add_beam(beam=beam, beamcolor=beamcolor, beampos=beampos)
+            self.add_beam(beam=beam, beamcolor=beamcolor, beampos=beampos,
+                          **beam_kwargs)
 
     def add_segment(self, ampfits: str = None, angfits: str = None,
                     Ufits: str = None, Qfits: str = None,
@@ -765,7 +776,9 @@ class PlotAstroData(AstroFrame):
                     rotation: float = 0.,
                     cutoff: float = 3.,
                     show_beam: bool = True, beamcolor: str = 'gray',
-                    beampos: list[float, float] | None = None, **kwargs) -> None:
+                    beampos: list[float, float] | None = None,
+                    beam_kwargs: dict = {},
+                    **kwargs) -> None:
         """Use Axes.quiver of matplotlib. kwargs must include the arguments of AstroData to specify the data to be plotted. fitsimage = [ampfits, angfits, Ufits, Qfits]. data = [amp, ang, stU, stQ].
 
         Args:
@@ -785,6 +798,7 @@ class PlotAstroData(AstroFrame):
             show_beam (bool, optional): Defaults to True.
             beamcolor (str, optional): Matplotlib color. Defaults to 'gray'.
             beampos (list, optional): Relative position. Defaults to None.
+            beam_kwargs (dict, optional): Keyword arguments for add_beam(). Defaults to {}.
         """
         _kw = {'angles': 'xy', 'scale_units': 'xy', 'color': 'gray',
                'pivot': 'mid', 'headwidth': 0, 'headlength': 0,
@@ -820,7 +834,8 @@ class PlotAstroData(AstroFrame):
         for axnow, unow, vnow in zip(self.ax, U, V):
             axnow.quiver(x, y, unow, vnow, **_kw)
         if show_beam:
-            self.add_beam(beam=beam, beamcolor=beamcolor, beampos=beampos)
+            self.add_beam(beam=beam, beamcolor=beamcolor, beampos=beampos,
+                          **beam_kwargs)
 
     def add_rgb(self, xskip: int = 1, yskip: int = 1,
                 stretch: list[str, str, str] = ['linear'] * 3,
@@ -829,6 +844,7 @@ class PlotAstroData(AstroFrame):
                 show_beam: bool = True,
                 beamcolor: list[str, str, str] = ['red', 'green', 'blue'],
                 beampos: list[list[float, float] | None] = [None, None, None],
+                beam_kwargs: dict = {},
                 **kwargs) -> None:
         """Use PIL.Image and imshow of matplotlib. kwargs must include the arguments of AstroData to specify the data to be plotted. A three-element array ([red, green, blue]) is supposed for all arguments, except for xskip, yskip and show_beam, including vmax and vmin.
 
@@ -840,6 +856,7 @@ class PlotAstroData(AstroFrame):
             show_beam (bool, optional): Defaults to True.
             beamcolor (list, optional): Matplotlib color. Defaults to ['red', 'green', 'blue'].
             beampos (list, optional): Relative position. Defaults to None.
+            beam_kwargs (dict, optional): Keyword arguments for add_beam(). Defaults to {}.
         """
         from PIL import Image
 
@@ -873,7 +890,8 @@ class PlotAstroData(AstroFrame):
             axnow.imshow(im, extent=[x[0], x[-1], y[0], y[-1]])
             axnow.set_aspect(np.abs((x[-1]-x[0]) / (y[-1]-y[0])))
         if show_beam:
-            self.add_beam(beam=beam, beamcolor=beamcolor, beampos=beampos)
+            self.add_beam(beam=beam, beamcolor=beamcolor, beampos=beampos,
+                          **beam_kwargs)
 
     def _set_axis_shared(self, pa2: PlotAxes2D, title: dict | str | None):
         """Internal method used in set_axis() and set_axis_radec().
