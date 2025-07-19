@@ -12,7 +12,7 @@ def obs2sys(xobs: np.ndarray, yobs: np.ndarray, zobs: np.ndarray,
         xobs (np.ndarray): Observed x-coordinates. The distance to the east.
         yobs (np.ndarray): Observed y-coordinates. The distance to the north.
         zobs (np.ndarray): Observed z-coordinates. The line-of-sight distance.
-        pa (float, optional): Position angle of the system in degrees from yobs (north) to xobs (east). Defaults to 0.
+        pa (float, optional): Position angle of the "blueshifted outflow" (not the disk major axis) in degrees from yobs (north) to xobs (east). Defaults to 0.
         incl (float, optional): Inclination of the system in degrees. i=0 means face-on. Defaults to 0.
         phi0 (float, optional): Azimuthal angle of the system in degrees, relative to the system that is observed. Defaults to 0.
         theta0 (float, optional): Polar angle of the x-axis of the system in degrees, relative to the x-axis of the system that is observed. Defaults to pi/2.
@@ -47,7 +47,7 @@ def sys2obs(xsys: np.ndarray, ysys: np.ndarray, zsys: np.ndarray,
         xsys (np.ndarray): System x-coordinates (or r).
         ysys (np.ndarray): System y-coordinates (or theta).
         zsys (np.ndarray): System z-coordinates (or phi).
-        pa (float, optional): Position angle of the system in degrees from yobs (north) to xobs (east). Defaults to 0.
+        pa (float, optional): Position angle of the "blueshifted outflow" (not the disk major axis) in degrees from yobs (north) to xobs (east). Defaults to 0.
         incl (float, optional): Inclination of the system in degrees. i=0 means face-on. Defaults to 0.
         phi0 (float, optional): Azimuthal angle of the system in degrees, relative to the system that is observed. Defaults to 0.
         theta0 (float, optional): Polar angle of the x-axis of the system in degrees, relative to the x-axis of the system that is observed. Defaults to pi/2.
