@@ -322,7 +322,7 @@ class EmceeCorner():
                     s2 = '_{-' + f'{s2:.2f}' + '}'
                     s0 = s0 + s1 + s2
                     ax[k] = fig.add_subplot(self.dim, self.dim, k + 1)
-                    ax[k].plot(x[i], y[i], 'k-')
+                    ax[k].plot(x[i], y[i], 'k-', drawstyle='steps-mid')
                     ax[k].axvline(self.popt[i])
                     ax[k].axvline(self.plow[i], linestyle='--', color='k')
                     ax[k].axvline(self.pmid[i], linestyle='--', color='k')
