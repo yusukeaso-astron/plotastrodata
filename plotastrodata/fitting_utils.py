@@ -165,7 +165,7 @@ class EmceeCorner():
             print('')
 
     def plotcorner(self, show: bool = False,
-                   savefig: str | None = None, labels: list[float] | None = None,
+                   savefig: str | None = None, labels: list[str] | None = None,
                    cornerrange: list[float] | None = None) -> None:
         """Make the corner plot from self.samples.
 
