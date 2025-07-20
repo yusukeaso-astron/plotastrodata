@@ -112,7 +112,7 @@ class EmceeCorner():
                 else:
                     sampler = ptemcee.Sampler(**pars)
                     sampler.run_mcmc(pos0, nsteps)
-                samples = sampler.chain[0, :, nburnin:, :]  # temperature, walker, step, dim
+                samples = sampler.chain[0, :, nburnin:, :]  # temperatures, walkers, steps, dim
             else:
                 if ncores > 1:
                     print('Use logl as log_prob_fn to avoid function-in-function.')
@@ -130,7 +130,7 @@ class EmceeCorner():
                 else:
                     sampler = emcee.EnsembleSampler(**pars)
                     sampler.run_mcmc(pos0, nsteps)
-                samples = sampler.chain[:, nburnin:, :]  # walker, step, dim
+                samples = sampler.chain[:, nburnin:, :]  # walkers, steps, dim
             if grcheck:
                 # Gelman-Rubin statistics #
                 B = np.std(np.mean(samples, axis=1), axis=0)
@@ -190,7 +190,7 @@ class EmceeCorner():
 
     def plotchain(self, show: bool = False, savefig: str = None,
                   labels: list = None, ylim: list = None):
-        """Plot parameters as a function of steps using self.samples.
+        """Plot parameters as a function of steps using self.samples. This method plots nine lines: percent[0], 50%, percent[1] percentiles (over the steps by 1% binning) of percent[0], 50%, percent[1] percentiles (over the walkers).
 
         Args:
             show (bool, optional): Whether to show the chain plot. Defaults to False.
@@ -208,11 +208,11 @@ class EmceeCorner():
         nend = len(x) - len(x) % 100 if naverage > 1 else len(x)
         x = x[:nend:naverage]
         for i in range(self.dim):
-            y = self.samples[:, :, i]
+            y = self.samples[:, :, i]  # walkers, steps, dim
             plist = [self.percent[0], 50, self.percent[1]]
-            y = [np.percentile(y, p, axis=0) for p in plist]
+            y = [np.percentile(y, p, axis=0) for p in plist]  # percent over the walkers, steps
             y = [[np.percentile(np.reshape(yy[:nend], (naverage, -1)), p, axis=0)
-                  for p in plist] for yy in y]
+                  for p in plist] for yy in y]  # percent over the walkers, percent over the steps
             ax = fig.add_subplot(self.dim, 1, i + 1)
             for yy, l, c in zip(y, [1, 2, 1], ['c', 'b', 'c']):
                 for yyy, w in zip(yy, [0.25, 1, 0.25]):
@@ -274,7 +274,7 @@ class EmceeCorner():
 
             def getpercentile(percent: float):
                 idxmin = [np.argmin(np.abs(q - percent)) for q in p1dcum]
-                return np.array([t[i] for t, i in zip(pargrid, idxmin)])
+                return np.array([p[i] for p, i in zip(pargrid, idxmin)])
 
             self.plow = getpercentile(self.percent[0] / 100)
             self.pmid = getpercentile(0.5)
