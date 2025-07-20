@@ -42,7 +42,7 @@ class EmceeCorner():
         """Make bounds, logl, and logp for ptemcee.
 
         Args:
-            bounds (np.ndarray): Bounds for ptemcee in the shape of (2, dim).
+            bounds (np.ndarray): Bounds for ptemcee in the shape of (dim, 2).
             logl (function, optional): Log likelihood for ptemcee. Defaults to None.
             model (function, optional): Model function to make a log likelihood function. Defaults to None.
             xdata (np.ndarray, optional): Input for the model function. Defaults to None.
@@ -52,7 +52,9 @@ class EmceeCorner():
             percent (list, optional): The lower and upper percnetiles to be calculated. Defaults to [16, 84].
         """
         global global_bounds, global_progressbar
-        global_bounds = np.array(bounds) if len(bounds) < 3 else np.transpose(bounds)
+        global_bounds = np.transpose(bounds)
+        if len(global_bounds) > 3:
+            global_bounds = global_bounds.T
         global_progressbar = progressbar
         if logl is None and not (None in [model, xdata, ydata]):
             def logl(x: np.ndarray) -> float:
@@ -287,7 +289,7 @@ class EmceeCorner():
 
     def plotongrid(self, show: bool = False, savefig: str | None = None,
                    labels: list[str] = None, cornerrange: list[float] = None,
-                   cmap: str = 'binary', levels: list[float] = [0.001, 0.01, 0.1]) -> None:
+                   cmap: str = 'binary', levels: list[float] = [0.011109, 0.135335, 0.606531]) -> None:
         """Make the corner plot from the posterior calculated on a grid.
 
         Args:
@@ -296,7 +298,7 @@ class EmceeCorner():
             labels (list, optional): Labels for the corner plot. Defaults to None.
             cornerrange (list, optional): Range for the corner plot. Defaults to None.
             cmap: (str, optional): cmap for matplotlib.pyplot.plt.pcolormesh(). Defaults to 'binary'.
-            levels: (list, optional): levels for matplotlib.pyplot.plt.contour() relative to the peak. Defaults to [0.001, 0.01, 0.1].
+            levels: (list, optional): levels for matplotlib.pyplot.plt.contour() relative to the peak. Defaults to [exp(-0.5*3^2), exp(-0.5*2^2), exp(-0.5*1^2)].
         """
         adim = np.arange(self.dim)
         if labels is None:
