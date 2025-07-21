@@ -25,7 +25,7 @@ def logp(x: np.ndarray) -> float:
     """
     if global_progressbar:
         bar.update(1)
-    if np.all((global_bounds[0] < x) & (x < global_bounds[1])):
+    if np.all((global_bounds[:, 0] < x) & (x < global_bounds[:, 1])):
         return 0
     else:
         return -np.inf
@@ -52,15 +52,17 @@ class EmceeCorner():
             percent (list, optional): The lower and upper percnetiles to be calculated. Defaults to [16, 84].
         """
         global global_bounds, global_progressbar
-        global_bounds = np.transpose(bounds)
-        if len(global_bounds) > 3:
-            global_bounds = global_bounds.T
+        if len(bounds[0]) > 3:
+            global_bounds = np.transpose(bounds)
+            print('bounds has been transposed because its shape is (2, dim).')
+        else:
+            global_bounds = np.array(bounds)
         global_progressbar = progressbar
         if logl is None and not (None in [model, xdata, ydata]):
             def logl(x: np.ndarray) -> float:
                 return np.sum((ydata - model(xdata, *x))**2 / sigma**2) / (-2)
         self.bounds = global_bounds
-        self.dim = len(self.bounds[0])
+        self.dim = len(self.bounds)
         self.logl = logl
         self.logp = logp
         self.percent = percent
@@ -101,7 +103,8 @@ class EmceeCorner():
             i += 1
             if pos0 is None:
                 pos0 = np.random.rand(ntemps, nwalkers, self.dim) \
-                       * (self.bounds[1] - self.bounds[0]) + self.bounds[0]
+                       * (self.bounds[:, 1] - self.bounds[:, 0]) \
+                       + self.bounds[:, 0]
                 if not pt:
                     pos0 = pos0[0]
             if pt:
@@ -180,7 +183,7 @@ class EmceeCorner():
         if labels is None:
             labels = [f'Par {i:d}' for i in range(self.dim)]
         if cornerrange is None:
-            cornerrange = np.transpose(self.bounds)
+            cornerrange = self.bounds
         corner.corner(np.reshape(self.samples, (-1, self.dim)), truths=self.popt,
                       quantiles=[self.percent[0] / 100, 0.5, self.percent[1] / 100],
                       show_titles=True, labels=labels, range=cornerrange)
@@ -203,7 +206,7 @@ class EmceeCorner():
         if labels is None:
             labels = [f'Par {i:d}' for i in range(self.dim)]
         if ylim is None:
-            ylim = np.transpose(self.bounds)
+            ylim = self.bounds
         fig = plt.figure(figsize=(4, 2 * self.dim))
         x = np.arange(np.shape(self.samples)[1])
         naverage = max(1, len(x) // 100)
@@ -246,7 +249,7 @@ class EmceeCorner():
         if type(log) is bool:
             log = [log] * self.dim
         pargrid = []
-        for a, b, c, d in zip(*global_bounds, ngrid, log):
+        for a, b, c, d in zip(self.bounds[:, 0], self.bounds[:, 1], ngrid, log):
             pargrid.append(np.geomspace(a, b, c) if d else np.linspace(a, b, c))
         p = np.exp(self.logl(np.meshgrid(*pargrid[::-1], indexing='ij')[::-1]))
         p[p < pcut] = 0
@@ -271,12 +274,12 @@ class EmceeCorner():
             self.pmid = np.full(self.dim, np.nan)
             self.phigh = np.full(self.dim, np.nan)
         else:
-            iopt = np.unravel_index(np.argmax(p), np.shape(p))[::-1]
-            self.popt = [t[i] for t, i in zip(pargrid, iopt)]
+            i_max = np.unravel_index(np.argmax(p), np.shape(p))[::-1]
+            self.popt = np.array([p[i] for p, i in zip(pargrid, i_max)])
 
             def getpercentile(percent: float):
-                idxmin = [np.argmin(np.abs(q - percent)) for q in p1dcum]
-                return np.array([p[i] for p, i in zip(pargrid, idxmin)])
+                i_min = [np.argmin(np.abs(q - percent)) for q in p1dcum]
+                return np.array([p[i] for p, i in zip(pargrid, i_min)])
 
             self.plow = getpercentile(self.percent[0] / 100)
             self.pmid = getpercentile(0.5)
@@ -304,7 +307,7 @@ class EmceeCorner():
         if labels is None:
             labels = [f'Par {i:d}' for i in adim]
         if cornerrange is None:
-            cornerrange = np.transpose(self.bounds)
+            cornerrange = self.bounds
         x = self.pargrid
         y = self.p1d
         fig = plt.figure(figsize=(2 * self.dim * 1.2, 2 * self.dim))
@@ -373,7 +376,7 @@ class EmceeCorner():
         """Calculate the Bayesian evidence for a model using dynamic nested sampling through dynesty.
         """
         def prior_transform(u):
-            return self.bounds[0] + (self.bounds[1] - self.bounds[0]) * u
+            return self.bounds[:, 0] + (self.bounds[:, 1] - self.bounds[:, 0]) * u
         dsampler = DNS(loglikelihood=self.logl,
                        prior_transform=prior_transform,
                        ndim=self.dim, **kwargs)
@@ -381,4 +384,4 @@ class EmceeCorner():
         results = dsampler.results
         evidence = np.exp(results.logz[-1])
         error = evidence * results.logzerr[-1]
-        return {'evidence': evidence, 'error': error}
+        return {'evidence': float(evidence), 'error': float(error)}
