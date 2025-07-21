@@ -384,4 +384,5 @@ class EmceeCorner():
         results = dsampler.results
         evidence = np.exp(results.logz[-1])
         error = evidence * results.logzerr[-1]
-        return {'evidence': float(evidence), 'error': float(error)}
+        self.evidence = evidence
+        return {'evidence': evidence, 'error': error}
