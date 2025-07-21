@@ -265,8 +265,6 @@ class EmceeCorner():
         axlist = [tuple(np.delete(adim, i)) for i in adim[::-1]]  # adim[::-1] is becuase the 0th parameter is the innermost axis.
         p1d = [np.sum(p * vol, axis=a) / np.sum(vol, axis=a) for a in axlist]
         evidence = np.sum(p * vol) / np.sum(vol)
-        p1dcum = [np.cumsum(q * w) / np.transpose([np.sum(q * w)])
-                  for q, w in zip(p1d, dpar)]
         if np.all(p == 0):
             print('All posterior is below pcut.')
             self.popt = np.full(self.dim, np.nan)
@@ -278,12 +276,13 @@ class EmceeCorner():
             self.popt = np.array([p[i] for p, i in zip(pargrid, i_max)])
 
             def getpercentile(percent: float):
-                i_min = [np.argmin(np.abs(q - percent)) for q in p1dcum]
-                return np.array([p[i] for p, i in zip(pargrid, i_min)])
+                a = [np.percentile(g, percent, method='inverted_cdf', weights=p)
+                     for g, p in zip(pargrid, p1d)]
+                return np.array(a)
 
-            self.plow = getpercentile(self.percent[0] / 100)
-            self.pmid = getpercentile(0.5)
-            self.phigh = getpercentile(self.percent[1] / 100)
+            self.plow = getpercentile(self.percent[0])
+            self.pmid = getpercentile(50)
+            self.phigh = getpercentile(self.percent[1])
         self.p = p
         self.p1d = p1d
         self.pargrid = pargrid
