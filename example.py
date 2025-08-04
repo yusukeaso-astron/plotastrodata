@@ -82,19 +82,19 @@ p.set_axis_radec(nticksminor=5, title={'label': '2D RGB', 'loc': 'right'})
 p.savefig('test2Drgb.png', show=True)
 
 ################################################################################
-from plotastrodata.plot_utils import plotprofile, plotslice, plot3d
-
-
+from plotastrodata.plot_utils import plotprofile
 # Line profile
 plotprofile(fitsimage=pre+'test3D.fits', ellipse=[[0.2, 0.2, 0]] * 2, flux=True,
             coords=['04h04m43.045s 26d18m55.766s', '04h04m43.109s 26d18m56.704s'],
             gaussfit=True, savefig='testprofile.png', show=True, width=2)
 
+from plotastrodata.plot_utils import plotslice
 # Spatial slice
 plotslice(length=1.6, pa=270, fitsimage=pre+'test2D.fits',
           center='04h04m43.07s 26d18m56.20s', sigma=5e-3,
           savefig='testslice.png', show=True)
 
+from plotastrodata.plot_utils import plot3d
 # Rotatable 3D cube in html
 plot3d(rmax=0.8, vmin=-5, vmax=5, fitsimage=pre+'test3D.fits',
        outname='test3D', levels=[3, 6, 9], show=False)
@@ -225,6 +225,14 @@ from plotastrodata.fft_utils import fftcentering
 # Calculate the FFT of a boxcar function
 x = np.linspace(-99.5, 99.5, 200)
 f = np.where(np.abs(x)<10, 1, 0)
+
+fig = plt.figure()
+ax = fig.add_subplot(1, 1, 1)
+ax.plot(x, f)
+ax.set_xlabel('x')
+ax.set_ylabel('f')
+fig.savefig('boxcar.png')
+plt.show()
 
 u = np.fft.fftshift(np.fft.fftfreq(len(x), d=x[1] - x[0]))
 F = np.fft.fftshift(np.fft.fft(f))
