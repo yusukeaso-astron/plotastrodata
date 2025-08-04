@@ -107,7 +107,7 @@ import matplotlib.animation as animation
 nchans = 31
 
 def update_plot(i):
-    print(i)
+    print(f'Channel number: {i:d}\033[1A')
     f = pad(rmax=0.8, fitsimage=pre+'test3D.fits', vmin=-5, vmax=5, vskip=2,
             channelnumber=i, fig=fig)
     f.add_color(fitsimage=pre+'test3D.fits', stretch='log')
@@ -130,7 +130,6 @@ from plotastrodata.los_utils import sys2obs, polarvel2losvel
 
 # The following introduces a way for plotting the projected morphology and the line-of-sight velocity of a streamer.
 incl = 60
-phi0 = 0
 theta0 = 90
 
 xscale = np.sin(np.radians(theta0))**2
@@ -156,15 +155,20 @@ v_r = v_r * vscale
 v_theta = v_theta * vscale
 v_phi = v_phi * vscale
 
-xobs, yobs, zobs = sys2obs(xsys=xsys, ysys=ysys, zsys=zsys,
+xlist, ylist, vlist = [], [], []
+for phi0 in np.linspace(0, 360, 9):
+    xobs, yobs, zobs = sys2obs(xsys=xsys, ysys=ysys, zsys=zsys,
+                               incl=incl, phi0=phi0, theta0=theta0)
+    vlos = polarvel2losvel(v_r=v_r, v_theta=v_theta, v_phi=v_phi,
+                           theta=theta, phi=phi,
                            incl=incl, phi0=phi0, theta0=theta0)
-vlos = polarvel2losvel(v_r=v_r, v_theta=v_theta, v_phi=v_phi,
-                       theta=theta, phi=phi,
-                       incl=incl, phi0=phi0, theta0=theta0)
+    xlist.append(xobs)
+    ylist.append(yobs)
+    vlist.append(vlos)
 
 fig = plt.figure()
 ax = fig.add_subplot(1, 1, 1)
-m = ax.scatter(xobs, yobs, c=vlos, cmap='coolwarm', vmin=-1.5, vmax=1.5)
+m = ax.scatter(xlist, ylist, c=vlist, cmap='coolwarm', vmin=-1.5, vmax=1.5)
 fig.colorbar(m, ax=ax, label=r'$V_\mathrm{los} / \sqrt{GM_{*}/r_{c}}$')
 ax.set_xlim(3, -3)
 ax.set_ylim(-3, 3)
@@ -173,6 +177,47 @@ ax.set_xlabel(r'$x / r_{c}$')
 ax.set_ylabel(r'$y / r_{c}$')
 ax.grid()
 fig.savefig('streamer.png')
+plt.show()
+
+################################################################################
+from plotastrodata.fft_utils import fftcentering
+
+
+# Calculate the FFT of a boxcar function
+x = np.linspace(-99.5, 99.5, 200)
+f = np.where(np.abs(x)<10, 1, 0)
+
+fig = plt.figure()
+ax = fig.add_subplot(1, 1, 1)
+ax.plot(x, f)
+ax.set_xlabel('x')
+ax.set_ylabel('f')
+fig.savefig('boxcar.png')
+plt.show()
+
+u = np.fft.fftshift(np.fft.fftfreq(len(x), d=x[1] - x[0]))
+F = np.fft.fftshift(np.fft.fft(f))
+
+fig = plt.figure()
+ax = fig.add_subplot(1, 1, 1)
+ax.plot(u, np.real(F), label='real')
+ax.plot(u, np.imag(F), label='imag')
+ax.set_xlabel('u')
+ax.set_ylabel('numpy.fft')
+ax.legend()
+fig.savefig('numpyfft.png')
+plt.show()
+
+F, u = fftcentering(f=f, x=x, xcenter=0)
+
+fig = plt.figure()
+ax = fig.add_subplot(1, 1, 1)
+ax.plot(u, np.real(F), label='real')
+ax.plot(u, np.imag(F), label='imag')
+ax.set_xlabel('u')
+ax.set_ylabel('fftcentering')
+ax.legend()
+fig.savefig('fftcentering.png')
 plt.show()
 
 ################################################################################
@@ -217,44 +262,3 @@ print('evidence:', fitter.evidence)
 fitter.plotongrid(show=True, savefig='grid.png',
                   labels=['par1', 'par2', 'par3'],
                   cornerrange=[[-4, 4], [-8, 8], [-16, 16]])
-
-################################################################################
-from plotastrodata.fft_utils import fftcentering
-
-
-# Calculate the FFT of a boxcar function
-x = np.linspace(-99.5, 99.5, 200)
-f = np.where(np.abs(x)<10, 1, 0)
-
-fig = plt.figure()
-ax = fig.add_subplot(1, 1, 1)
-ax.plot(x, f)
-ax.set_xlabel('x')
-ax.set_ylabel('f')
-fig.savefig('boxcar.png')
-plt.show()
-
-u = np.fft.fftshift(np.fft.fftfreq(len(x), d=x[1] - x[0]))
-F = np.fft.fftshift(np.fft.fft(f))
-
-fig = plt.figure()
-ax = fig.add_subplot(1, 1, 1)
-ax.plot(u, np.real(F), label='real')
-ax.plot(u, np.imag(F), label='imag')
-ax.set_xlabel('u')
-ax.set_ylabel('numpy.fft')
-ax.legend()
-fig.savefig('numpyfft.png')
-plt.show()
-
-F, u = fftcentering(f=f, x=x, xcenter=0)
-
-fig = plt.figure()
-ax = fig.add_subplot(1, 1, 1)
-ax.plot(u, np.real(F), label='real')
-ax.plot(u, np.imag(F), label='imag')
-ax.set_xlabel('u')
-ax.set_ylabel('fftcentering')
-ax.legend()
-fig.savefig('fftcentering.png')
-plt.show()
