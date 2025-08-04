@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-pre = '/Users/yusukeaso/C_programs/Programs/plotastrodata/testFITS/'
+pre = './exampleFITS/'
 
 ################################################################################
 from plotastrodata.analysis_utils import AstroData, AstroFrame
@@ -192,6 +192,7 @@ ax = fig.add_subplot(1, 1, 1)
 ax.plot(x, f)
 ax.set_xlabel('x')
 ax.set_ylabel('f')
+fig.tight_layout()
 fig.savefig('boxcar.png')
 plt.show()
 
@@ -205,6 +206,7 @@ ax.plot(u, np.imag(F), label='imag')
 ax.set_xlabel('u')
 ax.set_ylabel('numpy.fft')
 ax.legend()
+fig.tight_layout()
 fig.savefig('numpyfft.png')
 plt.show()
 
@@ -217,6 +219,7 @@ ax.plot(u, np.imag(F), label='imag')
 ax.set_xlabel('u')
 ax.set_ylabel('fftcentering')
 ax.legend()
+fig.tight_layout()
 fig.savefig('fftcentering.png')
 plt.show()
 
