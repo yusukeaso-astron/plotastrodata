@@ -309,8 +309,8 @@ class EmceeCorner():
             cornerrange = self.bounds
         x = self.pargrid
         y = self.p1d
-        fig = plt.figure(figsize=(2 * self.dim * 1.2, 2 * self.dim))
-        fig.subplots_adjust(hspace=0, wspace=0, top=0.87, right=0.87)
+        fig = plt.figure(figsize=(2 * self.dim * 1.2, 2 * self.dim * 1.2))
+        fig.subplots_adjust(hspace=0.05, wspace=0.05, top=0.87, right=0.87)
         ax = np.empty(self.dim * self.dim, dtype='object')
         for i in adim:
             for j in adim:
@@ -337,6 +337,7 @@ class EmceeCorner():
                     ax[k].set_yticks([])
                     if i == self.dim - 1:
                         plt.setp(ax[k].get_xticklabels(), rotation=45)
+                        ax[k].set_xlabel(labels[i])
                     else:
                         plt.setp(ax[k].get_xticklabels(), visible=False)
                 else:
@@ -365,11 +366,13 @@ class EmceeCorner():
                         plt.setp(ax[k].get_xticklabels(), rotation=45)
                     else:
                         plt.setp(ax[k].get_xticklabels(), visible=False)
-        fig.tight_layout()
+        #fig.tight_layout()
         if savefig is not None:
             plt.savefig(savefig)
         if show:
             plt.show()
+        else:
+            plt.close()
 
     def getDNSevidence(self, **kwargs):
         """Calculate the Bayesian evidence for a model using dynamic nested sampling through dynesty.
