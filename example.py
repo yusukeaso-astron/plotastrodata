@@ -106,6 +106,7 @@ import matplotlib.animation as animation
 # The following introduces a way for making an animation file of a given FITS cube.
 nchans = 31
 
+
 def update_plot(i):
     print(f'Channel number: {i:d}\033[1A')
     f = pad(rmax=0.8, fitsimage=pre+'test3D.fits', vmin=-5, vmax=5, vskip=2,
@@ -114,6 +115,7 @@ def update_plot(i):
     f.add_scalebar(length=50 / 140, label='50 au')
     f.set_axis_radec(grid={}, title='3D channel maps')
     f.fig.tight_layout()
+
 
 fig = plt.figure()
 ani = animation.FuncAnimation(fig, update_plot, frames=nchans, interval=50)
@@ -185,7 +187,7 @@ from plotastrodata.fft_utils import fftcentering
 
 # Calculate the FFT of a boxcar function
 x = np.linspace(-99.5, 99.5, 200)
-f = np.where(np.abs(x)<10, 1, 0)
+f = np.where(np.abs(x) < 10, 1, 0)
 
 fig = plt.figure()
 ax = fig.add_subplot(1, 1, 1)
@@ -230,10 +232,12 @@ from plotastrodata.plot_utils import set_rcparams
 
 set_rcparams(fontsize=12)
 
+
 def logl(p):
     x1, x2, x3 = p
     chi2 = (x1 / 1)**2 + (x2 / 2)**2 + (x3 / 4)**2
     return -0.5 * chi2
+
 
 # initialization
 fitter = EmceeCorner(bounds=[[-5, 5], [-10, 10], [-20, 20]],

@@ -366,7 +366,7 @@ class EmceeCorner():
                         plt.setp(ax[k].get_xticklabels(), rotation=45)
                     else:
                         plt.setp(ax[k].get_xticklabels(), visible=False)
-        #fig.tight_layout()
+        # fig.tight_layout()
         if savefig is not None:
             plt.savefig(savefig)
         if show:
