@@ -58,7 +58,7 @@ class EmceeCorner():
         else:
             global_bounds = np.array(bounds)
         global_progressbar = progressbar
-        if logl is None and not (None in [model, xdata, ydata]):
+        if logl is None and None not in [model, xdata, ydata]:
             def logl(x: np.ndarray) -> float:
                 return np.sum((ydata - model(xdata, *x))**2 / sigma**2) / (-2)
         self.bounds = global_bounds
@@ -219,9 +219,9 @@ class EmceeCorner():
             y = [[np.percentile(np.reshape(yy[:nend], (naverage, -1)), p, axis=0)
                   for p in plist] for yy in y]  # percent over the walkers, percent over the steps
             ax = fig.add_subplot(self.dim, 1, i + 1)
-            for yy, l, c in zip(y, [1, 2, 1], ['c', 'b', 'c']):
-                for yyy, w in zip(yy, [0.25, 1, 0.25]):
-                    ax.plot(x, yyy, '-', color=c, linewidth=l * w)
+            for yy, scale, c in zip(y, [1, 2, 1], ['c', 'b', 'c']):
+                for yyy, lw in zip(yy, [0.25, 1, 0.25]):
+                    ax.plot(x, yyy, '-', color=c, linewidth=lw * scale)
             ax.set_ylim(ylim[i])
             ax.set_ylabel(labels[i])
             if i < self.dim - 1:
@@ -249,13 +249,15 @@ class EmceeCorner():
         if type(log) is bool:
             log = [log] * self.dim
         pargrid = []
-        for a, b, c, d in zip(self.bounds[:, 0], self.bounds[:, 1], ngrid, log):
-            pargrid.append(np.geomspace(a, b, c) if d else np.linspace(a, b, c))
+        for start, stop, num, uselog \
+            in zip(self.bounds[:, 0], self.bounds[:, 1], ngrid, log):
+            args = [start, stop, num]
+            pargrid.append(np.geomspace(*args) if uselog else np.linspace(*args))
         p = np.exp(self.logl(np.meshgrid(*pargrid[::-1], indexing='ij')[::-1]))
         p[p < pcut] = 0
         dpar = []
-        for pg, l in zip(pargrid, log):
-            if l:
+        for pg, uselog in zip(pargrid, log):
+            if uselog:
                 r = np.sqrt(pg[1] / pg[0])
                 dpar.append(pg * (r - r**(-1)))
             else:

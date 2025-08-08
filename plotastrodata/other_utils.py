@@ -141,24 +141,24 @@ def trim(data: np.ndarray | None = None, x: np.ndarray | None = None,
     xout, yout, vout, dataout = x, y, v, data
     i0 = j0 = k0 = 0
     i1 = j1 = k1 = 100000
-    if not (x is None or xlim is None):
-        if not (None in xlim):
+    if x is not None and xlim is not None:
+        if None not in xlim:
             x0 = np.max([np.min(x), xlim[0]])
             x1 = np.min([np.max(x), xlim[1]])
             i0 = np.argmin(np.abs(x - x0))
             i1 = np.argmin(np.abs(x - x1))
             i0, i1 = sorted([i0, i1])
             xout = x[i0:i1+1]
-    if not (y is None or ylim is None):
-        if not (None in ylim):
+    if y is not None and ylim is not None:
+        if None not in ylim:
             y0 = np.max([np.min(y), ylim[0]])
             y1 = np.min([np.max(y), ylim[1]])
             j0 = np.argmin(np.abs(y - y0))
             j1 = np.argmin(np.abs(y - y1))
             j0, j1 = sorted([j0, j1])
             yout = y[j0:j1+1]
-    if not (v is None or vlim is None):
-        if not (None in vlim):
+    if v is not None and vlim is not None:
+        if None not in vlim:
             v0 = np.max([np.min(v), vlim[0]])
             v1 = np.min([np.max(v), vlim[1]])
             k0 = np.argmin(np.abs(v - v0))
@@ -214,7 +214,7 @@ def RGIxy(y: np.ndarray, x: np.ndarray, data: np.ndarray,
     Returns:
         np.ndarray: The RGI function or the interpolated array.
     """
-    if not np.ndim(data) in [2, 3, 4]:
+    if np.ndim(data) not in [2, 3, 4]:
         print('data must be 2D, 3D, or 4D.')
         return
 
@@ -250,7 +250,7 @@ def RGIxyv(v: np.ndarray, y: np.ndarray, x: np.ndarray, data: np.ndarray,
     Returns:
         np.ndarray: The RGI function or the interpolated array.
     """
-    if not np.ndim(data) in [3, 4]:
+    if np.ndim(data) not in [3, 4]:
         print('data must be 3D or 4D.')
         return
 

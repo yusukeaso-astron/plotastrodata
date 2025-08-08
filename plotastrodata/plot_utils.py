@@ -474,7 +474,7 @@ class PlotAstroData(AstroFrame):
         _kw.update(kwargs)
         if include_chan is None:
             include_chan = self.allchan
-        if not (patch in ['rectangle', 'ellipse']):
+        if patch not in ['rectangle', 'ellipse']:
             print('Only patch=\'rectangle\' or \'ellipse\' supported. ')
             return
         for x, y, width, height, angle in zip(*self.pos2xy(poslist),
@@ -482,7 +482,7 @@ class PlotAstroData(AstroFrame):
             for ch, axnow in enumerate(self.ax):
                 if type(self.channelnumber) is int:
                     ch = self.channelnumber
-                if not (ch in include_chan):
+                if ch not in include_chan:
                     continue
                 if self.fig is None:
                     plt.figure(ch // self.rowcol)
@@ -552,7 +552,7 @@ class PlotAstroData(AstroFrame):
         for ch, axnow in enumerate(self.ax):
             if type(self.channelnumber) is int:
                 ch = self.channelnumber
-            if not (ch in include_chan):
+            if ch not in include_chan:
                 continue
             for x, y in zip(*self.pos2xy(poslist)):
                 axnow.plot(x, y, **_kw)
@@ -575,7 +575,7 @@ class PlotAstroData(AstroFrame):
         for ch, axnow in enumerate(self.ax):
             if type(self.channelnumber) is int:
                 ch = self.channelnumber
-            if not (ch in include_chan):
+            if ch not in include_chan:
                 continue
             for x, y, s in zip(*self.pos2xy(poslist), listing(slist)):
                 axnow.text(x=x, y=y, s=s, **_kw)
@@ -600,7 +600,7 @@ class PlotAstroData(AstroFrame):
         for ch, axnow in enumerate(self.ax):
             if type(self.channelnumber) is int:
                 ch = self.channelnumber
-            if not (ch in include_chan):
+            if ch not in include_chan:
                 continue
             alist = np.radians(anglelist)
             for x, y, a, r in zip(*self.pos2xy(poslist), *listing(alist, rlist)):
@@ -627,7 +627,7 @@ class PlotAstroData(AstroFrame):
         for ch, axnow in enumerate(self.ax):
             if type(self.channelnumber) is int:
                 ch = self.channelnumber
-            if not (ch in include_chan):
+            if ch not in include_chan:
                 continue
             alist = np.radians(anglelist)
             for x, y, a, r in zip(*self.pos2xy(poslist), *listing(alist, rlist)):
@@ -655,7 +655,7 @@ class PlotAstroData(AstroFrame):
         if fontsize is None:
             fontsize = 20 if len(self.ax) == 1 else 15
         for ch, axnow in enumerate(self.ax):
-            if not (ch in self.bottomleft):
+            if ch not in self.bottomleft:
                 continue
             x, y = self.pos2xy([barpos[0], barpos[1] - 0.012])
             axnow.text(x[0], y[0], label, color=color, size=fontsize,
@@ -894,7 +894,7 @@ class PlotAstroData(AstroFrame):
             pa2.set_xyaxes(axnow)
             self.Xlim = pa2.xlim
             self.Ylim = pa2.ylim
-            if not (ch in self.bottomleft):
+            if ch not in self.bottomleft:
                 plt.setp(axnow.get_xticklabels(), visible=False)
                 plt.setp(axnow.get_yticklabels(), visible=False)
                 axnow.set_xlabel('')
