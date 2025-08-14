@@ -11,9 +11,14 @@ year = units.year.to('s')
 gauss = units.gauss.to('T')
 cm = units.cm.to('m')
 km = units.km.to('m')
+angstrom = units.angstrom.to('m')
 gram = units.gram.to('kg')
 debye = units.debye.to('A*s*m')
 erg = units.erg.to('J')
+coulomb = units.coulomb.to('A*s')
+newton = units.newton.to('kg*m*s**(-2)')
+pascal = units.pascal.to('J*m**(-3)')
+watt = units.watt.to('J*s**(-1)')
 
 # astropy.constants in the SI unit system
 G = constants.G.si.value
