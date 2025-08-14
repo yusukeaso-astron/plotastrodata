@@ -140,7 +140,7 @@ from plotastrodata.los_utils import sys2obs, polarvel2losvel
 
 # The following introduces a way for plotting the projected morphology and the line-of-sight velocity of a streamer.
 incl = 60
-theta0 = 90
+theta0 = 60
 
 xscale = np.sin(np.radians(theta0))**2
 vscale = 1 / np.sin(np.radians(theta0))
