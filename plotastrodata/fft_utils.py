@@ -154,7 +154,7 @@ def ifftcentering2(F: np.ndarray,
     if y0 is not None:
         y = y - y[0] + y0
     dx, dy = x[1] - x[0], y[1] - y[0]
-    F = shiftphase(F, u, v, x[-1] + dx - xcenter, y[-1] + dy - ycenter)
+    F = shiftphase2(F, u, v, x[-1] + dx - xcenter, y[-1] + dy - ycenter)
     f = np.fft.ifft2(np.fft.ifftshift(F))
     if outreal:
         f = np.real(f)
