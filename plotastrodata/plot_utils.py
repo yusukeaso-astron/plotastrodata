@@ -359,8 +359,8 @@ class PlotAstroData(AstroFrame):
             self.read(d := AstroData(fitsimage=self.fitsimage,
                                      restfreq=restfreq, sigma=None))
             v = d.v
-            dv = d.dv
         if len(v) > 1:
+            dv = v[1] - v[0]
             k0 = int(round((self.vmin - v[0]) / dv))
             if k0 < 0:
                 vpre = v[0] - (1 + np.arange(-k0)[::-1]) * dv
