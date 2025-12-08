@@ -199,7 +199,7 @@ class AstroData():
         self.rotate(-bpa)
         nx = len(self.x) if len(self.x) % 2 == 1 else len(self.x) - 1
         ny = len(self.y) if len(self.y) % 2 == 1 else len(self.y) - 1
-        y = np.linspace(-(ny-1) / 2, (ny-1) / 2, ny) * (self.y[1]-self.y[0])
+        y = np.linspace(-(ny-1) / 2, (ny-1) / 2, ny) * np.abs(self.dy)
         g1 = np.exp(-4*np.log(2) * y**2 / (bmaj**2 - bmin**2))
         g1 /= np.sqrt(np.pi/4/np.log(2) * bmin * np.sqrt(1 - bmin**2/bmaj**2))
         g = np.zeros((ny, nx))
@@ -256,10 +256,8 @@ class AstroData():
         d = self.data if chan is None else self.data[chan]
         x, y = np.meshgrid(self.x, self.y)
         if None not in self.beam:
-            dx = self.x[1] - self.x[0]
-            dy = self.y[1] - self.y[0]
             Omega = np.pi * self.beam[0] * self.beam[1] / 4 / np.log(2)
-            pixelperbeam = Omega / np.abs(dx * dy)
+            pixelperbeam = Omega / np.abs(self.dx * self.dy)
         else:
             pixelperbeam = 1.
 
@@ -296,7 +294,7 @@ class AstroData():
         d = self.data if chan is None else self.data[chan]
         x = self.x
         y = self.y
-        ds = np.min([np.abs(x[1] - x[0]), np.abs(y[1] - y[0])])
+        ds = np.min([np.abs(self.dx), np.abs(self.dy)])
         p0 = (np.max(d), np.median(x), np.median(y), 5 * ds, 5 * ds, 0)
         amax = np.max(np.abs(d))
         xmin = np.min(x)
@@ -377,6 +375,7 @@ class AstroData():
             xlist, ylist = coord2xy(coords, self.center) * 3600.
         nprof = len(xlist)
         v = self.v
+        dv = self.dv
         data, xf, yf = filled2d(self.data, self.x, self.y, ninterp)
         x, y = np.meshgrid(xf, yf)
         prof = np.empty((nprof, len(v)))
@@ -397,13 +396,12 @@ class AstroData():
                     prof[i] = [np.mean(d[r <= 1]) for d in data]
         if flux and (None not in self.beam):
             Omega = np.pi * self.beam[0] * self.beam[1] / 4. / np.log(2.)
-            dxdy = np.abs((yf[1]-yf[0]) * (xf[1]-xf[0]))
-            prof *= dxdy / Omega
+            prof *= np.abs(self.dx * self.dy) / Omega
         gfitres = {}
         if gaussfit:
             xmin, xmax = np.min(v), np.max(v)
             ymin, ymax = np.min(prof), np.max(prof)
-            bounds = [[ymin, xmin, v[1] - v[0]], [ymax, xmax, xmax - xmin]]
+            bounds = [[ymin, xmin, np.abs(dv)], [ymax, xmax, xmax - xmin]]
 
             def gauss(x, p, c, w):
                 return p * np.exp(-4. * np.log(2.) * ((x - c) / w)**2)
@@ -443,7 +441,7 @@ class AstroData():
             np.ndarray: [x, data]. If self.data is 3D, the output data are in the shape of (len(v), len(x)).
         """
         if dx is None:
-            dx = np.abs(self.x[1] - self.x[0])
+            dx = np.abs(self.dx)
         n = int(np.ceil(length / 2 / dx))
         r = np.linspace(-n, n, 2 * n + 1) * dx
         pa_rad = np.radians(pa)
@@ -476,7 +474,7 @@ class AstroData():
         h['NAXIS1'] = len(self.x)
         h['CRPIX1'] = np.argmin(np.abs(self.x)) + 1
         h['CRVAL1'] = cx
-        h['CDELT1'] = self.x[1] - self.x[0]
+        h['CDELT1'] = self.dx
         if fhd is not None and isdeg(fhd['CUNIT1']):
             h['CDELT1'] = h['CDELT1'] / 3600
         vaxis = '2' if self.pv else '3'
@@ -484,12 +482,12 @@ class AstroData():
         k_vmin = np.argmin(np.abs(self.v))
         h[f'CRPIX{vaxis}'] = k_vmin + 1
         h[f'CRVAL{vaxis}'] = (1 - self.v[k_vmin]/cu.c_kms) * self.restfreq
-        h[f'CDELT{vaxis}'] = (self.v[0]-self.v[1]) / cu.c_kms * self.restfreq
+        h[f'CDELT{vaxis}'] = -self.dv / cu.c_kms * self.restfreq
         if not self.pv:
             h['NAXIS2'] = len(self.y)
             h['CRPIX2'] = np.argmin(np.abs(self.y)) + 1
             h['CRVAL2'] = cy
-            h['CDELT2'] = self.y[1] - self.y[0]
+            h['CDELT2'] = self.dy
             if fhd is not None and isdeg(fhd['CUNIT2']):
                 h['CDELT2'] = h['CDELT2'] / 3600
         if None not in self.beam:
@@ -683,6 +681,10 @@ class AstroFrame():
                     d.data[i], grid[2] = d.data[i][::-1], grid[2][::-1]
                     print('Velocity has been inverted.')
                 d.v = grid[2]
+                if d.v is not None and len(d.v) > 1:
+                    d.dv = d.v[1] - d.v[0]
+                else:
+                    d.dv = None
                 grid = grid[:3:2] if self.pv else grid[:2]
                 if self.swapxy:
                     grid = [grid[1], grid[0]]
@@ -695,6 +697,14 @@ class AstroFrame():
                 a = np.moveaxis(a, [0, 1], [-2, -1])
                 d.data[i] = a
                 d.x, d.y = grid
+                if d.x is not None and len(d.x) > 1:
+                    d.dx = d.x[1] - d.x[0]
+                else:
+                    d.dx = None
+                if d.y is not None and len(d.y) > 1:
+                    d.dy = d.y[1] - d.y[0]
+                else:
+                    d.dy = None
                 if self.quadrants is not None:
                     d.data[i], d.x, d.y \
                         = quadrantmean(d.data[i], d.x, d.y, self.quadrants)
@@ -702,7 +712,7 @@ class AstroFrame():
                 if d.sigma[i] is not None:
                     d.sigma[i] = d.sigma[i] * d.cfactor[i]
                 if d.Tb[i]:
-                    dx = d.y[1] - d.y[0] if self.swapxy else d.x[1] - d.x[0]
+                    dx = d.dy if self.swapxy else d.dx
                     header = {'CDELT1': dx / 3600,
                               'CUNIT1': 'DEG',
                               'RESTFREQ': d.restfreq[i]}
@@ -718,7 +728,7 @@ class AstroFrame():
                         print('pvpa is not specified. pvpa=bmaj is assumed.')
                     p = np.radians(bpa - d.pvpa[i])
                     b = 1 / np.hypot(np.cos(p) / bmaj, np.sin(p) / bmin)
-                    d.beam[i] = np.array([d.v[1] - d.v[0], b, 0])
+                    d.beam[i] = np.array([np.abs(d.dv), b, 0])
             d.Tb[i] = False
             d.cfactor[i] = 1
             if d.fitsimage[i] is not None:

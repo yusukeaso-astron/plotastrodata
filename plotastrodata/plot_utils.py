@@ -359,8 +359,8 @@ class PlotAstroData(AstroFrame):
             self.read(d := AstroData(fitsimage=self.fitsimage,
                                      restfreq=restfreq, sigma=None))
             v = d.v
+            dv = d.dv
         if len(v) > 1:
-            dv = v[1] - v[0]
             k0 = int(round((self.vmin - v[0]) / dv))
             if k0 < 0:
                 vpre = v[0] - (1 + np.arange(-k0)[::-1]) * dv
@@ -379,7 +379,7 @@ class PlotAstroData(AstroFrame):
             nv = len(v := v[::vskip])
             npages = int(np.ceil(nv / nrows / ncols))
             nchan = npages * nrows * ncols
-            v = np.r_[v, v[-1] + (np.arange(nchan-nv)+1) * (v[1] - v[0])]
+            v = np.r_[v, v[-1] + (np.arange(nchan - nv) + 1) * dv]
             if type(channelnumber) is int:
                 nchan = npages = 1
 
@@ -1303,7 +1303,7 @@ def plot3d(levels: list[float] = [3, 6, 12],
     d = kwargs2AstroData(kwargs)
     f.read(d, xskip, yskip)
     volume, x, y, v, sigma = d.data, d.x, d.y, d.v, d.sigma
-    dx, dy, dv = x[1] - x[0], y[1] - y[0], v[1] - v[0]
+    dx, dy, dv = d.dx, d.dy, d.dv
     volume[np.isnan(volume)] = 0
     if dx < 0:
         x, dx, volume = x[::-1], -dx, volume[:, :, ::-1]
@@ -1376,11 +1376,11 @@ def plot3d(levels: list[float] = [3, 6, 12],
         a = int(sign == -1)
         b = int(sign == 1)
         volume = np.moveaxis([volume * a, volume * b], 0, axis)
-        if d.x[1] - d.x[0] < 0:
+        if d.dx < 0:
             volume = volume[:, :, ::-1]
-        if d.y[1] - d.y[0] < 0:
+        if d.dy < 0:
             volume = volume[:, ::-1, :]
-        if d.v[1] - d.v[0] < 0:
+        if d.dv < 0:
             volume = volume[::-1, :, :]
         for lev in levels:
             if lev * sigma > np.max(volume):
