@@ -249,8 +249,8 @@ class EmceeCorner():
         if type(log) is bool:
             log = [log] * self.dim
         pargrid = []
-        for start, stop, num, uselog \
-            in zip(self.bounds[:, 0], self.bounds[:, 1], ngrid, log):
+        inzip = [self.bounds[:, 0], self.bounds[:, 1], ngrid, log]
+        for start, stop, num, uselog in zip(*inzip):
             args = [start, stop, num]
             pargrid.append(np.geomspace(*args) if uselog else np.linspace(*args))
         p = np.exp(self.logl(np.meshgrid(*pargrid[::-1], indexing='ij')[::-1]))
