@@ -1414,4 +1414,4 @@ def plot3d(levels: list[float] = [3, 6, 12],
         return {'data': data, 'layout': layout}
     else:
         fig = go.Figure(data=data, layout=layout)
-        fig.write_html(file=outname + '.html', auto_play=show)
+        fig.write_html(file=outname.replace('.html', '') + '.html', auto_play=show)
