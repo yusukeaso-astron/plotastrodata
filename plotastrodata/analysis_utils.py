@@ -255,7 +255,7 @@ class AstroData():
         """
         d = self.data if chan is None else self.data[chan]
         x, y = np.meshgrid(self.x, self.y)
-        if None not in self.beam:
+        if None not in self.beam and None not in [self.dx, self.dy]:
             Omega = np.pi * self.beam[0] * self.beam[1] / 4 / np.log(2)
             pixelperbeam = Omega / np.abs(self.dx * self.dy)
         else:
@@ -394,9 +394,12 @@ class AstroData():
                     prof[i] = [np.sum(d[r <= 1]) for d in data]
                 else:
                     prof[i] = [np.mean(d[r <= 1]) for d in data]
-        if flux and (None not in self.beam):
-            Omega = np.pi * self.beam[0] * self.beam[1] / 4. / np.log(2.)
-            prof *= np.abs(self.dx * self.dy) / Omega
+        if flux:
+            if None in self.beam or None in [self.dx, self.dy]:
+                print('None in beam, dx, or dy. Flux is not converted.')
+            else:
+                Omega = np.pi * self.beam[0] * self.beam[1] / 4. / np.log(2.)
+                prof *= np.abs(self.dx * self.dy) / Omega
         gfitres = {}
         if gaussfit:
             xmin, xmax = np.min(v), np.max(v)
