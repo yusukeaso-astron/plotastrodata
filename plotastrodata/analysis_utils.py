@@ -727,8 +727,8 @@ class AstroFrame():
                 if self.pv and None not in d.beam[i]:
                     bmaj, bmin, bpa = d.beam_org[i] = d.beam[i]
                     if d.pvpa[i] is None:
-                        d.pvpa[i] = bmaj
-                        print('pvpa is not specified. pvpa=bmaj is assumed.')
+                        d.pvpa[i] = bpa
+                        print('pvpa is not specified. pvpa=bpa is assumed.')
                     p = np.radians(bpa - d.pvpa[i])
                     b = 1 / np.hypot(np.cos(p) / bmaj, np.sin(p) / bmin)
                     d.beam[i] = np.array([np.abs(d.dv), b, 0])
