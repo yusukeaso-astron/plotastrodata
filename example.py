@@ -130,7 +130,7 @@ ani = animation.FuncAnimation(fig, update_plot, frames=nchans, interval=50)
 Writer = animation.writers['ffmpeg']  # for mp4
 # Writer = animation.writers['pillow']  # for gif
 writer = Writer(fps=10, bitrate=128)  # frame per second
-ani.save('test_animation.mp4', writer=writer)
+ani.save('test_animation.mp4', writer=writer, dpi=100)
 # ani.save('test_animation.gif', writer=writer)
 plt.close()
 
