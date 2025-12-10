@@ -686,7 +686,8 @@ class PlotAstroData(AstroFrame):
             cbticklabels (list, optional): Ticklabels of colorbar. Defaults to None.
             cblocation (str, optional): 'left', 'top', 'left', 'right'. Only for 2D images. Defaults to 'right'.
         """
-        _kw = {'cmap': 'cubehelix', 'alpha': 1, 'edgecolors': 'none', 'zorder': 1}
+        _kw = {'cmap': 'cubehelix', 'alpha': 1,
+               'edgecolors': 'none', 'zorder': 1}
         beam_kwargs = kwargs2beamargs(kwargs)
         _kw.update(kwargs)
         d = kwargs2AstroData(_kw)

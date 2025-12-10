@@ -97,6 +97,7 @@ class AstroData():
     restfreq: float | None = None
     cfactor: float = 1
     pvpa: float | None = None
+    pv: bool = False
 
     def __post_init__(self):
         n = 0
@@ -124,7 +125,6 @@ class AstroData():
         self.sigma_org = None
         self.beam_org = None
         self.fitsheader = None
-        self.pv = False
 
     def binning(self, width: list[int, int, int] = [1, 1, 1]):
         """Binning up neighboring pixels in the v, y, and x domain.
@@ -461,7 +461,7 @@ class AstroData():
         d = {'data': self.data, 'x': self.x, 'y': self.y, 'v': self.v,
              'fitsimage': self.fitsimage, 'beam': self.beam, 'Tb': self.Tb,
              'restfreq': self.restfreq, 'cfactor': self.cfactor,
-             'sigma': self.sigma, 'center': self.center}
+             'sigma': self.sigma, 'center': self.center, 'pv': self.pv}
         return d
 
     def writetofits(self, fitsimage: str = 'out.fits', header: dict = {}):
@@ -473,7 +473,8 @@ class AstroData():
         """
         fhd = self.fitsheader
         h = {}
-        cx, cy = (0, 0) if self.pv or self.center is None else coord2xy(self.center)
+        nocent = self.pv or self.center is None
+        cx, cy = (0, 0) if nocent else coord2xy(self.center)
         h['NAXIS1'] = len(self.x)
         h['CRPIX1'] = np.argmin(np.abs(self.x)) + 1
         h['CRVAL1'] = cx
@@ -673,21 +674,19 @@ class AstroFrame():
                 d.beam[i] = fd.get_beam(dist=self.dist)
                 d.bunit[i] = fd.get_header('BUNIT')
             if d.data[i] is not None:
-                d.pv[i] = self.pv
                 d.sigma_org[i] = d.sigma[i]
                 d.sigma[i] = estimate_rms(d.data[i], d.sigma[i])
                 d.data[i], grid = trim(data=d.data[i],
                                        x=grid[0], y=grid[1], v=grid[2],
                                        xlim=self.xlim, ylim=self.ylim,
                                        vlim=self.vlim, pv=self.pv)
-                if grid[2] is not None and len(grid[2]) > 1 and grid[2][1] < grid[2][0]:
-                    d.data[i], grid[2] = d.data[i][::-1], grid[2][::-1]
+                v = grid[2]
+                has_v = v is not None and len(v) > 1
+                if has_v and v[1] < v[0]:
+                    d.data[i], v = d.data[i][::-1], v[::-1]
                     print('Velocity has been inverted.')
-                d.v = grid[2]
-                if d.v is not None and len(d.v) > 1:
-                    d.dv = d.v[1] - d.v[0]
-                else:
-                    d.dv = None
+                d.v = v
+                d.dv = v[1] - v[0] if has_v else None
                 grid = grid[:3:2] if self.pv else grid[:2]
                 if self.swapxy:
                     grid = [grid[1], grid[0]]
@@ -699,15 +698,11 @@ class AstroFrame():
                 a = a[::yskip, ::xskip]
                 a = np.moveaxis(a, [0, 1], [-2, -1])
                 d.data[i] = a
-                d.x, d.y = grid
-                if d.x is not None and len(d.x) > 1:
-                    d.dx = d.x[1] - d.x[0]
-                else:
-                    d.dx = None
-                if d.y is not None and len(d.y) > 1:
-                    d.dy = d.y[1] - d.y[0]
-                else:
-                    d.dy = None
+                x, y = d.x, d.y = grid
+                has_x = x is not None and len(x) > 1
+                d.dx = x[1] - x[0] if has_x else None
+                has_y = y is not None and len(y) > 1
+                d.dy = y[1] - y[0] if has_y else None
                 if self.quadrants is not None:
                     d.data[i], d.x, d.y \
                         = quadrantmean(d.data[i], d.x, d.y, self.quadrants)
@@ -724,7 +719,7 @@ class AstroFrame():
                         header['BMIN'] = d.beam[i][1] / 3600 / self.dist
                     d.data[i] = d.data[i] * Jy2K(header=header)
                     d.sigma[i] = d.sigma[i] * Jy2K(header=header)
-                if self.pv and None not in d.beam[i]:
+                if self.pv and not d.pv[i] and None not in d.beam[i]:
                     bmaj, bmin, bpa = d.beam_org[i] = d.beam[i]
                     if d.pvpa[i] is None:
                         d.pvpa[i] = bpa
@@ -732,6 +727,7 @@ class AstroFrame():
                     p = np.radians(bpa - d.pvpa[i])
                     b = 1 / np.hypot(np.cos(p) / bmaj, np.sin(p) / bmin)
                     d.beam[i] = np.array([np.abs(d.dv), b, 0])
+                d.pv[i] = self.pv
             d.Tb[i] = False
             d.cfactor[i] = 1
             if d.fitsimage[i] is not None:
