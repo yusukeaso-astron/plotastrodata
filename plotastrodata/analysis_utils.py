@@ -678,6 +678,15 @@ class AstroFrame():
             if d.data[i] is not None:
                 d.sigma_org[i] = d.sigma[i]
                 d.sigma[i] = estimate_rms(d.data[i], d.sigma[i])
+                if (not self.pv
+                    and self.center is not None
+                    and d.center[i] is not None
+                    and d.center[i] != self.center
+                ):
+                    xoff, yoff = coord2xy(d.center[i], self.center) * 3600
+                    grid[0] += xoff
+                    grid[1] += yoff
+                    d.center[i] = self.center
                 d.data[i], grid = trim(data=d.data[i],
                                        x=grid[0], y=grid[1], v=grid[2],
                                        xlim=self.xlim, ylim=self.ylim,
