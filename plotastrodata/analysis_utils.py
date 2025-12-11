@@ -204,7 +204,9 @@ class AstroData():
         g1 /= np.sqrt(np.pi/4/np.log(2) * bmin * np.sqrt(1 - bmin**2/bmaj**2))
         g = np.zeros((ny, nx))
         g[:, (nx - 1) // 2] = g1
-        d = to4dim(self.data)
+        d = self.data.copy()
+        d[np.isnan(d)] = 0
+        d = to4dim(d)
         d = [[convolve(c, g, mode='same') for c in cc] for cc in d]
         self.data = np.squeeze(d)
         self.rotate(bpa)
