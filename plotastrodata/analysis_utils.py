@@ -683,9 +683,9 @@ class AstroFrame():
                     and d.center[i] is not None
                     and d.center[i] != self.center
                 ):
-                    xoff, yoff = coord2xy(d.center[i], self.center) * 3600
-                    grid[0] += xoff
-                    grid[1] += yoff
+                    cx, cy = coord2xy(d.center[i], self.center) * 3600
+                    grid[0] += cx
+                    grid[1] += cy
                     d.center[i] = self.center
                 d.data[i], grid = trim(data=d.data[i],
                                        x=grid[0], y=grid[1], v=grid[2],
