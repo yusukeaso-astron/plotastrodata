@@ -652,7 +652,7 @@ class AstroFrame():
         for i in range(d.n):
             if d.center[i] == 'common':
                 d.center[i] = self.center
-            grid = grid0
+            grid = grid0.copy()
             if d.fitsimage[i] is not None:
                 fd = FitsData(d.fitsimage[i])
                 if d.fitsheader[i] is None:
@@ -678,14 +678,14 @@ class AstroFrame():
             if d.data[i] is not None:
                 d.sigma_org[i] = d.sigma[i]
                 d.sigma[i] = estimate_rms(d.data[i], d.sigma[i])
-                if (not self.pv
-                    and self.center is not None
-                    and d.center[i] is not None
-                    and d.center[i] != self.center
-                ):
+                diffcent = (not self.pv
+                            and self.center is not None
+                            and d.center[i] is not None
+                            and d.center[i] != self.center)
+                if diffcent:
                     cx, cy = coord2xy(d.center[i], self.center) * 3600
-                    grid[0] += cx
-                    grid[1] += cy
+                    grid[0] = grid[0] + cx  # Don't use += cx.
+                    grid[1] = grid[1] + cy  # Don't use += cy.
                     d.center[i] = self.center
                 d.data[i], grid = trim(data=d.data[i],
                                        x=grid[0], y=grid[1], v=grid[2],

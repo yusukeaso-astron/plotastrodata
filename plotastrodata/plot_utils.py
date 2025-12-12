@@ -415,9 +415,11 @@ class PlotAstroData(AstroFrame):
             if nchan > 1 or type(channelnumber) is int:
                 fig.subplots_adjust(hspace=0, wspace=0, right=0.87, top=0.87)
                 if ch < nv:
-                    vellabel = v[ch] if channelnumber is None else v[channelnumber]
+                    chnum = channelnumber
+                    vellabel = v[ch if chnum is None else chnum]
+                    vd = f'{veldigit:d}'
                     ax[ch].text(0.9 * self.rmax, 0.7 * self.rmax,
-                                rf'${vellabel:.{veldigit:d}f}$', color='black',
+                                rf'${vellabel:.{vd}f}$', color='black',
                                 backgroundcolor='white', zorder=20)
         self.fig = None if internalfig else fig
         self.ax = ax
@@ -1015,6 +1017,7 @@ class PlotAstroData(AstroFrame):
             ticks = (n*g - second + rounded) * factor
             ticksminor = np.linspace(ticks[0], ticks[-1], 6*nticksminor + 1)
             decimals = max(decimals, 0)
+            decimals = f'{decimals:d}'
             if mode == 'ra':
                 xy, i = [ticks / 3600., ticks * 0], 0
             else:
@@ -1024,7 +1027,7 @@ class PlotAstroData(AstroFrame):
             tickvalues = np.array([float(_get(t, i)) for t in tickvalues])
             tickvalues = np.divmod(tickvalues + 1e-7, 1)
             tickvalues = (tickvalues[0] % 60, tickvalues[1])
-            ticklabels = [f'{int(i):02d}{unit}' + f'{j:.{decimals:d}f}'[2:]
+            ticklabels = [f'{int(i):02d}{unit}' + f'{j:.{decimals}f}'[2:]
                           for i, j in zip(*tickvalues)]
             return ticks, ticksminor, ticklabels
 

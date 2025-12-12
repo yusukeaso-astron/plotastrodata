@@ -74,7 +74,7 @@ dgreen = np.sum(d.data[20:41], axis=0) * dv
 dred = np.sum(d.data[41:61], axis=0) * dv
 d.data = [dred, dgreen, dblue]
 d.sigma = [d.sigma * dv * np.sqrt(20)] * 3
-p = pad(rmax=0.8, center='04h04m43.07s 26d18m56.20s')
+p = pad(rmax=0.8, center='ICRS 04h04m43.07s 26d18m56.20s')
 p.add_rgb(**d.todict())
 p.add_contour(fitsimage=pre+'test2D_2.fits', colors='r', sigma=5e-3)
 p.add_contour(fitsimage=pre+'test2D.fits', xskip=2, yskip=2, sigma=5e-3)
