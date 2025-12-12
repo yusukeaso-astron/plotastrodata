@@ -145,8 +145,10 @@ class AstroData():
             newdata = np.moveaxis(np.zeros(size), n, 0)
             t = np.zeros(newsize[n])
             for i in range(width[n]):
-                t += grid[n][i:i + newsize[n]*width[n]:width[n]]
-                newdata += olddata[i:i + newsize[n]*width[n]:width[n]]
+                i_stop = i + newsize[n] * width[n]
+                i_step = width[n]
+                t += grid[n][i:i_stop:i_step]
+                newdata += olddata[i:i_stop:i_step]
             grid[n] = t / width[n]
             d = np.moveaxis(newdata, 0, n) / width[n]
         self.data = np.squeeze(d)
@@ -201,7 +203,8 @@ class AstroData():
         ny = len(self.y) if len(self.y) % 2 == 1 else len(self.y) - 1
         y = np.linspace(-(ny-1) / 2, (ny-1) / 2, ny) * np.abs(self.dy)
         g1 = np.exp(-4*np.log(2) * y**2 / (bmaj**2 - bmin**2))
-        g1 /= np.sqrt(np.pi/4/np.log(2) * bmin * np.sqrt(1 - bmin**2/bmaj**2))
+        e = np.sqrt(1 - bmin**2 / bmaj**2)
+        g1 /= np.sqrt(np.pi / 4 / np.log(2) * bmin * e)
         g = np.zeros((ny, nx))
         g[:, (nx - 1) // 2] = g1
         d = self.data.copy()
@@ -415,10 +418,10 @@ class AstroData():
             best, error = [None] * nprof, [None] * nprof
             for i in range(nprof):
                 popt, pcov = curve_fit(gauss, v, prof[i], bounds=bounds)
-                e = np.sqrt(np.diag(pcov))
+                perr = np.sqrt(np.diag(pcov))
                 print('Gauss (peak, center, FWHM):', popt)
-                print('Gauss uncertainties:', e)
-                best[i], error[i] = popt, e
+                print('Gauss uncertainties:', perr)
+                best[i], error[i] = popt, perr
             gfitres = {'best': best, 'error': error}
         return v, prof, gfitres
 

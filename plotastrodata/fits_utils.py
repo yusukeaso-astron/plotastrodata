@@ -244,21 +244,21 @@ class FitsData:
                 s = s + h[f'CRVAL{i:d}']
             return s
 
-        def gen_x(s: np.ndarray) -> None:
-            s = (s - cx) * dist
+        def gen_x(s_in: np.ndarray) -> None:
+            s = (s_in - cx) * dist
             if isdeg(h['CUNIT1']):
                 s *= 3600.
             self.x, self.dx = s, s[1] - s[0]
 
-        def gen_y(s: np.ndarray) -> None:
-            s = (s - cy) * dist
+        def gen_y(s_in: np.ndarray) -> None:
+            s = (s_in - cy) * dist
             if isdeg(h['CUNIT2']):
                 s *= 3600.
             self.y, self.dy = s, s[1] - s[0]
 
-        def gen_v(s: np.ndarray) -> None:
+        def gen_v(s_in: np.ndarray) -> None:
             if restfreq is None:
-                freq = np.mean(s)
+                freq = np.mean(s_in)
                 print('restfreq is assumed to be the center.')
             else:
                 freq = restfreq
@@ -271,28 +271,28 @@ class FitsData:
                     if freq == 0:
                         print('v is frequency because restfreq=0.')
                     else:
-                        s = (1 - s / freq) * cu.c_kms - vsys
+                        s = (1 - s_in / freq) * cu.c_kms - vsys
                 case 'HZ':
                     if freq == 0:
                         print('v is frequency because restfreq=0.')
                     else:
-                        s = (1 - s / freq) * cu.c_kms - vsys
+                        s = (1 - s_in / freq) * cu.c_kms - vsys
                 case 'm/s':
                     print(f'{key}=\'m/s\' found.')
-                    s = s * 1e-3 - vsys
+                    s = s_in * 1e-3 - vsys
                 case 'M/S':
                     print(f'{key}=\'M/S\' found.')
-                    s = s * 1e-3 - vsys
+                    s = s_in * 1e-3 - vsys
                 case 'km/s':
                     print(f'{key}=\'km/s\' found.')
-                    s = s - vsys
+                    s = s_in - vsys
                 case 'KM/S':
                     print(f'{key}=\'KM/S\' found.')
-                    s = s - vsys
+                    s = s_in - vsys
                 case _:
                     print(f'Unknown CUNIT3 {cunitv} found.'
                           + ' v is read as is.')
-                    s = s - vsys
+                    s = s_in - vsys
 
             self.v, self.dv = s, s[1] - s[0]
 
