@@ -15,7 +15,8 @@ from plotastrodata.fitting_utils import EmceeCorner
 
 
 def quadrantmean(data: np.ndarray, x: np.ndarray, y: np.ndarray,
-                 quadrants: str = '13') -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+                 quadrants: str = '13'
+                 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Take mean between 1st and 3rd (or 2nd and 4th) quadrants.
 
     Args:
@@ -242,7 +243,8 @@ class AstroData():
             bmin_new = 1 / np.sqrt(alpha + Det)
             self.beam = np.array([bmaj_new, bmin_new, bpa_new])
 
-    def fit2d(self, model: object, bounds: np.ndarray, progressbar: bool = False,
+    def fit2d(self, model: object, bounds: np.ndarray,
+              progressbar: bool = False,
               kwargs_fit: dict = {}, kwargs_plotcorner: dict = {},
               chan: int | None = None):
         """Fit a given 2D model function to self.data.
@@ -276,8 +278,9 @@ class AstroData():
         mcmc.fit(**kwargs_fit0)
         kwargs_plotcorner0 = {'show': False, 'savefig': None}
         kwargs_plotcorner0.update(kwargs_plotcorner)
-        if kwargs_plotcorner0['show'] or kwargs_plotcorner0['savefig'] is not None:
-            mcmc.plotcorner(**kwargs_plotcorner0)
+        kw_pl = kwargs_plotcorner0
+        if kw_pl['show'] or kw_pl['savefig'] is not None:
+            mcmc.plotcorner(**kw_pl)
         popt = mcmc.popt
         plow = mcmc.plow
         pmid = mcmc.pmid
