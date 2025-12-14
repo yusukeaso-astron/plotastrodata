@@ -36,7 +36,8 @@ class EmceeCorner():
 
     def __init__(self, bounds: np.ndarray, logl: object | None = None,
                  model: object | None = None,
-                 xdata: np.ndarray | None = None, ydata: np.ndarray | None = None,
+                 xdata: np.ndarray | None = None,
+                 ydata: np.ndarray | None = None,
                  sigma: np.ndarray = 1, progressbar: bool = True,
                  percent: list = [16, 84]):
         """Make bounds, logl, and logp for ptemcee.
@@ -88,7 +89,8 @@ class EmceeCorner():
         """
         global bar
         if nwalkersperdim < 2:
-            print(f'nwalkersperdim < 2 is not allowed. Use 2 instead of {nwalkersperdim:d}.')
+            print('nwalkersperdim < 2 is not allowed.'
+                  + f' Use 2 instead of {nwalkersperdim:d}.')
         nwalkers = max(nwalkersperdim, 2) * self.dim  # must be even and >= 2 * dim
         if ntemps > 1 and not pt:
             print('ntemps>1 is supported only with pt=True. Set pt=True.')
@@ -170,7 +172,8 @@ class EmceeCorner():
             print('')
 
     def plotcorner(self, show: bool = False,
-                   savefig: str | None = None, labels: list[str] | None = None,
+                   savefig: str | None = None,
+                   labels: list[str] | None = None,
                    cornerrange: list[float] | None = None) -> None:
         """Make the corner plot from self.samples.
 
@@ -184,8 +187,11 @@ class EmceeCorner():
             labels = [f'Par {i:d}' for i in range(self.dim)]
         if cornerrange is None:
             cornerrange = self.bounds
-        corner.corner(np.reshape(self.samples, (-1, self.dim)), truths=self.popt,
-                      quantiles=[self.percent[0] / 100, 0.5, self.percent[1] / 100],
+        corner.corner(np.reshape(self.samples, (-1, self.dim)),
+                      truths=self.popt,
+                      quantiles=[self.percent[0] / 100,
+                                 0.5,
+                                 self.percent[1] / 100],
                       show_titles=True, labels=labels, range=cornerrange)
         if savefig is not None:
             plt.savefig(savefig)
@@ -292,8 +298,10 @@ class EmceeCorner():
         self.evidence = evidence
 
     def plotongrid(self, show: bool = False, savefig: str | None = None,
-                   labels: list[str] = None, cornerrange: list[float] = None,
-                   cmap: str = 'binary', levels: list[float] = [0.011109, 0.135335, 0.606531]) -> None:
+                   labels: list[str] = None,
+                   cornerrange: list[float] = None, cmap: str = 'binary',
+                   levels: list[float] = [0.011109, 0.135335, 0.606531]
+                   ) -> None:
         """Make the corner plot from the posterior calculated on a grid.
 
         Args:
@@ -380,7 +388,10 @@ class EmceeCorner():
         """Calculate the Bayesian evidence for a model using dynamic nested sampling through dynesty.
         """
         def prior_transform(u):
-            return self.bounds[:, 0] + (self.bounds[:, 1] - self.bounds[:, 0]) * u
+            b0 = self.bounds[:, 0]
+            b1 = self.bounds[:, 1]
+            return b0 + (b1 - b0) * u
+
         dsampler = DNS(loglikelihood=self.logl,
                        prior_transform=prior_transform,
                        ndim=self.dim, **kwargs)

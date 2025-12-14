@@ -74,7 +74,8 @@ def sys2obs(xsys: np.ndarray, ysys: np.ndarray, zsys: np.ndarray,
 
 def polarvel2losvel(v_r: np.ndarray, v_theta: np.ndarray, v_phi: np.ndarray,
                     theta: np.ndarray, phi: np.ndarray,
-                    incl: float = 0, phi0: float = 0, theta0: float = 90) -> np.ndarray:
+                    incl: float = 0, phi0: float = 0, theta0: float = 90
+                    ) -> np.ndarray:
     """Convert the polar velocities in the system's coordinates to the line-of-sight velocity in the observer's coordinates. In the system coordinates, the observer is at the direction of (0, -sin i, cos i). The observer's +z (i.e., line-of-sight) is from the observer to the system. The system's x coordinate and the observer's x coordinate have opposite signs.
 
     Args:

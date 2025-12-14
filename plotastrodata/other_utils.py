@@ -36,7 +36,8 @@ def isdeg(s: str) -> bool:
         return False
 
 
-def estimate_rms(data: np.ndarray, sigma: float | str | None = 'hist') -> float:
+def estimate_rms(data: np.ndarray, sigma: float | str | None = 'hist'
+                 ) -> float:
     """Estimate a noise level of a N-D array.
        When a float number or None is given, this function just outputs it.
        Following methos are acceptable.
@@ -123,7 +124,8 @@ def trim(data: np.ndarray | None = None, x: np.ndarray | None = None,
          xlim: list[float, float] | None = None,
          ylim: list[float, float] | None = None,
          vlim: list[float, float] | None = None,
-         pv: bool = False) -> tuple[np.ndarray, list[np.ndarray, np.ndarray, np.ndarray]]:
+         pv: bool = False
+         ) -> tuple[np.ndarray, list[np.ndarray, np.ndarray, np.ndarray]]:
     """Trim 2D or 3D data by given coordinates and their limits.
 
     Args:
@@ -270,7 +272,8 @@ def RGIxyv(v: np.ndarray, y: np.ndarray, x: np.ndarray, data: np.ndarray,
 
 def gaussian2d(xy: np.ndarray,
                amplitude: float, xo: float, yo: float,
-               fwhm_major: float, fwhm_minor: float, pa: float) -> np.ndarray:
+               fwhm_major: float, fwhm_minor: float, pa: float
+               ) -> np.ndarray:
     """Two dimensional Gaussian function.
 
     Args:

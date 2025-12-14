@@ -5,7 +5,8 @@ from plotastrodata.fits_utils import fits2data
 from plotastrodata.plot_utils import set_rcparams
 
 
-def shiftphase(F: np.ndarray, u: np.ndarray, xoff: float = 0) -> np.ndarray:
+def shiftphase(F: np.ndarray, u: np.ndarray,
+               xoff: float = 0) -> np.ndarray:
     """Shift the phase of 1D FFT by xoff.
 
     Args:
@@ -93,7 +94,9 @@ def fftcentering2(f: np.ndarray,
 
 
 def ifftcentering(F: np.ndarray, u: np.ndarray | None = None,
-                  xcenter: float = 0, x0: float = None, outreal: bool = True
+                  xcenter: float = 0,
+                  x0: float = None,
+                  outreal: bool = True
                   ) -> tuple[np.ndarray, np.ndarray]:
     """inverse FFT with the phase referring to a specific point.
 

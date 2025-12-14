@@ -167,8 +167,8 @@ class PlotAxes2D():
 
 
 def set_minmax(data: np.ndarray, stretch: str, stretchscale: float,
-               stretchpower: float,
-               rms: float, kw: dict) -> np.ndarray:
+               stretchpower: float, rms: float, kw: dict
+               ) -> np.ndarray:
     """Set vmin and vmax for color pcolormesh and RGB maps.
 
     Args:
@@ -346,10 +346,13 @@ class PlotAstroData(AstroFrame):
     """
     def __init__(self, v: np.ndarray = np.array([0]), vskip: int = 1,
                  veldigit: int = 2, restfreq: float | None = None,
-                 channelnumber: int | None = None, nrows: int = 4, ncols: int = 6,
-                 fontsize: int | None = None, nancolor: str = 'w', dpi: int = 256,
+                 channelnumber: int | None = None,
+                 nrows: int = 4, ncols: int = 6,
+                 fontsize: int | None = None,
+                 nancolor: str = 'w', dpi: int = 256,
                  figsize: tuple[float, float] | None = None,
-                 fig: object | None = None, ax: object | None = None, **kwargs) -> None:
+                 fig: object | None = None, ax: object | None = None,
+                 **kwargs) -> None:
         super().__init__(**kwargs)
         internalfig = fig is None
         internalax = ax is None
@@ -951,7 +954,8 @@ class PlotAstroData(AstroFrame):
                        xlabel: str = 'R.A. (ICRS)',
                        ylabel: str = 'Dec. (ICRS)',
                        nticksminor: int = 2,
-                       grid: dict | None = None, title: dict | None = None) -> None:
+                       grid: dict | None = None, title: dict | None = None
+                       ) -> None:
         """Use Axes.set_* of matplotlib. kwargs can include the arguments of PlotAxes2D to adjust x and y axis.
 
         Args:
@@ -1095,7 +1099,8 @@ def plotprofile(coords: list[str] | str = [],
                 ninterp: int = 1,
                 flux: bool = False, width: int = 1,
                 gaussfit: bool = False, gauss_kwargs: dict = {},
-                title: list[str] | None = None, text: list[str] | None = None,
+                title: list[str] | None = None,
+                text: list[str] | None = None,
                 dist: float = 1., vsys: float = 0.,
                 nrows: int = 0, ncols: int = 1, fig=None, ax=None,
                 getfigax: bool = False,
@@ -1365,7 +1370,8 @@ def plot3d(levels: list[float] = [3, 6, 12],
             case 0:
                 shape = np.shape(d.data[0, :, :])
         if np.shape(kwargs['data']) != shape:
-            print('The shape of the 2D data is inconsistent with the shape of the 3D data.')
+            print('The shape of the 2D data is inconsistent'
+                  + ' with the shape of the 3D data.')
             return
 
         _kw = {'levels': [3, 6, 12, 24, 48, 96, 192, 384],
@@ -1418,4 +1424,5 @@ def plot3d(levels: list[float] = [3, 6, 12],
         return {'data': data, 'layout': layout}
     else:
         fig = go.Figure(data=data, layout=layout)
-        fig.write_html(file=outname.replace('.html', '') + '.html', auto_play=show)
+        fig.write_html(file=outname.replace('.html', '') + '.html',
+                       auto_play=show)
