@@ -68,6 +68,16 @@ def filled2d(data: np.ndarray, x: np.ndarray, y: np.ndarray, n: int = 1,
     return d, xnew, ynew
 
 
+def need_multipixel(method):
+    def wrapper(self, *args, **kwargs):
+        singlepixel = self.dx is None or self.dy is None
+        if singlepixel:
+            print('No pixel size.')
+            return
+        return method(self, *args, **kwargs)
+    return wrapper
+
+
 @dataclass
 class AstroData():
     """Data to be processed and parameters for processing the data.
@@ -133,25 +143,30 @@ class AstroData():
         Args:
             width (list, optional): Number of channels, y-pixels, and x-pixels for binning. Defaults to [1, 1, 1].
         """
-        width = [1] * (4 - len(width)) + width
+        w = [1] * (4 - len(width)) + list(width)
         d = to4dim(self.data)
-        size = list(np.shape(d))
-        newsize = size // np.array(width, dtype=int)
+        size = np.array(np.shape(d))
+        w = np.array(w, dtype=int)
+        if np.any(w > size):
+            w = np.minimum(w, size)
+            ws = ', '.join([f'{s:d}' for s in w[1:]])
+            print(f'width was changed to [{ws}].')
+        newsize = size // w
         grid = [None, self.v, self.y, self.x]
         for n in range(4):
-            if width[n] == 1:
+            if w[n] == 1 or grid[n] is None:
                 continue
             size[n] = newsize[n]
             olddata = np.moveaxis(d, n, 0)
             newdata = np.moveaxis(np.zeros(size), n, 0)
             t = np.zeros(newsize[n])
-            for i in range(width[n]):
-                i_stop = i + newsize[n] * width[n]
-                i_step = width[n]
+            for i in range(w[n]):
+                i_stop = i + newsize[n] * w[n]
+                i_step = w[n]
                 t += grid[n][i:i_stop:i_step]
                 newdata += olddata[i:i_stop:i_step]
-            grid[n] = t / width[n]
-            d = np.moveaxis(newdata, 0, n) / width[n]
+            grid[n] = t / w[n]
+            d = np.moveaxis(newdata, 0, n) / w[n]
         self.data = np.squeeze(d)
         _, self.v, self.y, self.x = grid
 
@@ -191,6 +206,7 @@ class AstroData():
         else:
             print('No change because includexy=False and includev=False.')
 
+    @need_multipixel
     def circularbeam(self):
         """Make the beam circular by convolving with 1D Gaussian
         """
@@ -243,6 +259,7 @@ class AstroData():
             bmin_new = 1 / np.sqrt(alpha + Det)
             self.beam = np.array([bmaj_new, bmin_new, bpa_new])
 
+    @need_multipixel
     def fit2d(self, model: object, bounds: np.ndarray,
               progressbar: bool = False,
               kwargs_fit: dict = {}, kwargs_plotcorner: dict = {},
@@ -262,7 +279,7 @@ class AstroData():
         """
         d = self.data if chan is None else self.data[chan]
         x, y = np.meshgrid(self.x, self.y)
-        if None not in self.beam and None not in [self.dx, self.dy]:
+        if None not in self.beam:
             Omega = np.pi * self.beam[0] * self.beam[1] / 4 / np.log(2)
             pixelperbeam = Omega / np.abs(self.dx * self.dy)
         else:
@@ -290,6 +307,7 @@ class AstroData():
         return {'popt': popt, 'plow': plow, 'pmid': pmid, 'phigh': phigh,
                 'model': modelopt, 'residual': residual}
 
+    @need_multipixel
     def gaussfit2d(self, chan: int | None = None):
         """Fit a 2D Gaussian function to self.data.
 
@@ -317,7 +335,8 @@ class AstroData():
                                p0=p0, bounds=bounds)
         model = gaussian2d((x, y), *popt)
         residual = d - model
-        return {'popt': popt, 'pcov': pcov, 'model': model, 'residual': residual}
+        return {'popt': popt, 'pcov': pcov,
+                'model': model, 'residual': residual}
 
     def histogram(self, **kwargs) -> tuple:
         """Output histogram of self.data using numpy.histogram. This method can take the arguments of numpy.histogram.
@@ -451,8 +470,12 @@ class AstroData():
         Returns:
             np.ndarray: [x, data]. If self.data is 3D, the output data are in the shape of (len(v), len(x)).
         """
-        if dx is None:
+        if dx is None and self.dx is not None:
             dx = np.abs(self.dx)
+        if dx is None:
+            print('dx was not found. Please input dx.')
+            return
+
         n = int(np.ceil(length / 2 / dx))
         r = np.linspace(-n, n, 2 * n + 1) * dx
         pa_rad = np.radians(pa)
@@ -472,6 +495,7 @@ class AstroData():
              'sigma': self.sigma, 'center': self.center, 'pv': self.pv}
         return d
 
+    @need_multipixel
     def writetofits(self, fitsimage: str = 'out.fits', header: dict = {}):
         """Write out the AstroData to a FITS file.
 
