@@ -203,8 +203,8 @@ def set_minmax(data: np.ndarray, stretch: str, stretchscale: float,
         elif st == 'power':
             cmin = kw['min'][i] if 'vmin' in kw else r
             c = c.clip(cmin, None)
-            c = ((c / cmin)**(1 - stretchpower) - 1) \
-                / (1 - stretchpower) / np.log(10)
+            p = 1 - stretchpower
+            c = ((c / cmin)**p - 1) / p / np.log(10)
         data[i] = c
     n = len(data)
     for m in ['vmin', 'vmax']:
@@ -215,13 +215,12 @@ def set_minmax(data: np.ndarray, stretch: str, stretchscale: float,
                 elif st == 'asinh':
                     kw[m][i] = np.arcsinh(kw[m][i] / stsc)
                 elif st == 'power':
-                    kw[m][i] = ((kw[m][i]/c.min())**(1 - stretchpower) - 1) \
-                               / (1 - stretchpower) / np.log(10)
+                    p = 1 - stretchpower
+                    kw[m][i] = ((kw[m][i]/c.min())**p - 1) / p / np.log(10)
         else:
             kw[m] = [None] * n
             for i, (c, st, _, r) in enumerate(zip(*z)):
                 if m == 'vmin':
-
                     kw[m][i] = np.log10(r) if st == 'log' else np.nanmin(c)
                 else:
                     kw[m][i] = np.nanmax(c)
@@ -344,7 +343,8 @@ class PlotAstroData(AstroFrame):
         fig (optional): External plt.figure(). Defaults to None.
         ax (optional): External fig.add_subplot(). Defaults to None.
     """
-    def __init__(self, v: np.ndarray = np.array([0]), vskip: int = 1,
+    def __init__(self,
+                 v: np.ndarray = np.array([0]), vskip: int = 1,
                  veldigit: int = 2, restfreq: float | None = None,
                  channelnumber: int | None = None,
                  nrows: int = 4, ncols: int = 6,
@@ -457,6 +457,37 @@ class PlotAstroData(AstroFrame):
             dnan = np.full(shape, d[0] * np.nan)
             return np.concatenate((d, dnan), axis=0)
         self.vskipfill = vskipfill
+
+    def _map_init(self, kw: dict) -> tuple:
+        """
+        Common process for add_color, add_contour, add_segment, and add_rgb.
+        xskip and yskip (int) mean spatial pixel skips, which defaults to 1.
+
+        Args:
+            kw (dict): kwargs input for each method.
+
+        Returns:
+            tuple: Data and parameters used in each method.
+        """
+        beam_kwargs = kwargs2beamargs(kw)
+        self._kw.update(kw)
+        if 'xskip' in self._kw:
+            xskip = self._kw['xskip']
+            del self._kw['xskip']
+        else:
+            xskip = 1
+        if 'yskip' in self._kw:
+            yskip = self._kw['yskip']
+            del self._kw['yskip']
+        else:
+            yskip = 1
+        d = kwargs2AstroData(self._kw)
+        self.read(d, xskip, yskip)
+        self.beam = d.beam
+        self.sigma = d.sigma
+        singlepix = d.dx is None or d.dy is None
+        return (d.data, d.x, d.y, d.v, d.beam, d.sigma, d.bunit,
+                self._kw, beam_kwargs, singlepix)
 
     def add_region(self, patch: str = 'ellipse',
                    poslist: list[str | list[float, float]] = [],
@@ -669,18 +700,20 @@ class PlotAstroData(AstroFrame):
             axnow.plot([x[0] - length/2., x[0] + length/2.], [y[0], y[0]],
                        '-', linewidth=linewidth, color=color)
 
-    def add_color(self, xskip: int = 1, yskip: int = 1,
+    def add_color(self,
                   stretch: str = 'linear',
                   stretchscale: float | None = None,
                   stretchpower: float = 0,
-                  show_cbar: bool = True, cblabel: str | None = None,
-                  cbformat: float = '%.1e', cbticks: list[float] | None = None,
-                  cbticklabels: list[str] | None = None, cblocation: str = 'right',
+                  show_cbar: bool = True,
+                  cblabel: str | None = None,
+                  cbformat: float = '%.1e',
+                  cbticks: list[float] | None = None,
+                  cbticklabels: list[str] | None = None,
+                  cblocation: str = 'right',
                   **kwargs) -> None:
-        """Use Axes.pcolormesh of matplotlib. kwargs must include the arguments of AstroData to specify the data to be plotted. kwargs may include arguments for add_beam() and a dict of beam_kwargs to specify the beam patch in more detail.
+        """Use Axes.pcolormesh of matplotlib. kwargs must include the arguments of AstroData to specify the data to be plotted. kwargs may include arguments for add_beam() and a dict of beam_kwargs to specify the beam patch in more detail. kwargs may include xskiip and yskip.
 
         Args:
-            xskip, yskip (int, optional): Spatial pixel skip. Defaults to 1.
             stretch (str, optional): 'log' means the mapped data are logarithmic. 'asinh' means the mapped data are arc sin hyperbolic. 'power' means the mapped data are power-law (see also stretchpower). Defaults to 'linear'.
             stretchscale (float, optional): color scale is asinh(data / stretchscale). Defaults to None.
             stretchpower (float, optional): color scale is ((data / vmin)**(1 - stretchpower) - 1) / (1 - stretchpower) / ln(10). 0 means the linear scale. 1 means the logarithmic scale. Defaults to 0.
@@ -691,16 +724,14 @@ class PlotAstroData(AstroFrame):
             cbticklabels (list, optional): Ticklabels of colorbar. Defaults to None.
             cblocation (str, optional): 'left', 'top', 'left', 'right'. Only for 2D images. Defaults to 'right'.
         """
-        _kw = {'cmap': 'cubehelix', 'alpha': 1,
-               'edgecolors': 'none', 'zorder': 1}
-        beam_kwargs = kwargs2beamargs(kwargs)
-        _kw.update(kwargs)
-        d = kwargs2AstroData(_kw)
-        self.read(d, xskip, yskip)
-        c, x, y, v, beam, sigma = d.data, d.x, d.y, d.v, d.beam, d.sigma
-        bunit = d.bunit
-        self.beam = beam
-        self.sigma = sigma
+        self._kw = {'cmap': 'cubehelix', 'alpha': 1,
+                    'edgecolors': 'none', 'zorder': 1}
+        c, x, y, v, beam, sigma, bunit, _kw, beam_kwargs, singlepix \
+            = self._map_init(kwargs)
+        if singlepix:
+            print('No pixel size. Skip add_color.')
+            return
+
         if stretchscale is None:
             stretchscale = sigma
         cmin_org = _kw['vmin'] if 'vmin' in _kw else sigma
@@ -735,8 +766,9 @@ class PlotAstroData(AstroFrame):
                 elif stretch == 'asinh':
                     cbticks = np.arcsinh(np.array(cbticks) / stretchscale)
                 elif stretch == 'power':
-                    cbticks = (np.array(cbticks) / cmin_org)**(1 - stretchpower)
-                    cbticks = (cbticks - 1) / (1 - stretchpower) / np.log(10)
+                    cbticks = np.array(cbticks)
+                    p = 1 - stretchpower
+                    cbticks = ((cbticks / cmin_org)**p - 1) / p / np.log(10)
                 cb.set_ticks(cbticks)
             if cbticklabels is not None:
                 cb.set_ticklabels(cbticklabels)
@@ -749,28 +781,26 @@ class PlotAstroData(AstroFrame):
                 elif stretch == 'asinh':
                     ticklin = np.sinh(t) * stretchscale
                 elif stretch == 'power':
-                    ticklin = 1 + (1 - stretchpower) * np.log(10) * t
-                    ticklin = cmin_org * ticklin**(1 / (1 - stretchpower))
+                    p = 1 - stretchpower
+                    ticklin = cmin_org * (1 + p * np.log(10) * t)**(1 / p)
                 cb.set_ticklabels([f'{d:{cbformat[1:]}}' for d in ticklin])
         self.add_beam(beam=beam, **beam_kwargs)
 
-    def add_contour(self, xskip: int = 1, yskip: int = 1,
+    def add_contour(self,
                     levels: list[float] = [-12, -6, -3, 3, 6, 12, 24, 48, 96, 192, 384],
                     **kwargs) -> None:
-        """Use Axes.contour of matplotlib. kwargs must include the arguments of AstroData to specify the data to be plotted. kwargs may include arguments for add_beam() and a dict of beam_kwargs to specify the beam patch in more detail.
+        """Use Axes.contour of matplotlib. kwargs must include the arguments of AstroData to specify the data to be plotted. kwargs may include arguments for add_beam() and a dict of beam_kwargs to specify the beam patch in more detail. kwargs may include xskiip and yskip.
 
         Args:
-            xskip, yskip (int, optional): Spatial pixel skip. Defaults to 1.
             levels (list, optional): Contour levels in the unit of sigma. Defaults to [-12,-6,-3,3,6,12,24,48,96,192,384].
         """
-        _kw = {'colors': 'gray', 'linewidths': 1.0, 'zorder': 2}
-        beam_kwargs = kwargs2beamargs(kwargs)
-        _kw.update(kwargs)
-        d = kwargs2AstroData(_kw)
-        self.read(d, xskip, yskip)
-        c, x, y, v, beam, sigma = d.data, d.x, d.y, d.v, d.beam, d.sigma
-        self.beam = beam
-        self.sigma = sigma
+        self._kw = {'colors': 'gray', 'linewidths': 1.0, 'zorder': 2}
+        c, x, y, v, beam, sigma, _, _kw, beam_kwargs, singlepix \
+            = self._map_init(kwargs)
+        if singlepix:
+            print('No pixel size. Skip add_contour.')
+            return
+
         c = self.vskipfill(c, v)
         if type(self.channelnumber) is int:
             c = [c[self.channelnumber]]
@@ -778,9 +808,9 @@ class PlotAstroData(AstroFrame):
             axnow.contour(x, y, cnow, np.sort(levels) * sigma, **_kw)
         self.add_beam(beam=beam, **beam_kwargs)
 
-    def add_segment(self, ampfits: str = None, angfits: str = None,
+    def add_segment(self,
+                    ampfits: str = None, angfits: str = None,
                     Ufits: str = None, Qfits: str = None,
-                    xskip: int = 1, yskip: int = 1,
                     amp: list[np.ndarray] | None = None,
                     ang: list[np.ndarray] | None = None,
                     stU: list[np.ndarray] | None = None,
@@ -789,14 +819,13 @@ class PlotAstroData(AstroFrame):
                     rotation: float = 0.,
                     cutoff: float = 3.,
                     **kwargs) -> None:
-        """Use Axes.quiver of matplotlib. kwargs must include the arguments of AstroData to specify the data to be plotted. fitsimage = [ampfits, angfits, Ufits, Qfits]. data = [amp, ang, stU, stQ]. kwargs may include arguments for add_beam() and a dict of beam_kwargs to specify the beam patch in more detail.
+        """Use Axes.quiver of matplotlib. kwargs must include the arguments of AstroData to specify the data to be plotted. fitsimage = [ampfits, angfits, Ufits, Qfits]. data = [amp, ang, stU, stQ]. kwargs may include arguments for add_beam() and a dict of beam_kwargs to specify the beam patch in more detail. kwargs may include xskiip and yskip.
 
         Args:
             ampfits (str, optional): In put fits name. Length of segment. Defaults to None.
             angfits (str, optional): In put fits name. North to east. Defaults to None.
             Ufits (str, optional): In put fits name. Stokes U. Defaults to None.
             Qfits (str, optional): In put fits name. Stokes Q. Defaults to None.
-            xskip, yskip (int, optional): Spatial pixel skip. Defaults to 1.
             amp (list, optional): Length of segment. Defaults to None.
             ang (list, optional): North to east. Defaults to None.
             stU (list, optional): Stokes U. Defaults to None.
@@ -806,16 +835,17 @@ class PlotAstroData(AstroFrame):
             rotation (float, optional): Segment angle is ang + rotation. Defaults to 0..
             cutoff (float, optional): Used when amp and ang are calculated from Stokes U and Q. In the unit of sigma. Defaults to 3..
         """
-        _kw = {'angles': 'xy', 'scale_units': 'xy', 'color': 'gray',
-               'pivot': 'mid', 'headwidth': 0, 'headlength': 0,
-               'headaxislength': 0, 'width': 0.007, 'zorder': 3}
-        beam_kwargs = kwargs2beamargs(kwargs)
-        _kw.update(kwargs)
-        _kw['data'] = [amp, ang, stU, stQ]
-        _kw['fitsimage'] = [ampfits, angfits, Ufits, Qfits]
-        d = kwargs2AstroData(_kw)
-        self.read(d, xskip, yskip)
-        c, x, y, v, beam, sigma = d.data, d.x, d.y, d.v, d.beam, d.sigma
+        self._kw = {'angles': 'xy', 'scale_units': 'xy', 'color': 'gray',
+                    'pivot': 'mid', 'headwidth': 0, 'headlength': 0,
+                    'headaxislength': 0, 'width': 0.007, 'zorder': 3,
+                    'fitsimage': [ampfits, angfits, Ufits, Qfits],
+                    'data': [amp, ang, stU, stQ]}
+        c, x, y, v, beam, sigma, _, _kw, beam_kwargs, singlepix \
+            = self._map_init(kwargs)
+        if singlepix:
+            print('No pixel size. Skip add_segment.')
+            return
+
         amp, ang, stU, stQ = c
         sigmaU, sigmaQ = sigma[2:]
         beam = [beam[i] for i in range(4) if beam[i][0] is not None][0]
@@ -837,34 +867,32 @@ class PlotAstroData(AstroFrame):
         if type(self.channelnumber) is int:
             U = [U[self.channelnumber]]
             V = [V[self.channelnumber]]
-        _kw['scale'] = 1 if len(x) == 1 else 1. / np.abs(x[1] - x[0])
+        _kw['scale'] = 1. / np.abs(x[1] - x[0])
         for axnow, unow, vnow in zip(self.ax, U, V):
             axnow.quiver(x, y, unow, vnow, **_kw)
         self.add_beam(beam=beam, **beam_kwargs)
 
-    def add_rgb(self, xskip: int = 1, yskip: int = 1,
+    def add_rgb(self,
                 stretch: list[str, str, str] = ['linear'] * 3,
                 stretchscale: list[float | None, float | None, float | None] = [None] * 3,
                 stretchpower: float = 0,
                 **kwargs) -> None:
-        """Use PIL.Image and imshow of matplotlib. kwargs must include the arguments of AstroData to specify the data to be plotted. A three-element array ([red, green, blue]) is supposed for all arguments, except for xskip, yskip and show_beam, including vmax and vmin. kwargs may include arguments for add_beam() and a dict of beam_kwargs to specify the beam patch in more detail.
+        """Use PIL.Image and imshow of matplotlib. kwargs must include the arguments of AstroData to specify the data to be plotted. A three-element array ([red, green, blue]) is supposed for all arguments, except for xskip, yskip and show_beam, including vmax and vmin. kwargs may include arguments for add_beam() and a dict of beam_kwargs to specify the beam patch in more detail. kwargs may include xskiip and yskip.
 
         Args:
-            xskip, yskip (int, optional): Spatial pixel skip. Defaults to 1.
             stretch (str, optional): 'log' means the mapped data are logarithmic. 'asinh' means the mapped data are arc sin hyperbolic. 'power' means the mapped data are power-law (see also stretchpower). Defaults to 'linear'.
             stretchscale (float, optional): color scale is asinh(data / stretchscale). Defaults to None.
             stretchpower (float, optional): color scale is ((data / vmin)**(1 - stretchpower) - 1) / (1 - stretchpower) / ln(10). 0 means the linear scale. 1 means the logarithmic scale. Defaults to 0.
         """
         from PIL import Image
 
-        _kw = {}
-        beam_kwargs = kwargs2beamargs(kwargs)
-        _kw.update(kwargs)
-        d = kwargs2AstroData(_kw)
-        self.read(d, xskip, yskip)
-        c, x, y, v, beam, sigma = d.data, d.x, d.y, d.v, d.beam, d.sigma
-        self.beam = beam
-        self.sigma = sigma
+        self._kw = {}
+        c, x, y, v, beam, sigma, _, _kw, beam_kwargs, singlepix \
+            = self._map_init(kwargs)
+        if singlepix:
+            print('No pixel size. Skip add_rgb.')
+            return
+
         for i in range(len(stretchscale)):
             if stretchscale[i] is None:
                 stretchscale[i] = sigma[i]
