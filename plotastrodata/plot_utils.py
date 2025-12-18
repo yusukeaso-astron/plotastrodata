@@ -550,12 +550,15 @@ class PlotAstroData(AstroFrame):
         """
         if not show_beam:
             return
-        include_chan = self.bottomleft if self.channelnumber is None else self.allchan
+
+        animation = self.channelnumber is not None
+        include_chan = self.allchan if animation else self.bottomleft
         patch = 'rectangle' if self.pv else 'ellipse'
         blist = [beam] if np.ndim(beam) == 1 else beam
         n = len(blist)
         bclist = beamcolor if type(beamcolor) is list else [beamcolor] * n
-        bplist = beampos if beampos == [None] * 3 or np.ndim(beampos) == 2 else [beampos] * n
+        islist = beampos == [None] * 3 or np.ndim(beampos) == 2
+        bplist = beampos if islist else [beampos] * n
         for (bmaj, bmin, bpa), bc, bp in zip(blist, bclist, bplist):
             if None in [bmaj, bmin, bpa]:
                 print('No beam to plot.')
@@ -614,7 +617,8 @@ class PlotAstroData(AstroFrame):
                 ch = self.channelnumber
             if ch not in include_chan:
                 continue
-            for x, y, s in zip(*self.pos2xy(poslist), listing(slist)):
+            z = listing(*self.pos2xy(poslist), slist)
+            for x, y, s in zip(*z):
                 axnow.text(x=x, y=y, s=s, **_kw)
 
     def add_line(self, poslist: list[str | list[float, float]] = [],
@@ -640,7 +644,8 @@ class PlotAstroData(AstroFrame):
             if ch not in include_chan:
                 continue
             alist = np.radians(anglelist)
-            for x, y, a, r in zip(*self.pos2xy(poslist), *listing(alist, rlist)):
+            z = listing(*self.pos2xy(poslist), alist, rlist)
+            for x, y, a, r in zip(*z):
                 axnow.plot([x, x + r * np.sin(a)],
                            [y, y + r * np.cos(a)], **_kw)
 
@@ -667,7 +672,8 @@ class PlotAstroData(AstroFrame):
             if ch not in include_chan:
                 continue
             alist = np.radians(anglelist)
-            for x, y, a, r in zip(*self.pos2xy(poslist), *listing(alist, rlist)):
+            z = listing(*self.pos2xy(poslist), alist, rlist)
+            for x, y, a, r in zip(*z):
                 axnow.quiver(x, y, r * np.sin(a), r * np.cos(a),
                              angles='xy', scale_units='xy', scale=1,
                              **_kw)
