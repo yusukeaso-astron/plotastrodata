@@ -68,7 +68,7 @@ def filled2d(data: np.ndarray, x: np.ndarray, y: np.ndarray, n: int = 1,
     return d, xnew, ynew
 
 
-def need_multipixel(method):
+def need_multipixels(method):
     def wrapper(self, *args, **kwargs):
         singlepixel = self.dx is None or self.dy is None
         if singlepixel:
@@ -153,8 +153,13 @@ class AstroData():
             print(f'width was changed to [{ws}].')
         newsize = size // w
         grid = [None, self.v, self.y, self.x]
-        for n in range(4):
+        dgrid = [None, self.dv, self.dy, self.dx]
+        for n in range(1, 4):
             if w[n] == 1 or grid[n] is None:
+                continue
+            if dgrid[n] is None:
+                s = ['v', 'y', 'x'][n - 1]
+                print(f'Skip binning in the {s}-axis because d{s} is None.')
                 continue
             size[n] = newsize[n]
             olddata = np.moveaxis(d, n, 0)
@@ -166,9 +171,11 @@ class AstroData():
                 t += grid[n][i:i_stop:i_step]
                 newdata += olddata[i:i_stop:i_step]
             grid[n] = t / w[n]
+            dgrid[n] = dgrid[n] * w[n]
             d = np.moveaxis(newdata, 0, n) / w[n]
         self.data = np.squeeze(d)
         _, self.v, self.y, self.x = grid
+        _, self.dv, self.dy, self.dx = dgrid
 
     def centering(self, includexy: bool = True, includev: bool = False,
                   **kwargs):
@@ -206,7 +213,7 @@ class AstroData():
         else:
             print('No change because includexy=False and includev=False.')
 
-    @need_multipixel
+    @need_multipixels
     def circularbeam(self):
         """Make the beam circular by convolving with 1D Gaussian
         """
@@ -259,7 +266,7 @@ class AstroData():
             bmin_new = 1 / np.sqrt(alpha + Det)
             self.beam = np.array([bmaj_new, bmin_new, bpa_new])
 
-    @need_multipixel
+    @need_multipixels
     def fit2d(self, model: object, bounds: np.ndarray,
               progressbar: bool = False,
               kwargs_fit: dict = {}, kwargs_plotcorner: dict = {},
@@ -307,7 +314,7 @@ class AstroData():
         return {'popt': popt, 'plow': plow, 'pmid': pmid, 'phigh': phigh,
                 'model': modelopt, 'residual': residual}
 
-    @need_multipixel
+    @need_multipixels
     def gaussfit2d(self, chan: int | None = None):
         """Fit a 2D Gaussian function to self.data.
 
@@ -495,7 +502,7 @@ class AstroData():
              'sigma': self.sigma, 'center': self.center, 'pv': self.pv}
         return d
 
-    @need_multipixel
+    @need_multipixels
     def writetofits(self, fitsimage: str = 'out.fits', header: dict = {}):
         """Write out the AstroData to a FITS file.
 
