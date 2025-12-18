@@ -513,8 +513,9 @@ class PlotAstroData(AstroFrame):
         if patch not in ['rectangle', 'ellipse']:
             print('Only patch=\'rectangle\' or \'ellipse\' supported. ')
             return
-        for x, y, width, height, angle in zip(*self.pos2xy(poslist),
-                                              *listing(minlist, majlist, palist)):
+
+        z = listing(*self.pos2xy(poslist), minlist, majlist, palist)
+        for x, y, width, height, angle in zip(*z):
             for ch, axnow in enumerate(self.ax):
                 if type(self.channelnumber) is int:
                     ch = self.channelnumber

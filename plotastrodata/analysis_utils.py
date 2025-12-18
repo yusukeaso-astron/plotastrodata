@@ -629,9 +629,8 @@ class AstroFrame():
          Returns:
             np.ndarray: absolute coordinates.
          """
-        if np.shape(poslist) == () \
-            or (np.shape(poslist) == (2,)
-                and type(poslist[0]) is not str):
+        onexy = np.shape(poslist) == (2,) and type(poslist[0]) is not str
+        if np.shape(poslist) == () or onexy:
             poslist = [poslist]
         x, y = [None] * len(poslist), [None] * len(poslist)
         for i, p in enumerate(poslist):

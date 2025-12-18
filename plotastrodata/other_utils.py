@@ -12,10 +12,10 @@ def listing(*args) -> list:
     Returns:
         list: With a single non-list input, the output is a list like ['a'], rather than [['a']].
     """
-    nums = [float, int, np.float64, np.int64, np.float32, np.int32]
+    strnum = [str, float, int, np.float64, np.int64, np.float32, np.int32]
     b = [None] * len(args)
     for i, a in enumerate(args):
-        b[i] = [a] if type(a) in (nums + [str]) else a
+        b[i] = [a] if type(a) in strnum else a
     if len(args) == 1:
         b = b[0]
     return b
