@@ -4,7 +4,7 @@ from scipy.interpolate import RegularGridInterpolator as RGI
 from scipy.optimize import curve_fit
 from scipy.signal import convolve
 
-from plotastrodata.coord_utils import coord2xy, rel2abs
+from plotastrodata.coord_utils import coord2xy, xy2coord, rel2abs
 from plotastrodata.matrix_utils import Mfac, Mrot, dot2d
 from plotastrodata.other_utils import (estimate_rms, trim,
                                        gaussian2d, isdeg,
@@ -315,14 +315,14 @@ class AstroData():
                 'model': modelopt, 'residual': residual}
 
     @_need_multipixels
-    def gaussfit2d(self, chan: int | None = None):
+    def gaussfit2d(self, chan: int | None = None) -> dict:
         """Fit a 2D Gaussian function to self.data.
 
         Args:
             chan (int): The channel number where the 2D Gaussian is fitted. Defaults to None.
 
         Returns:
-            dict: The best parameter set (popt), the covariance set (pcov), the best 2D Gaussian array (model), and the residual from the model (residual).
+            dict: The best parameter set (popt), the covariance set (pcov), the best 2D Gaussian array (model), the residual from the model (residual), and the coordinates of the best-fit center (center).
         """
         d = self.data if chan is None else self.data[chan]
         x = self.x
@@ -338,12 +338,21 @@ class AstroData():
         bounds = [[-amax, xmin, ymin, ds, ds, -90],
                   [amax, xmax, ymax, smax, smax, 90]]
         x, y = np.meshgrid(x, y)
-        popt, pcov = curve_fit(gaussian2d, (x.ravel(), y.ravel()), d.ravel(),
+        popt, pcov = curve_fit(gaussian2d,
+                               (x.ravel(), y.ravel()), d.ravel(),
                                p0=p0, bounds=bounds)
         model = gaussian2d((x, y), *popt)
         residual = d - model
+        if (center := self.center) is not None:
+            xy = popt[1:3] / 3600
+            newcenter = xy2coord(xy, coordorg=center)
+            if len(c := center.split()) == 3:
+                newcenter = f'{c[0]} {newcenter}'
+        else:
+            newcenter = None
         return {'popt': popt, 'pcov': pcov,
-                'model': model, 'residual': residual}
+                'model': model, 'residual': residual,
+                'center': newcenter}
 
     def histogram(self, **kwargs) -> tuple:
         """Output histogram of self.data using numpy.histogram. This method can take the arguments of numpy.histogram.
