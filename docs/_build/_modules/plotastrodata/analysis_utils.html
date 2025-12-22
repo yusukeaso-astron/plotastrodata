@@ -75,7 +75,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">scipy.optimize</span><span class="w"> </span><span class="kn">import</span> <span class="n">curve_fit</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">scipy.signal</span><span class="w"> </span><span class="kn">import</span> <span class="n">convolve</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">plotastrodata.coord_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">coord2xy</span><span class="p">,</span> <span class="n">rel2abs</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">plotastrodata.coord_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">coord2xy</span><span class="p">,</span> <span class="n">xy2coord</span><span class="p">,</span> <span class="n">rel2abs</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">plotastrodata.matrix_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">Mfac</span><span class="p">,</span> <span class="n">Mrot</span><span class="p">,</span> <span class="n">dot2d</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">plotastrodata.other_utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span><span class="n">estimate_rms</span><span class="p">,</span> <span class="n">trim</span><span class="p">,</span>
                                        <span class="n">gaussian2d</span><span class="p">,</span> <span class="n">isdeg</span><span class="p">,</span>
@@ -411,14 +411,14 @@
 <div class="viewcode-block" id="AstroData.gaussfit2d">
 <a class="viewcode-back" href="../../plotastrodata.html#plotastrodata.analysis_utils.AstroData.gaussfit2d">[docs]</a>
     <span class="nd">@_need_multipixels</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">gaussfit2d</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">chan</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">gaussfit2d</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">chan</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Fit a 2D Gaussian function to self.data.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            chan (int): The channel number where the 2D Gaussian is fitted. Defaults to None.</span>
 
 <span class="sd">        Returns:</span>
-<span class="sd">            dict: The best parameter set (popt), the covariance set (pcov), the best 2D Gaussian array (model), and the residual from the model (residual).</span>
+<span class="sd">            dict: The best parameter set (popt), the covariance set (pcov), the best 2D Gaussian array (model), the residual from the model (residual), and the coordinates of the best-fit center (center).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="k">if</span> <span class="n">chan</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">chan</span><span class="p">]</span>
         <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span>
@@ -434,12 +434,21 @@
         <span class="n">bounds</span> <span class="o">=</span> <span class="p">[[</span><span class="o">-</span><span class="n">amax</span><span class="p">,</span> <span class="n">xmin</span><span class="p">,</span> <span class="n">ymin</span><span class="p">,</span> <span class="n">ds</span><span class="p">,</span> <span class="n">ds</span><span class="p">,</span> <span class="o">-</span><span class="mi">90</span><span class="p">],</span>
                   <span class="p">[</span><span class="n">amax</span><span class="p">,</span> <span class="n">xmax</span><span class="p">,</span> <span class="n">ymax</span><span class="p">,</span> <span class="n">smax</span><span class="p">,</span> <span class="n">smax</span><span class="p">,</span> <span class="mi">90</span><span class="p">]]</span>
         <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
-        <span class="n">popt</span><span class="p">,</span> <span class="n">pcov</span> <span class="o">=</span> <span class="n">curve_fit</span><span class="p">(</span><span class="n">gaussian2d</span><span class="p">,</span> <span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">y</span><span class="o">.</span><span class="n">ravel</span><span class="p">()),</span> <span class="n">d</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span>
+        <span class="n">popt</span><span class="p">,</span> <span class="n">pcov</span> <span class="o">=</span> <span class="n">curve_fit</span><span class="p">(</span><span class="n">gaussian2d</span><span class="p">,</span>
+                               <span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">y</span><span class="o">.</span><span class="n">ravel</span><span class="p">()),</span> <span class="n">d</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span>
                                <span class="n">p0</span><span class="o">=</span><span class="n">p0</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="n">bounds</span><span class="p">)</span>
         <span class="n">model</span> <span class="o">=</span> <span class="n">gaussian2d</span><span class="p">((</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">),</span> <span class="o">*</span><span class="n">popt</span><span class="p">)</span>
         <span class="n">residual</span> <span class="o">=</span> <span class="n">d</span> <span class="o">-</span> <span class="n">model</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">center</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">center</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">xy</span> <span class="o">=</span> <span class="n">popt</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span> <span class="o">/</span> <span class="mi">3600</span>
+            <span class="n">newcenter</span> <span class="o">=</span> <span class="n">xy2coord</span><span class="p">(</span><span class="n">xy</span><span class="p">,</span> <span class="n">coordorg</span><span class="o">=</span><span class="n">center</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">c</span> <span class="o">:=</span> <span class="n">center</span><span class="o">.</span><span class="n">split</span><span class="p">())</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+                <span class="n">newcenter</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">c</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">newcenter</span><span class="si">}</span><span class="s1">&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">newcenter</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;popt&#39;</span><span class="p">:</span> <span class="n">popt</span><span class="p">,</span> <span class="s1">&#39;pcov&#39;</span><span class="p">:</span> <span class="n">pcov</span><span class="p">,</span>
-                <span class="s1">&#39;model&#39;</span><span class="p">:</span> <span class="n">model</span><span class="p">,</span> <span class="s1">&#39;residual&#39;</span><span class="p">:</span> <span class="n">residual</span><span class="p">}</span></div>
+                <span class="s1">&#39;model&#39;</span><span class="p">:</span> <span class="n">model</span><span class="p">,</span> <span class="s1">&#39;residual&#39;</span><span class="p">:</span> <span class="n">residual</span><span class="p">,</span>
+                <span class="s1">&#39;center&#39;</span><span class="p">:</span> <span class="n">newcenter</span><span class="p">}</span></div>
 
 
 <div class="viewcode-block" id="AstroData.histogram">
