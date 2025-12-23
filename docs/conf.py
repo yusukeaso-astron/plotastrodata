@@ -38,7 +38,8 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.viewcode',
     'sphinx.ext.todo',
-    'sphinx.ext.napoleon'
+    'sphinx.ext.napoleon',
+    'myst_nb'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -76,3 +77,9 @@ html_static_path = []
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = True
+
+# -- MyST-NB configuration ---------------------------------------------
+
+nb_execution_mode = "auto"   # execute notebooks during RTD build
+nb_execution_timeout = 300   # seconds
+nb_execution_raise_on_error = True

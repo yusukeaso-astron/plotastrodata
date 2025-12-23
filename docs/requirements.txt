@@ -4,6 +4,7 @@ dynesty
 emcee
 matplotlib
 multiprocess
+myst-nb
 numpy
 pillow
 plotly
