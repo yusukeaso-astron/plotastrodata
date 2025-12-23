@@ -74,34 +74,31 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">astropy</span><span class="w"> </span><span class="kn">import</span> <span class="n">units</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_getframe</span><span class="p">(</span><span class="n">coord</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">s</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Internal function to pick up the frame name from the coordinates.</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_getframe</span><span class="p">(</span><span class="n">coord</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Internal function to pick up the frame name from the coordinates. When coord is a list, frame and framename are picked up from the first element.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        coord (str): something like &quot;J2000 01h23m45.6s 01d23m45.6s&quot;</span>
-<span class="sd">        s (str, optional): To distinguish coord and coordorg. Defaults to &#39;&#39;.</span>
+<span class="sd">        coord (str): something like &quot;J2000 01h23m45.6s 01d23m45.6s&quot; or a list of them.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        tuple: updated coord and frame. frame is FK5(equinox=&#39;J2000), FK4(equinox=&#39;B1950&#39;), or &#39;icrs&#39;.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">c</span> <span class="o">:=</span> <span class="n">coord</span><span class="o">.</span><span class="n">split</span><span class="p">())</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
-        <span class="n">coord</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">c</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">c</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span>
-        <span class="k">if</span> <span class="s1">&#39;J2000&#39;</span> <span class="ow">in</span> <span class="n">c</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
-            <span class="n">frame</span> <span class="o">=</span> <span class="n">FK5</span><span class="p">(</span><span class="n">equinox</span><span class="o">=</span><span class="s1">&#39;J2000&#39;</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="s1">&#39;FK5&#39;</span> <span class="ow">in</span> <span class="n">c</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
-            <span class="n">frame</span> <span class="o">=</span> <span class="n">FK5</span><span class="p">(</span><span class="n">equinox</span><span class="o">=</span><span class="s1">&#39;J2000&#39;</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="s1">&#39;B1950&#39;</span> <span class="ow">in</span> <span class="n">c</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
-            <span class="n">frame</span> <span class="o">=</span> <span class="n">FK4</span><span class="p">(</span><span class="n">equinox</span><span class="o">=</span><span class="s1">&#39;B1950&#39;</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="s1">&#39;FK4&#39;</span> <span class="ow">in</span> <span class="n">c</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
-            <span class="n">frame</span> <span class="o">=</span> <span class="n">FK4</span><span class="p">(</span><span class="n">equinox</span><span class="o">=</span><span class="s1">&#39;B1950&#39;</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="s1">&#39;ICRS&#39;</span> <span class="ow">in</span> <span class="n">c</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
-            <span class="n">frame</span> <span class="o">=</span> <span class="s1">&#39;icrs&#39;</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Unknown equinox found in coord</span><span class="si">{</span><span class="n">s</span><span class="si">}</span><span class="s1">. ICRS is used&#39;</span><span class="p">)</span>
-            <span class="n">frame</span> <span class="o">=</span> <span class="s1">&#39;icrs&#39;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">getframe_single</span><span class="p">(</span><span class="n">s</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+        <span class="n">hasframe</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span>
+        <span class="n">hmsdms</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">c</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">c</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span> <span class="k">if</span> <span class="n">hasframe</span> <span class="k">else</span> <span class="n">s</span>
+        <span class="n">frame</span> <span class="o">=</span> <span class="n">_updateframe</span><span class="p">(</span><span class="n">c</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="k">if</span> <span class="n">hasframe</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="n">framename</span> <span class="o">=</span> <span class="n">c</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">hasframe</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="n">hmsdms</span><span class="p">,</span> <span class="n">frame</span><span class="p">,</span> <span class="n">framename</span>
+
+    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">coord</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">getframe_single</span><span class="p">(</span><span class="n">coord</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">frame</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="k">return</span> <span class="n">coord</span><span class="p">,</span> <span class="n">frame</span>
+        <span class="n">outlist</span> <span class="o">=</span> <span class="p">[</span><span class="n">getframe_single</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">coord</span><span class="p">]</span>
+        <span class="n">hmsdms</span> <span class="o">=</span> <span class="p">[</span><span class="n">a</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">outlist</span><span class="p">]</span>
+        <span class="n">frame</span> <span class="o">=</span> <span class="n">outlist</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">framename</span> <span class="o">=</span> <span class="n">outlist</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">hmsdms</span><span class="p">,</span> <span class="n">frame</span><span class="p">,</span> <span class="n">framename</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_updateframe</span><span class="p">(</span><span class="n">frame</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
@@ -119,6 +116,9 @@
         <span class="n">a</span> <span class="o">=</span> <span class="n">FK5</span><span class="p">(</span><span class="n">equinox</span><span class="o">=</span><span class="s1">&#39;J2000&#39;</span><span class="p">)</span>
     <span class="k">elif</span> <span class="s1">&#39;B1950&#39;</span> <span class="ow">in</span> <span class="n">frame</span> <span class="ow">or</span> <span class="s1">&#39;FK4&#39;</span> <span class="ow">in</span> <span class="n">frame</span><span class="p">:</span>
         <span class="n">a</span> <span class="o">=</span> <span class="n">FK4</span><span class="p">(</span><span class="n">equinox</span><span class="o">=</span><span class="s1">&#39;B1950&#39;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="n">frame</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Unknown frame (</span><span class="si">{</span><span class="n">frame</span><span class="si">}</span><span class="s1">) was found. Use ICRS instead.&#39;</span><span class="p">)</span>
+        <span class="n">a</span> <span class="o">=</span> <span class="s1">&#39;icrs&#39;</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">a</span> <span class="o">=</span> <span class="n">frame</span>
     <span class="k">return</span> <span class="n">a</span>
@@ -140,23 +140,18 @@
 <span class="sd">    Returns:</span>
 <span class="sd">        np.ndarray: [(array of) alphas, (array of) deltas] in degree. The shape of alphas and deltas is the input shape. With a single input, the output is [alpha0, delta0].</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">coordorg</span><span class="p">,</span> <span class="n">frameorg_c</span> <span class="o">=</span> <span class="n">_getframe</span><span class="p">(</span><span class="n">coordorg</span><span class="p">,</span> <span class="s1">&#39;org&#39;</span><span class="p">)</span>
-    <span class="n">frameorg</span> <span class="o">=</span> <span class="n">frameorg_c</span> <span class="k">if</span> <span class="n">frameorg</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">_updateframe</span><span class="p">(</span><span class="n">frameorg</span><span class="p">)</span>
-    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">coords</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">list</span><span class="p">:</span>
-        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">coords</span><span class="p">)):</span>
-            <span class="n">coords</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">frame_c</span> <span class="o">=</span> <span class="n">_getframe</span><span class="p">(</span><span class="n">coords</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">coords</span><span class="p">,</span> <span class="n">frame_c</span> <span class="o">=</span> <span class="n">_getframe</span><span class="p">(</span><span class="n">coords</span><span class="p">)</span>
-    <span class="n">frame</span> <span class="o">=</span> <span class="n">frame_c</span> <span class="k">if</span> <span class="n">frame</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">_updateframe</span><span class="p">(</span><span class="n">frame</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">frame</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">frameorg</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">coordorg</span><span class="p">,</span> <span class="n">frameorg_in</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">_getframe</span><span class="p">(</span><span class="n">coordorg</span><span class="p">)</span>
+    <span class="n">frameorg</span> <span class="o">=</span> <span class="n">frameorg_in</span> <span class="k">if</span> <span class="n">frameorg</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">_updateframe</span><span class="p">(</span><span class="n">frameorg</span><span class="p">)</span>
+    <span class="n">coords</span><span class="p">,</span> <span class="n">frame_in</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">_getframe</span><span class="p">(</span><span class="n">coords</span><span class="p">)</span>
+    <span class="n">frame</span> <span class="o">=</span> <span class="n">frame_in</span> <span class="k">if</span> <span class="n">frame</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">_updateframe</span><span class="p">(</span><span class="n">frame</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">frame</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">frame</span> <span class="o">=</span> <span class="n">frameorg</span>
-    <span class="k">if</span> <span class="n">frame</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">frameorg</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">elif</span> <span class="n">frameorg</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">frameorg</span> <span class="o">=</span> <span class="n">frame</span>
-    <span class="k">if</span> <span class="n">frame</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">frameorg</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">frame</span> <span class="o">=</span> <span class="n">frameorg</span> <span class="o">=</span> <span class="s1">&#39;icrs&#39;</span>
-    <span class="n">clist</span> <span class="o">=</span> <span class="n">SkyCoord</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="n">frame</span><span class="p">)</span>
-    <span class="n">c0</span> <span class="o">=</span> <span class="n">SkyCoord</span><span class="p">(</span><span class="n">coordorg</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="n">frameorg</span><span class="p">)</span>
-    <span class="n">c0</span> <span class="o">=</span> <span class="n">c0</span><span class="o">.</span><span class="n">transform_to</span><span class="p">(</span><span class="n">frame</span><span class="o">=</span><span class="n">frame</span><span class="p">)</span>
+    <span class="n">c0</span> <span class="o">=</span> <span class="n">SkyCoord</span><span class="p">(</span><span class="n">coordorg</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="n">frameorg</span><span class="p">)</span>  <span class="c1"># frame=None means ICRS.</span>
+    <span class="k">if</span> <span class="n">frame</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">c0</span> <span class="o">=</span> <span class="n">c0</span><span class="o">.</span><span class="n">transform_to</span><span class="p">(</span><span class="n">frame</span><span class="o">=</span><span class="n">frame</span><span class="p">)</span>
+    <span class="n">clist</span> <span class="o">=</span> <span class="n">SkyCoord</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="n">frame</span><span class="p">)</span>  <span class="c1"># frame=None means ICRS.</span>
     <span class="n">xy</span> <span class="o">=</span> <span class="n">c0</span><span class="o">.</span><span class="n">spherical_offsets_to</span><span class="p">(</span><span class="n">clist</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">xy</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">degree</span><span class="p">,</span> <span class="n">xy</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">degree</span><span class="p">])</span></div>
 
@@ -178,15 +173,18 @@
 <span class="sd">    Returns:</span>
 <span class="sd">        str: something like &#39;01h23m45.6s 01d23m45.6s&#39;. With multiple inputs, the output has the input shape.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">coordorg</span><span class="p">,</span> <span class="n">frameorg_c</span> <span class="o">=</span> <span class="n">_getframe</span><span class="p">(</span><span class="n">coordorg</span><span class="p">,</span> <span class="s1">&#39;org&#39;</span><span class="p">)</span>
-    <span class="n">frameorg</span> <span class="o">=</span> <span class="n">frameorg_c</span> <span class="k">if</span> <span class="n">frameorg</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">_updateframe</span><span class="p">(</span><span class="n">frameorg</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">frameorg</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">frameorg</span> <span class="o">=</span> <span class="s1">&#39;icrs&#39;</span>
+    <span class="n">coordorg</span><span class="p">,</span> <span class="n">frameorg_in</span><span class="p">,</span> <span class="n">framenameorg</span> <span class="o">=</span> <span class="n">_getframe</span><span class="p">(</span><span class="n">coordorg</span><span class="p">)</span>
+    <span class="n">frameorg</span> <span class="o">=</span> <span class="n">frameorg_in</span> <span class="k">if</span> <span class="n">frameorg</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">_updateframe</span><span class="p">(</span><span class="n">frameorg</span><span class="p">)</span>
+    <span class="n">framename</span> <span class="o">=</span> <span class="n">framenameorg</span> <span class="k">if</span> <span class="n">frame</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">frame</span>
     <span class="n">frame</span> <span class="o">=</span> <span class="n">frameorg</span> <span class="k">if</span> <span class="n">frame</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">_updateframe</span><span class="p">(</span><span class="n">frame</span><span class="p">)</span>
-    <span class="n">c0</span> <span class="o">=</span> <span class="n">SkyCoord</span><span class="p">(</span><span class="n">coordorg</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="n">frameorg</span><span class="p">)</span>
+    <span class="n">c0</span> <span class="o">=</span> <span class="n">SkyCoord</span><span class="p">(</span><span class="n">coordorg</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="n">frameorg</span><span class="p">)</span>  <span class="c1"># frame=None means ICRS.</span>
     <span class="n">coords</span> <span class="o">=</span> <span class="n">c0</span><span class="o">.</span><span class="n">spherical_offsets_by</span><span class="p">(</span><span class="o">*</span><span class="n">xy</span> <span class="o">*</span> <span class="n">units</span><span class="o">.</span><span class="n">degree</span><span class="p">)</span>
-    <span class="n">coords</span> <span class="o">=</span> <span class="n">coords</span><span class="o">.</span><span class="n">transform_to</span><span class="p">(</span><span class="n">frame</span><span class="o">=</span><span class="n">frame</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">coords</span><span class="o">.</span><span class="n">to_string</span><span class="p">(</span><span class="s1">&#39;hmsdms&#39;</span><span class="p">)</span></div>
+    <span class="k">if</span> <span class="n">frame</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">coords</span> <span class="o">=</span> <span class="n">coords</span><span class="o">.</span><span class="n">transform_to</span><span class="p">(</span><span class="n">frame</span><span class="o">=</span><span class="n">frame</span><span class="p">)</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="n">coords</span><span class="o">.</span><span class="n">to_string</span><span class="p">(</span><span class="s1">&#39;hmsdms&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">framename</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">framename</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">s</span><span class="si">}</span><span class="s1">&#39;</span>
+    <span class="k">return</span> <span class="n">s</span></div>
 
 
 
