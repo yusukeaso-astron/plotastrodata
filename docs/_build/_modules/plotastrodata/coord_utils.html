@@ -74,6 +74,29 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">astropy</span><span class="w"> </span><span class="kn">import</span> <span class="n">units</span>
 
 
+<span class="k">def</span><span class="w"> </span><span class="nf">_updateframe</span><span class="p">(</span><span class="n">frame</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Internal function to str frame to astropy frame.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        frame (str): This should be one of &#39;J2000&#39;, &#39;B1950&#39;, &#39;FK5&#39;, &#39;FK4&#39;, and &#39;ICRS&#39;.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        str: frame as is, FK5(equinox=&#39;J2000&#39;), FK4(equinox=&#39;B1950&#39;), or &#39;icrs&#39;.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="s1">&#39;ICRS&#39;</span> <span class="ow">in</span> <span class="n">frame</span><span class="p">:</span>
+        <span class="n">a</span> <span class="o">=</span> <span class="s1">&#39;icrs&#39;</span>
+    <span class="k">elif</span> <span class="s1">&#39;J2000&#39;</span> <span class="ow">in</span> <span class="n">frame</span> <span class="ow">or</span> <span class="s1">&#39;FK5&#39;</span> <span class="ow">in</span> <span class="n">frame</span><span class="p">:</span>
+        <span class="n">a</span> <span class="o">=</span> <span class="n">FK5</span><span class="p">(</span><span class="n">equinox</span><span class="o">=</span><span class="s1">&#39;J2000&#39;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="s1">&#39;B1950&#39;</span> <span class="ow">in</span> <span class="n">frame</span> <span class="ow">or</span> <span class="s1">&#39;FK4&#39;</span> <span class="ow">in</span> <span class="n">frame</span><span class="p">:</span>
+        <span class="n">a</span> <span class="o">=</span> <span class="n">FK4</span><span class="p">(</span><span class="n">equinox</span><span class="o">=</span><span class="s1">&#39;B1950&#39;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="n">frame</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Unknown frame (</span><span class="si">{</span><span class="n">frame</span><span class="si">}</span><span class="s1">) was found. Use ICRS instead.&#39;</span><span class="p">)</span>
+        <span class="n">a</span> <span class="o">=</span> <span class="s1">&#39;icrs&#39;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">a</span> <span class="o">=</span> <span class="n">frame</span>
+    <span class="k">return</span> <span class="n">a</span>
+
+
 <span class="k">def</span><span class="w"> </span><span class="nf">_getframe</span><span class="p">(</span><span class="n">coord</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Internal function to pick up the frame name from the coordinates. When coord is a list, frame and framename are picked up from the first element.</span>
 
@@ -99,29 +122,6 @@
         <span class="n">frame</span> <span class="o">=</span> <span class="n">outlist</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
         <span class="n">framename</span> <span class="o">=</span> <span class="n">outlist</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">hmsdms</span><span class="p">,</span> <span class="n">frame</span><span class="p">,</span> <span class="n">framename</span>
-
-
-<span class="k">def</span><span class="w"> </span><span class="nf">_updateframe</span><span class="p">(</span><span class="n">frame</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Internal function to str frame to astropy frame.</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">        frame (str): _description_</span>
-
-<span class="sd">    Returns:</span>
-<span class="sd">        str: frame as is, FK5(equinox=&#39;J2000&#39;), FK4(equinox=&#39;B1950&#39;), or &#39;icrs&#39;.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="s1">&#39;ICRS&#39;</span> <span class="ow">in</span> <span class="n">frame</span><span class="p">:</span>
-        <span class="n">a</span> <span class="o">=</span> <span class="s1">&#39;icrs&#39;</span>
-    <span class="k">elif</span> <span class="s1">&#39;J2000&#39;</span> <span class="ow">in</span> <span class="n">frame</span> <span class="ow">or</span> <span class="s1">&#39;FK5&#39;</span> <span class="ow">in</span> <span class="n">frame</span><span class="p">:</span>
-        <span class="n">a</span> <span class="o">=</span> <span class="n">FK5</span><span class="p">(</span><span class="n">equinox</span><span class="o">=</span><span class="s1">&#39;J2000&#39;</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="s1">&#39;B1950&#39;</span> <span class="ow">in</span> <span class="n">frame</span> <span class="ow">or</span> <span class="s1">&#39;FK4&#39;</span> <span class="ow">in</span> <span class="n">frame</span><span class="p">:</span>
-        <span class="n">a</span> <span class="o">=</span> <span class="n">FK4</span><span class="p">(</span><span class="n">equinox</span><span class="o">=</span><span class="s1">&#39;B1950&#39;</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="n">frame</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Unknown frame (</span><span class="si">{</span><span class="n">frame</span><span class="si">}</span><span class="s1">) was found. Use ICRS instead.&#39;</span><span class="p">)</span>
-        <span class="n">a</span> <span class="o">=</span> <span class="s1">&#39;icrs&#39;</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">a</span> <span class="o">=</span> <span class="n">frame</span>
-    <span class="k">return</span> <span class="n">a</span>
 
 
 <div class="viewcode-block" id="coord2xy">
