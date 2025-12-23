@@ -286,7 +286,7 @@ fitter.plotongrid(show=True, savefig='grid.png',
 from plotastrodata.coord_utils import xy2coord, coord2xy
 
 
-coord = xy2coord (xy=[[30, 90], [0, 0]], coordorg='00h00m00s 60d00m00s')
+coord = xy2coord(xy=[[30, 90], [0, 0]], coordorg='00h00m00s 60d00m00s')
 print(coord)
 xy = coord2xy(coords=coord, coordorg='00h00m00s 60d00m00s')
 print(np.round(xy, 2))
