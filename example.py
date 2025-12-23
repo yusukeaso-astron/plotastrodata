@@ -276,3 +276,28 @@ print('evidence:', fitter.evidence)
 fitter.plotongrid(show=True, savefig='grid.png',
                   labels=['par1', 'par2', 'par3'],
                   cornerrange=[[-4, 4], [-8, 8], [-16, 16]])
+
+################################################################################
+from plotastrodata.coord_utils import xy2coord
+from plotastrodata.coord_utils import coord2xy
+
+
+coord = xy2coord (xy=[[30, 90], [0, 0]], coordorg='00h00m00s 60d00m00s')
+print(coord)
+xy = coord2xy(coords=coord, coordorg='00h00m00s 60d00m00s')
+print(np.round(xy, 2))
+
+################################################################################
+import plotastrodata.const_utils as cu
+
+
+print(cu.pc)
+print(cu.M_sun)
+print(cu.centi)
+
+################################################################################
+from plotastrodata.ext_utils import BnuT, JnuT
+
+
+print(BnuT(T=30, nu=230e9))
+print(JnuT(T=30, nu=230e9))
