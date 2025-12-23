@@ -346,8 +346,6 @@ class AstroData():
         if (center := self.center) is not None:
             xy = popt[1:3] / 3600
             newcenter = xy2coord(xy, coordorg=center)
-            if len(c := center.split()) == 3:
-                newcenter = f'{c[0]} {newcenter}'
         else:
             newcenter = None
         return {'popt': popt, 'pcov': pcov,

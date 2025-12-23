@@ -3,34 +3,31 @@ from astropy.coordinates import SkyCoord, FK5, FK4
 from astropy import units
 
 
-def _getframe(coord: str, s: str = '') -> tuple:
-    """Internal function to pick up the frame name from the coordinates.
+def _getframe(coord: str) -> tuple:
+    """Internal function to pick up the frame name from the coordinates. When coord is a list, frame and framename are picked up from the first element.
 
     Args:
-        coord (str): something like "J2000 01h23m45.6s 01d23m45.6s"
-        s (str, optional): To distinguish coord and coordorg. Defaults to ''.
+        coord (str): something like "J2000 01h23m45.6s 01d23m45.6s" or a list of them.
 
     Returns:
         tuple: updated coord and frame. frame is FK5(equinox='J2000), FK4(equinox='B1950'), or 'icrs'.
     """
-    if len(c := coord.split()) == 3:
-        coord = f'{c[1]} {c[2]}'
-        if 'J2000' in c[0]:
-            frame = FK5(equinox='J2000')
-        elif 'FK5' in c[0]:
-            frame = FK5(equinox='J2000')
-        elif 'B1950' in c[0]:
-            frame = FK4(equinox='B1950')
-        elif 'FK4' in c[0]:
-            frame = FK4(equinox='B1950')
-        elif 'ICRS' in c[0]:
-            frame = 'icrs'
-        else:
-            print(f'Unknown equinox found in coord{s}. ICRS is used')
-            frame = 'icrs'
+    def getframe_single(s: str) -> tuple:
+        c = s.split()
+        hasframe = len(c) == 3
+        hmsdms = f'{c[1]} {c[2]}' if hasframe else s
+        frame = _updateframe(c[0]) if hasframe else None
+        framename = c[0] if hasframe else None
+        return hmsdms, frame, framename
+
+    if type(coord) is str:
+        return getframe_single(coord)
     else:
-        frame = None
-    return coord, frame
+        outlist = [getframe_single(c) for c in coord]
+        hmsdms = [a[0] for a in outlist]
+        frame = outlist[0][1]
+        framename = outlist[0][2]
+        return hmsdms, frame, framename
 
 
 def _updateframe(frame: str) -> str:
@@ -48,6 +45,9 @@ def _updateframe(frame: str) -> str:
         a = FK5(equinox='J2000')
     elif 'B1950' in frame or 'FK4' in frame:
         a = FK4(equinox='B1950')
+    elif type(frame) is str:
+        print(f'Unknown frame ({frame}) was found. Use ICRS instead.')
+        a = 'icrs'
     else:
         a = frame
     return a
@@ -67,23 +67,18 @@ def coord2xy(coords: str | list, coordorg: str = '00h00m00s 00d00m00s',
     Returns:
         np.ndarray: [(array of) alphas, (array of) deltas] in degree. The shape of alphas and deltas is the input shape. With a single input, the output is [alpha0, delta0].
     """
-    coordorg, frameorg_c = _getframe(coordorg, 'org')
-    frameorg = frameorg_c if frameorg is None else _updateframe(frameorg)
-    if type(coords) is list:
-        for i in range(len(coords)):
-            coords[i], frame_c = _getframe(coords[i])
-    else:
-        coords, frame_c = _getframe(coords)
-    frame = frame_c if frame is None else _updateframe(frame)
-    if frame is None and frameorg is not None:
+    coordorg, frameorg_in, _ = _getframe(coordorg)
+    frameorg = frameorg_in if frameorg is None else _updateframe(frameorg)
+    coords, frame_in, _ = _getframe(coords)
+    frame = frame_in if frame is None else _updateframe(frame)
+    if frame is None:
         frame = frameorg
-    if frame is not None and frameorg is None:
+    elif frameorg is None:
         frameorg = frame
-    if frame is None and frameorg is None:
-        frame = frameorg = 'icrs'
-    clist = SkyCoord(coords, frame=frame)
-    c0 = SkyCoord(coordorg, frame=frameorg)
-    c0 = c0.transform_to(frame=frame)
+    c0 = SkyCoord(coordorg, frame=frameorg)  # frame=None means ICRS.
+    if frame is not None:
+        c0 = c0.transform_to(frame=frame)
+    clist = SkyCoord(coords, frame=frame)  # frame=None means ICRS.
     xy = c0.spherical_offsets_to(clist)
     return np.array([xy[0].degree, xy[1].degree])
 
@@ -102,15 +97,18 @@ def xy2coord(xy: list, coordorg: str = '00h00m00s 00d00m00s',
     Returns:
         str: something like '01h23m45.6s 01d23m45.6s'. With multiple inputs, the output has the input shape.
     """
-    coordorg, frameorg_c = _getframe(coordorg, 'org')
-    frameorg = frameorg_c if frameorg is None else _updateframe(frameorg)
-    if frameorg is None:
-        frameorg = 'icrs'
+    coordorg, frameorg_in, framenameorg = _getframe(coordorg)
+    frameorg = frameorg_in if frameorg is None else _updateframe(frameorg)
+    framename = framenameorg if frame is None else frame
     frame = frameorg if frame is None else _updateframe(frame)
-    c0 = SkyCoord(coordorg, frame=frameorg)
+    c0 = SkyCoord(coordorg, frame=frameorg)  # frame=None means ICRS.
     coords = c0.spherical_offsets_by(*xy * units.degree)
-    coords = coords.transform_to(frame=frame)
-    return coords.to_string('hmsdms')
+    if frame is not None:
+        coords = coords.transform_to(frame=frame)
+    s = coords.to_string('hmsdms')
+    if framename is not None:
+        s = f'{framename} {s}'
+    return s
 
 
 def rel2abs(xrel: float, yrel: float,
