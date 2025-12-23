@@ -3,6 +3,29 @@ from astropy.coordinates import SkyCoord, FK5, FK4
 from astropy import units
 
 
+def _updateframe(frame: str) -> str:
+    """Internal function to str frame to astropy frame.
+
+    Args:
+        frame (str): This should be one of 'J2000', 'B1950', 'FK5', 'FK4', and 'ICRS'.
+
+    Returns:
+        str: frame as is, FK5(equinox='J2000'), FK4(equinox='B1950'), or 'icrs'.
+    """
+    if 'ICRS' in frame:
+        a = 'icrs'
+    elif 'J2000' in frame or 'FK5' in frame:
+        a = FK5(equinox='J2000')
+    elif 'B1950' in frame or 'FK4' in frame:
+        a = FK4(equinox='B1950')
+    elif type(frame) is str:
+        print(f'Unknown frame ({frame}) was found. Use ICRS instead.')
+        a = 'icrs'
+    else:
+        a = frame
+    return a
+
+
 def _getframe(coord: str) -> tuple:
     """Internal function to pick up the frame name from the coordinates. When coord is a list, frame and framename are picked up from the first element.
 
@@ -28,29 +51,6 @@ def _getframe(coord: str) -> tuple:
         frame = outlist[0][1]
         framename = outlist[0][2]
         return hmsdms, frame, framename
-
-
-def _updateframe(frame: str) -> str:
-    """Internal function to str frame to astropy frame.
-
-    Args:
-        frame (str): _description_
-
-    Returns:
-        str: frame as is, FK5(equinox='J2000'), FK4(equinox='B1950'), or 'icrs'.
-    """
-    if 'ICRS' in frame:
-        a = 'icrs'
-    elif 'J2000' in frame or 'FK5' in frame:
-        a = FK5(equinox='J2000')
-    elif 'B1950' in frame or 'FK4' in frame:
-        a = FK4(equinox='B1950')
-    elif type(frame) is str:
-        print(f'Unknown frame ({frame}) was found. Use ICRS instead.')
-        a = 'icrs'
-    else:
-        a = frame
-    return a
 
 
 def coord2xy(coords: str | list, coordorg: str = '00h00m00s 00d00m00s',
