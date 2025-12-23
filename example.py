@@ -1,14 +1,14 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-pre = './exampleFITS/'
-
-################################################################################
 from plotastrodata.analysis_utils import AstroData, AstroFrame
 from plotastrodata.plot_utils import PlotAstroData as pad
 
 
-# 2D case
+pre = './exampleFITS/'
+
+################################################################################
+# 2D image
 d = AstroData(fitsimage=pre+'test2D.fits', Tb=True, sigma=5e-3)
 f = AstroFrame(rmax=0.8, center='B1950 04h01m40.57s +26d10m47.297s')
 f.read(d)
@@ -27,7 +27,7 @@ p.add_region('ellipse', [0.2, 0.8], majlist=0.4, minlist=0.2, palist=45)
 p.set_axis_radec(nticksminor=5, title={'label': '2D image', 'loc': 'right'})
 p.savefig('test2D.png', show=True)
 
-# 3D case
+# 3D channel maps
 p = pad(rmax=0.8, fitsimage=pre+'test3D.fits', vmin=-5, vmax=5, vskip=2)
 p.add_color(fitsimage=pre+'test3D.fits', stretch='log')
 p.add_contour(fitsimage=pre+'test3D.fits', colors='r')
@@ -47,7 +47,7 @@ p.add_region('rectangle', [[0.2, 0.8]],
 p.set_axis(grid={}, title='3D channel maps')
 p.savefig('test3D.png', show=True)
 
-# PV case
+# PV diagram
 p = pad(rmax=0.8, pv=True, swapxy=True, vmin=-5, vmax=5, figsize=(6, 7))
 p.add_color(fitsimage=pre+'testPV.fits', Tb=True, cblabel='Tb (K)',
             cblocation='top', pvpa=60)
@@ -57,14 +57,14 @@ p.add_marker([[0.5, 0.5]])
 p.set_axis(title='PV diagram')
 p.savefig('testPV.png', show=True)
 
-# log log PV case
+# log log PV
 p = pad(rmax=0.8 * 140, pv=True, quadrants='13', vmin=-5, vmax=5, dist=140)
 p.add_color(fitsimage=pre+'testPV.fits', Tb=True, cblabel='Tb (K)', show_beam=False)
 p.add_contour(fitsimage=pre+'testPV.fits', colors='r', sigma=1e-3, show_beam=False)
 p.set_axis(title='loglog PV diagram', loglog=20)
 p.savefig('testloglogPV.png', show=True)
 
-# RGB case
+# RGB
 d = AstroData(fitsimage=pre+'test3D.fits', Tb=True, sigma=5e-3)
 f = AstroFrame(rmax=0.8, center='B1950 04h01m40.57s +26d10m47.297s')
 f.read(d)
@@ -107,10 +107,10 @@ plot3d(rmax=0.8, vmin=-5, vmax=5, fitsimage=pre+'test3D.fits',
        outname='test3D', levels=[3, 6, 9], show=False)
 
 ################################################################################
+# Animation
 import matplotlib.animation as animation
 
 
-# The following introduces a way for making an animation file of a given FITS cube.
 nchans = 31
 
 
@@ -134,10 +134,10 @@ ani.save('test_animation.mp4', writer=writer, dpi=100)
 plt.close()
 
 ################################################################################
+# Line-of-sight velocity with 3D rotation
 from plotastrodata.los_utils import sys2obs, polarvel2losvel
 
 
-# The following introduces a way for plotting the projected morphology and the line-of-sight velocity of a streamer.
 incl = 60
 theta0 = 60
 
@@ -189,10 +189,10 @@ fig.savefig('streamer.png')
 plt.show()
 
 ################################################################################
+# FFT with a given center
 from plotastrodata.fft_utils import fftcentering
 
 
-# Calculate the FFT of a boxcar function
 x = np.linspace(-99.5, 99.5, 200)
 f = np.where(np.abs(x) < 10, 1, 0)
 
@@ -233,6 +233,7 @@ fig.savefig('fftcentering.png')
 plt.show()
 
 ################################################################################
+# MCMC using emcee, corner, and dynesty
 from plotastrodata.fitting_utils import EmceeCorner
 from plotastrodata.plot_utils import set_rcparams
 
@@ -246,11 +247,8 @@ def logl(p):
     return -0.5 * chi2
 
 
-# initialization
 fitter = EmceeCorner(bounds=[[-5, 5], [-10, 10], [-20, 20]],
                      logl=logl, progressbar=False, percent=[16, 84])
-
-# Using emcee, corner, and dynesty
 fitter.fit(nwalkersperdim=30, nsteps=11000, nburnin=1000,
            savechain='chain.npy')
 print('best:', fitter.popt)
@@ -278,8 +276,8 @@ fitter.plotongrid(show=True, savefig='grid.png',
                   cornerrange=[[-4, 4], [-8, 8], [-16, 16]])
 
 ################################################################################
-from plotastrodata.coord_utils import xy2coord
-from plotastrodata.coord_utils import coord2xy
+# Other functions
+from plotastrodata.coord_utils import xy2coord, coord2xy
 
 
 coord = xy2coord (xy=[[30, 90], [0, 0]], coordorg='00h00m00s 60d00m00s')
