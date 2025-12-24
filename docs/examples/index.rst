@@ -5,4 +5,5 @@ Examples
    :maxdepth: 1
 
    example
-   example_embed
+   example_3Dhtml
+   3Dtest_embed
