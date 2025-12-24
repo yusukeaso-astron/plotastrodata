@@ -124,7 +124,6 @@ dmypy.json
 # Pyre type checker
 .pyre/
 .DS_Store
-test3D.html
 testprofile.png
 testslice.png
 test2D.png
