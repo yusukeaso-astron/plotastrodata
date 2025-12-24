@@ -1,5 +1,6 @@
 # plotastrodata
 Python package to make figures from radio astronomical data by astropy and matplotlib.
+Sphinx document in [readthedocs](https://plotastrodata.readthedocs.io/en/latest/).
 
 
 ## Demo and Usage
@@ -30,7 +31,6 @@ Or directly in your script,
 import  sys
 sys.path.append( "/YOUR_PATH_TO/plotastrodata" )
 ```
-The Sphinx html document is available from docs/_build/index.html or [readthedocs](https://plotastrodata.readthedocs.io/en/latest/).
  
 ## Features
  
