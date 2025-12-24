@@ -1,3 +1,6 @@
+3D Plotly Example
+=================
+
 .. raw:: html
 
    <iframe

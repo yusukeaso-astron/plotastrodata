@@ -110,7 +110,7 @@ from plotastrodata.plot_utils import plot3d
 
 
 plot3d(rmax=0.8, vmin=-5, vmax=5, fitsimage=pre+'test3D.fits',
-       outname='test3D', levels=[3, 6, 9], show=False)
+       outname='test3D.html', levels=[3, 6, 9], show=False)
 
 ################################################################################
 # Animation
