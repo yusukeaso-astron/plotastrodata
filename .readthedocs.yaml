@@ -33,8 +33,8 @@ sphinx:
 python:
   install:
     - requirements: docs/requirements.txt
-#    - method: pip
-#      path: .
+    - method: pip
+      path: .
 #      extra_requirements:
 #        - docs
 #    - method: pip
