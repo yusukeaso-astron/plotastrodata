@@ -6,4 +6,4 @@ Examples
 
    example
    example_3Dhtml
-   3Dtest_embed
+   test3D_embed
