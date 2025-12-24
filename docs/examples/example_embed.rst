@@ -1,4 +1,4 @@
-3D Plotly Example
+3D Plotly figure in html
 =================
 
 .. raw:: html
