@@ -105,7 +105,7 @@ plotslice(length=1.6, pa=270, fitsimage=pre+'test2D.fits',
           center='04h04m43.07s 26d18m56.20s', sigma=5e-3,
           savefig='testslice.png', show=True)
 
-# Rotatable 3D cube in html
+# 3D Plotly figure in html
 from plotastrodata.plot_utils import plot3d
 
 
