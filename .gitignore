@@ -143,3 +143,6 @@ grid.png
 numpyfft.png
 fftcentering.png
 boxcar.png
+
+docs/_build/
+build/
