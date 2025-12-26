@@ -262,7 +262,8 @@ def logl(p):
 fitter = EmceeCorner(bounds=[[-5, 5], [-10, 10], [-20, 20]],
                      logl=logl, progressbar=False, percent=[16, 84])
 fitter.fit(nwalkersperdim=30, nsteps=11000, nburnin=1000,
-           savechain='chain.npy')
+           #savechain='chain.npy'
+           )
 print('best:', fitter.popt)
 print('lower percentile:', fitter.plow)
 print('50 percentile:', fitter.pmid)
