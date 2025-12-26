@@ -1,4 +1,4 @@
-Animation
+Animation (output)
 =========
 
 .. raw:: html
