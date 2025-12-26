@@ -5,19 +5,19 @@ from plotastrodata.analysis_utils import AstroData, AstroFrame
 from plotastrodata.plot_utils import PlotAstroData as pad
 
 
-pre = './docs/_static/data/'
+data_dir = './docs/_static/data/'
 
 ################################################################################
 # 2D image
-d = AstroData(fitsimage=pre+'test2D.fits', Tb=True, sigma=5e-3)
+d = AstroData(fitsimage=f'{data_dir}/test2D.fits', Tb=True, sigma=5e-3)
 f = AstroFrame(rmax=0.8, center='B1950 04h01m40.57s +26d10m47.297s')
 f.read(d)
 p = pad(rmax=0.8, center='ICRS 04h04m43.07s 26d18m56.20s')
 p.add_color(**d.todict(), cblabel='Tb (K)')
-p.add_contour(fitsimage=pre+'test2D_2.fits', colors='r', sigma=5e-3)
-p.add_contour(fitsimage=pre+'test2D.fits', xskip=2, yskip=2, sigma=5e-3)
-p.add_segment(ampfits=pre+'test2Damp.fits',
-              angfits=pre+'test2Dang.fits', xskip=3, yskip=3)
+p.add_contour(fitsimage=f'{data_dir}/test2D_2.fits', colors='r', sigma=5e-3)
+p.add_contour(fitsimage=f'{data_dir}/test2D.fits', xskip=2, yskip=2, sigma=5e-3)
+p.add_segment(ampfits=f'{data_dir}/test2Damp.fits',
+              angfits=f'{data_dir}/test2Dang.fits', xskip=3, yskip=3)
 p.add_scalebar(length=50 / 140, label='50 au')
 p.add_text([0.3, 0.3], slist='text')
 p.add_marker('04h04m43.07s 26d18m56.20s')
@@ -28,12 +28,12 @@ p.set_axis_radec(nticksminor=5, title={'label': '2D image', 'loc': 'right'})
 p.savefig('test2D.png', show=True)
 
 # 3D channel maps
-p = pad(rmax=0.8, fitsimage=pre+'test3D.fits', vmin=-5, vmax=5, vskip=2)
-p.add_color(fitsimage=pre+'test3D.fits', stretch='log')
-p.add_contour(fitsimage=pre+'test3D.fits', colors='r')
-p.add_contour(fitsimage=pre+'test2D.fits', colors='b', sigma=5e-3)
-p.add_segment(ampfits=pre+'test2Damp.fits',
-              angfits=pre+'test2Dang.fits', xskip=3, yskip=3)
+p = pad(rmax=0.8, fitsimage=f'{data_dir}/test3D.fits', vmin=-5, vmax=5, vskip=2)
+p.add_color(fitsimage=f'{data_dir}/test3D.fits', stretch='log')
+p.add_contour(fitsimage=f'{data_dir}/test3D.fits', colors='r')
+p.add_contour(fitsimage=f'{data_dir}/test2D.fits', colors='b', sigma=5e-3)
+p.add_segment(ampfits=f'{data_dir}/test2Damp.fits',
+              angfits=f'{data_dir}/test2Dang.fits', xskip=3, yskip=3)
 p.add_scalebar(length=50 / 140, label='50 au')
 p.add_text([[0.3, 0.3]], slist=['text'], include_chan=[0, 1, 2])
 p.add_marker([0.7, 0.7])
@@ -49,9 +49,10 @@ p.savefig('test3D.png', show=True)
 
 # PV diagram
 p = pad(rmax=0.8, pv=True, swapxy=True, vmin=-5, vmax=5, figsize=(6, 7))
-p.add_color(fitsimage=pre+'testPV.fits', Tb=True, cblabel='Tb (K)',
+p.add_color(fitsimage=f'{data_dir}/testPV.fits', Tb=True, cblabel='Tb (K)',
             cblocation='top', pvpa=60)
-p.add_contour(fitsimage=pre+'testPV.fits', colors='r', sigma=1e-3, pvpa=60)
+p.add_contour(fitsimage=f'{data_dir}/testPV.fits', colors='r',
+              sigma=1e-3, pvpa=60)
 p.add_text([0.3, 0.3], slist='text')
 p.add_marker([[0.5, 0.5]])
 p.set_axis(title='PV diagram')
@@ -59,13 +60,15 @@ p.savefig('testPV.png', show=True)
 
 # log log PV
 p = pad(rmax=0.8 * 140, pv=True, quadrants='13', vmin=-5, vmax=5, dist=140)
-p.add_color(fitsimage=pre+'testPV.fits', Tb=True, cblabel='Tb (K)', show_beam=False)
-p.add_contour(fitsimage=pre+'testPV.fits', colors='r', sigma=1e-3, show_beam=False)
+p.add_color(fitsimage=f'{data_dir}/testPV.fits', Tb=True,
+            cblabel='Tb (K)', show_beam=False)
+p.add_contour(fitsimage=f'{data_dir}/testPV.fits', colors='r',
+              sigma=1e-3, show_beam=False)
 p.set_axis(title='loglog PV diagram', loglog=20)
 p.savefig('testloglogPV.png', show=True)
 
 # RGB
-d = AstroData(fitsimage=pre+'test3D.fits', Tb=True, sigma=5e-3)
+d = AstroData(fitsimage=f'{data_dir}/test3D.fits', Tb=True, sigma=5e-3)
 f = AstroFrame(rmax=0.8, center='B1950 04h01m40.57s +26d10m47.297s')
 f.read(d)
 dblue = np.sum(d.data[0:20], axis=0) * d.dv
@@ -75,10 +78,10 @@ d.data = [dred, dgreen, dblue]
 d.sigma = [d.sigma * d.dv * np.sqrt(20)] * 3
 p = pad(rmax=0.8, center='ICRS 04h04m43.07s 26d18m56.20s')
 p.add_rgb(**d.todict())
-p.add_contour(fitsimage=pre+'test2D_2.fits', colors='r', sigma=5e-3)
-p.add_contour(fitsimage=pre+'test2D.fits', xskip=2, yskip=2, sigma=5e-3)
-p.add_segment(ampfits=pre+'test2Damp.fits',
-              angfits=pre+'test2Dang.fits', xskip=3, yskip=3)
+p.add_contour(fitsimage=f'{data_dir}/test2D_2.fits', colors='r', sigma=5e-3)
+p.add_contour(fitsimage=f'{data_dir}/test2D.fits', xskip=2, yskip=2, sigma=5e-3)
+p.add_segment(ampfits=f'{data_dir}/test2Damp.fits',
+              angfits=f'{data_dir}/test2Dang.fits', xskip=3, yskip=3)
 p.add_scalebar(length=50 / 140, label='50 au')
 p.add_text([0.3, 0.3], slist='text')
 p.add_marker('04h04m43.07s 26d18m56.20s')
@@ -93,15 +96,17 @@ p.savefig('test2Drgb.png', show=True)
 from plotastrodata.plot_utils import plotprofile
 
 
-plotprofile(fitsimage=pre+'test3D.fits', ellipse=[[0.2, 0.2, 0]] * 2, flux=True,
-            coords=['04h04m43.045s 26d18m55.766s', '04h04m43.109s 26d18m56.704s'],
+plotprofile(fitsimage=f'{data_dir}/test3D.fits', ellipse=[[0.2, 0.2, 0]] * 2,
+            flux=True,
+            coords=['04h04m43.045s 26d18m55.766s',
+                    '04h04m43.109s 26d18m56.704s'],
             gaussfit=True, savefig='testprofile.png', show=True, width=2)
 
 # Spatial slice
 from plotastrodata.plot_utils import plotslice
 
 
-plotslice(length=1.6, pa=270, fitsimage=pre+'test2D.fits',
+plotslice(length=1.6, pa=270, fitsimage=f'{data_dir}/test2D.fits',
           center='04h04m43.07s 26d18m56.20s', sigma=5e-3,
           savefig='testslice.png', show=True)
 
@@ -109,7 +114,7 @@ plotslice(length=1.6, pa=270, fitsimage=pre+'test2D.fits',
 from plotastrodata.plot_utils import plot3d
 
 
-plot3d(rmax=0.8, vmin=-5, vmax=5, fitsimage=pre+'test3D.fits',
+plot3d(rmax=0.8, vmin=-5, vmax=5, fitsimage=f'{data_dir}/test3D.fits',
        outname='test3D.html', levels=[3, 6, 9], show=False)
 
 ################################################################################
@@ -122,19 +127,20 @@ nchans = 31
 
 def update_plot(i):
     print(f'Channel number: {i:d}\033[1A')
-    f = pad(rmax=0.8, fitsimage=pre+'test3D.fits', vmin=-5, vmax=5, vskip=2,
+    p = pad(rmax=0.8, fitsimage=f'{data_dir}/test3D.fits',
+            vmin=-5, vmax=5, vskip=2,
             channelnumber=i, fig=fig)
-    f.add_color(fitsimage=pre+'test3D.fits', stretch='log')
-    f.add_scalebar(length=50 / 140, label='50 au')
-    f.set_axis_radec(grid={}, title='3D channel maps')
-    f.fig.tight_layout()
+    p.add_color(fitsimage=f'{data_dir}/test3D.fits', stretch='log')
+    p.add_scalebar(length=50 / 140, label='50 au')
+    p.set_axis_radec(grid={}, title='3D channel maps')
+    p.fig.tight_layout()
 
 
 fig = plt.figure()
 ani = animation.FuncAnimation(fig, update_plot, frames=nchans, interval=50)
 Writer = animation.writers['ffmpeg']  # for mp4
 # Writer = animation.writers['pillow']  # for gif
-writer = Writer(fps=10, bitrate=128)  # frame per second
+writer = Writer(fps=1, bitrate=128)  # frame per second
 ani.save('test_animation.mp4', writer=writer, dpi=100)
 # ani.save('test_animation.gif', writer=writer)
 plt.close()
