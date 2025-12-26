@@ -6,6 +6,6 @@ Examples
 
    example
    example_3Dhtml
-   test3D_embed
+   3Dhtml_embed
    example_animation
    animation_embed
