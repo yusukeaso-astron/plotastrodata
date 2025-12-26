@@ -122,13 +122,13 @@ plot3d(rmax=0.8, vmin=-5, vmax=5, fitsimage=f'{data_dir}/test3D.fits',
 import matplotlib.animation as animation
 
 
-nchans = 31
+nchans = 16
 
 
 def update_plot(i):
     print(f'Channel number: {i:d}\033[1A')
     p = pad(rmax=0.8, fitsimage=f'{data_dir}/test3D.fits',
-            vmin=-5, vmax=5, vskip=2,
+            vmin=-5, vmax=5, vskip=4,
             channelnumber=i, fig=fig)
     p.add_color(fitsimage=f'{data_dir}/test3D.fits', stretch='log')
     p.add_scalebar(length=50 / 140, label='50 au')
@@ -137,12 +137,12 @@ def update_plot(i):
 
 
 fig = plt.figure()
-ani = animation.FuncAnimation(fig, update_plot, frames=nchans, interval=50)
+ani = animation.FuncAnimation(fig, update_plot, frames=nchans)
 Writer = animation.writers['ffmpeg']  # for mp4
 # Writer = animation.writers['pillow']  # for gif
-writer = Writer(fps=1, bitrate=128)  # frame per second
-ani.save('test_animation.mp4', writer=writer, dpi=100)
-# ani.save('test_animation.gif', writer=writer)
+writer = Writer(fps=1)  # frame per second
+ani.save('test_animation.mp4', writer=writer, dpi=64)
+# ani.save('test_animation.gif', writer=writer, dpi=100)
 plt.close()
 
 ################################################################################
