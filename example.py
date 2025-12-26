@@ -142,7 +142,7 @@ Writer = animation.writers['ffmpeg']  # for mp4
 # Writer = animation.writers['pillow']  # for gif
 writer = Writer(fps=1)  # frame per second
 ani.save('test_animation.mp4', writer=writer, dpi=64)
-# ani.save('test_animation.gif', writer=writer, dpi=100)
+# ani.save('test_animation.gif', writer=writer, dpi=64)
 plt.close()
 
 ################################################################################
