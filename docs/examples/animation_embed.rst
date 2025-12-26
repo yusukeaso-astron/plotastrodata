@@ -1,6 +1,8 @@
 Animation (output)
 ==================
 
-.. image:: /_static/video/test_animation.gif
-   :alt: Animation
-   :width: 100%
+.. raw:: html
+
+   <img src="/_static/video/test_animation.gif"
+        alt="Animation"
+        style="max-width: 100%; height: auto;">
