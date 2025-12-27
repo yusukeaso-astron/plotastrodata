@@ -12,6 +12,7 @@ Welcome to plotastrodata's documentation!
 
    plotastrodata
    examples/index
+   manual
 
 
 Indices and tables
