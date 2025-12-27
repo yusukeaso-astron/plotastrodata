@@ -11,7 +11,7 @@ The full plotastrodata manual is available as a PDF:
      src="https://raw.githubusercontent.com/yusukeaso-astron/plotastrodata/main/plotastrodata_manual.pdf"
      style="
        width: 100%;
-       height: calc(200vh - 140px);
+       height: calc(100vh - 140px);
        border: none;
      ">
    </iframe>
