@@ -136,7 +136,7 @@ def update_plot(i):
     p.fig.tight_layout()
 
 
-fig = plt.figure(figsize=(7, 5))
+fig = plt.figure(figsize=(7, 5))  # Giving figsize may help ffmpeg.
 ani = animation.FuncAnimation(fig, update_plot, frames=nchans)
 Writer = animation.writers['ffmpeg']  # for mp4
 #Writer = animation.writers['pillow']  # for gif
