@@ -136,13 +136,13 @@ def update_plot(i):
     p.fig.tight_layout()
 
 
-fig = plt.figure()
+fig = plt.figure(figsize=(7, 5))
 ani = animation.FuncAnimation(fig, update_plot, frames=nchans)
-#Writer = animation.writers['ffmpeg']  # for mp4
-Writer = animation.writers['pillow']  # for gif
+Writer = animation.writers['ffmpeg']  # for mp4
+#Writer = animation.writers['pillow']  # for gif
 writer = Writer(fps=1)  # frame per second
-#ani.save('test_animation.mp4', writer=writer, dpi=64)
-ani.save('test_animation.gif', writer=writer, dpi=64)
+ani.save('test_animation.mp4', writer=writer, dpi=64)
+#ani.save('test_animation.gif', writer=writer, dpi=64)
 plt.close()
 
 ################################################################################
