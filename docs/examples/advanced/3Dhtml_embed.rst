@@ -1,7 +1,10 @@
 3D html figure (Plotly) [output]
 ================================
 
-example_3Dhtml
+.. toctree::
+   :maxdepth: 1
+
+   example_3Dhtml
 
 .. raw:: html
 
