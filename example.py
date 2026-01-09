@@ -5,7 +5,7 @@ from plotastrodata.analysis_utils import AstroData, AstroFrame
 from plotastrodata.plot_utils import PlotAstroData as pad
 
 
-data_dir = './docs/_static/data/'
+data_dir = './example_data/'
 
 ################################################################################
 # 2D image
