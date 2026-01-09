@@ -1,11 +1,6 @@
 3D html figure (Plotly) [output]
 ================================
 
-.. toctree::
-   :maxdepth: 1
-
-   example_3Dhtml
-
 .. raw:: html
 
    <iframe
