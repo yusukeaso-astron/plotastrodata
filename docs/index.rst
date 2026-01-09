@@ -11,7 +11,7 @@ Welcome to plotastrodata's documentation!
    :caption: Contents:
 
    plotastrodata
-   examples
+   example
    manual
 
 
