@@ -1,5 +1,7 @@
 3D html figure (Plotly) [output]
-====================================
+================================
+
+example_3Dhtml
 
 .. raw:: html
 
