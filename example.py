@@ -110,7 +110,7 @@ plotslice(length=1.6, pa=270, fitsimage=f'{data_dir}/test2D.fits',
           center='04h04m43.07s 26d18m56.20s', sigma=5e-3,
           savefig='testslice.png', show=True)
 
-# 3D Plotly figure in html
+# 3D html figure (Plotly)
 from plotastrodata.plot_utils import plot3d
 
 
@@ -245,7 +245,7 @@ fig.savefig('fftcentering.png')
 plt.show()
 
 ################################################################################
-# MCMC using emcee, corner, and dynesty
+# MCMC (emcee, corner, dynesty)
 from plotastrodata.fitting_utils import EmceeCorner
 from plotastrodata.plot_utils import set_rcparams
 
@@ -277,7 +277,7 @@ fitter.plotchain(show=True, savefig='chain.png',
                  labels=['par1', 'par2', 'par3'],
                  ylim=[[-2, 2], [-4, 4], [-8, 8]])
 
-# Calculating logl on a parameter grid
+# Likelihood on a parameter grid
 fitter.posteriorongrid(ngrid=[101, 201, 401])
 print('best:', fitter.popt)
 print('lower percentile:', fitter.plow)
