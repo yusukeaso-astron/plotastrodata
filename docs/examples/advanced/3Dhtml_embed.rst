@@ -1,4 +1,4 @@
-3D html figure using Plotly (output)
+3D html figure (Plotly) [output]
 ====================================
 
 .. raw:: html
