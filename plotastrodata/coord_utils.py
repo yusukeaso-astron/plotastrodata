@@ -80,12 +80,13 @@ def coord2xy(coords: str | list, coordorg: str = '00h00m00s 00d00m00s',
         c0 = c0.transform_to(frame=frame)
     clist = SkyCoord(coords, frame=frame)  # frame=None means ICRS.
     xy = c0.spherical_offsets_to(clist)
-    return np.array([xy[0].degree, xy[1].degree])
+    xy = np.array([xy[0].degree, xy[1].degree])
+    return xy
 
 
 def xy2coord(xy: list, coordorg: str = '00h00m00s 00d00m00s',
              frame: str | None = None, frameorg: str | None = None,
-             ) -> str:
+             ) -> str | np.ndarray:
     """Transform relative (deg, deg) to R.A.-Dec.
 
     Args:
@@ -105,10 +106,13 @@ def xy2coord(xy: list, coordorg: str = '00h00m00s 00d00m00s',
     coords = c0.spherical_offsets_by(*xy * units.degree)
     if frame is not None:
         coords = coords.transform_to(frame=frame)
-    s = coords.to_string('hmsdms')
+    coords = coords.to_string('hmsdms')
     if framename is not None:
-        s = f'{framename} {s}'
-    return s
+        if type(coords) is str:
+            coords = f'{framename} {coords}'
+        else:
+            coords = np.array([f'{framename} {s}' for s in coords])
+    return coords
 
 
 def rel2abs(xrel: float, yrel: float,

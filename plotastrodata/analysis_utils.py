@@ -634,7 +634,8 @@ class AstroFrame():
         if self.fitsimage is not None and self.center is None:
             self.center = FitsData(self.fitsimage).get_center()
 
-    def pos2xy(self, poslist: list[str | list[float, float]] = []) -> np.ndarray:
+    def pos2xy(self, poslist: list[str | list[float, float]] = []
+               ) -> np.ndarray:
         """Text or relative to absolute coordinates.
 
          Args:
