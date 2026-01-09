@@ -147,3 +147,9 @@ boxcar.png
 
 docs/_build/
 build/
+docs/examples/test2D_2.fits
+docs/examples/test2D.fits
+docs/examples/test2Damp.fits
+docs/examples/testPV.fits
+docs/examples/test2Dang.fits
+docs/examples/test3D.fits
