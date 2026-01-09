@@ -1,5 +1,5 @@
-Advanced Examples Gallery
-=========================
+Advanced Example Gallery
+========================
 
 .. toctree::
    :maxdepth: 1
