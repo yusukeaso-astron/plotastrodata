@@ -10,7 +10,7 @@ data_dir = './example_data/'
 ################################################################################
 # 2D image
 d = AstroData(fitsimage=f'{data_dir}/test2D.fits', Tb=True, sigma=5e-3)
-f = AstroFrame(rmax=0.8, center='B1950 04h01m40.57s +26d10m47.297s')
+f = AstroFrame(rmax=0.8, center='B1950 04h01m40.5705s +26d10m47.285s')
 f.read(d)
 p = pad(rmax=0.8, center='ICRS 04h04m43.07s 26d18m56.20s')
 p.add_color(**d.todict(), cblabel='Tb (K)')
@@ -69,7 +69,7 @@ p.savefig('testloglogPV.png', show=True)
 
 # RGB
 d = AstroData(fitsimage=f'{data_dir}/test3D.fits', Tb=True, sigma=5e-3)
-f = AstroFrame(rmax=0.8, center='B1950 04h01m40.57s +26d10m47.297s')
+f = AstroFrame(rmax=0.8, center='B1950 04h01m40.5705s +26d10m47.285s')
 f.read(d)
 dblue = np.sum(d.data[0:20], axis=0) * d.dv
 dgreen = np.sum(d.data[20:41], axis=0) * d.dv
