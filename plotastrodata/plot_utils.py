@@ -433,7 +433,8 @@ class PlotAstroData(AstroFrame):
         self.channelnumber = channelnumber
         self.v = v
 
-        def vskipfill(c: np.ndarray, v_in: np.ndarray = None) -> np.ndarray:
+        def vskipfill(c: np.ndarray, v_in: np.ndarray = None
+                      ) -> np.ndarray:
             """Skip and fill channels with nan.
 
             Args:
@@ -445,6 +446,12 @@ class PlotAstroData(AstroFrame):
             """
             if np.ndim(c) == 3:
                 if v_in is not None:
+                    dv_org = self.v[1] - self.v[0]
+                    dv_in = v_in[1] - v_in[0]
+                    if np.abs(dv_in - dv_org) / dv_org > 0.01:
+                        print('Velocity resolution mismatch (>1%).',
+                              'The cube needs to be regridded',
+                              'outside plotastrodata.')
                     k0 = np.argmin(np.abs(self.v - v_in[0]))
                     if k0 > 0:
                         prenan = np.full((k0, *np.shape(c)[1:]), np.nan)
