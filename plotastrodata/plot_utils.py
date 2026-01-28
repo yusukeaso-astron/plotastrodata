@@ -445,7 +445,7 @@ class PlotAstroData(AstroFrame):
             """
             if np.ndim(c) == 3:
                 if v_in is not None:
-                    if (k0 := np.argmin(np.abs(v - v_in[0]))) > 0:
+                    if (k0 := np.argmin(np.abs(self.v - v_in[0]))) > 0:
                         prenan = np.full((k0, *np.shape(c)[1:]), np.nan)
                         d = np.append(prenan, c, axis=0)
                     else:
