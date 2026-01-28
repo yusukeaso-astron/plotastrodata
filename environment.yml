@@ -5,7 +5,7 @@ channels:
   - plotly
 dependencies:
   - python>=3.10
-  - astropy
+  - astropy>=7.0
   - corner
   - dynesty
   - emcee
