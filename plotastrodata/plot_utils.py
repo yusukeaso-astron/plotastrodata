@@ -431,6 +431,7 @@ class PlotAstroData(AstroFrame):
         self.allchan = np.arange(nv)
         self.bottomleft = nij2ch(np.arange(npages), nrows - 1, 0)
         self.channelnumber = channelnumber
+        self.v = v
 
         def vskipfill(c: np.ndarray, v_in: np.ndarray = None) -> np.ndarray:
             """Skip and fill channels with nan.
@@ -454,8 +455,9 @@ class PlotAstroData(AstroFrame):
                 d = np.full((nv, *np.shape(c)), c)
             n = nchan if channelnumber is None else nv
             shape = (n - len(d), len(d[0]), len(d[0, 0]))
-            dnan = np.full(shape, d[0] * np.nan)
-            return np.concatenate((d, dnan), axis=0)
+            postnan = np.full(shape, d[0] * np.nan)
+            d = np.append(d, postnan, axis=0)
+            return d
         self.vskipfill = vskipfill
 
     def _map_init(self, kw: dict) -> tuple:
