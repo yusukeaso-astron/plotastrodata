@@ -777,15 +777,18 @@ class PlotAstroData(AstroFrame):
             cb.ax.tick_params(labelsize=14)
             font = mpl.font_manager.FontProperties(size=16)
             cb.ax.yaxis.label.set_font_properties(font)
+            if cbticks is not None and ch // self.rowcol == 0:
+                cbticks = np.array(cbticks)
+                match stretch:
+                    case 'log':
+                        cbticks = np.log10(cbticks)
+                    case 'asinh':
+                        cbticks = np.arcsinh(cbticks / stretchscale)
+                    case 'power':
+                        p = 1 - stretchpower
+                        cbticks = (cbticks / cmin_org)**p - 1
+                        cbticks = cbticks / p / np.log(10)
             if cbticks is not None:
-                if stretch == 'log':
-                    cbticks = np.log10(cbticks)
-                elif stretch == 'asinh':
-                    cbticks = np.arcsinh(np.array(cbticks) / stretchscale)
-                elif stretch == 'power':
-                    cbticks = np.array(cbticks)
-                    p = 1 - stretchpower
-                    cbticks = ((cbticks / cmin_org)**p - 1) / p / np.log(10)
                 cb.set_ticks(cbticks)
             if cbticklabels is not None:
                 cb.set_ticklabels(cbticklabels)
