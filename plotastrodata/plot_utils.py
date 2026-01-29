@@ -756,8 +756,11 @@ class PlotAstroData(AstroFrame):
         c = self.vskipfill(c, v)
         if type(self.channelnumber) is int:
             c = [c[self.channelnumber]]
-        for axnow, cnow in zip(self.ax, c):
-            p = axnow.pcolormesh(x, y, cnow, **_kw)
+        p = [None] * len(self.ax)
+        for ch, (axnow, cnow) in enumerate(zip(self.ax, c)):
+            pnow = axnow.pcolormesh(x, y, cnow, **_kw)
+            if ch in self.bottomleft:
+                p[ch] = pnow
         for ch in self.bottomleft:
             if not show_cbar:
                 break
@@ -768,12 +771,13 @@ class PlotAstroData(AstroFrame):
             else:
                 fig = self.fig
             if len(self.ax) == 1:
-                ax = self.ax[0]
-                cb = fig.colorbar(p, ax=ax, label=cblabel,
+                ax = self.ax[ch]
+                cb = fig.colorbar(p[ch], ax=ax, label=cblabel,
                                   format=cbformat, location=cblocation)
             else:
                 cax = plt.axes([0.88, 0.105, 0.015, 0.77])
-                cb = fig.colorbar(p, cax=cax, label=cblabel, format=cbformat)
+                cb = fig.colorbar(p[ch], cax=cax, label=cblabel,
+                                  format=cbformat)
             cb.ax.tick_params(labelsize=14)
             font = mpl.font_manager.FontProperties(size=16)
             cb.ax.yaxis.label.set_font_properties(font)
