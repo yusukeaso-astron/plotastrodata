@@ -408,7 +408,7 @@ class PlotAstroData(AstroFrame):
                 figsize = (ncols * 2 / sqrt_a, max(nrows*2, 3) * sqrt_a)
         for ch in range(nchan):
             n, i, j = ch2nij(ch)
-            if internalfig:
+            if internalfig and n not in plt.get_fignums():
                 fig = plt.figure(n, figsize=figsize)
             sharex = ax[nij2ch(n, i - 1, j)] if i > 0 else None
             sharey = ax[nij2ch(n, i, j - 1)] if j > 0 else None
@@ -1122,7 +1122,7 @@ class PlotAstroData(AstroFrame):
                 fig.savefig(fname, **_kw)
         if show:
             plt.show()
-        plt.close()
+        plt.close('all')
 
     def get_figax(self) -> tuple[object, object]:
         """Output the external fig and ax after plotting.
