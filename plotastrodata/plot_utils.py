@@ -1,3 +1,4 @@
+import warnings
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -433,7 +434,8 @@ class PlotAstroData(AstroFrame):
         self.channelnumber = channelnumber
         self.v = v
 
-        def vskipfill(c: np.ndarray, v_in: np.ndarray = None
+        def vskipfill(c: np.ndarray,
+                      v_in: np.ndarray | None = None
                       ) -> np.ndarray:
             """Skip and fill channels with nan.
 
@@ -444,23 +446,36 @@ class PlotAstroData(AstroFrame):
             Returns:
                 np.ndarray: 3D arrays skipped and filled with nan.
             """
-            if np.ndim(c) == 3:
+            if np.ndim(c) == 2:
+                d = np.full((nv, *np.shape(c)), c)
+            elif np.ndim(c) == 3:
                 if v_in is not None:
                     dv_org = self.v[1] - self.v[0]
-                    dv_in = v_in[1] - v_in[0]
-                    if np.abs(dv_in - dv_org) / dv_org > 0.01:
-                        print('Velocity resolution mismatch (>1%).',
-                              'The cube needs to be regridded',
-                              'outside plotastrodata.')
+                    dv_in = (v_in[1] - v_in[0]) * vskip
                     k0 = np.argmin(np.abs(self.v - v_in[0]))
-                    if k0 > 0:
-                        prenan = np.full((k0, *np.shape(c)[1:]), np.nan)
-                        d = np.append(prenan, c, axis=0)
-                    else:
+                    k1 = np.argmin(np.abs(self.v - v_in[-1]))
+                    if np.abs(dv_in - dv_org) / dv_org < 0.01:
                         d = c
+                    else:
+                        s = 'Velocity resolution mismatch (>1%).' \
+                            + ' The cube needs to be regridded' \
+                            + ' outside plotastrodata.'
+                        warnings.warn(s, UserWarning)
+                        n_valid = k1 - k0
+                        d = [None] * n_valid
+                        for k in range(n_valid):
+                            k_tmp = np.argmin(np.abs(v_in - self.v[k]))
+                            diffvel = np.abs(v_in[k_tmp] - self.v[k])
+                            nearby = diffvel < dv_org * 0.5
+                            d[k] = c[k_tmp] if nearby else c[0] * np.nan
+                        d = np.array(d)
+                    if k0 > 0:
+                        prenan = np.full((k0, *np.shape(d)[1:]), np.nan)
+                        d = np.append(prenan, d, axis=0)
                 d = d[::vskip]
             else:
-                d = np.full((nv, *np.shape(c)), c)
+                print('c must be 2D or 3D.')
+                return
             n = nchan if channelnumber is None else nv
             shape = (n - len(d), len(d[0]), len(d[0, 0]))
             postnan = np.full(shape, d[0] * np.nan)
@@ -756,8 +771,11 @@ class PlotAstroData(AstroFrame):
         c = self.vskipfill(c, v)
         if type(self.channelnumber) is int:
             c = [c[self.channelnumber]]
-        for axnow, cnow in zip(self.ax, c):
-            p = axnow.pcolormesh(x, y, cnow, **_kw)
+        p = [None] * len(self.ax)
+        for ch, (axnow, cnow) in enumerate(zip(self.ax, c)):
+            pnow = axnow.pcolormesh(x, y, cnow, **_kw)
+            if ch in self.bottomleft:
+                p[ch] = pnow
         for ch in self.bottomleft:
             if not show_cbar:
                 break
@@ -768,12 +786,13 @@ class PlotAstroData(AstroFrame):
             else:
                 fig = self.fig
             if len(self.ax) == 1:
-                ax = self.ax[0]
-                cb = fig.colorbar(p, ax=ax, label=cblabel,
+                ax = self.ax[ch]
+                cb = fig.colorbar(p[ch], ax=ax, label=cblabel,
                                   format=cbformat, location=cblocation)
             else:
                 cax = plt.axes([0.88, 0.105, 0.015, 0.77])
-                cb = fig.colorbar(p, cax=cax, label=cblabel, format=cbformat)
+                cb = fig.colorbar(p[ch], cax=cax, label=cblabel,
+                                  format=cbformat)
             cb.ax.tick_params(labelsize=14)
             font = mpl.font_manager.FontProperties(size=16)
             cb.ax.yaxis.label.set_font_properties(font)
