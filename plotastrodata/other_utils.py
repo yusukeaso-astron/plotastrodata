@@ -1,5 +1,6 @@
+import warnings
 import numpy as np
-from scipy.optimize import curve_fit
+from scipy.optimize import curve_fit, OptimizeWarning
 from scipy.special import erf
 from scipy.interpolate import RegularGridInterpolator as RGI
 
@@ -59,6 +60,11 @@ def estimate_rms(data: np.ndarray, sigma: float | str | None = 'hist'
     if sigma is None:
         return None
 
+    def warning_offset(ave, noise):
+        if np.abs(ave) > 0.2 * noise:
+            warnings.warn('The intensity offset is larger than 0.2 sigma.',
+                          UserWarning)
+
     nums = [float, int, np.float64, np.int64, np.float32, np.int32]
     if type(sigma) in nums:
         noise = sigma
@@ -68,8 +74,7 @@ def estimate_rms(data: np.ndarray, sigma: float | str | None = 'hist'
     elif sigma == 'edge':
         ave = np.nanmean(data[::len(data) - 1])
         noise = np.nanstd(data[::len(data) - 1])
-        if np.abs(ave) > 0.2 * noise:
-            print('Warning: The intensity offset is larger than 0.2 sigma.')
+        warning_offset(ave, noise)
     elif sigma == 'neg':
         noise = np.sqrt(np.nanmean(data[data < 0]**2))
     elif sigma == 'med':
@@ -82,8 +87,7 @@ def estimate_rms(data: np.ndarray, sigma: float | str | None = 'hist'
             n = n[np.abs(n) < 3.5 * sig]
         ave = np.nanmean(n)
         noise = np.nanstd(n)
-        if np.abs(ave) > 0.2 * noise:
-            print('Warning: The intensity offset is larger than 0.2 sigma.')
+        warning_offset(ave, noise)
     elif sigma == 'out':
         n, n0, n1 = data.copy(), len(data), len(data[0])
         n = np.moveaxis(n, [-2, -1], [0, 1])
@@ -95,8 +99,7 @@ def estimate_rms(data: np.ndarray, sigma: float | str | None = 'hist'
         else:
             ave = np.nanmean(n)
             noise = np.nanstd(n)
-            if np.abs(ave) > 0.2 * noise:
-                print('Warning: The intensity offset is larger than 0.2 sigma.')
+            warning_offset(ave, noise)
     elif sigma[:4] == 'hist':
         m0, s0 = np.nanmean(data), np.nanstd(data)
         hist, hbin = np.histogram(data[~np.isnan(data)],
@@ -108,13 +111,15 @@ def estimate_rms(data: np.ndarray, sigma: float | str | None = 'hist'
                 xn = (x - c) / np.sqrt(2) / s
                 return (erf(xn) - erf(xn * np.exp(-R**2))) / (2 * (x-c) * R**2)
         else:
-            def g(x, s, c, R):
-                return np.exp(-((x-c)/s)**2 / 2) / np.sqrt(2*np.pi) / s
-        popt, _ = curve_fit(g, hbin, hist, p0=[1, 0, 1])
+            def g(x, s, c, _):
+                xn = (x - c) / np.sqrt(2) / s
+                return np.exp(-xn**2) / np.sqrt(2 * np.pi) / s
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', OptimizeWarning)
+            popt, _ = curve_fit(g, hbin, hist, p0=[1, 0, 1])
         ave = popt[1]
         noise = popt[0]
-        if np.abs(ave) > 0.2 * noise:
-            print('Warning: The intensity offset is larger than 0.2 sigma.')
+        warning_offset(ave, noise)
         noise = noise * s0
     return noise
 
