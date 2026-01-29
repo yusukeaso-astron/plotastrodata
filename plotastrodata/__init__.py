@@ -1,4 +1,4 @@
 import warnings
 
-warnings.simplefilter('ignore', UserWarning)
+warnings.simplefilter('ignore', FutureWarning)
 __version__ = '1.6.4'

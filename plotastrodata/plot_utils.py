@@ -408,7 +408,7 @@ class PlotAstroData(AstroFrame):
                 figsize = (ncols * 2 / sqrt_a, max(nrows*2, 3) * sqrt_a)
         for ch in range(nchan):
             n, i, j = ch2nij(ch)
-            if internalfig:
+            if internalfig and n not in plt.get_fignums():
                 fig = plt.figure(n, figsize=figsize)
             sharex = ax[nij2ch(n, i - 1, j)] if i > 0 else None
             sharey = ax[nij2ch(n, i, j - 1)] if j > 0 else None
@@ -431,8 +431,10 @@ class PlotAstroData(AstroFrame):
         self.allchan = np.arange(nv)
         self.bottomleft = nij2ch(np.arange(npages), nrows - 1, 0)
         self.channelnumber = channelnumber
+        self.v = v
 
-        def vskipfill(c: np.ndarray, v_in: np.ndarray = None) -> np.ndarray:
+        def vskipfill(c: np.ndarray, v_in: np.ndarray = None
+                      ) -> np.ndarray:
             """Skip and fill channels with nan.
 
             Args:
@@ -444,7 +446,14 @@ class PlotAstroData(AstroFrame):
             """
             if np.ndim(c) == 3:
                 if v_in is not None:
-                    if (k0 := np.argmin(np.abs(v - v_in[0]))) > 0:
+                    dv_org = self.v[1] - self.v[0]
+                    dv_in = v_in[1] - v_in[0]
+                    if np.abs(dv_in - dv_org) / dv_org > 0.01:
+                        print('Velocity resolution mismatch (>1%).',
+                              'The cube needs to be regridded',
+                              'outside plotastrodata.')
+                    k0 = np.argmin(np.abs(self.v - v_in[0]))
+                    if k0 > 0:
                         prenan = np.full((k0, *np.shape(c)[1:]), np.nan)
                         d = np.append(prenan, c, axis=0)
                     else:
@@ -454,8 +463,9 @@ class PlotAstroData(AstroFrame):
                 d = np.full((nv, *np.shape(c)), c)
             n = nchan if channelnumber is None else nv
             shape = (n - len(d), len(d[0]), len(d[0, 0]))
-            dnan = np.full(shape, d[0] * np.nan)
-            return np.concatenate((d, dnan), axis=0)
+            postnan = np.full(shape, d[0] * np.nan)
+            d = np.append(d, postnan, axis=0)
+            return d
         self.vskipfill = vskipfill
 
     def _map_init(self, kw: dict) -> tuple:
@@ -767,15 +777,18 @@ class PlotAstroData(AstroFrame):
             cb.ax.tick_params(labelsize=14)
             font = mpl.font_manager.FontProperties(size=16)
             cb.ax.yaxis.label.set_font_properties(font)
+            if cbticks is not None and ch // self.rowcol == 0:
+                cbticks = np.array(cbticks)
+                match stretch:
+                    case 'log':
+                        cbticks = np.log10(cbticks)
+                    case 'asinh':
+                        cbticks = np.arcsinh(cbticks / stretchscale)
+                    case 'power':
+                        p = 1 - stretchpower
+                        cbticks = (cbticks / cmin_org)**p - 1
+                        cbticks = cbticks / p / np.log(10)
             if cbticks is not None:
-                if stretch == 'log':
-                    cbticks = np.log10(cbticks)
-                elif stretch == 'asinh':
-                    cbticks = np.arcsinh(np.array(cbticks) / stretchscale)
-                elif stretch == 'power':
-                    cbticks = np.array(cbticks)
-                    p = 1 - stretchpower
-                    cbticks = ((cbticks / cmin_org)**p - 1) / p / np.log(10)
                 cb.set_ticks(cbticks)
             if cbticklabels is not None:
                 cb.set_ticklabels(cbticklabels)
@@ -1112,7 +1125,7 @@ class PlotAstroData(AstroFrame):
                 fig.savefig(fname, **_kw)
         if show:
             plt.show()
-        plt.close()
+        plt.close('all')
 
     def get_figax(self) -> tuple[object, object]:
         """Output the external fig and ax after plotting.
