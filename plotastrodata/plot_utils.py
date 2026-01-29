@@ -1,3 +1,4 @@
+import warnings
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -456,9 +457,10 @@ class PlotAstroData(AstroFrame):
                     if np.abs(dv_in - dv_org) / dv_org < 0.01:
                         d = c
                     else:
-                        print('Velocity resolution mismatch (>1%).',
-                              'The cube needs to be regridded',
-                              'outside plotastrodata.')
+                        s = 'Velocity resolution mismatch (>1%).' \
+                            + ' The cube needs to be regridded' \
+                            + ' outside plotastrodata.'
+                        warnings.warn(s, UserWarning)
                         n_valid = k1 - k0
                         d = [None] * n_valid
                         for k in range(n_valid):

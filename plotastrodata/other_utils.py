@@ -62,8 +62,8 @@ def estimate_rms(data: np.ndarray, sigma: float | str | None = 'hist'
 
     def warning_offset(ave, noise):
         if np.abs(ave) > 0.2 * noise:
-            warnings.warn('The intensity offset is larger than 0.2 sigma.',
-                          UserWarning)
+            s = 'The intensity offset is larger than 0.2 sigma.'
+            warnings.warn(s, UserWarning)
 
     nums = [float, int, np.float64, np.int64, np.float32, np.int32]
     if type(sigma) in nums:
