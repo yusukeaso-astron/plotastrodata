@@ -527,12 +527,13 @@ class AstroData():
         h['CDELT1'] = self.dx
         if fhd is not None and isdeg(fhd['CUNIT1']):
             h['CDELT1'] = h['CDELT1'] / 3600
-        vaxis = '2' if self.pv else '3'
-        h[f'NAXIS{vaxis}'] = len(self.v)
-        k_vmin = np.argmin(np.abs(self.v))
-        h[f'CRPIX{vaxis}'] = k_vmin + 1
-        h[f'CRVAL{vaxis}'] = (1 - self.v[k_vmin]/cu.c_kms) * self.restfreq
-        h[f'CDELT{vaxis}'] = -self.dv / cu.c_kms * self.restfreq
+        if self.dv is not None:
+            vaxis = '2' if self.pv else '3'
+            h[f'NAXIS{vaxis}'] = len(self.v)
+            k_vmin = np.argmin(np.abs(self.v))
+            h[f'CRPIX{vaxis}'] = k_vmin + 1
+            h[f'CRVAL{vaxis}'] = (1 - self.v[k_vmin]/cu.c_kms) * self.restfreq
+            h[f'CDELT{vaxis}'] = -self.dv / cu.c_kms * self.restfreq
         if not self.pv:
             h['NAXIS2'] = len(self.y)
             h['CRPIX2'] = np.argmin(np.abs(self.y)) + 1
