@@ -1,6 +1,6 @@
 # plotastrodata
 Python package to make figures from radio astronomical data by astropy and matplotlib.
-The specifications, examples, and gallery are available in [readthedocs](https://plotastrodata.readthedocs.io/en/latest/).
+The API, examples, and gallery are available in [readthedocs](https://plotastrodata.readthedocs.io/en/latest/).
 The PDF manual is available [here](https://github.com/yusukeaso-astron/plotastrodata/blob/main/plotastrodata_manual.pdf).
 
 
