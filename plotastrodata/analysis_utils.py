@@ -1,3 +1,4 @@
+import warnings
 import numpy as np
 from dataclasses import dataclass
 from scipy.interpolate import RegularGridInterpolator as RGI
@@ -291,12 +292,17 @@ class AstroData():
             pixelperbeam = Omega / np.abs(self.dx * self.dy)
         else:
             pixelperbeam = 1.
+        s = 'sigma is multiplied by sqrt(pixel-per-beam)' \
+            + ' to consider the noise correlation in a beam.' \
+            + ' This correction is relatively conservative.'
+        warnings.warn(s, UserWarning)
 
         def logl(p):
             rss = np.nansum((model(p, x, y) - d)**2)
             return -0.5 * rss / self.sigma**2 / pixelperbeam
 
-        mcmc = EmceeCorner(bounds=bounds, logl=logl, progressbar=progressbar)
+        mcmc = EmceeCorner(bounds=bounds, logl=logl,
+                           progressbar=progressbar)
         kwargs_fit0 = {}
         kwargs_fit0.update(kwargs_fit)
         mcmc.fit(**kwargs_fit0)
@@ -338,9 +344,17 @@ class AstroData():
         bounds = [[-amax, xmin, ymin, ds, ds, -90],
                   [amax, xmax, ymax, smax, smax, 90]]
         x, y = np.meshgrid(x, y)
+        Omega = np.pi * self.beam[0] * self.beam[1] / 4 / np.log(2)
+        pixelperbeam = Omega / np.abs(self.dx * self.dy)
+        s = 'sigma is multiplied by sqrt(pixel-per-beam)' \
+            + ' to consider the noise correlation in a beam.' \
+            + ' This correction is relatively conservative.'
+        warnings.warn(s, UserWarning)
         popt, pcov = curve_fit(gaussian2d,
                                (x.ravel(), y.ravel()), d.ravel(),
-                               p0=p0, bounds=bounds)
+                               p0=p0, bounds=bounds,
+                               sigma=self.sigma * np.sqrt(pixelperbeam),
+                               absolute_sigma=True)
         model = gaussian2d((x, y), *popt)
         residual = d - model
         if (center := self.center) is not None:
