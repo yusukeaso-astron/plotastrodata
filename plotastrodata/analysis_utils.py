@@ -539,9 +539,8 @@ class AstroData():
         if nocent:
             cx, cy = 0, 0
         else:
-            cx = self.x[ci] / 3600
-            cy = self.y[cj] / 3600
-            cx, cy = coord2xy(xy2coord([cx, cy], self.center))
+            xy = [self.x[ci] / 3600, self.y[cj] / 3600]
+            cx, cy = coord2xy(xy2coord(xy, self.center))
         h['NAXIS1'] = len(self.x)
         h['CRPIX1'] = ci + 1
         h['CRVAL1'] = cx
