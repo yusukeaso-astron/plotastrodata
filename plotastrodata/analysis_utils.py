@@ -534,9 +534,16 @@ class AstroData():
         fhd = self.fitsheader
         h = {}
         nocent = self.pv or self.center is None
-        cx, cy = (0, 0) if nocent else coord2xy(self.center)
+        ci = np.argmin(np.abs(self.x))
+        cj = np.argmin(np.abs(self.y))
+        if nocent:
+            cx, cy = 0, 0
+        else:
+            cx = self.x[ci] / 3600
+            cy = self.y[cj] / 3600
+            cx, cy = coord2xy(xy2coord([cx, cy], self.center))
         h['NAXIS1'] = len(self.x)
-        h['CRPIX1'] = np.argmin(np.abs(self.x)) + 1
+        h['CRPIX1'] = ci + 1
         h['CRVAL1'] = cx
         h['CDELT1'] = self.dx
         if fhd is None or 'CUNIT1' not in fhd or isdeg(fhd['CUNIT1']):
@@ -550,7 +557,7 @@ class AstroData():
             h[f'CDELT{vaxis}'] = -self.dv / cu.c_kms * self.restfreq
         if not self.pv:
             h['NAXIS2'] = len(self.y)
-            h['CRPIX2'] = np.argmin(np.abs(self.y)) + 1
+            h['CRPIX2'] = cj + 1
             h['CRVAL2'] = cy
             h['CDELT2'] = self.dy
             if fhd is None or 'CUNIT2' not in fhd or isdeg(fhd['CUNIT2']):
