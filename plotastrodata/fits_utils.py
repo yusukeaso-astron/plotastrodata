@@ -405,7 +405,6 @@ def data2fits(d: np.ndarray | None = None, h: dict = {},
         templatefits (str, optional): Fits file to copy header. Defaults to None.
         fitsimage (str, optional): Output name. Defaults to 'test'.
     """
-    ctype0 = ["RA---SIN", "DEC--SIN", "VELOCITY"]
     naxis = np.ndim(d)
     w = wcs.WCS(naxis=naxis)
     _h = {} if templatefits is None else FitsData(templatefits).get_header()
@@ -414,7 +413,14 @@ def data2fits(d: np.ndarray | None = None, h: dict = {},
         w.wcs.crpix = [0] * naxis
         w.wcs.crval = [0] * naxis
         w.wcs.cdelt = [1] * naxis
-        w.wcs.ctype = ctype0[:naxis]
+    ctype = ['RA---SIN', 'DEC--SIN', 'FREQ']
+    if 'CTYPE1' in _h:
+        ctype[0] = _h['CTYPE1']
+    if 'CTYPE2' in _h:
+        ctype[1] = _h['CTYPE2']
+    if 'CTYPE3' in _h:
+        ctype[2] = _h['CTYPE3']
+    w.wcs.ctype = ctype[:naxis]
     header = w.to_header()
     hdu = fits.PrimaryHDU(d, header=header)
     for k in _h:
