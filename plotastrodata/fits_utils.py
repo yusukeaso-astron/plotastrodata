@@ -421,6 +421,14 @@ def data2fits(d: np.ndarray | None = None, h: dict = {},
     if 'CTYPE3' in _h:
         ctype[2] = _h['CTYPE3']
     w.wcs.ctype = ctype[:naxis]
+    cunit = ['deg', 'deg', 'Hz']
+    if 'CUNIT1' in _h:
+        cunit[0] = _h['CUNIT1']
+    if 'CUNIT2' in _h:
+        cunit[1] = _h['CUNIT2']
+    if 'CUNIT3' in _h:
+        cunit[2] = _h['CUNIT3']
+    w.wcs.cunit = cunit[:naxis]
     header = w.to_header()
     hdu = fits.PrimaryHDU(d, header=header)
     for k in _h:
