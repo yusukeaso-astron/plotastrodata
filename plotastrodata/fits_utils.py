@@ -431,6 +431,10 @@ def data2fits(d: np.ndarray | None = None, h: dict = {},
     w.wcs.cunit = cunit[:naxis]
     header = w.to_header()
     hdu = fits.PrimaryHDU(d, header=header)
+    if 'BUNIT' not in _h:
+        _h['BUNIT'] = 'Jy/beam'
+    if naxis >= 3 and 'SPECSYS' not in _h:
+        _h['SPECSYS'] = 'LSRK'
     for k in _h:
         if not ('COMMENT' in k or 'HISTORY' in k) and _h[k] is not None:
             hdu.header[k] = _h[k]
