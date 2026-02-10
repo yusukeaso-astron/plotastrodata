@@ -524,7 +524,8 @@ class AstroData():
         return d
 
     @_need_multipixels
-    def writetofits(self, fitsimage: str = 'out.fits', header: dict = {}):
+    def writetofits(self, fitsimage: str = 'out.fits',
+                    header: dict = {}) -> None:
         """Write out the AstroData to a FITS file.
 
         Args:
@@ -533,43 +534,50 @@ class AstroData():
         """
         fhd = self.fitsheader
         h = {}
-        nocent = self.pv or self.center is None
         ci = np.argmin(np.abs(self.x))
-        cj = np.argmin(np.abs(self.y))
-        if nocent:
-            cx, cy = 0, 0
-        else:
-            xy = [self.x[ci] / 3600, self.y[cj] / 3600]
-            cx, cy = coord2xy(xy2coord(xy, self.center))
+        cx = 0
+        if not self.pv:
+            cj = np.argmin(np.abs(self.y))
+            if self.center is None:
+                cx, cy = self.x[ci], self.x[cj]
+            else:
+                xy = [self.x[ci] / 3600, self.y[cj] / 3600]
+                cx, cy = coord2xy(xy2coord(xy, self.center))
+
+        def indeg(s):
+            u = f'CUNIT{s}'
+            return fhd is None or u not in fhd or isdeg(fhd[u])
+
         h['NAXIS1'] = len(self.x)
-        h['CRPIX1'] = ci + 1
-        h['CRVAL1'] = cx
-        h['CDELT1'] = self.dx
-        if fhd is None or 'CUNIT1' not in fhd or isdeg(fhd['CUNIT1']):
-            h['CDELT1'] = h['CDELT1'] / 3600
+        h['CRPIX1'] = int(ci + 1)
+        h['CRVAL1'] = float(cx)
+        h['CDELT1'] = float(self.dx / (3600 if indeg('1') else 1))
         if self.dv is not None:
             vaxis = '2' if self.pv else '3'
+            ck = np.argmin(np.abs(self.v))
+            cv = self.v[ck]
+            dv = self.dv
+            if self.restfreq is None or self.restfreq == 0:
+                s = 'No valid restfreq.' \
+                    + f' Axis {vaxis} is saved as is.'
+                warnings.warn(s, UserWarning)
+            else:
+                cv = (1 - cv / cu.c_kms) * self.restfreq
+                dv = -dv / cu.c_kms * self.restfreq
             h[f'NAXIS{vaxis}'] = len(self.v)
-            k_vmin = np.argmin(np.abs(self.v))
-            h[f'CRPIX{vaxis}'] = k_vmin + 1
-            h[f'CRVAL{vaxis}'] = (1 - self.v[k_vmin]/cu.c_kms) * self.restfreq
-            h[f'CDELT{vaxis}'] = -self.dv / cu.c_kms * self.restfreq
+            h[f'CRPIX{vaxis}'] = int(ck + 1)
+            h[f'CRVAL{vaxis}'] = float(cv)
+            h[f'CDELT{vaxis}'] = float(dv)
         if not self.pv:
             h['NAXIS2'] = len(self.y)
-            h['CRPIX2'] = cj + 1
-            h['CRVAL2'] = cy
-            h['CDELT2'] = self.dy
-            if fhd is None or 'CUNIT2' not in fhd or isdeg(fhd['CUNIT2']):
-                h['CDELT2'] = h['CDELT2'] / 3600
+            h['CRPIX2'] = int(cj + 1)
+            h['CRVAL2'] = float(cy)
+            h['CDELT2'] = float(self.dy / (3600 if indeg('2') else 1))
         if None not in self.beam:
-            if self.pv:
-                h['BMAJ'] = self.beam_org[0] / 3600
-                h['BMIN'] = self.beam_org[1] / 3600
-                h['BPA'] = self.beam_org[2]
-            else:
-                h['BMAJ'] = self.beam[0] / 3600
-                h['BMIN'] = self.beam[1] / 3600
-                h['BPA'] = self.beam[2]
+            beam = self.beam_org if self.pv else self.beam
+            h['BMAJ'] = float(beam[0] / 3600)
+            h['BMIN'] = float(beam[1] / 3600)
+            h['BPA'] = float(beam[2])
         h.update(header)
         data2fits(d=self.data, h=h, templatefits=self.fitsimage_org,
                   fitsimage=fitsimage)
