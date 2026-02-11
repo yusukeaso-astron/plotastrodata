@@ -271,11 +271,13 @@ class FitsData:
                 case 'Hz':
                     if freq == 0:
                         print('v is frequency because restfreq=0.')
+                        s = s_in * 1
                     else:
                         s = (1 - s_in / freq) * cu.c_kms - vsys
                 case 'HZ':
                     if freq == 0:
                         print('v is frequency because restfreq=0.')
+                        s = s_in * 1
                     else:
                         s = (1 - s_in / freq) * cu.c_kms - vsys
                 case 'm/s':
