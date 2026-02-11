@@ -110,6 +110,7 @@ class AstroData():
     cfactor: float = 1
     pvpa: float | None = None
     pv: bool = False
+    bunit: str = ''
 
     def __post_init__(self):
         n = 0
@@ -132,7 +133,6 @@ class AstroData():
         if n == 0:
             print('Either data or fitsimage must be given.')
         self.n = n
-        self.bunit = ''
         self.fitsimage_org = None
         self.sigma_org = None
         self.beam_org = None
@@ -520,7 +520,8 @@ class AstroData():
         d = {'data': self.data, 'x': self.x, 'y': self.y, 'v': self.v,
              'fitsimage': self.fitsimage, 'beam': self.beam, 'Tb': self.Tb,
              'restfreq': self.restfreq, 'cfactor': self.cfactor,
-             'sigma': self.sigma, 'center': self.center, 'pv': self.pv}
+             'sigma': self.sigma, 'center': self.center, 'pv': self.pv,
+             'bunit': self.bunit}
         return d
 
     @_need_multipixels
