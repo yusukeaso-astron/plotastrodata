@@ -90,13 +90,13 @@ class AstroData():
         v (np.ndarray, optional): 1D array. Defaults to None.
         beam (np.ndarray, optional): [bmaj, bmin, bpa]. Defaults ot [None, None, None].
         fitsimage (str, optional): Input fits name. Defaults to None.
-        Tb (bool, optional): True means the mapped data are brightness T. Defaults to False.
+        Tb (bool, optional): True means the data array is brightness temperature. Defaults to False.
         sigma (float or str, optional): Noise level or method for measuring it. Defaults to 'hist'.
         center (str, optional): Text coordinates. 'common' means initialized value. Defaults to 'common'.
-        restfreq (float, optional): Used for velocity and brightness T. Defaults to None.
-        cfactor (float, optional): Output data times cfactor. Defaults to 1.
+        restfreq (float, optional): Used for velocity and brightness temperature. Defaults to None.
+        cfactor (float, optional): The data array is multiplied by cfactor. Defaults to 1.
         pvpa (float, optional): Position angle of the PV cut. Defaults to None.
-        pv (bool, optional): True means that the data array is a position-velocity diagram. Defaults to False.
+        pv (bool, optional): True means the data array is a position-velocity diagram. Defaults to False.
         bunit (str, optional): The unit of the data array. Defaults to ''.
     """
     data: np.ndarray | None = None
