@@ -96,6 +96,8 @@ class AstroData():
         restfreq (float, optional): Used for velocity and brightness T. Defaults to None.
         cfactor (float, optional): Output data times cfactor. Defaults to 1.
         pvpa (float, optional): Position angle of the PV cut. Defaults to None.
+        pv (bool, optional): True means that the data array is a position-velocity diagram. Defaults to False.
+        bunit (str, optional): The unit of the data array. Defaults to ''.
     """
     data: np.ndarray | None = None
     x: np.ndarray | None = None
