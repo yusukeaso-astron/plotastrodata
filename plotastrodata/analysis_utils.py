@@ -161,8 +161,10 @@ class AstroData():
             if w[n] == 1 or grid[n] is None:
                 continue
             if dgrid[n] is None:
-                s = ['v', 'y', 'x'][n - 1]
-                print(f'Skip binning in the {s}-axis because d{s} is None.')
+                t = ['v', 'y', 'x'][n - 1]
+                s = f'Skip binning in the {t}-axis' \
+                    + f' because d{t} is None.'
+                warnings.warn(s, UserWarning)
                 continue
             size[n] = newsize[n]
             olddata = np.moveaxis(d, n, 0)
@@ -179,8 +181,11 @@ class AstroData():
         self.data = np.squeeze(d)
         _, self.v, self.y, self.x = grid
         _, self.dv, self.dy, self.dx = dgrid
+        s = 'AstroData.sigma is not updated by AstroData.binning().'
+        warnings.warn(s, UserWarning)
 
-    def centering(self, includexy: bool = True, includev: bool = False,
+    def centering(self, includexy: bool = True,
+                  includev: bool = False,
                   **kwargs):
         """Spatial regridding to set the center at (x,y,v)=(0,0,0).
 
