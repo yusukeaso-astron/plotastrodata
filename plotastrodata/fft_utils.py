@@ -58,7 +58,7 @@ def fftcentering(f: np.ndarray, x: np.ndarray | None = None,
     dx = X[1] - X[0]
     u = np.fft.fftshift(np.fft.fftfreq(nx, d=dx))
     F = np.fft.fftshift(np.fft.fft(f))
-    F = shiftphase(F, u=u, xoff=xcenter - X[-1] - dx)
+    F = shiftphase(F, u=u, xoff=xcenter - X[0])
     return F, u
 
 
@@ -89,7 +89,7 @@ def fftcentering2(f: np.ndarray,
     u = np.fft.fftshift(np.fft.fftfreq(nx, d=dx))
     v = np.fft.fftshift(np.fft.fftfreq(ny, d=dy))
     F = np.fft.fftshift(np.fft.fft2(f))
-    F = shiftphase2(F, u, v, xcenter - X[-1] - dx, ycenter - Y[-1] - dy)
+    F = shiftphase2(F, u, v, xcenter - X[0], ycenter - Y[0])
     return F, u, v
 
 
@@ -116,8 +116,7 @@ def ifftcentering(F: np.ndarray, u: np.ndarray | None = None,
     x = (np.arange(nx) - (nx-1)/2.) / (u[1]-u[0]) / nx + xcenter
     if x0 is not None:
         x = x - x[0] + x0
-    dx = x[1] - x[0]
-    F = shiftphase(F, u=u, xoff=x[-1] + dx - xcenter)
+    F = shiftphase(F, u=u, xoff=x[0] - xcenter)
     f = np.fft.ifft(np.fft.ifftshift(F))
     if outreal:
         f = np.real(f)
@@ -156,8 +155,7 @@ def ifftcentering2(F: np.ndarray,
         x = x - x[0] + x0
     if y0 is not None:
         y = y - y[0] + y0
-    dx, dy = x[1] - x[0], y[1] - y[0]
-    F = shiftphase2(F, u, v, x[-1] + dx - xcenter, y[-1] + dy - ycenter)
+    F = shiftphase2(F, u, v, x[0] - xcenter, y[0] - ycenter)
     f = np.fft.ifft2(np.fft.ifftshift(F))
     if outreal:
         f = np.real(f)
