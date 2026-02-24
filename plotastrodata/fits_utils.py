@@ -314,8 +314,10 @@ class FitsData:
             yc = self.y[jc] / self.dy
             Mcd = [[cd11, cd12], [cd21, cd22]]
             xc, yc = dot2d(Mcd, [xc, yc])
-            newcenter = xy2coord(xy=[xc, yc], coordorg=self.get_center())
-            xc, yc = coord2xy(coords=newcenter, coordorg='00h00m00s 00d00m00s')
+            newcenter = xy2coord(xy=[xc, yc],
+                                 coordorg=self.get_center())
+            xc, yc = coord2xy(coords=newcenter,
+                              coordorg='00h00m00s 00d00m00s')
             self.header['CRVAL1'] = xc
             self.header['CRVAL2'] = yc
             self.x = self.x - self.x[ic]
