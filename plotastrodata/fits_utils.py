@@ -267,7 +267,7 @@ class FitsData:
             vaxis = '2' if pv else '3'
             key = f'CUNIT{vaxis}'
             cunitv = h[key]
-            match cunitv:
+            match cunitv.strip():
                 case 'Hz':
                     if freq == 0:
                         print('v is frequency because restfreq=0.')
