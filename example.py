@@ -139,10 +139,10 @@ def update_plot(i):
 fig = plt.figure(figsize=(7, 5))  # Giving figsize may help ffmpeg.
 ani = animation.FuncAnimation(fig, update_plot, frames=nchans)
 Writer = animation.writers['ffmpeg']  # for mp4
-#Writer = animation.writers['pillow']  # for gif
+# Writer = animation.writers['pillow']  # for gif
 writer = Writer(fps=1)  # frame per second
 ani.save('test_animation.mp4', writer=writer, dpi=64)
-#ani.save('test_animation.gif', writer=writer, dpi=64)
+# ani.save('test_animation.gif', writer=writer, dpi=64)
 plt.close()
 
 ################################################################################
@@ -262,7 +262,7 @@ def logl(p):
 fitter = EmceeCorner(bounds=[[-5, 5], [-10, 10], [-20, 20]],
                      logl=logl, progressbar=False, percent=[16, 84])
 fitter.fit(nwalkersperdim=30, nsteps=11000, nburnin=1000,
-           #savechain='chain.npy'
+           # savechain='chain.npy'
            )
 print('best:', fitter.popt)
 print('lower percentile:', fitter.plow)
