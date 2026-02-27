@@ -12,6 +12,36 @@ from plotastrodata.plot_utils import (set_rcparams, PlotAstroData,
                                       plotprofile, plotslice, plot3d)
 
 
-def test_astrodata():
+def test_import():
+    a = [AstroData,
+         AstroFrame,
+         coord2xy,
+         xy2coord,
+         rel2abs,
+         abs2rel,
+         BnuT,
+         JnuT,
+         fftcentering2,
+         ifftcentering2,
+         FitsData,
+         fits2data,
+         data2fits,
+         EmceeCorner,
+         obs2sys,
+         sys2obs,
+         polarvel2losvel,
+         Mfac,
+         Mrot,
+         Mrot3d,
+         dot2d,
+         estimate_rms,
+         trim,
+         gaussian2d,
+         set_rcparams,
+         PlotAstroData,
+         plotprofile,
+         plotslice,
+         plot3d
+         ]
     d = AstroData()
-    assert type(d.todict()) is dict
+    assert None not in a and type(d.todict()) is dict
