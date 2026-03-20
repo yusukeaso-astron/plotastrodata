@@ -1,7 +1,7 @@
 import warnings
 import numpy as np
 from scipy.optimize import curve_fit
-from scipy.special import exp1
+from scipy.special import erf
 from scipy.interpolate import RegularGridInterpolator as RGI
 
 from plotastrodata.matrix_utils import Mrot, dot2d
@@ -108,26 +108,22 @@ def estimate_rms(data: np.ndarray, sigma: float | str | None = 'hist'
                                          m0 + s0 * 3.5))
         hist, hbin = hist * s0, (hbin[:-1] + hbin[1:]) / 2 / s0
         if sigma[4:] == '-pbcor':
-            def g(x, s, R):
-                xn = x / np.sqrt(2) / s
-                pbcor = np.exp2(R**2)
-                y1 = xn**2
-                y2 = y1 / pbcor**2
-                area = 2 * np.sqrt(2 * np.pi) * s * (pbcor - 1)
-                p = (exp1(y2) - exp1(y1)) / area
+            def g(x, s, c, R):
+                y2 = (x - c) / np.sqrt(2) / s
+                y1 = (x * 2**(-R**2) - c) / np.sqrt(2) / s
+                p = erf(y2) - erf(y1) 
+                p = p / (2 * np.log(2) * x * R**2)
                 return p
-            popt, _ = curve_fit(g, hbin, hist, p0=[1, 1],
-                                bounds=[[0.001, 0.001], [2, 2]])
-            ave = 0
-            noise = popt[0]
+            popt, _ = curve_fit(g, hbin, hist, p0=[1, 0, 1],
+                                bounds=[[0.001, -2, 0.001], [2, 2, 2]])
         else:
             def g(x, s, c):
                 xn = (x - c) / np.sqrt(2) / s
                 return np.exp(-xn**2) / np.sqrt(2 * np.pi) / s
             popt, _ = curve_fit(g, hbin, hist, p0=[1, 0],
                                 bounds=[[0.001, -2], [2, 2]])
-            ave = popt[1]
-            noise = popt[0]
+        ave = popt[1]
+        noise = popt[0]
         warning_offset(ave, noise)
         noise = noise * s0
     return noise
