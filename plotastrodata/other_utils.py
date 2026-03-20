@@ -1,7 +1,7 @@
 import warnings
 import numpy as np
 from scipy.optimize import curve_fit, OptimizeWarning
-from scipy.special import erf
+from scipy.special import exp1
 from scipy.interpolate import RegularGridInterpolator as RGI
 
 from plotastrodata.matrix_utils import Mrot, dot2d
@@ -104,21 +104,30 @@ def estimate_rms(data: np.ndarray, sigma: float | str | None = 'hist'
         m0, s0 = np.nanmean(data), np.nanstd(data)
         hist, hbin = np.histogram(data[~np.isnan(data)],
                                   bins=100, density=True,
-                                  range=(m0 - s0 * 5, m0 + s0 * 5))
+                                  range=(m0 - s0 * 3.5,
+                                         m0 + s0 * 3.5))
         hist, hbin = hist * s0, (hbin[:-1] + hbin[1:]) / 2 / s0
         if sigma[4:] == '-pbcor':
-            def g(x, s, c, R):
-                xn = (x - c) / np.sqrt(2) / s
-                return (erf(xn) - erf(xn * np.exp(-R**2))) / (2 * (x-c) * R**2)
+            def g(x, s, R):
+                xn = x / np.sqrt(2) / s
+                pbcor = np.exp2(R**2)
+                y1 = xn**2
+                y2 = y1 / pbcor**2
+                area = 2 * np.sqrt(2 * np.pi) * s * (pbcor - 1)
+                p = (exp1(y2) - exp1(y1)) / area
+                return p
+            popt, _ = curve_fit(g, hbin, hist, p0=[1, 1],
+                                bounds=[[0.001, 0.001], [2, 2]])
+            ave = 0
+            noise = popt[0]
         else:
-            def g(x, s, c, _):
+            def g(x, s, c):
                 xn = (x - c) / np.sqrt(2) / s
                 return np.exp(-xn**2) / np.sqrt(2 * np.pi) / s
-        with warnings.catch_warnings():
-            warnings.simplefilter('ignore', OptimizeWarning)
-            popt, _ = curve_fit(g, hbin, hist, p0=[1, 0, 1])
-        ave = popt[1]
-        noise = popt[0]
+            popt, _ = curve_fit(g, hbin, hist, p0=[1, 0],
+                                bounds=[[0.001, -2], [2, 2]])
+            ave = popt[1]
+            noise = popt[0]
         warning_offset(ave, noise)
         noise = noise * s0
     return noise

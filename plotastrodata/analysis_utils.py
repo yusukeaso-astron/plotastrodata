@@ -379,7 +379,8 @@ class AstroData():
         Returns:
             tuple: (bins, histogram)
         """
-        hist, hbin = np.histogram(self.data, **kwargs)
+        hist, hbin = np.histogram(self.data[~np.isnan(self.data)],
+                                  **kwargs)
         hbin = (hbin[:-1] + hbin[1:]) / 2
         return hbin, hist
 
