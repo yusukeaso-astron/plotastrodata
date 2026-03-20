@@ -1,6 +1,6 @@
 import warnings
 import numpy as np
-from scipy.optimize import curve_fit, OptimizeWarning
+from scipy.optimize import curve_fit
 from scipy.special import exp1
 from scipy.interpolate import RegularGridInterpolator as RGI
 
