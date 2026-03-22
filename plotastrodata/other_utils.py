@@ -47,8 +47,8 @@ def estimate_rms(data: np.ndarray, sigma: float | str | None = 'hist'
        'med': use the median of data^2 assuming Gaussian.
        'iter': exclude outliers.
        'out': exclude inner 60% about axes=-2 and -1.
-       'hist': fit histgram with Gaussian.
-       'hist-pbcor': fit histgram with PB-corrected Gaussian.
+       'hist': fit histgram with Gaussian. This option can be combined with 'edge' and/or 'neg'.
+       'hist-pbcor': fit histgram with PB-corrected Gaussian. This option can be combined with 'edge' and/or 'neg'.
 
     Args:
         data (np.ndarray): N-D array.
