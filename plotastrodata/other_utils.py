@@ -89,7 +89,7 @@ def estimate_rms(data: np.ndarray, sigma: float | str | None = 'hist'
         noise = np.nanstd(n)
         warning_offset(ave, noise)
     elif sigma == 'out':
-        n, n0, n1 = data.copy(), len(data), len(data[0])
+        n, n0, n1 = data * 1, len(data), len(data[0])
         n = np.moveaxis(n, [-2, -1], [0, 1])
         n[n0//5: n0*4//5, n1//5: n1*4//5] = np.nan
         if np.all(np.isnan(n)):
@@ -100,14 +100,20 @@ def estimate_rms(data: np.ndarray, sigma: float | str | None = 'hist'
             ave = np.nanmean(n)
             noise = np.nanstd(n)
             warning_offset(ave, noise)
-    elif sigma[:4] == 'hist':
-        m0, s0 = np.nanmean(data), np.nanstd(data)
-        hist, hbin = np.histogram(data[~np.isnan(data)],
-                                  bins=100, density=True,
+    elif 'hist' in sigma:
+        n = data * 1
+        if 'edge' in sigma:
+            n = n[::len(n) - 1]
+        if 'neg' in sigma:
+            n = n[n < 0]
+            n = np.r_[n, -n]
+        n = n[~np.isnan(n)]
+        m0, s0 = np.mean(n), np.std(n)
+        hist, hbin = np.histogram(n, bins=100, density=True,
                                   range=(m0 - s0 * 3.5,
                                          m0 + s0 * 3.5))
         hist, hbin = hist * s0, (hbin[:-1] + hbin[1:]) / 2 / s0
-        if sigma[4:] == '-pbcor':
+        if 'pbcor' in sigma:
             def g(x, s, c, R):
                 y2 = (x - c) / np.sqrt(2) / s
                 y1 = (x * 2**(-R**2) - c) / np.sqrt(2) / s
@@ -119,7 +125,8 @@ def estimate_rms(data: np.ndarray, sigma: float | str | None = 'hist'
         else:
             def g(x, s, c):
                 xn = (x - c) / np.sqrt(2) / s
-                return np.exp(-xn**2) / np.sqrt(2 * np.pi) / s
+                p = np.exp(-xn**2) / np.sqrt(2 * np.pi) / s
+                return p
             popt, _ = curve_fit(g, hbin, hist, p0=[1, 0],
                                 bounds=[[0.001, -2], [2, 2]])
         ave = popt[1]
