@@ -117,7 +117,7 @@ def estimate_rms(data: np.ndarray, sigma: float | str | None = 'hist'
             def g(x, s, c, R):
                 y2 = (x - c) / np.sqrt(2) / s
                 y1 = (x * 2**(-R**2) - c) / np.sqrt(2) / s
-                p = erf(y2) - erf(y1) 
+                p = erf(y2) - erf(y1)
                 p = p / (2 * np.log(2) * x * R**2)
                 return p
             popt, _ = curve_fit(g, hbin, hist, p0=[1, 0, 1],
