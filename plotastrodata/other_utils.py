@@ -55,7 +55,7 @@ def estimate_rms(data: np.ndarray, sigma: float | str | None = 'hist'
         sigma (float or str): One of the methods above. Defaults to 'hist'.
 
     Returns:
-        float: the estimated root mean square of noise.
+        float: the estimated standard deviation of noise.
     """
     if sigma is None:
         return None
