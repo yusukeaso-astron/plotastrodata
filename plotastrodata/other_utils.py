@@ -4,6 +4,7 @@ from scipy.optimize import curve_fit
 from scipy.special import erf
 from scipy.interpolate import RegularGridInterpolator as RGI
 
+from plotastrodata.fitting_utils import EmceeCorner
 from plotastrodata.matrix_utils import Mrot, dot2d
 
 
@@ -109,30 +110,49 @@ def estimate_rms(data: np.ndarray, sigma: float | str | None = 'hist'
             n = np.r_[n, -n]
         n = n[~np.isnan(n)]
         m0, s0 = np.mean(n), np.std(n)
-        hist, hbin = np.histogram(n, bins=100, density=True,
-                                  range=(m0 - s0 * 3.5,
-                                         m0 + s0 * 3.5))
-        hist, hbin = hist * s0, (hbin[:-1] + hbin[1:]) / 2 / s0
+        hist, hbin = np.histogram((n - m0) / s0,
+                                  bins=100, density=True,
+                                  range=(-3.5, 3.5))
+        hbin = (hbin[:-1] + hbin[1:]) / 2
+        h = np.linspace(-3.5, 3.5, 101)
+        dh = 0.07
+        def normalize(f, x, *args):
+            # For normalization within (-3.5, 3.5), not (-inf, inf).
+            area = np.sum(f(h, *args)) * dh
+            if area == 0:
+                p = np.where(np.abs(x - args[1]) < dh / 2, 1 / dh, 0)
+            else:
+                p = f(x, *args) / area
+            return p
+
         if 'pbcor' in sigma:
-            def g(x, s, c, R):
-                y2 = (x - c) / np.sqrt(2) / s
-                y1 = (x * 2**(-R**2) - c) / np.sqrt(2) / s
+            bounds = [[0.1, 2], [-2, 2], [0.1, 2]]
+
+            def g(x, *p):
+                s, m, R = p
+                y2 = (x - m) / np.sqrt(2) / s
+                y1 = (x * 2**(-R**2) - m) / np.sqrt(2) / s
                 p = erf(y2) - erf(y1)
                 p = p / (2 * np.log(2) * x * R**2)
                 return p
-            popt, _ = curve_fit(g, hbin, hist, p0=[1, 0, 1],
-                                bounds=[[0.001, -2, 0.001], [2, 2, 2]])
         else:
-            def g(x, s, c):
-                xn = (x - c) / np.sqrt(2) / s
+            bounds = [[0.1, 2], [-2, 2]]
+
+            def g(x, *p):
+                s, m = p
+                xn = (x - m) / np.sqrt(2) / s
                 p = np.exp(-xn**2) / np.sqrt(2 * np.pi) / s
                 return p
-            popt, _ = curve_fit(g, hbin, hist, p0=[1, 0],
-                                bounds=[[0.001, -2], [2, 2]])
-        ave = popt[1]
-        noise = popt[0]
+        def model(x, *p):
+            return normalize(g, x, *p)
+        fitter = EmceeCorner(bounds=bounds, model=model,
+                             xdata=hbin, ydata=hist,
+                             sigma=np.max(hist) * 0.01)
+        fitter.fit(nwalkersperdim=4, nsteps=200, nburnin=0)
+        popt = fitter.popt
+        ave = popt[1] * s0 + m0
+        noise = popt[0] * s0
         warning_offset(ave, noise)
-        noise = noise * s0
     return noise
 
 
