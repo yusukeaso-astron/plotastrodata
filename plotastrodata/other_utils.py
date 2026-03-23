@@ -46,7 +46,7 @@ def _estimate_rms_hist(data: np.ndarray, sigma: str) -> tuple:
     hist, hbin = np.histogram((data - m0) / s0, bins=100,
                               density=True, range=h_range)
     hbin = (hbin[:-1] + hbin[1:]) / 2
-    
+
     def normalize(f):
         """Decorator to normalize a function over h_range."""
         def wrapper(x, *args):
