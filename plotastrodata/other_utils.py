@@ -1,6 +1,5 @@
 import warnings
 import numpy as np
-from scipy.optimize import curve_fit
 from scipy.special import erf
 from scipy.interpolate import RegularGridInterpolator as RGI
 
@@ -116,6 +115,7 @@ def estimate_rms(data: np.ndarray, sigma: float | str | None = 'hist'
         hbin = (hbin[:-1] + hbin[1:]) / 2
         h = np.linspace(-3.5, 3.5, 101)
         dh = 0.07
+
         def normalize(f, x, *args):
             # For normalization within (-3.5, 3.5), not (-inf, inf).
             area = np.sum(f(h, *args)) * dh
@@ -130,9 +130,9 @@ def estimate_rms(data: np.ndarray, sigma: float | str | None = 'hist'
 
             def g(x, *p):
                 s, m, R = p
-                y2 = (x - m) / np.sqrt(2) / s
-                y1 = (x * 2**(-R**2) - m) / np.sqrt(2) / s
-                p = erf(y2) - erf(y1)
+                x1 = (x - m) / np.sqrt(2) / s
+                x0 = (x * 2**(-R**2) - m) / np.sqrt(2) / s
+                p = erf(x1) - erf(x0)
                 p = p / (2 * np.log(2) * x * R**2)
                 return p
         else:
@@ -140,9 +140,11 @@ def estimate_rms(data: np.ndarray, sigma: float | str | None = 'hist'
 
             def g(x, *p):
                 s, m = p
-                xn = (x - m) / np.sqrt(2) / s
-                p = np.exp(-xn**2) / np.sqrt(2 * np.pi) / s
+                x1 = (x - m) / np.sqrt(2) / s
+                p = np.exp(-x1**2) 
+                p = p / (np.sqrt(2 * np.pi) * s)
                 return p
+
         def model(x, *p):
             return normalize(g, x, *p)
         fitter = EmceeCorner(bounds=bounds, model=model,
