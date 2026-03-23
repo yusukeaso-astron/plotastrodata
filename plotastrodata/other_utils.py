@@ -37,7 +37,8 @@ def isdeg(s: str) -> bool:
         return False
 
 
-def _estimate_rms_hist(data: np.ndarray, sigma: str):
+def _estimate_rms_hist(data: np.ndarray, sigma: str
+                       ) -> tuple:
     h_range = (-3.5, 3.5)
     h = np.linspace(*h_range, 101)
     dh = 0.07
