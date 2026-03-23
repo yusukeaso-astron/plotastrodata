@@ -147,6 +147,7 @@ def estimate_rms(data: np.ndarray, sigma: float | str | None = 'hist'
 
         def model(x, *p):
             return normalize(g, x, *p)
+        # curve_fit does not work for this fitting.
         fitter = EmceeCorner(bounds=bounds, model=model,
                              xdata=hbin, ydata=hist,
                              sigma=np.max(hist) * 0.01)
