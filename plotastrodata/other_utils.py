@@ -39,13 +39,14 @@ def isdeg(s: str) -> bool:
 
 def _estimate_rms_hist(data: np.ndarray, sigma: str):
     h_range = (-3.5, 3.5)
-    m0, s0 = np.mean(data), np.std(data)
+    h = np.linspace(*h_range, 101)
+    dh = 0.07
+    m0 = np.mean(data)
+    s0 = np.std(data)
     hist, hbin = np.histogram((data - m0) / s0, bins=100,
                               density=True, range=h_range)
     hbin = (hbin[:-1] + hbin[1:]) / 2
-    h = np.linspace(*h_range, 101)
-    dh = 0.07
-
+    
     def normalize(f):
         """Decorator to normalize a function over h_range."""
         def wrapper(x, *args):
@@ -59,8 +60,8 @@ def _estimate_rms_hist(data: np.ndarray, sigma: str):
 
     if 'pbcor' in sigma:
         @normalize
-        def model(x, *p):
-            s, m, R = p
+        def model(x, *args):
+            s, m, R = args
             x1 = (x - m) / np.sqrt(2) / s
             x0 = (x * 2**(-R**2) - m) / np.sqrt(2) / s
             p = erf(x1) - erf(x0)
@@ -69,8 +70,8 @@ def _estimate_rms_hist(data: np.ndarray, sigma: str):
         bounds = [[0.1, 2], [-2, 2], [0.1, 2]]
     else:
         @normalize
-        def model(x, *p):
-            s, m = p
+        def model(x, *args):
+            s, m = args
             x1 = (x - m) / np.sqrt(2) / s
             p = np.exp(-x1**2)
             p = p / (np.sqrt(2 * np.pi) * s)
