@@ -128,7 +128,7 @@ def estimate_rms(data: np.ndarray, sigma: float | str | None = 'hist'
     elif 'out' in sigma:
         nx = np.shape(n)[-1]
         ny = np.shape(n)[-2]
-        ntmp = np.moveaxis(ntmp, [-2, -1], [0, 1])
+        ntmp = np.moveaxis(n, [-2, -1], [0, 1])
         ntmp[ny // 5 : ny * 4 // 5, nx // 5 : nx * 4 // 5] = np.nan
         if np.all(np.isnan(ntmp)):
             print('\'out\' is ignored because'
