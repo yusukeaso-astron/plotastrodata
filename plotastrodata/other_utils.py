@@ -141,7 +141,7 @@ def estimate_rms(data: np.ndarray, sigma: float | str | None = 'hist'
             def g(x, *p):
                 s, m = p
                 x1 = (x - m) / np.sqrt(2) / s
-                p = np.exp(-x1**2) 
+                p = np.exp(-x1**2)
                 p = p / (np.sqrt(2 * np.pi) * s)
                 return p
 
