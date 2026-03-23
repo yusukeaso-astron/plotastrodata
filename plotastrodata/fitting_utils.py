@@ -38,7 +38,7 @@ class EmceeCorner():
                  model: object | None = None,
                  xdata: np.ndarray | None = None,
                  ydata: np.ndarray | None = None,
-                 sigma: np.ndarray = 1, progressbar: bool = True,
+                 sigma: np.ndarray = 1, progressbar: bool = False,
                  percent: list = [16, 84]):
         """Make bounds, logl, and logp for ptemcee.
 
@@ -59,9 +59,12 @@ class EmceeCorner():
         else:
             global_bounds = np.array(bounds)
         global_progressbar = progressbar
-        if logl is None and None not in [model, xdata, ydata]:
+        if logl is None and (model is not None
+                             and xdata is not None
+                             and ydata is not None):
             def logl(x: np.ndarray) -> float:
-                return np.sum((ydata - model(xdata, *x))**2 / sigma**2) / (-2)
+                chi2 = np.sum((ydata - model(xdata, *x))**2 / sigma**2)
+                return chi2 / (-2)
         self.bounds = global_bounds
         self.dim = len(self.bounds)
         self.logl = logl
@@ -69,10 +72,12 @@ class EmceeCorner():
         self.percent = percent
         self.ndata = 10000 if xdata is None else len(xdata)
 
-    def fit(self, nwalkersperdim: int = 2, ntemps: int = 1, nsteps: int = 1000,
-            nburnin: int = 500, ntry: int = 1, pos0: np.ndarray | None = None,
-            savechain: str | None = None, ncores: int = 1, grcheck: bool = False,
-            pt: bool = False) -> None:
+    def fit(self, nwalkersperdim: int = 2,
+            ntemps: int = 1, nsteps: int = 1000,
+            nburnin: int = 500, ntry: int = 1,
+            pos0: np.ndarray | None = None,
+            savechain: str | None = None, ncores: int = 1,
+            grcheck: bool = False, pt: bool = False) -> None:
         """Perform a Markov Chain Monte Carlo (MCMC) fitting process using the ptemcee library, which is a parallel tempering version of the emcee package, and make a corner plot of the samples using the corner package.
 
         Args:
