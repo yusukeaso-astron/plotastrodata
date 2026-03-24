@@ -271,6 +271,8 @@ def kwargs2AstroFrame(kw: dict) -> AstroFrame:
     for k in vars(f):
         if k in kw:
             tmp[k] = kw[k]
+            if k not in ['fitsimage', 'center']:
+                del kw[k]
     f = AstroFrame(**tmp)
     return f
 
@@ -1161,6 +1163,30 @@ class PlotAstroData(AstroFrame):
         return fig, self.ax[0]
 
 
+def close_figure(fig: object,
+                 savefig: dict | str | None = None,
+                 show: bool = False) -> tuple[object, object]:
+    """Save, show, and close the figure.
+
+    Args:
+        fig (optional): External plt.figure(). Defaults to None.
+        savefig (dict or str, optional): For plt.figure().savefig(). Defaults to None.
+        show (bool, optional): True means doing plt.show(). Defaults to False.
+
+    Returns:
+        tuple: (fig, ax), where ax is a list, if getfigax=True. Otherwise, no return.
+    """
+    savefig0 = {'bbox_inches': 'tight', 'transparent': True}
+    fig.tight_layout()
+    if savefig is not None:
+        s = {'fname': savefig} if type(savefig) is str else savefig
+        savefig0.update(s)
+        fig.savefig(**savefig0)
+    if show:
+        plt.show()
+    plt.close()
+
+
 def plotprofile(coords: list[str] | str = [],
                 xlist: list[float] = [], ylist: list[float] = [],
                 ellipse: list[float, float, float] | None = None,
@@ -1169,7 +1195,6 @@ def plotprofile(coords: list[str] | str = [],
                 gaussfit: bool = False, gauss_kwargs: dict = {},
                 title: list[str] | None = None,
                 text: list[str] | None = None,
-                dist: float = 1., vsys: float = 0.,
                 nrows: int = 0, ncols: int = 1,
                 fig: object | None = None,
                 ax: object | None = None,
@@ -1177,7 +1202,7 @@ def plotprofile(coords: list[str] | str = [],
                 savefig: dict | str | None = None,
                 show: bool = False,
                 **kwargs) -> tuple[object, object]:
-    """Use Axes.plot of matplotlib to plot line profiles at given coordinates. kwargs must include the arguments of AstroData to specify the data to be plotted. kwargs can include the arguments of PlotAxes2D to adjust x and y axes.
+    """Use Axes.plot of matplotlib to plot line profiles at given coordinates. kwargs must include the arguments of AstroData to specify the data to be plotted. kwargs must include the arguments of AstroFrame to specify the ranges and so on for plotting. kwargs can include the arguments of PlotAxes2D to adjust x and y axes.
 
     Args:
         coords (list, optional): Coordinates. Defaults to [].
@@ -1191,8 +1216,6 @@ def plotprofile(coords: list[str] | str = [],
         gauss_kwargs (dict, optional): Kwargs for Axes.plot. Defaults to {}.
         title (list, optional): For each plot. Defaults to None.
         text (list, optional): For each plot. Defaults to None.
-        dist (float, optional): Change x and y in arcsec to au. Defaults to 1..
-        vsys (float, optional): Each channel shows v-vsys. Defaults to 0..
         nrows (int, optional): Used for channel maps. Defaults to 0.
         ncols (int, optional): Used for channel maps. Defaults to 1.
         fig (optional): External plt.figure(). Defaults to None.
@@ -1208,13 +1231,10 @@ def plotprofile(coords: list[str] | str = [],
     _kw.update(kwargs)
     _kwgauss = {'drawstyle': 'default', 'color': 'g'}
     _kwgauss.update(gauss_kwargs)
-    savefig0 = {'bbox_inches': 'tight', 'transparent': True}
     if type(coords) is str:
         coords = [coords]
-    vmin, vmax = _kw['xlim'] if 'xlim' in _kw else [-1e10, 1e10]
-    f = AstroFrame(dist=dist, vsys=vsys, vmin=vmin, vmax=vmax)
+    f = kwargs2AstroFrame(_kw)
     d = kwargs2AstroData(_kw)
-    Tb = d.Tb
     f.read(d)
     d.binning([width, 1, 1])
     v, prof, gfitres = d.profile(coords=coords, xlist=xlist, ylist=ylist,
@@ -1223,7 +1243,7 @@ def plotprofile(coords: list[str] | str = [],
     nprof = len(prof)
     if 'ylabel' in _kw:
         ylabel = _kw['ylabel']
-    elif Tb:
+    elif d.Tb:
         ylabel = r'$T_b$ (K)'
     elif flux:
         ylabel = 'Flux (Jy)'
@@ -1249,7 +1269,7 @@ def plotprofile(coords: list[str] | str = [],
     if 'xlim' not in _kw:
         _kw['xlim'] = [v.min(), v.max()]
     _kw['samexy'] = False
-    pa2d = kwargs2PlotAxes2D(_kw)
+    pa2 = kwargs2PlotAxes2D(_kw)
     for i in range(nprof):
         sharex = None if i < nrows - 1 else ax[i - 1]
         ax[i] = fig.add_subplot(nrows, ncols, i + 1, sharex=sharex)
@@ -1258,7 +1278,7 @@ def plotprofile(coords: list[str] | str = [],
         ax[i].plot(v, prof[i], **_kw)
         ax[i].hlines([0], v.min(), v.max(), linestyle='dashed', color='k')
         ax[i].set_ylabel(ylabel[i])
-        pa2d.set_xyaxes(ax[i])
+        pa2.set_xyaxes(ax[i])
         if text is not None:
             ax[i].text(**text[i])
         if title is not None:
@@ -1269,35 +1289,22 @@ def plotprofile(coords: list[str] | str = [],
             plt.setp(ax[i].get_xticklabels(), visible=False)
     if getfigax:
         return fig, ax
-    fig.tight_layout()
-    if savefig is not None:
-        s = {'fname': savefig} if type(savefig) is str else savefig
-        savefig0.update(s)
-        fig.savefig(**savefig0)
-    if show:
-        plt.show()
-    plt.close()
+
+    return close_figure(fig, savefig, show)
 
 
 def plotslice(length: float, dx: float | None = None, pa: float = 0,
-              dist: float = 1, xoff: float = 0, yoff: float = 0,
-              xflip: bool = True, yflip: bool = False,
               txtfile: str | None = None,
               fig: object | None = None, ax: object | None = None,
               getfigax: bool = False,
               savefig: str | dict | None = None, show: bool = False,
-              **kwargs) -> None:
-    """Use Axes.plot of matplotlib to plot a 1D spatial slice in a 2D map. kwargs must include the arguments of AstroData to specify the data to be plotted. kwargs can include the arguments of PlotAxes2D to adjust x and y axes.
+              **kwargs) -> tuple[object, object]:
+    """Use Axes.plot of matplotlib to plot a 1D spatial slice in a 2D map. kwargs must include the arguments of AstroData to specify the data to be plotted. kwargs must include the arguments of AstroFrame to specify the ranges and so on for plotting. kwargs can include the arguments of PlotAxes2D to adjust x and y axes.
 
     Args:
         length (float): Slice length.
         dx (float, optional): Grid increment. Defaults to None.
         pa (float, optional): Degree. Position angle. Defaults to 0.
-        dist (float, optional): For AstroFrame. Defaults to 1.
-        xoff (float, optional): For AstroFrame. Defaults to 0.
-        yoff (float, optional): For AstroFrame. Defaults to 0.
-        xflip (bool, optional): For AstroFrame. Defaults to True.
-        yflip (bool, optional): For AstroFrame. Defaults to False.
         txtfile (str, optional): File name for numpy.savetxt(). Defaults to None.
         fig (optional): External plt.figure(). Defaults to None.
         ax (optional): External fig.add_subplot(). Defaults to None.
@@ -1310,31 +1317,23 @@ def plotslice(length: float, dx: float | None = None, pa: float = 0,
     """
     _kw = {'linestyle': '-', 'marker': 'o'}
     _kw.update(kwargs)
-    savefig0 = {'bbox_inches': 'tight', 'transparent': True}
-    center = _kw['center'] if 'center' in _kw else None
-    f = AstroFrame(rmax=length / 2, dist=dist, xoff=xoff, yoff=yoff,
-                   xflip=xflip, yflip=yflip, center=center)
+    _kw['rmax'] = length / 2
+    f = kwargs2AstroFrame(_kw)
     d = kwargs2AstroData(_kw)
-    Tb = d.Tb
     f.read(d)
     if np.ndim(d.data) > 2:
         print('Only 2D map is supported.')
         return
 
     r, z = d.slice(length=length, pa=pa, dx=dx)
-    xunit = 'arcsec' if dist == 1 else 'au'
-    yunit = 'K' if Tb else d.bunit
-    yquantity = 'Tb' if Tb else 'intensity'
+    xunit = 'arcsec' if f.dist == 1 else 'au'
+    yunit = 'K' if d.Tb else d.bunit
+    yquantity = r'$T_b$' if d.Tb else 'intensity'
 
     if txtfile is not None:
         np.savetxt(txtfile, np.c_[r, z],
                    header=f'x ({xunit}), {yquantity} ({yunit}); '
                    + f'positive x is pa={pa:.2f} deg.')
-    set_rcparams()
-    if fig is None:
-        fig = plt.figure()
-    if ax is None:
-        ax = fig.add_subplot(1, 1, 1)
     if 'xlabel' not in _kw:
         _kw['xlabel'] = f'Offset ({xunit})'
     if 'ylabel' not in _kw:
@@ -1342,21 +1341,20 @@ def plotslice(length: float, dx: float | None = None, pa: float = 0,
     if 'xlim' not in _kw:
         _kw['xlim'] = [r.min(), r.max()]
     _kw['samexy'] = False
-    pa2d = kwargs2PlotAxes2D(_kw)
+    set_rcparams()
+    if fig is None:
+        fig = plt.figure()
+    if ax is None:
+        ax = fig.add_subplot(1, 1, 1)
+    pa2 = kwargs2PlotAxes2D(_kw)
     ax.plot(r, z, **_kw)
     if d.sigma is not None:
         ax.plot(r, r * 0 + 3 * d.sigma, 'k--')
-    pa2d.set_xyaxes(ax)
+    pa2.set_xyaxes(ax)
     if getfigax:
         return fig, ax
-    fig.tight_layout()
-    if savefig is not None:
-        s = {'fname': savefig} if type(savefig) is str else savefig
-        savefig0.update(s)
-        fig.savefig(**savefig0)
-    if show:
-        plt.show()
-    plt.close()
+
+    close_figure(fig, savefig, show)
 
 
 def plot3d(levels: list[float] = [3, 6, 12],

@@ -101,23 +101,23 @@ def select_noise(data: np.ndarray, sigma: str) -> np.ndarray:
 
 
 class Noise:
-    def __init__(self, data: np.ndarray, sigma: str):
-        """This class holds the data selected as noise, histogram, and best-fit function.
-           The following methods are acceptable for data selection. Multiple options are possible.
-           'edge': use data[0] and data[-1].
-           'out': exclude inner 60% about axes=-2 and -1.
-           'neg': use only negative values.
-           'iter': exclude outliers.
-           The following methods are acceptable for noise estimation. Only single option is possible.
-           'med': calculate rms from the median of data^2 assuming Gaussian.
-           'hist': fit histgram with Gaussian.
-           'hist-pbcor': fit histgram with PB-corrected Gaussian.
-           '(no string)': calculate the mean and standard deviation.
+    """This class holds the data selected as noise, histogram, and best-fit function.
+       The following methods are acceptable for data selection. Multiple options are possible.
+       'edge': use data[0] and data[-1].
+       'out': exclude inner 60% about axes=-2 and -1.
+       'neg': use only negative values.
+       'iter': exclude outliers.
+       The following methods are acceptable for noise estimation. Only single option is possible.
+       'med': calculate rms from the median of data^2 assuming Gaussian.
+       'hist': fit histgram with Gaussian.
+       'hist-pbcor': fit histgram with PB-corrected Gaussian.
+       '(no string)': calculate the mean and standard deviation.
 
-        Args:
-            data (np.ndarray): Original data array.
-            sigma (str): Methods above, like 'edge,neg,hist-pbcor'.
-        """
+    Args:
+        data (np.ndarray): Original data array.
+        sigma (str): Methods above, like 'edge,neg,hist-pbcor'.
+    """
+    def __init__(self, data: np.ndarray, sigma: str):
         self.data = select_noise(data, sigma)
         self.sigma = sigma
         self.m0 = np.mean(self.data)
