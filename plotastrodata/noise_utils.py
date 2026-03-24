@@ -5,12 +5,12 @@ from scipy.special import erf
 from plotastrodata.fitting_utils import EmceeCorner
 
 
-def normalize(h_range: tuple = (-3.5, 3.5), bins: int = 100):
-    """Decorator factory to normalize a function over h_range."""
+def normalize(range: tuple = (-3.5, 3.5), bins: int = 100):
+    """Decorator factory to normalize a function over the given range."""
     def decorator(f):
-        h = np.linspace(*h_range, bins + 1)
+        h = np.linspace(*range, bins + 1)
         h = (h[1:] + h[:-1]) / 2
-        dh = (h_range[1] - h_range[0]) / 100
+        dh = (range[1] - range[0]) / 100
 
         def wrapper(x, *args):
             area = np.sum(f(h, *args)) * dh
@@ -61,71 +61,16 @@ def gauss_pbcor(x: np.ndarray, s: float, m: float, R: float
     return p
 
 
-def estimate_rms_hist(data: np.ndarray, pbcor: bool = False,
-                      h_range: tuple = (-3.5, 3.5),
-                      bins: int = 100) -> tuple:
-    """Function to obtain the mean and standard deviation using the histogram of a given data array.
+def select_noise(data: np.ndarray, sigma: str) -> np.ndarray:
+    """Select data pixels to be used for noise estimation.
 
     Args:
-        data (np.ndarray): Data array whose noise is estimated.
-        pbcor (bool): Whether it considers the primary beam correction.
-        h_range (tuple, optional): Range for numpy.histogram(). Defaults to (-3.5, 3.5).
-        bins (int, optional): Bins for numpy.histogram(). Defaults to 100.
+        data (np.ndarray): Original data array.
+        sigma (str): Selection methods. Multiple options are possible. 'edge', 'out', 'neg', or 'iter'.
 
     Returns:
-        tuple: (mean, standard deviation)
+        np.ndarray: 1D array that includes only the selected pixels.
     """
-    m0 = np.mean(data)
-    s0 = np.std(data)
-    hist, hbin = np.histogram((data - m0) / s0, bins=bins,
-                              density=True, range=h_range)
-    hbin = (hbin[:-1] + hbin[1:]) / 2
-    f = gauss_pbcor if pbcor else gauss
-    model = normalize(h_range, bins)(f)
-    bounds = [[0.1, 2], [-2, 2]]
-    if pbcor:
-        bounds.append([0.1, 2])
-    # curve_fit does not work for this fitting.
-    fitter = EmceeCorner(bounds=bounds, sigma=np.max(hist) * 0.01,
-                         model=model, xdata=hbin, ydata=hist)
-    fitter.fit(nwalkersperdim=4, nsteps=200, nburnin=0)
-    popt = fitter.popt
-    ave = popt[1] * s0 + m0
-    noise = popt[0] * s0
-    return ave, noise
-
-
-def estimate_rms(data: np.ndarray, sigma: float | str | None = 'hist'
-                 ) -> float:
-    """Estimate a noise level of a N-D array.
-       When a float number or None is given, this function just outputs it.
-       The following methods are acceptable for data selection. Multiple options are possible.
-       'edge': use data[0] and data[-1].
-       'out': exclude inner 60% about axes=-2 and -1.
-       'neg': use only negative values.
-       'iter': exclude outliers.
-       The following methods are acceptable for noise estimation. Only single option is possible.
-       'med': calculate rms from the median of data^2 assuming Gaussian.
-       'hist': fit histgram with Gaussian.
-       'hist-pbcor': fit histgram with PB-corrected Gaussian.
-       '(no string)': calculate the mean and standard deviation.
-
-    Args:
-        data (np.ndarray): Data array whose noise is estimated.
-        sigma (float or str): Methods above, like 'edge,neg,hist-pbcor'. Defaults to 'hist'.
-
-    Returns:
-        float: The estimated standard deviation of noise.
-    """
-    nums = [float, int, np.float64, np.int64, np.float32, np.int32]
-    if sigma is None or type(sigma) in nums:
-        return sigma
-
-    if np.ndim(np.squeeze(data)) == 0:
-        print('sigma cannot be estimated from only one pixel.')
-        return 0.0
-
-    # Selection
     n = data * 1
     if 'edge' in sigma:
         if np.ndim(n) <= 2:
@@ -151,17 +96,101 @@ def estimate_rms(data: np.ndarray, sigma: float | str | None = 'hist'
     if 'iter' in sigma:
         for _ in range(5):
             n = n[np.abs(n - np.mean(n)) < 3.5 * np.std(n)]
-    # Estimation
+    return n.ravel()
+
+
+class Noise:
+    def __init__(self, data: np.ndarray, sigma: str):
+        """This class holds the data selected as noise, histogram, and best-fit function.
+           The following methods are acceptable for data selection. Multiple options are possible.
+           'edge': use data[0] and data[-1].
+           'out': exclude inner 60% about axes=-2 and -1.
+           'neg': use only negative values.
+           'iter': exclude outliers.
+           The following methods are acceptable for noise estimation. Only single option is possible.
+           'med': calculate rms from the median of data^2 assuming Gaussian.
+           'hist': fit histgram with Gaussian.
+           'hist-pbcor': fit histgram with PB-corrected Gaussian.
+           '(no string)': calculate the mean and standard deviation.
+
+        Args:
+            data (np.ndarray): Original data array.
+            sigma (str): Methods above, like 'edge,neg,hist-pbcor'.
+        """
+        self.data = select_noise(data)
+        self.sigma = sigma
+        self.m0 = np.mean(self.data)
+        self.s0 = np.std(self.data)
+        
+    def gen_histogram(self, **kwargs):
+        """Generage a pair of histogram and bins using numpy.histogram. The data values are shifted and scaled by the mean and standard deviation, respectively, to generate the histogram. The mean and standard deviation are stored as self.m0 and self.s0, respectively.
+        """
+        _kw = {'bins': 100, 'range': (-3.5, 3.5), 'density': True}
+        _kw.update(kwargs)
+        self.bins = _kw['bins']
+        self.range = _kw['range']
+        n = (self.data - self.m0) / self.s0
+        hist, hbin = np.histogram(n, **_kw)
+        hbin = (hbin[:-1] + hbin[1:]) / 2
+        self.hist = hist
+        self.hbin = hbin
+
+    def fit_histogram(self, **kwargs):
+        """kwargs is for plotastrodata.fitting_utils.EmceeCorner.
+        """
+        _kw = {'nwalkersperdim': 4, 'nsteps': 200, 'nburnin': 0}
+        _kw.update(kwargs)
+        f = gauss_pbcor if 'pbcor' in self.sigma else gauss
+        model = normalize(range=self.range, bins=self.bins)(f)
+        bounds = [[0.1, 2], [-2, 2]]
+        if 'pbcor' in self.sigma:
+            bounds.append([0.1, 2])
+        # curve_fit does not work for this fitting.
+        # 0.01 in sigma is set only to search the best-fit parameters.
+        # Thus, this sigma does not justify the parameter errors.
+        fitter = EmceeCorner(bounds=bounds, model=model,
+                             xdata=self.hbin, ydata=self.hist,
+                             sigma=np.max(self.hist) * 0.01)
+        fitter.fit(**_kw)
+        self.popt = fitter.popt
+        self.mean = self.popt[1] * self.s0 + self.m0
+        self.std = self.popt[0] * self.s0
+
+
+def estimate_rms(data: np.ndarray, sigma: float | str | None = 'hist'
+                 ) -> float:
+    """Estimate a noise level of a N-D array.
+       When a float number or None is given, this function just outputs it.
+
+    Args:
+        data (np.ndarray): Data array whose noise is estimated.
+        sigma (float or str): Methods for the Noise class, like 'edge,neg,hist-pbcor'. Defaults to 'hist'.
+
+    Returns:
+        float: The estimated standard deviation of noise.
+    """
+    nums = [float, int, np.float64, np.int64, np.float32, np.int32]
+    if sigma is None or type(sigma) in nums:
+        return sigma
+
+    if np.ndim(np.squeeze(data)) == 0:
+        print('sigma cannot be estimated from only one pixel.')
+        return 0.0
+
+    noisedata = Noise(data, sigma)
+    n = noisedata.data
     if 'hist' in sigma:
-        ave, noise = estimate_rms_hist(n, sigma, 'pbcor' in sigma)
+        noisedata.gen_histogram()
+        noisedata.fit_histogram()
+        ave = noisedata.mean
+        noise = noisedata.std
     elif 'med' in sigma:
         ave = 0
         noise = np.sqrt(np.median(n**2) / 0.454936)
     else:
-        ave = np.mean(n)
-        noise = np.std(n)
+        ave = noisedata.m0
+        noise = noisedata.s0
     if np.abs(ave) > 0.2 * noise:
         s = 'The intensity offset is larger than 0.2 sigma.'
         warnings.warn(s, UserWarning)
     return noise
-
