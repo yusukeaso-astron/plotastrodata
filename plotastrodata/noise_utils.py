@@ -1,8 +1,10 @@
 import warnings
 import numpy as np
+import matplotlib.pyplot as plt
 from scipy.special import erf
 
 from plotastrodata.fitting_utils import EmceeCorner
+from plotastrodata.plot_utils import set_rcparams
 
 
 def normalize(range: tuple = (-3.5, 3.5), bins: int = 100):
@@ -156,6 +158,31 @@ class Noise:
         self.mean = float(self.popt[1] * self.s0 + self.m0)
         self.std = float(self.popt[0] * self.s0)
         self.model = model(self.hbin, *self.popt)
+
+    def plot_histogram(self, savefig: dict | str | None = None,
+                       show: bool = False):
+        """Make a simple figure of the histogram and model.
+
+        Args:
+            savefig (dict or str, optional): For plt.figure().savefig(). Defaults to None.
+            show (bool, optional): True means doing plt.show(). Defaults to False.
+        """
+        savefig0 = {'bbox_inches': 'tight', 'transparent': True}
+        set_rcparams()
+        fig = plt.figure()
+        ax = fig.add_subplot(1, 1, 1)
+        ax.plot(self.hbin, self.hist, drawstyle='steps-mid')
+        ax.plot(self.hbin, self.model, '-')
+        ax.set_xlabel('(noise - m0) / s0')
+        ax.set_ylabel('Probability density')
+        fig.tight_layout()
+        if savefig is not None:
+            s = {'fname': savefig} if type(savefig) is str else savefig
+            savefig0.update(s)
+            fig.savefig(**savefig0)
+        if show:
+            plt.show()
+        plt.close()
 
 
 def estimate_rms(data: np.ndarray,

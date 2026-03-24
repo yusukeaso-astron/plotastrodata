@@ -88,7 +88,7 @@ class PlotAxes2D():
         aspect (dict or float, optional): Defaults to None.
     """
     samexy: bool = True
-    loglog: bool | None = None
+    loglog: float | None = None
     xscale: str = 'linear'
     yscale: str = 'linear'
     xlim: list | None = None
@@ -99,8 +99,8 @@ class PlotAxes2D():
     yticks: list | None = None
     xticklabels: list | None = None
     yticklabels: list | None = None
-    xticksminor: list | int = None
-    yticksminor: list | int = None
+    xticksminor: list | int | None = None
+    yticksminor: list | int | None = None
     grid: dict | None = None
     aspect: dict | float | None = None
 
@@ -1170,9 +1170,12 @@ def plotprofile(coords: list[str] | str = [],
                 title: list[str] | None = None,
                 text: list[str] | None = None,
                 dist: float = 1., vsys: float = 0.,
-                nrows: int = 0, ncols: int = 1, fig=None, ax=None,
+                nrows: int = 0, ncols: int = 1,
+                fig: object | None = None,
+                ax: object | None = None,
                 getfigax: bool = False,
-                savefig: dict = None, show: bool = True,
+                savefig: dict | str | None = None,
+                show: bool = False,
                 **kwargs) -> tuple[object, object]:
     """Use Axes.plot of matplotlib to plot line profiles at given coordinates. kwargs must include the arguments of AstroData to specify the data to be plotted. kwargs can include the arguments of PlotAxes2D to adjust x and y axes.
 
@@ -1188,6 +1191,15 @@ def plotprofile(coords: list[str] | str = [],
         gauss_kwargs (dict, optional): Kwargs for Axes.plot. Defaults to {}.
         title (list, optional): For each plot. Defaults to None.
         text (list, optional): For each plot. Defaults to None.
+        dist (float, optional): Change x and y in arcsec to au. Defaults to 1..
+        vsys (float, optional): Each channel shows v-vsys. Defaults to 0..
+        nrows (int, optional): Used for channel maps. Defaults to 0.
+        ncols (int, optional): Used for channel maps. Defaults to 1.
+        fig (optional): External plt.figure(). Defaults to None.
+        ax (optional): External fig.add_subplot(). Defaults to None.
+        getfigax (bool, optional): Defaults to False.
+        savefig (dict or str, optional): For plt.figure().savefig(). Defaults to None.
+        show (bool, optional): True means doing plt.show(). Defaults to False.
 
     Returns:
         tuple: (fig, ax), where ax is a list, if getfigax=True. Otherwise, no return.
@@ -1281,7 +1293,20 @@ def plotslice(length: float, dx: float | None = None, pa: float = 0,
         length (float): Slice length.
         dx (float, optional): Grid increment. Defaults to None.
         pa (float, optional): Degree. Position angle. Defaults to 0.
-        fitsimage to show: same as in PlotAstroData.
+        dist (float, optional): For AstroFrame. Defaults to 1.
+        xoff (float, optional): For AstroFrame. Defaults to 0.
+        yoff (float, optional): For AstroFrame. Defaults to 0.
+        xflip (bool, optional): For AstroFrame. Defaults to True.
+        yflip (bool, optional): For AstroFrame. Defaults to False.
+        txtfile (str, optional): File name for numpy.savetxt(). Defaults to None.
+        fig (optional): External plt.figure(). Defaults to None.
+        ax (optional): External fig.add_subplot(). Defaults to None.
+        getfigax (bool, optional): Defaults to False.
+        savefig (dict or str, optional): For plt.figure().savefig(). Defaults to None.
+        show (bool, optional): True means doing plt.show(). Defaults to False.
+
+    Returns:
+        tuple: (fig, ax), where ax is a list, if getfigax=True. Otherwise, no return.
     """
     _kw = {'linestyle': '-', 'marker': 'o'}
     _kw.update(kwargs)
