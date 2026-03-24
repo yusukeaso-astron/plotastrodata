@@ -36,21 +36,11 @@ release = '1.8.0'
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
-    'sphinx.ext.autosummary',
     'sphinx.ext.napoleon',
     'sphinx.ext.viewcode',
     'sphinx.ext.todo',
-    'sphinx.ext.apidoc',
     'myst_nb'
 ]
-autosummary_generate = True
-
-# --- apidoc config ---
-
-apidoc_module_dir = "../plotastrodata"  # your package
-apidoc_output_dir = "."                 # where .rst will be generated
-apidoc_separate_modules = True          # one page per module
-apidoc_module_first = True              # nicer ordering
 
 # -- Source file types -------------------------------------------------
 
