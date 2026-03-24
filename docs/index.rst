@@ -10,7 +10,7 @@ Welcome to plotastrodata's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-   modules
+   plotastrodata
    example
    manual
 
