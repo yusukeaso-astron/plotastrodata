@@ -118,6 +118,30 @@ plot3d(rmax=0.8, vmin=-5, vmax=5, fitsimage=f'{data_dir}/test3D.fits',
        outname='test3D.html', levels=[3, 6, 9], show=False)
 
 ################################################################################
+# Noise estimate
+from plotastrodata.noise_utils import Noise
+
+x = np.linspace(-1.5, 1.5, 301)
+y = np.linspace(-1.5, 1.5, 301)
+x, y = np.meshgrid(x, y)
+r = np.hypot(x, y)
+data = np.random.randn(*np.shape(r))
+data[r > 1.5] = np.nan
+data = data * np.exp2(r**2)
+n = Noise(data=data, sigma='hist-pbcor')
+n.gen_histogram()
+n.fit_histogram()
+print('Noise (mean, std, Rout):',
+      [n.mean, n.std, float(n.popt[2])])
+
+fig = plt.figure()
+ax = fig.add_subplot(1, 1, 1)
+ax.plot(n.hbin, n.hist, drawstyle='steps-mid')
+ax.plot(n.hbin, n.model, '-')
+fig.savefig('noise.png')
+plt.show()
+
+################################################################################
 # Animation
 import matplotlib.animation as animation
 

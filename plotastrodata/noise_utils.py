@@ -153,8 +153,8 @@ class Noise:
                              sigma=np.max(self.hist) * 0.01)
         fitter.fit(**_kw)
         self.popt = fitter.popt
-        self.mean = self.popt[1] * self.s0 + self.m0
-        self.std = self.popt[0] * self.s0
+        self.mean = float(self.popt[1] * self.s0 + self.m0)
+        self.std = float(self.popt[0] * self.s0)
         self.model = model(self.hbin, *self.popt)
 
 
