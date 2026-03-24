@@ -36,12 +36,13 @@ release = '1.8.0'
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
+    'sphinx.ext.autosummary',
     'sphinx.ext.viewcode',
     'sphinx.ext.todo',
     'sphinx.ext.napoleon',
     'myst_nb'
 ]
-
+autosummary_generate = True
 
 # -- Source file types -------------------------------------------------
 
