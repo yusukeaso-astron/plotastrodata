@@ -23,10 +23,10 @@ copyright = '2023, YusukeAso'
 author = 'YusukeAso'
 
 # The short X.Y version
-version = '1.7.10'
+version = '1.8.0'
 
 # The full version, including alpha/beta/rc tags
-release = '1.7.10'
+release = '1.8.0'
 
 
 # -- General configuration ---------------------------------------------------
@@ -98,12 +98,10 @@ nb_execution_mode = "auto"   # execute notebooks during RTD build
 nb_execution_timeout = 300   # seconds
 nb_execution_raise_on_error = True
 
-# -- General configuration ------------------------------------------------
-
-extensions = [
-    "sphinx.ext.autodoc",
-    "sphinx.ext.autosummary",
-    "sphinx.ext.napoleon",   # optional but recommended (Google/NumPy docstrings)
-]
-
-autosummary_generate = True
+# Let MyST-NB manage notebook parsing.
+# This explicit mapping is OK, but not strictly necessary.
+source_suffix = {
+    ".rst": "restructuredtext",
+    ".md": "markdown",
+    ".ipynb": "myst-nb",
+}
