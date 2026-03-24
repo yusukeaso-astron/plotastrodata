@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 from scipy.special import erf
 
 from plotastrodata.fitting_utils import EmceeCorner
-from plotastrodata.plot_utils import set_rcparams
 
 
 def normalize(range: tuple = (-3.5, 3.5), bins: int = 100):
@@ -168,7 +167,6 @@ class Noise:
             show (bool, optional): True means doing plt.show(). Defaults to False.
         """
         savefig0 = {'bbox_inches': 'tight', 'transparent': True}
-        set_rcparams()
         fig = plt.figure()
         ax = fig.add_subplot(1, 1, 1)
         ax.plot(self.hbin, self.hist, drawstyle='steps-mid')
