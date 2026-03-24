@@ -1,4 +1,4 @@
 import warnings
 
 warnings.simplefilter('ignore', FutureWarning)
-__version__ = '1.7.14'
+__version__ = '1.8.0'
