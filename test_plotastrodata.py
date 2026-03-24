@@ -7,7 +7,8 @@ from plotastrodata.fits_utils import FitsData, fits2data, data2fits
 from plotastrodata.fitting_utils import EmceeCorner
 from plotastrodata.los_utils import obs2sys, sys2obs, polarvel2losvel
 from plotastrodata.matrix_utils import Mfac, Mrot, Mrot3d, dot2d
-from plotastrodata.other_utils import estimate_rms, trim, gaussian2d
+from plotastrodata.noise_utils import estimate_rms
+from plotastrodata.other_utils import trim, gaussian2d
 from plotastrodata.plot_utils import (set_rcparams, PlotAstroData,
                                       plotprofile, plotslice, plot3d)
 
