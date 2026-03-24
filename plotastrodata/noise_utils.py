@@ -161,8 +161,8 @@ class Noise:
 def estimate_rms(data: np.ndarray,
                  sigma: float | str | None = 'hist'
                  ) -> float:
-    """Estimate a noise level of a N-D array.
-       When a float number or None is given, this function just outputs it.
+    """Estimate a noise level of a data array.
+       When a float number or None is given as sigma, this function just outputs it.
 
     Args:
         data (np.ndarray): Data array whose noise is estimated.
