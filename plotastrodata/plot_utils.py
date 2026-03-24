@@ -6,7 +6,8 @@ from matplotlib.patches import Ellipse, Rectangle
 from dataclasses import dataclass
 
 from plotastrodata.coord_utils import coord2xy, xy2coord
-from plotastrodata.other_utils import listing, estimate_rms
+from plotastrodata.noise_utils import estimate_rms
+from plotastrodata.other_utils import listing
 from plotastrodata.analysis_utils import AstroData, AstroFrame
 
 

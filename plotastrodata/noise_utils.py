@@ -117,11 +117,11 @@ class Noise:
             data (np.ndarray): Original data array.
             sigma (str): Methods above, like 'edge,neg,hist-pbcor'.
         """
-        self.data = select_noise(data)
+        self.data = select_noise(data, sigma)
         self.sigma = sigma
         self.m0 = np.mean(self.data)
         self.s0 = np.std(self.data)
-        
+
     def gen_histogram(self, **kwargs):
         """Generage a pair of histogram and bins using numpy.histogram. The data values are shifted and scaled by the mean and standard deviation, respectively, to generate the histogram. The mean and standard deviation are stored as self.m0 and self.s0, respectively.
         """
@@ -155,9 +155,11 @@ class Noise:
         self.popt = fitter.popt
         self.mean = self.popt[1] * self.s0 + self.m0
         self.std = self.popt[0] * self.s0
+        self.model = model(self.hbin, *self.popt)
 
 
-def estimate_rms(data: np.ndarray, sigma: float | str | None = 'hist'
+def estimate_rms(data: np.ndarray,
+                 sigma: float | str | None = 'hist'
                  ) -> float:
     """Estimate a noise level of a N-D array.
        When a float number or None is given, this function just outputs it.
@@ -177,20 +179,19 @@ def estimate_rms(data: np.ndarray, sigma: float | str | None = 'hist'
         print('sigma cannot be estimated from only one pixel.')
         return 0.0
 
-    noisedata = Noise(data, sigma)
-    n = noisedata.data
+    n = Noise(data, sigma)
     if 'hist' in sigma:
-        noisedata.gen_histogram()
-        noisedata.fit_histogram()
-        ave = noisedata.mean
-        noise = noisedata.std
+        n.gen_histogram()
+        n.fit_histogram()
+        ave = n.mean
+        noise = n.std
     elif 'med' in sigma:
         ave = 0
-        noise = np.sqrt(np.median(n**2) / 0.454936)
+        noise = np.sqrt(np.median(n.data**2) / 0.454936)
     else:
-        ave = noisedata.m0
-        noise = noisedata.s0
+        ave = n.m0
+        noise = n.s0
     if np.abs(ave) > 0.2 * noise:
-        s = 'The intensity offset is larger than 0.2 sigma.'
+        s = 'Mean > 0.2 x standard deviation.'
         warnings.warn(s, UserWarning)
     return noise

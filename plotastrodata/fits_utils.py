@@ -4,8 +4,8 @@ from astropy import units, wcs
 
 from plotastrodata.coord_utils import coord2xy, xy2coord
 from plotastrodata.matrix_utils import dot2d
-from plotastrodata.other_utils import (estimate_rms, trim, isdeg,
-                                       RGIxy)
+from plotastrodata.noise_utils import estimate_rms
+from plotastrodata.other_utils import trim, isdeg, RGIxy
 from plotastrodata import const_utils as cu
 
 
