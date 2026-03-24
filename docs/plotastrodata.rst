@@ -1,3 +1,9 @@
+plotastrodata
+=============
+
+Modules
+-------
+
 .. autosummary::
    :toctree: generated
    :recursive:

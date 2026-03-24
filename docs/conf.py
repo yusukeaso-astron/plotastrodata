@@ -43,7 +43,11 @@ extensions = [
     'myst_nb'
 ]
 autosummary_generate = True
-
+autodoc_default_options = {
+    "members": True,
+    "undoc-members": False,
+    "show-inheritance": True,
+}
 # -- Source file types -------------------------------------------------
 
 source_suffix = {
