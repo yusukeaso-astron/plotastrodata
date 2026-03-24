@@ -1194,8 +1194,8 @@ def plotprofile(coords: list[str] | str = [],
         text (list, optional): For each plot. Defaults to None.
         nrows (int, optional): Used for channel maps. Defaults to 0.
         ncols (int, optional): Used for channel maps. Defaults to 1.
-        fig (optional): External plt.figure(). Defaults to None.
-        ax (optional): External fig.add_subplot(). Defaults to None.
+        fig (object, optional): External plt.figure(). Defaults to None.
+        ax (object, optional): External fig.add_subplot(). Defaults to None.
         getfigax (bool, optional): Defaults to False.
         savefig (dict or str, optional): For plt.figure().savefig(). Defaults to None.
         show (bool, optional): True means doing plt.show(). Defaults to False.
@@ -1282,8 +1282,8 @@ def plotslice(length: float, dx: float | None = None, pa: float = 0,
         dx (float, optional): Grid increment. Defaults to None.
         pa (float, optional): Degree. Position angle. Defaults to 0.
         txtfile (str, optional): File name for numpy.savetxt(). Defaults to None.
-        fig (optional): External plt.figure(). Defaults to None.
-        ax (optional): External fig.add_subplot(). Defaults to None.
+        fig (object, optional): External plt.figure(). Defaults to None.
+        ax (object, optional): External fig.add_subplot(). Defaults to None.
         getfigax (bool, optional): Defaults to False.
         savefig (dict or str, optional): For plt.figure().savefig(). Defaults to None.
         show (bool, optional): True means doing plt.show(). Defaults to False.

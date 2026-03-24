@@ -215,7 +215,7 @@ def close_figure(fig: object,
     """Save, show, and close the figure.
 
     Args:
-        fig (optional): External plt.figure(). Defaults to None.
+        fig (object): External plt.figure(). Defaults to None.
         savefig (dict or str, optional): For plt.figure().savefig(). Defaults to None.
         show (bool, optional): True means doing plt.show(). Defaults to False.
     """
