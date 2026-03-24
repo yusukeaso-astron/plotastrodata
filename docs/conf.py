@@ -97,11 +97,3 @@ todo_include_todos = True
 nb_execution_mode = "auto"   # execute notebooks during RTD build
 nb_execution_timeout = 300   # seconds
 nb_execution_raise_on_error = True
-
-# Let MyST-NB manage notebook parsing.
-# This explicit mapping is OK, but not strictly necessary.
-source_suffix = {
-    ".rst": "restructuredtext",
-    ".md": "markdown",
-    ".ipynb": "myst-nb",
-}
