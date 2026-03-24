@@ -1290,7 +1290,7 @@ def plotprofile(coords: list[str] | str = [],
     if getfigax:
         return fig, ax
 
-    return close_figure(fig, savefig, show)
+    close_figure(fig, savefig, show)
 
 
 def plotslice(length: float, dx: float | None = None, pa: float = 0,
