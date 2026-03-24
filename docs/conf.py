@@ -97,3 +97,13 @@ todo_include_todos = True
 nb_execution_mode = "auto"   # execute notebooks during RTD build
 nb_execution_timeout = 300   # seconds
 nb_execution_raise_on_error = True
+
+# -- General configuration ------------------------------------------------
+
+extensions = [
+    "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
+    "sphinx.ext.napoleon",   # optional but recommended (Google/NumPy docstrings)
+]
+
+autosummary_generate = True
