@@ -7,7 +7,7 @@ from dataclasses import dataclass
 
 from plotastrodata.coord_utils import coord2xy, xy2coord
 from plotastrodata.noise_utils import estimate_rms
-from plotastrodata.other_utils import listing
+from plotastrodata.other_utils import listing, close_figure
 from plotastrodata.analysis_utils import AstroData, AstroFrame
 
 
@@ -1161,30 +1161,6 @@ class PlotAstroData(AstroFrame):
 
         fig = plt.figure(0) if self.fig is None else self.fig
         return fig, self.ax[0]
-
-
-def close_figure(fig: object,
-                 savefig: dict | str | None = None,
-                 show: bool = False) -> tuple[object, object]:
-    """Save, show, and close the figure.
-
-    Args:
-        fig (optional): External plt.figure(). Defaults to None.
-        savefig (dict or str, optional): For plt.figure().savefig(). Defaults to None.
-        show (bool, optional): True means doing plt.show(). Defaults to False.
-
-    Returns:
-        tuple: (fig, ax), where ax is a list, if getfigax=True. Otherwise, no return.
-    """
-    savefig0 = {'bbox_inches': 'tight', 'transparent': True}
-    fig.tight_layout()
-    if savefig is not None:
-        s = {'fname': savefig} if type(savefig) is str else savefig
-        savefig0.update(s)
-        fig.savefig(**savefig0)
-    if show:
-        plt.show()
-    plt.close()
 
 
 def plotprofile(coords: list[str] | str = [],

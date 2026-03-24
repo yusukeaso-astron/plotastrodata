@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 from scipy.interpolate import RegularGridInterpolator as RGI
 
 from plotastrodata.matrix_utils import Mrot, dot2d
@@ -206,3 +207,24 @@ def gaussian2d(xy: np.ndarray,
     s, t = dot2d(Mrot(-pa), [xy[1] - yo, xy[0] - xo])
     g = amplitude * np.exp2(-4 * ((s / fwhm_major)**2 + (t / fwhm_minor)**2))
     return g
+
+
+def close_figure(fig: object,
+                 savefig: dict | str | None = None,
+                 show: bool = False) -> None:
+    """Save, show, and close the figure.
+
+    Args:
+        fig (optional): External plt.figure(). Defaults to None.
+        savefig (dict or str, optional): For plt.figure().savefig(). Defaults to None.
+        show (bool, optional): True means doing plt.show(). Defaults to False.
+    """
+    savefig0 = {'bbox_inches': 'tight', 'transparent': True}
+    fig.tight_layout()
+    if savefig is not None:
+        s = {'fname': savefig} if type(savefig) is str else savefig
+        savefig0.update(s)
+        fig.savefig(**savefig0)
+    if show:
+        plt.show()
+    plt.close()
