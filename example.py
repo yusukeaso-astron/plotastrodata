@@ -161,16 +161,7 @@ n.gen_histogram()
 n.fit_histogram()
 print('Noise (mean, std, Rout):',
       [n.mean, n.std, float(n.popt[2])])
-
-fig = plt.figure()
-ax = fig.add_subplot(1, 1, 1)
-ax.plot(n.hbin, n.hist, drawstyle='steps-mid')
-ax.plot(n.hbin, n.model, '-')
-ax.set_xlabel('(noise - m0) / s0')
-ax.set_ylabel('Probability density')
-fig.tight_layout()
-fig.savefig('noise.png')
-plt.show()
+n.plot_histogram(savefig='noise.png', show=True)
 
 ################################################################################
 # Line-of-sight velocity with 3D rotation
