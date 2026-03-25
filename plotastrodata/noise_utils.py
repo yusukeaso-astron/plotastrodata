@@ -147,6 +147,9 @@ class Noise:
         bounds = [[0.1, 2], [-2, 2]]
         if 'pbcor' in self.sigma:
             bounds.append([0.1, 2])
+        if not hasattr(self, 'hist'):
+            self.gen_histogram()
+            print('Noise.gen_histogram() was done with default arguments.')
         # curve_fit does not work for this fitting.
         # 0.01 in sigma is set only to search the best-fit parameters.
         # Thus, this sigma does not justify the parameter errors.
@@ -167,6 +170,9 @@ class Noise:
             savefig (dict or str, optional): For plt.figure().savefig(). Defaults to None.
             show (bool, optional): True means doing plt.show(). Defaults to False.
         """
+        if not hasattr(self, 'model'):
+            self.fit_histogram()
+            print('Noise.fit_histogram() was done with default arguments.')
         fig, ax = plt.subplots()
         ax.plot(self.hbin, self.hist, drawstyle='steps-mid')
         ax.plot(self.hbin, self.model, '-')
