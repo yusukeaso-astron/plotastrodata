@@ -1,5 +1,5 @@
 from plotastrodata.analysis_utils import AstroData, AstroFrame
-from plotastrodata import const_utils
+from plotastrodata import const_utils as cu
 from plotastrodata.coord_utils import coord2xy, xy2coord, rel2abs, abs2rel
 from plotastrodata.ext_utils import BnuT, JnuT
 from plotastrodata.fft_utils import fftcentering2, ifftcentering2
@@ -45,4 +45,7 @@ def test_import():
          plot3d
          ]
     d = AstroData()
-    assert None not in a and type(d.todict()) is dict
+    c1 = None not in a
+    c2 = type(d.todict()) is dict
+    c3 = 299000 < cu.c_kms < 300000
+    assert c1 and c2 and c3
