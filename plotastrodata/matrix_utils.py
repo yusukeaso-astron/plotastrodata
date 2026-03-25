@@ -24,7 +24,7 @@ def Mrot(pa: float = 0) -> np.ndarray:
         np.ndarray: Matrix for the rotation.
     """
     p = np.radians(pa)
-    return np.array([[np.cos(p), -np.sin(p)], [np.sin(p),  np.cos(p)]])
+    return np.array([[np.cos(p), -np.sin(p)], [np.sin(p), np.cos(p)]])
 
 
 def dot2d(M: np.ndarray = [[1, 0], [0, 1]],
