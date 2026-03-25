@@ -1,6 +1,6 @@
 import numpy as np
-from astropy.coordinates import SkyCoord, FK5, FK4
 from astropy import units
+from astropy.coordinates import SkyCoord, FK5, FK4
 
 
 def _updateframe(frame: str) -> str:

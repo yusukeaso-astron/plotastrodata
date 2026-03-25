@@ -1,6 +1,6 @@
-import subprocess
-import shlex
 import numpy as np
+import shlex
+import subprocess
 
 from plotastrodata import const_utils as cu
 

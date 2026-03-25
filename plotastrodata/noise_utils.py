@@ -1,6 +1,6 @@
-import warnings
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+import warnings
 from scipy.special import erf
 
 from plotastrodata.fitting_utils import EmceeCorner

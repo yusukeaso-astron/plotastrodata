@@ -1,12 +1,12 @@
-import numpy as np
-import matplotlib.pyplot as plt
-import emcee
-import ptemcee
 import corner
-from dynesty import DynamicNestedSampler as DNS
+import emcee
+import matplotlib.pyplot as plt
+import numpy as np
+import ptemcee
 import warnings
-from tqdm import tqdm
+from dynesty import DynamicNestedSampler as DNS
 from multiprocessing import Pool
+from tqdm import tqdm
 
 from plotastrodata.other_utils import close_figure
 

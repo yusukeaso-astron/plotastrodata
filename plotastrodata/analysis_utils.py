@@ -1,18 +1,18 @@
-import warnings
 import numpy as np
+import warnings
 from dataclasses import dataclass
 from scipy.interpolate import RegularGridInterpolator as RGI
 from scipy.optimize import curve_fit
 from scipy.signal import convolve
 
+from plotastrodata import const_utils as cu
 from plotastrodata.coord_utils import coord2xy, xy2coord, rel2abs
+from plotastrodata.fits_utils import FitsData, data2fits, Jy2K
+from plotastrodata.fitting_utils import EmceeCorner
 from plotastrodata.matrix_utils import Mfac, Mrot, dot2d
 from plotastrodata.noise_utils import estimate_rms
 from plotastrodata.other_utils import (trim, gaussian2d, isdeg,
                                        RGIxy, RGIxyv, to4dim)
-from plotastrodata.fits_utils import FitsData, data2fits, Jy2K
-from plotastrodata import const_utils as cu
-from plotastrodata.fitting_utils import EmceeCorner
 
 
 def quadrantmean(data: np.ndarray, x: np.ndarray, y: np.ndarray,

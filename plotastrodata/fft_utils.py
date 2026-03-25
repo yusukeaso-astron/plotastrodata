@@ -1,5 +1,5 @@
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 
 from plotastrodata.fits_utils import fits2data
 from plotastrodata.other_utils import close_figure

@@ -1,14 +1,14 @@
-import warnings
-import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from matplotlib.patches import Ellipse, Rectangle
+import numpy as np
+import warnings
 from dataclasses import dataclass
+from matplotlib.patches import Ellipse, Rectangle
 
+from plotastrodata.analysis_utils import AstroData, AstroFrame
 from plotastrodata.coord_utils import coord2xy, xy2coord
 from plotastrodata.noise_utils import estimate_rms
 from plotastrodata.other_utils import listing, close_figure
-from plotastrodata.analysis_utils import AstroData, AstroFrame
 
 
 plt.ioff()  # force to turn off interactive mode

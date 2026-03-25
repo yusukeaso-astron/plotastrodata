@@ -1,12 +1,12 @@
 import numpy as np
-from astropy.io import fits
 from astropy import units, wcs
+from astropy.io import fits
 
+from plotastrodata import const_utils as cu
 from plotastrodata.coord_utils import coord2xy, xy2coord
 from plotastrodata.matrix_utils import dot2d
 from plotastrodata.noise_utils import estimate_rms
 from plotastrodata.other_utils import trim, isdeg, RGIxy
-from plotastrodata import const_utils as cu
 
 
 def Jy2K(header=None, bmaj: float | None = None, bmin: float | None = None,

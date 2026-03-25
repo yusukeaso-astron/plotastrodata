@@ -1,5 +1,5 @@
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 from scipy.interpolate import RegularGridInterpolator as RGI
 
 from plotastrodata.matrix_utils import Mrot, dot2d
