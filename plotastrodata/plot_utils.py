@@ -8,7 +8,7 @@ from matplotlib.patches import Ellipse, Rectangle
 from plotastrodata.analysis_utils import AstroData, AstroFrame
 from plotastrodata.coord_utils import coord2xy, xy2coord
 from plotastrodata.noise_utils import estimate_rms
-from plotastrodata.other_utils import listing, close_figure
+from plotastrodata.other_utils import close_figure, listing
 
 
 plt.ioff()  # force to turn off interactive mode

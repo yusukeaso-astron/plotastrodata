@@ -6,7 +6,7 @@ from plotastrodata import const_utils as cu
 from plotastrodata.coord_utils import coord2xy, xy2coord
 from plotastrodata.matrix_utils import dot2d
 from plotastrodata.noise_utils import estimate_rms
-from plotastrodata.other_utils import trim, isdeg, RGIxy
+from plotastrodata.other_utils import isdeg, RGIxy, trim
 
 
 def Jy2K(header=None, bmaj: float | None = None, bmin: float | None = None,
