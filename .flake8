@@ -1,2 +1,2 @@
 [flake8]
-ignore = E226, E501, W503
+ignore = E226, E402, E501, W503

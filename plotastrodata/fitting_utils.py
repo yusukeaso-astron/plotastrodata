@@ -111,9 +111,9 @@ class EmceeCorner():
         while np.max(GR) > 1.25 and i < ntry:
             i += 1
             if pos0 is None:
-                pos0 = np.random.rand(ntemps, nwalkers, self.dim) \
-                       * (self.bounds[:, 1] - self.bounds[:, 0]) \
-                       + self.bounds[:, 0]
+                pos0 = np.random.rand(ntemps, nwalkers, self.dim)
+                pos0 = pos0 * (self.bounds[:, 1] - self.bounds[:, 0])
+                pos0 = pos0 + self.bounds[:, 0]
                 if not pt:
                     pos0 = pos0[0]
             if pt:
