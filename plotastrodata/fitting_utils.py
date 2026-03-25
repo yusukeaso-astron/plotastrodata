@@ -8,6 +8,8 @@ import warnings
 from tqdm import tqdm
 from multiprocessing import Pool
 
+from plotastrodata.other_utils import close_figure
+
 
 global_bounds = None
 bar = None
@@ -176,17 +178,17 @@ class EmceeCorner():
         if global_progressbar:
             print('')
 
-    def plotcorner(self, show: bool = False,
-                   savefig: str | None = None,
-                   labels: list[str] | None = None,
-                   cornerrange: list[float] | None = None) -> None:
+    def plotcorner(self, labels: list[str] | None = None,
+                   cornerrange: list[float] | None = None,
+                   savefig: dict | str | None = None,
+                   show: bool = False) -> None:
         """Make the corner plot from self.samples.
 
         Args:
-            show (bool, optional): Whether to show the corner plot. Defaults to False.
-            savefig (str, optional): File name of the corner plot. Defaults to None.
             labels (list, optional): Labels for the corner plot. Defaults to None.
             cornerrange (list, optional): Range for the corner plot. Defaults to None.
+            savefig (dict or str, optional): For plt.figure().savefig(). Defaults to None.
+            show (bool, optional): True means doing plt.show(). Defaults to False.
         """
         if labels is None:
             labels = [f'Par {i:d}' for i in range(self.dim)]
@@ -198,21 +200,17 @@ class EmceeCorner():
                                  0.5,
                                  self.percent[1] / 100],
                       show_titles=True, labels=labels, range=cornerrange)
-        if savefig is not None:
-            plt.savefig(savefig)
-        if show:
-            plt.show()
-        plt.close()
+        close_figure(plt, savefig, show, tight=False)
 
-    def plotchain(self, show: bool = False, savefig: str = None,
-                  labels: list = None, ylim: list = None):
+    def plotchain(self, labels: list = None, ylim: list = None,
+                  savefig: dict | str = None, show: bool = False):
         """Plot parameters as a function of steps using self.samples. This method plots nine lines: percent[0], 50%, percent[1] percentiles (over the steps by 1% binning) of percent[0], 50%, percent[1] percentiles (over the walkers).
 
         Args:
-            show (bool, optional): Whether to show the chain plot. Defaults to False.
-            savefig (str, optional): File name of the chain plot. Defaults to None.
             labels (list, optional): Labels for the chain plot. Defaults to None.
             ylim (list, optional): Y-range for the chain plot. Defaults to None.
+            savefig (dict or str, optional): For plt.figure().savefig(). Defaults to None.
+            show (bool, optional): True means doing plt.show(). Defaults to False.
         """
         if labels is None:
             labels = [f'Par {i:d}' for i in range(self.dim)]
@@ -239,12 +237,7 @@ class EmceeCorner():
                 ax.set_xticks([])
             else:
                 ax.set_xlabel('Step')
-        fig.tight_layout()
-        if savefig is not None:
-            plt.savefig(savefig)
-        if show:
-            plt.show()
-        plt.close()
+        close_figure(fig, savefig, show)
 
     def posteriorongrid(self, ngrid: list[int] | int = 100,
                         log: list[bool] | bool = False, pcut: float = 0):
@@ -381,13 +374,7 @@ class EmceeCorner():
                         plt.setp(ax[k].get_xticklabels(), rotation=45)
                     else:
                         plt.setp(ax[k].get_xticklabels(), visible=False)
-        # fig.tight_layout()
-        if savefig is not None:
-            plt.savefig(savefig)
-        if show:
-            plt.show()
-        else:
-            plt.close()
+        close_figure(fig, savefig, show, tight=False)
 
     def getDNSevidence(self, **kwargs):
         """Calculate the Bayesian evidence for a model using dynamic nested sampling through dynesty.

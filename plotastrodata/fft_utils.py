@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from plotastrodata.fits_utils import fits2data
-from plotastrodata.plot_utils import set_rcparams
+from plotastrodata.other_utils import close_figure
 
 
 def shiftphase(F: np.ndarray, u: np.ndarray,
@@ -198,7 +198,9 @@ def zeropadding(f: np.ndarray, x: np.ndarray, y: np.ndarray,
 
 def fftfits(fitsimage: str, center: str | None = None, lam: float = 1,
             xlim: list | None = None, ylim: list | None = None,
-            plot: bool = False) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+            savefig: dict | str | None = None,
+            show: bool = False,
+            ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """FFT a fits image with the phase referring to a specific point.
 
     Args:
@@ -207,7 +209,8 @@ def fftfits(fitsimage: str, center: str | None = None, lam: float = 1,
         lam (float, optional): Return u * lam and v * lam. Defaults to 1.
         xlim (list, optional): Range of x for zero padding in arcsec.
         ylim (list, optional): Range of y for zero padding in arcsec.
-        plot (bool, optional): Check F through images.
+        savefig (dict or str, optional): For plt.figure().savefig(). Defaults to None.
+        show (bool, optional): True means doing plt.show(). Defaults to False.
 
     Returns:
         tuple: (F, u, v). F is FFT of f in the unit of Jy. u and v are 1D arrays in the unit of lambda or meter if lam it not unity.
@@ -215,32 +218,26 @@ def fftfits(fitsimage: str, center: str | None = None, lam: float = 1,
     f, (x, y, v), _, _, _ = fits2data(fitsimage, center=center)
     if xlim is not None and ylim is not None:
         f, x, y = zeropadding(f, x, y, xlim, ylim)
+    f[np.isnan(f)] = 0
     arcsec = np.radians(1) / 3600.
     F, u, v = fftcentering2(f, x * arcsec, y * arcsec)
     u, v = u * lam, v * lam
-    if plot:
-        set_rcparams()
-        fig = plt.figure(figsize=(10, 8))
-        ax = fig.add_subplot(2, 2, 1)
-        m = ax.pcolormesh(u, v, np.real(F), shading='nearest', cmap='jet')
-        fig.colorbar(m, ax=ax, label='Real', format='%.1e')
-        ax.set_ylabel(r'v ($\lambda$)')
-        ax = fig.add_subplot(2, 2, 2)
-        m = ax.pcolormesh(u, v, np.imag(F), shading='nearest', cmap='jet')
-        fig.colorbar(m, ax=ax, label='Imaginary', format='%.1e')
-        ax = fig.add_subplot(2, 2, 3)
-        m = ax.pcolormesh(u, v, np.abs(F), shading='nearest', cmap='jet')
-        fig.colorbar(m, ax=ax, label='Amplitude', format='%.1e')
-        ax.set_xlabel(r'u ($\lambda$)')
-        ax.set_ylabel(r'v ($\lambda$)')
-        ax = fig.add_subplot(2, 2, 4)
-        m = ax.pcolormesh(u, v, np.angle(F) * np.degrees(1),
-                          shading='nearest', cmap='jet')
-        fig.colorbar(m, ax=ax, label='Phase (deg)', format='%.0f')
-        ax.set_xlabel(r'u ($\lambda$)')
-        fig.tight_layout()
-        plt.show()
-        plt.close()
+    if savefig is not None or show:
+        fig, ax = plt.subplots(2, 2, figsize=(10, 8))
+        m = ax[0, 0].pcolormesh(u, v, np.real(F), cmap='jet')
+        fig.colorbar(m, ax=ax[0, 0], label='Real', format='%.1e')
+        ax[0, 0].set_ylabel(r'v ($\lambda$)')
+        m = ax[0, 1].pcolormesh(u, v, np.imag(F), cmap='jet')
+        fig.colorbar(m, ax=ax[0, 1], label='Imaginary', format='%.1e')
+        m = ax[1, 0].pcolormesh(u, v, np.abs(F), cmap='jet')
+        fig.colorbar(m, ax=ax[1, 0], label='Amplitude', format='%.1e')
+        ax[1, 0].set_xlabel(r'u ($\lambda$)')
+        ax[1, 0].set_ylabel(r'v ($\lambda$)')
+        m = ax[1, 1].pcolormesh(u, v, np.angle(F) * np.degrees(1),
+                                cmap='jet')
+        fig.colorbar(m, ax=ax[1, 1], label='Phase (deg)', format='%.0f')
+        ax[1, 1].set_xlabel(r'u ($\lambda$)')
+        close_figure(fig, savefig, show)
     return F, u, v
 
 

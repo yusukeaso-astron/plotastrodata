@@ -209,18 +209,19 @@ def gaussian2d(xy: np.ndarray,
     return g
 
 
-def close_figure(fig: object,
-                 savefig: dict | str | None = None,
-                 show: bool = False) -> None:
+def close_figure(fig: object, savefig: dict | str | None = None,
+                 show: bool = False, tight: bool = True) -> None:
     """Save, show, and close the figure.
 
     Args:
         fig (object): External plt.figure(). Defaults to None.
         savefig (dict or str, optional): For plt.figure().savefig(). Defaults to None.
         show (bool, optional): True means doing plt.show(). Defaults to False.
+        tight (bool, optional): True means doing fig.tight_layout(). Defaults to False.
     """
     savefig0 = {'bbox_inches': 'tight', 'transparent': True}
-    fig.tight_layout()
+    if tight:
+        fig.tight_layout()
     if savefig is not None:
         s = {'fname': savefig} if type(savefig) is str else savefig
         savefig0.update(s)

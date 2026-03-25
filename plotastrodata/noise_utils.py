@@ -167,8 +167,7 @@ class Noise:
             savefig (dict or str, optional): For plt.figure().savefig(). Defaults to None.
             show (bool, optional): True means doing plt.show(). Defaults to False.
         """
-        fig = plt.figure()
-        ax = fig.add_subplot(1, 1, 1)
+        fig, ax = plt.subplots()
         ax.plot(self.hbin, self.hist, drawstyle='steps-mid')
         ax.plot(self.hbin, self.model, '-')
         ax.set_xlabel('(noise - m0) / s0')
