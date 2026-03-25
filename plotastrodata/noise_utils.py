@@ -142,14 +142,14 @@ class Noise:
         """
         _kw = {'nwalkersperdim': 4, 'nsteps': 200, 'nburnin': 0}
         _kw.update(kwargs)
+        if not hasattr(self, 'hist'):
+            self.gen_histogram()
+            print('Noise.gen_histogram() was done with default arguments.')
         f = gauss_pbcor if 'pbcor' in self.sigma else gauss
         model = normalize(range=self.range, bins=self.bins)(f)
         bounds = [[0.1, 2], [-2, 2]]
         if 'pbcor' in self.sigma:
             bounds.append([0.1, 2])
-        if not hasattr(self, 'hist'):
-            self.gen_histogram()
-            print('Noise.gen_histogram() was done with default arguments.')
         # curve_fit does not work for this fitting.
         # 0.01 in sigma is set only to search the best-fit parameters.
         # Thus, this sigma does not justify the parameter errors.
