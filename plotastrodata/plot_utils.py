@@ -65,13 +65,13 @@ def logticks(ticks: list[float], lim: list[float, float]
     return newticks, newlabels
 
 
-def logcbticks(vmin: float = 0.99e-3, vmax: float = 1.01e3
+def logcbticks(vmin: float = -3.01, vmax: float = 3.01
                ) -> tuple[np.ndarray, np.ndarray]:
     """Make nice ticks for a log color bar.
 
     Args:
-        vmin (float, optional): Minimum value. Defaults to 0.99e-3.
-        vmax (float, optional): Maximum value. Defaults to 1.01e3.
+        vmin (float, optional): Minimum value. Defaults to -3.01.
+        vmax (float, optional): Maximum value. Defaults to 3.01.
 
     Returns:
         tuple: (ticks, ticklabels).
