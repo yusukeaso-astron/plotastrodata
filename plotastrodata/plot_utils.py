@@ -65,6 +65,26 @@ def logticks(ticks: list[float], lim: list[float, float]
     return newticks, newlabels
 
 
+def logcbticks(vmin: float, vmax: float):
+    ticks = np.outer(np.logspace(-3, 3, 7), np.arange(1, 10))
+    ticklabels = []
+    for i in range(-3, 4):
+        ii = np.abs(min(i, 0))
+        ii = f'{ii:d}'
+        for j in range(1, 10):
+            jj = j * 10**i
+            if j in [1, 2, 5]:
+                s = f'{jj:.{ii}f}'
+            else:
+                s = ''
+            ticklabels.append(s)
+    ticks = np.log10(np.ravel(ticks))
+    ticklabels = np.ravel(ticklabels)
+    ticklabels = ticklabels[((vmin < ticks) * (ticks < vmax))]
+    ticks = ticks[((vmin < ticks) * (ticks < vmax))]
+    return ticks, ticklabels
+
+
 @dataclass
 class PlotAxes2D():
     """Use Axes.set_* to adjust x and y axes.
@@ -771,6 +791,7 @@ class PlotAstroData(AstroFrame):
             stretchscale = sigma
         cmin_org = _kw['vmin'] if 'vmin' in _kw else sigma
         c = set_minmax(c, stretch, stretchscale, stretchpower, sigma, _kw)
+        cmin, cmax = np.nanmin(c), np.nanmax(c)
         c = self.vskipfill(c, v)
         if type(self.channelnumber) is int:
             c = [c[self.channelnumber]]
@@ -810,13 +831,15 @@ class PlotAstroData(AstroFrame):
                         p = 1 - stretchpower
                         cbticks = (cbticks / cmin_org)**p - 1
                         cbticks = cbticks / p / np.log(10)
+            if stretch == 'log' and cbticks is None:
+                cbticks, cbticklabels = logcbticks(cmin, cmax)
             if cbticks is not None:
                 cb.set_ticks(cbticks)
             if cbticklabels is not None:
                 cb.set_ticklabels(cbticklabels)
             elif stretch in ['log', 'asinh', 'power']:
                 t = cb.get_ticks()
-                t = t[(_kw['vmin'] < t) * (t < _kw['vmax'])]
+                t = t[(cmin < t) * (t < cmax)]
                 cb.set_ticks(t)
                 if stretch == 'log':
                     ticklin = 10**t
