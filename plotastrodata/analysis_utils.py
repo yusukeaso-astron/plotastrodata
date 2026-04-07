@@ -155,6 +155,12 @@ class AstroData():
             ws = ', '.join([f'{s:d}' for s in w[1:]])
             print(f'width was changed to [{ws}].')
         newsize = size // w
+        if w[1] > 1:
+            print(f'sigma has been divided by sqrt({w[1]:d})'
+                  + ' because of binning in the v-axis.')
+            self.sigma = self.sigma / np.sqrt(w[1])
+        if w[2] > 1 or w[3] > 1:
+            print('Binning in the x- or y-axis does not update sigma.')
         grid = [None, self.v, self.y, self.x]
         dgrid = [None, self.dv, self.dy, self.dx]
         for n in range(1, 4):
@@ -181,8 +187,6 @@ class AstroData():
         self.data = np.squeeze(d)
         _, self.v, self.y, self.x = grid
         _, self.dv, self.dy, self.dx = dgrid
-        s = 'AstroData.sigma is not updated by AstroData.binning().'
-        warnings.warn(s, UserWarning)
 
     def centering(self, includexy: bool = True,
                   includev: bool = False,
