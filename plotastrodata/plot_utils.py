@@ -852,6 +852,9 @@ class PlotAstroData(AstroFrame):
             return
 
         minlinear = _kw['vmin'] if 'vmin' in _kw else sigma
+        if cblabel is None:
+            cblabel = bunit
+
         c = set_minmax(c, stretch, stretchscale, stretchpower, sigma, _kw)
         c = self.vskipfill(c, v)
         if type(self.channelnumber) is int:
@@ -864,8 +867,6 @@ class PlotAstroData(AstroFrame):
         for ch in self.bottomleft:
             if not show_cbar:
                 break
-            if cblabel is None:
-                cblabel = bunit
             if self.fig is None:
                 fig = plt.figure(ch // self.rowcol)
             else:
