@@ -95,6 +95,68 @@ def logcbticks(vmin: float = -3.01, vmax: float = 3.01
     return ticks, ticklabels
 
 
+def pow10(x: np.ndarray, stretchpower: float, xmin: float
+          ) -> np.ndarray:
+    """A power-law function scaled by xmin. This function is used for the case of stretch='power' in PlotAstroData.add_color().
+
+    Args:
+        x (np.ndarray): Input in the linear scale.
+        stretchpower (float): Power-law index between 0 and 1. 0 means the linear scale, while 1 means the logarithmic scale.
+        stretchscale (float): The minimum value of x. xmin must be positive.
+
+    Returns:
+        np.ndarray: Output values.
+    """
+    p = 1 - stretchpower
+    y = ((x / xmin)**p - 1) / p / np.log(10)
+    return y
+
+
+def ipow10(x: np.ndarray, stretchpower: float, xmin: float
+           ) -> np.ndarray:
+    """The inverse function of pow10. This function is used for the case of stretch='power' in PlotAstroData.add_color().
+
+    Args:
+        x (np.ndarray): Input values.
+        stretchpower (float): Power-law index between 0 and 1. 0 means the linear scale, while 1 means the logarithmic scale.
+        xmin (float): The minimum value of x. xmin must be positive.
+
+    Returns:
+        np.ndarray: Output values in the linear scale.
+    """
+    p = 1 - stretchpower
+    y = xmin * (1 + p * np.log(10) * x)**(1 / p)
+    return y
+
+
+def _func_stretch(x: list | np.ndarray,
+                  stretch: str, stretchscale: float,
+                  stretchpower: float, minlinear: float):
+    t = np.array(x)
+    match stretch:
+        case 'log':
+            t = np.log10(t)
+        case 'asinh':
+            t = np.arcsinh(t / stretchscale)
+        case 'power':
+            t = pow10(t, stretchpower, minlinear)
+    return t
+
+
+def _ifunc_stretch(x: object,
+                   stretch: str, stretchscale: float,
+                   stretchpower: float, minlinear: float):
+    t = np.array(x)
+    match stretch:
+        case 'log':
+            t = 10**t
+        case 'asinh':
+            t = np.sinh(t) * stretchscale
+        case 'power':
+            t = ipow10(t, stretchpower, minlinear)
+    return t
+
+
 @dataclass
 class PlotAxes2D():
     """Use Axes.set_* to adjust x and y axes.
@@ -199,7 +261,7 @@ class PlotAxes2D():
 
 
 def set_minmax(data: np.ndarray, stretch: str, stretchscale: float,
-               stretchpower: float, rms: float, kw: dict
+               stretchpower: float, sigma: float, kw: dict
                ) -> np.ndarray:
     """Set vmin and vmax for color pcolormesh and RGB maps.
 
@@ -208,7 +270,7 @@ def set_minmax(data: np.ndarray, stretch: str, stretchscale: float,
         stretch (str): 'log', 'asinh', 'power'. Any other means linear.
         stretchscale (float): For the arcsinh strech.
         stretchpower (float): For the power strech.
-        rms (float): RMS noise level.
+        sigma (float): Noise level.
         kw (dict): Probably like {'vmin':0, 'vmax':1}.
 
     Returns:
@@ -216,46 +278,38 @@ def set_minmax(data: np.ndarray, stretch: str, stretchscale: float,
     """
     if type(stretch) is str:
         data = [data]
-        rms = [rms]
+        sigma = [sigma]
         stretch = [stretch]
         stretchscale = [stretchscale]
+        stretchpower = [stretchpower]
         if 'vmin' in kw:
             kw['vmin'] = [kw['vmin']]
         if 'vmax' in kw:
             kw['vmax'] = [kw['vmax']]
-    z = (data, stretch, stretchscale, rms)
-    for i, (c, st, stsc, r) in enumerate(zip(*z)):
-        if stsc is None:
-            stsc = r
-        if st == 'log':
-            if np.any(c > 0):
-                c = np.log10(c.clip(np.nanmin(c[c > 0]), None))
-        elif st == 'asinh':
-            c = np.arcsinh(c / stsc)
-        elif st == 'power':
-            cmin = kw['min'][i] if 'vmin' in kw else r
-            c = c.clip(cmin, None)
-            p = 1 - stretchpower
-            c = ((c / cmin)**p - 1) / p / np.log(10)
-        data[i] = c
+
     n = len(data)
-    for m in ['vmin', 'vmax']:
-        if m in kw:
-            for i, (c, st, stsc, _) in enumerate(zip(*z)):
-                if st == 'log':
-                    kw[m][i] = np.log10(kw[m][i])
-                elif st == 'asinh':
-                    kw[m][i] = np.arcsinh(kw[m][i] / stsc)
-                elif st == 'power':
-                    p = 1 - stretchpower
-                    kw[m][i] = ((kw[m][i]/c.min())**p - 1) / p / np.log(10)
-        else:
-            kw[m] = [None] * n
-            for i, (c, st, _, r) in enumerate(zip(*z)):
-                if m == 'vmin':
-                    kw[m][i] = np.log10(r) if st == 'log' else np.nanmin(c)
-                else:
-                    kw[m][i] = np.nanmax(c)
+    if 'vmin' not in kw:
+        kw['vmin'] = [None] * n
+    if 'vmax' not in kw:
+        kw['vmax'] = [None] * n
+    stretch = np.where(np.equal(stretch, None), sigma, stretch)
+    minlinear = np.where(np.equal(kw['vmin'], None), sigma, kw['vmin'])
+
+    z = (stretch, stretchscale, stretchpower, minlinear)
+    for i, args in enumerate(zip(*z)):
+        st, _, _, ml = args
+        c = data[i]
+        if st in ['log', 'power']:
+            c = c.clip(ml, None)
+        c = _func_stretch(c, *args)
+        data[i] = c
+        cmin = np.nanmin(c)
+        cmax = np.nanmax(c)
+        for k in ['vmin', 'vmax']:
+            if kw[k][i] is None:
+                kw[k][i] = cmin if k == 'vmin' else cmax
+            else:
+                kw[k][i] = _func_stretch(kw[k][i], *args)
     data = [c.clip(a, b) for c, a, b in zip(data, kw['vmin'], kw['vmax'])]
     if n == 1:
         data = data[0]
@@ -797,11 +851,8 @@ class PlotAstroData(AstroFrame):
             print('No pixel size. Skip add_color.')
             return
 
-        if stretchscale is None:
-            stretchscale = sigma
-        cmin_org = _kw['vmin'] if 'vmin' in _kw else sigma
+        minlinear = _kw['vmin'] if 'vmin' in _kw else sigma
         c = set_minmax(c, stretch, stretchscale, stretchpower, sigma, _kw)
-        cmin, cmax = np.nanmin(c), np.nanmax(c)
         c = self.vskipfill(c, v)
         if type(self.channelnumber) is int:
             c = [c[self.channelnumber]]
@@ -830,35 +881,20 @@ class PlotAstroData(AstroFrame):
             cb.ax.tick_params(labelsize=14)
             font = mpl.font_manager.FontProperties(size=16)
             cb.ax.yaxis.label.set_font_properties(font)
+            args = [stretch, stretchscale, stretchpower, minlinear]
             if cbticks is not None and ch // self.rowcol == 0:
-                cbticks = np.array(cbticks)
-                match stretch:
-                    case 'log':
-                        cbticks = np.log10(cbticks)
-                    case 'asinh':
-                        cbticks = np.arcsinh(cbticks / stretchscale)
-                    case 'power':
-                        p = 1 - stretchpower
-                        cbticks = (cbticks / cmin_org)**p - 1
-                        cbticks = cbticks / p / np.log(10)
-            if stretch == 'log' and cbticks is None:
-                cbticks, cbticklabels = logcbticks(cmin, cmax)
+                cbticks = _func_stretch(cbticks, *args)
+            if cbticks is None and stretch == 'log':
+                cbticks, cbticklabels = logcbticks()
             if cbticks is not None:
-                cb.set_ticks(cbticks)
-            if cbticklabels is not None:
-                cb.set_ticklabels(cbticklabels)
-            elif stretch in ['log', 'asinh', 'power']:
-                t = cb.get_ticks()
-                t = t[(cmin < t) * (t < cmax)]
-                cb.set_ticks(t)
-                if stretch == 'log':
-                    ticklin = 10**t
-                elif stretch == 'asinh':
-                    ticklin = np.sinh(t) * stretchscale
-                elif stretch == 'power':
-                    p = 1 - stretchpower
-                    ticklin = cmin_org * (1 + p * np.log(10) * t)**(1 / p)
-                cb.set_ticklabels([f'{d:{cbformat[1:]}}' for d in ticklin])
+                cond = (_kw['vmin'] < cbticks) * (cbticks < _kw['vmax'])
+                cb.set_ticks(cbticks[cond])
+                if cbticklabels is not None:
+                    tl = np.array(cbticklabels)[cond]
+                else:
+                    t = _ifunc_stretch(cb.get_ticks(), *args)
+                    tl = [f'{d:{cbformat[1:]}}' for d in t]
+                cb.set_ticklabels(tl)
         self.add_beam(beam=beam, **beam_kwargs)
 
     def add_contour(self,
@@ -950,7 +986,7 @@ class PlotAstroData(AstroFrame):
     def add_rgb(self,
                 stretch: list[str, str, str] = ['linear'] * 3,
                 stretchscale: list[float | None, float | None, float | None] = [None] * 3,
-                stretchpower: float = 0,
+                stretchpower: list[float, float, float] = [0, 0, 0],
                 **kwargs) -> None:
         """Use PIL.Image and imshow of matplotlib. kwargs must include the arguments of AstroData to specify the data to be plotted. A three-element array ([red, green, blue]) is supposed for all arguments, except for xskip, yskip and show_beam, including vmax and vmin. kwargs may include arguments for add_beam() and a dict of beam_kwargs to specify the beam patch in more detail. kwargs may include xskiip and yskip.
 
@@ -968,9 +1004,6 @@ class PlotAstroData(AstroFrame):
             print('No pixel size. Skip add_rgb.')
             return
 
-        for i in range(len(stretchscale)):
-            if stretchscale[i] is None:
-                stretchscale[i] = sigma[i]
         c = set_minmax(c, stretch, stretchscale, stretchpower, sigma, _kw)
         if not (np.shape(c[0]) == np.shape(c[1]) == np.shape(c[2])):
             print('RGB shapes mismatch. Skip add_rgb.')
