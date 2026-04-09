@@ -863,20 +863,21 @@ class PlotAstroData(AstroFrame):
             cbticks = do_stretch(cbticks, *stretch_args)
         if cbticks is None and stretch == 'log':
             cbticks, cbticklabels = logcbticks()
-        if cbticks is not None:
-            cond = (vmin < cbticks) * (cbticks < vmax)
-            cb.set_ticks(cbticks[cond])
-            if cbticklabels is not None:
-                tl = np.array(cbticklabels)[cond]
-            else:
-                t = undo_stretch(cb.get_ticks(), *stretch_args)
-                tl = [f'{d:{cbformat[1:]}}' for d in t]
-            cb.set_ticklabels(tl)
+        if cbticks is None:
+            cbticks = cb.get_ticks()
+        cond = (vmin < cbticks) * (cbticks < vmax)
+        cb.set_ticks(cbticks[cond])
+        if cbticklabels is not None:
+            tl = np.array(cbticklabels)[cond]
+        else:
+            t = undo_stretch(cb.get_ticks(), *stretch_args)
+            tl = [f'{d:{cbformat[1:]}}' for d in t]
+        cb.set_ticklabels(tl)
 
     def add_color(self,
                   stretch: str = 'linear',
                   stretchscale: float | None = None,
-                  stretchpower: float = 1,
+                  stretchpower: float = 0.5,
                   show_cbar: bool = True,
                   cblabel: str | None = None,
                   cbformat: float = '%.1e',
@@ -889,7 +890,7 @@ class PlotAstroData(AstroFrame):
         Args:
             stretch (str, optional): 'log', 'asinh', 'power', or 'linear'. Any other means 'linear'. 'log' means the mapped data are logarithmic. 'asinh' means the mapped data are arc sin hyperbolic. 'power' means the mapped data are power-law (see also stretchpower). Defaults to 'linear'.
             stretchscale (float, optional): Color scale is asinh(data / stretchscale). Defaults to None.
-            stretchpower (float, optional): Color scale is ((data / stretchscale)**stretchpower - 1) / stretchpower / ln(10). 1 means the linear scale, while 0 means the logarithmic scale. Defaults to 1.
+            stretchpower (float, optional): Color scale is ((data / stretchscale)**stretchpower - 1) / stretchpower / ln(10). 1 means the linear scale, while 0 means the logarithmic scale. Defaults to 0.5.
             show_cbar (bool, optional): Show color bar. Defaults to True.
             cblabel (str, optional): Colorbar label. Defaults to None.
             cbformat (float, optional): Format for ticklabels of colorbar. Defaults to '%.1e'.
