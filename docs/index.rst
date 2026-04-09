@@ -6,6 +6,33 @@
 Welcome to plotastrodata's documentation!
 =========================================
 
+plotastrodata is a tool for astronomers to create figures from FITS files and perform fundamental data analyses with ease.
+
+Installation
+------------
+
+You can install ``plotastrodata`` in several ways:
+
+**From conda-forge:**
+
+.. code-block:: bash
+
+   conda install -c conda-forge plotastrodata
+
+**From PyPI:**
+
+.. code-block:: bash
+
+   pip install plotastrodata
+
+**From GitHub:**
+
+.. code-block:: bash
+
+   git close https://github.com/yusukeaso-astron/plotastrodata
+
+Contents
+--------
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
