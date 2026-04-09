@@ -125,9 +125,20 @@ def ipow10(x: np.ndarray, stretchpower: float) -> np.ndarray:
     return y
 
 
-def _func_stretch(x: list | np.ndarray,
-                  stretch: str, stretchscale: float,
-                  stretchpower: float):
+def do_stretch(x: list | np.ndarray,
+               stretch: str, stretchscale: float,
+               stretchpower: float) -> np.ndarray:
+    """Get the stretched values.
+
+    Args:
+        x (list | np.ndarray): Input array in the linear scale.
+        stretch (str): 'linear', 'log', 'asinh', or 'power'.
+        stretchscale (float): The scaling parameter for 'log' and 'power'.
+        stretchpower (float): The power-law index for 'power'.
+
+    Returns:
+        np.ndarray: Output stretched array.
+    """
     t = np.array(x)
     match stretch:
         case 'log':
@@ -139,9 +150,20 @@ def _func_stretch(x: list | np.ndarray,
     return t
 
 
-def _ifunc_stretch(x: list | np.ndarray,
-                   stretch: str, stretchscale: float,
-                   stretchpower: float):
+def undo_stretch(x: list | np.ndarray,
+                 stretch: str, stretchscale: float,
+                 stretchpower: float) -> np.ndarray:
+    """Get the linear values from the stretched values.
+
+    Args:
+        x (list | np.ndarray): Input stretched array.
+        stretch (str): 'linear', 'log', 'asinh', or 'power'.
+        stretchscale (float): The scaling parameter for 'log' and 'power'.
+        stretchpower (float): The power-law index for 'power'.
+
+    Returns:
+        np.ndarray: Output array in the linear scale.
+    """
     t = np.array(x)
     match stretch:
         case 'log':
@@ -290,16 +312,17 @@ def set_minmax(data: np.ndarray, stretch: str, stretchscale: float,
     cmin = np.where(np.equal(kw['vmin'], None), sigma, kw['vmin'])
 
     argslist = (stretch, stretchscale, stretchpower)
-    for i, args in enumerate(zip(*argslist)):
+    for i, stretch_args in enumerate(zip(*argslist)):
         c = data[i]
-        c = c.clip(cmin[i] if args[0] in ['log', 'power'] else None, None)
-        c = _func_stretch(c, *args)
+        if stretch_args[0] in ['log', 'power']:
+            c = c.clip(cmin[i], None)
+        c = do_stretch(c, *stretch_args)
         data[i] = c
         for k in ['vmin', 'vmax']:
             if kw[k][i] is None:
                 kw[k][i] = np.nanmin(c) if k == 'vmin' else np.nanmax(c)
             else:
-                kw[k][i] = _func_stretch(kw[k][i], *args)
+                kw[k][i] = do_stretch(kw[k][i], *stretch_args)
     data = [c.clip(a, b) for c, a, b in zip(data, kw['vmin'], kw['vmax'])]
     if n == 1:
         data = data[0]
@@ -835,7 +858,7 @@ class PlotAstroData(AstroFrame):
         cb.ax.yaxis.label.set_font_properties(font)
         stretch_args = (stretch, stretchscale, stretchpower)
         if cbticks is not None and ch // self.rowcol == 0:
-            cbticks = _func_stretch(cbticks, *stretch_args)
+            cbticks = do_stretch(cbticks, *stretch_args)
         if cbticks is None and stretch == 'log':
             cbticks, cbticklabels = logcbticks()
         if cbticks is not None:
@@ -844,7 +867,7 @@ class PlotAstroData(AstroFrame):
             if cbticklabels is not None:
                 tl = np.array(cbticklabels)[cond]
             else:
-                t = _ifunc_stretch(cb.get_ticks(), *stretch_args)
+                t = undo_stretch(cb.get_ticks(), *stretch_args)
                 tl = [f'{d:{cbformat[1:]}}' for d in t]
             cb.set_ticklabels(tl)
 
