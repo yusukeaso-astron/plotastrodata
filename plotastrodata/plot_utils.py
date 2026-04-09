@@ -905,7 +905,7 @@ class PlotAstroData(AstroFrame):
 
         if cblabel is None:
             cblabel = bunit
-        
+
         stretch_args = (stretch, stretchscale, stretchpower)
         c = set_minmax(c, *stretch_args, sigma, _kw)
         c = self.vskipfill(c, v)
