@@ -308,8 +308,10 @@ def set_minmax(data: np.ndarray, stretch: str, stretchscale: float,
     for k in ['vmin', 'vmax']:
         if k not in kw:
             kw[k] = [None] * n
-    stretch = np.where(np.equal(stretch, None), sigma, stretch)
-    cmin = np.where(np.equal(kw['vmin'], None), sigma, kw['vmin'])
+    isnan = np.equal(stretchscale, None)
+    stretchscale = np.where(isnan, sigma, stretchscale)
+    isnan = np.equal(kw['vmin'], None)
+    cmin = np.where(isnan, sigma, kw['vmin'])
 
     argslist = (stretch, stretchscale, stretchpower)
     for i, stretch_args in enumerate(zip(*argslist)):
@@ -905,6 +907,8 @@ class PlotAstroData(AstroFrame):
 
         if cblabel is None:
             cblabel = bunit
+        if stretchscale is None:
+            stretchscale = sigma
 
         stretch_args = (stretch, stretchscale, stretchpower)
         c = set_minmax(c, *stretch_args, sigma, _kw)
