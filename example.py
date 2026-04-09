@@ -61,9 +61,9 @@ p.savefig('testPV.png', show=True)
 # log log PV
 p = pad(rmax=0.8 * 140, pv=True, quadrants='13', vmin=-5, vmax=5, dist=140)
 p.add_color(fitsimage=f'{data_dir}/testPV.fits', Tb=True,
-            cblabel='Tb (K)', show_beam=False)
+            cblabel='Tb (K)', show_beam=False, pvpa=60)
 p.add_contour(fitsimage=f'{data_dir}/testPV.fits', colors='r',
-              sigma=1e-3, show_beam=False)
+              sigma=1e-3, show_beam=False, pvpa=60)
 p.set_axis(title='loglog PV diagram', loglog=20)
 p.savefig('testloglogPV.png', show=True)
 
