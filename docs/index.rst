@@ -29,7 +29,7 @@ You can install ``plotastrodata`` in several ways:
 
 .. code-block:: bash
 
-   git close https://github.com/yusukeaso-astron/plotastrodata
+   git clone https://github.com/yusukeaso-astron/plotastrodata
 
 Contents
 --------
