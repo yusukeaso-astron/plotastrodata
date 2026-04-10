@@ -318,8 +318,7 @@ def kwargs2AstroData(kw: dict) -> AstroData:
     d = AstroData(data=np.zeros((2, 2)))
     for k in vars(d):
         if k in kw:
-            tmp[k] = kw[k]
-            del kw[k]
+            tmp[k] = kw.pop(k)
     if tmp == {}:
         print('No argument given.')
         return None
@@ -361,8 +360,7 @@ def kwargs2PlotAxes2D(kw: dict) -> PlotAxes2D:
     d = PlotAxes2D()
     for k in vars(d):
         if k in kw:
-            tmp[k] = kw[k]
-            del kw[k]
+            tmp[k] = kw.pop(k)
     d = PlotAxes2D(**tmp)
     return d
 
@@ -379,11 +377,8 @@ def kwargs2beamargs(kw: dict) -> dict:
     tmp = {}
     for k in ['show_beam', 'beamcolor', 'beampos']:
         if k in kw:
-            tmp[k] = kw[k]
-            del kw[k]
-    if 'beam_kwargs' in kw:
-        tmp.update(kw['beam_kwargs'])
-        del kw['beam_kwargs']
+            tmp[k] = kw.pop(k)
+    tmp.update(kw.pop('beam_kwargs', {}))
     return tmp
 
 
@@ -570,16 +565,8 @@ class PlotAstroData(AstroFrame):
         """
         beam_kwargs = kwargs2beamargs(kw)
         self._kw.update(kw)
-        if 'xskip' in self._kw:
-            xskip = self._kw['xskip']
-            del self._kw['xskip']
-        else:
-            xskip = 1
-        if 'yskip' in self._kw:
-            yskip = self._kw['yskip']
-            del self._kw['yskip']
-        else:
-            yskip = 1
+        xskip = self._kw.pop('xskip', 1)
+        yskip = self._kw.pop('yskip', 1)
         d = kwargs2AstroData(self._kw)
         self.read(d, xskip, yskip)
         self.beam = d.beam
@@ -708,6 +695,11 @@ class PlotAstroData(AstroFrame):
         """
         _kw = {'color': 'gray', 'fontsize': 15, 'ha': 'center',
                'va': 'center', 'zorder': 10}
+        subkeys = {'ha': 'horizontalalignment',
+                   'va': 'verticalalignment'}
+        for short, long in subkeys.items():
+            if long in kwargs:
+                kwargs[short] = kwargs.pop(long)
         _kw.update(kwargs)
         if include_chan is None:
             include_chan = self.allchan
