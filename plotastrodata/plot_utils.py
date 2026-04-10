@@ -65,20 +65,22 @@ def logticks(ticks: list[float], lim: list[float, float]
     return newticks, newlabels
 
 
-def logcbticks(vmin: float = -3.01, vmax: float = 3.01
+def logcbticks(vmin: float = 1e-3, vmax: float = 1e3
                ) -> tuple[np.ndarray, np.ndarray]:
     """Make nice ticks for a log color bar.
 
     Args:
-        vmin (float, optional): Minimum value. Defaults to -3.01.
-        vmax (float, optional): Maximum value. Defaults to 3.01.
+        vmin (float, optional): Minimum value. Defaults to 1e-3.
+        vmax (float, optional): Maximum value. Defaults to 1e3.
 
     Returns:
         tuple: (ticks, ticklabels).
     """
-    ticks = np.outer(np.logspace(-3, 3, 7), np.arange(1, 10))
+    i0 = int(np.floor(np.log10(vmin)))
+    i1 = int(np.ceil(np.log10(vmax)))
+    ticks = np.outer(np.logspace(i0, i1, i1 - i0 + 1), np.arange(1, 10))
     ticklabels = []
-    for i in range(-3, 4):
+    for i in range(i0, i1 + 1):
         ii = np.abs(min(i, 0))
         ii = f'{ii:d}'
         for j in range(1, 10):
@@ -88,11 +90,10 @@ def logcbticks(vmin: float = -3.01, vmax: float = 3.01
             else:
                 s = ''
             ticklabels.append(s)
-    ticks = np.log10(np.ravel(ticks))
+    ticks = np.ravel(ticks)
     ticklabels = np.ravel(ticklabels)
-    ticklabels = ticklabels[((vmin < ticks) * (ticks < vmax))]
-    ticks = ticks[((vmin < ticks) * (ticks < vmax))]
-    return ticks, ticklabels
+    cond = (vmin <= ticks) * (ticks <= vmax)
+    return ticks[cond], ticklabels[cond]
 
 
 def do_stretch(x: list | np.ndarray,
@@ -112,7 +113,7 @@ def do_stretch(x: list | np.ndarray,
     t = np.array(x)
     match stretch:
         case 'log':
-            t = np.log10(t)
+            t = np.log10(t)  # To be consistent with logcbticks().
         case 'asinh':
             t = np.arcsinh(t / stretchscale)
         case 'power':
@@ -138,7 +139,7 @@ def undo_stretch(x: list | np.ndarray,
     t = np.array(x)
     match stretch:
         case 'log':
-            t = 10**t
+            t = 10**t  # To be consistent with logcbticks().
         case 'asinh':
             t = np.sinh(t) * stretchscale
         case 'power':
@@ -823,13 +824,13 @@ class PlotAstroData(AstroFrame):
         font = mpl.font_manager.FontProperties(size=16)
         cb.ax.yaxis.label.set_font_properties(font)
         stretch_args = (stretch, stretchscale, stretchpower)
-        if cbticks is not None and ch // self.rowcol == 0:
-            cbticks = do_stretch(cbticks, *stretch_args)
         if cbticks is None and stretch == 'log':
-            cbticks, cbticklabels = logcbticks()
-        if cbticks is None:
+            cbticks, cbticklabels = logcbticks(10**vmin, 10**vmax)
+        if cbticks is not None:
+            cbticks = do_stretch(cbticks, *stretch_args)
+        else:
             cbticks = cb.get_ticks()
-        cond = (vmin < cbticks) * (cbticks < vmax)
+        cond = (vmin <= cbticks) * (cbticks <= vmax)
         cb.set_ticks(cbticks[cond])
         if cbticklabels is not None:
             tl = np.array(cbticklabels)[cond]
