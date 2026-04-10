@@ -59,30 +59,27 @@ def trim(data: np.ndarray | None = None, x: np.ndarray | None = None,
     xout, yout, vout, dataout = x, y, v, data
     i0 = j0 = k0 = 0
     i1 = j1 = k1 = 100000
-    if x is not None and xlim is not None:
-        if None not in xlim:
-            x0 = np.max([np.min(x), xlim[0]])
-            x1 = np.min([np.max(x), xlim[1]])
-            i0 = np.argmin(np.abs(x - x0))
-            i1 = np.argmin(np.abs(x - x1))
-            i0, i1 = sorted([i0, i1])
-            xout = x[i0:i1+1]
-    if y is not None and ylim is not None:
-        if None not in ylim:
-            y0 = np.max([np.min(y), ylim[0]])
-            y1 = np.min([np.max(y), ylim[1]])
-            j0 = np.argmin(np.abs(y - y0))
-            j1 = np.argmin(np.abs(y - y1))
-            j0, j1 = sorted([j0, j1])
-            yout = y[j0:j1+1]
-    if v is not None and vlim is not None:
-        if None not in vlim:
-            v0 = np.max([np.min(v), vlim[0]])
-            v1 = np.min([np.max(v), vlim[1]])
-            k0 = np.argmin(np.abs(v - v0))
-            k1 = np.argmin(np.abs(v - v1))
-            k0, k1 = sorted([k0, k1])
-            vout = v[k0:k1+1]
+    if x is not None and xlim is not None and None not in xlim:
+        x0 = np.max([np.min(x), xlim[0]])
+        x1 = np.min([np.max(x), xlim[1]])
+        i0 = np.argmin(np.abs(x - x0))
+        i1 = np.argmin(np.abs(x - x1))
+        i0, i1 = sorted([i0, i1])
+        xout = x[i0:i1+1]
+    if y is not None and ylim is not None and None not in ylim:
+        y0 = np.max([np.min(y), ylim[0]])
+        y1 = np.min([np.max(y), ylim[1]])
+        j0 = np.argmin(np.abs(y - y0))
+        j1 = np.argmin(np.abs(y - y1))
+        j0, j1 = sorted([j0, j1])
+        yout = y[j0:j1+1]
+    if v is not None and vlim is not None and None not in vlim:
+        v0 = np.max([np.min(v), vlim[0]])
+        v1 = np.min([np.max(v), vlim[1]])
+        k0 = np.argmin(np.abs(v - v0))
+        k1 = np.argmin(np.abs(v - v1))
+        k0, k1 = sorted([k0, k1])
+        vout = v[k0:k1+1]
     if data is not None:
         d = np.squeeze(data)
         if np.ndim(d) == 0:
