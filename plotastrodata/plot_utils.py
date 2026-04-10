@@ -112,7 +112,7 @@ def do_stretch(x: list | np.ndarray,
     t = np.array(x)
     match stretch:
         case 'log':
-            t = np.log(t)
+            t = np.log10(t)
         case 'asinh':
             t = np.arcsinh(t / stretchscale)
         case 'power':
@@ -138,7 +138,7 @@ def undo_stretch(x: list | np.ndarray,
     t = np.array(x)
     match stretch:
         case 'log':
-            t = np.exp(t)
+            t = 10**t
         case 'asinh':
             t = np.sinh(t) * stretchscale
         case 'power':
