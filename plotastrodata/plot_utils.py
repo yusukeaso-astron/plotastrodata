@@ -95,36 +95,6 @@ def logcbticks(vmin: float = -3.01, vmax: float = 3.01
     return ticks, ticklabels
 
 
-def pow10(x: np.ndarray, stretchpower: float) -> np.ndarray:
-    """A power-law function scaled by xmin. This function is used for the case of stretch='power' in PlotAstroData.add_color().
-
-    Args:
-        x (np.ndarray): Input in the linear scale.
-        stretchpower (float, optional): The output is (data**stretchpower - 1) / stretchpower / ln(10). 1 means the linear scale, while 0 means the logarithmic scale.
-
-    Returns:
-        np.ndarray: Output values.
-    """
-    p = 1e-6 if stretchpower == 0 else stretchpower
-    y = (x**p - 1) / p / np.log(10)
-    return y
-
-
-def ipow10(x: np.ndarray, stretchpower: float) -> np.ndarray:
-    """The inverse function of pow10. This function is used for the case of stretch='power' in PlotAstroData.add_color().
-
-    Args:
-        x (np.ndarray): Input values.
-        stretchpower (float, optional): The input is (data**stretchpower - 1) / stretchpower / ln(10). 1 means the linear scale, while 0 means the logarithmic scale.
-
-    Returns:
-        np.ndarray: Output values in the linear scale.
-    """
-    p = 1e-6 if stretchpower == 0 else stretchpower
-    y = (1 + p * np.log(10) * x)**(1 / p)
-    return y
-
-
 def do_stretch(x: list | np.ndarray,
                stretch: str, stretchscale: float,
                stretchpower: float) -> np.ndarray:
@@ -133,8 +103,8 @@ def do_stretch(x: list | np.ndarray,
     Args:
         x (list | np.ndarray): Input array in the linear scale.
         stretch (str): 'log', 'asinh', 'power', or 'linear'. Any other means 'linear'. 'log' means the mapped data are logarithmic. 'asinh' means the mapped data are arc sin hyperbolic. 'power' means the mapped data are power-law (see also stretchpower). Defaults to 'linear'.
-        stretchscale (float, optional): The output is asinh(data / stretchscale). Defaults to None.
-        stretchpower (float, optional): The output is ((data / stretchscale)**stretchpower - 1) / stretchpower / ln(10). 1 means the linear scale, while 0 means the logarithmic scale.
+        stretchscale (float): The output is asinh(data / stretchscale).
+        stretchpower (float): The output is data**stretchpower / stretchpower. 1 means the linear scale, while 0 means the logarithmic scale.
 
     Returns:
         np.ndarray: Output stretched array.
@@ -142,11 +112,12 @@ def do_stretch(x: list | np.ndarray,
     t = np.array(x)
     match stretch:
         case 'log':
-            t = np.log10(t)
+            t = np.log(t)
         case 'asinh':
             t = np.arcsinh(t / stretchscale)
         case 'power':
-            t = pow10(t / stretchscale, stretchpower)
+            p = 1e-6 if stretchpower == 0 else stretchpower
+            t = t**p / p
     return t
 
 
@@ -158,8 +129,8 @@ def undo_stretch(x: list | np.ndarray,
     Args:
         x (list | np.ndarray): Input stretched array.
         stretch (str): 'log', 'asinh', 'power', or 'linear'. Any other means 'linear'. 'log' means the mapped data are logarithmic. 'asinh' means the mapped data are arc sin hyperbolic. 'power' means the mapped data are power-law (see also stretchpower). Defaults to 'linear'.
-        stretchscale (float, optional): The input is asinh(data / stretchscale). Defaults to None.
-        stretchpower (float, optional): The input is ((data / stretchscale)**stretchpower - 1) / stretchpower / ln(10). 1 means the linear scale, while 0 means the logarithmic scale.
+        stretchscale (float): The input is asinh(data / stretchscale).
+        stretchpower (float): The input is data**stretchpower / stretchpower. 1 means the linear scale, while 0 means the logarithmic scale.
 
     Returns:
         np.ndarray: Output array in the linear scale.
@@ -167,11 +138,12 @@ def undo_stretch(x: list | np.ndarray,
     t = np.array(x)
     match stretch:
         case 'log':
-            t = 10**t
+            t = np.exp(t)
         case 'asinh':
             t = np.sinh(t) * stretchscale
         case 'power':
-            t = ipow10(t, stretchpower) * stretchscale
+            p = 1e-6 if stretchpower == 0 else stretchpower
+            t = (t * p)**(1 / p)
     return t
 
 
@@ -285,9 +257,9 @@ def set_minmax(data: np.ndarray, stretch: str, stretchscale: float,
 
     Args:
         data (np.ndarray): Plotted data.
-        stretch (str): 'log', 'asinh', 'power'. Any other means linear.
-        stretchscale (float): For the arcsinh strech and the power stretch.
-        stretchpower (float): For the power strech.
+        stretch (str): 'log', 'asinh', 'power', or 'linear'. Any other means 'linear'. 'log' means the mapped data are logarithmic. 'asinh' means the mapped data are arc sin hyperbolic. 'power' means the mapped data are power-law (see also stretchpower). Defaults to 'linear'.
+        stretchscale (float): The input is asinh(data / stretchscale).
+        stretchpower (float): The input is data**stretchpower / stretchpower. 1 means the linear scale, while 0 means the logarithmic scale.
         sigma (float): Noise level.
         kw (dict): Probably like {'vmin':0, 'vmax':1}.
 
@@ -820,7 +792,7 @@ class PlotAstroData(AstroFrame):
             linewidth (float, optional): Width of the bar. Defaults to 3.
         """
         if length == 0:
-            print('Please input length to add_scalebar().')
+            print('No length is given. Skip add_scalebar().')
             return
         if fontsize is None:
             fontsize = 20 if len(self.ax) == 1 else 15
@@ -890,7 +862,7 @@ class PlotAstroData(AstroFrame):
         Args:
             stretch (str, optional): 'log', 'asinh', 'power', or 'linear'. Any other means 'linear'. 'log' means the mapped data are logarithmic. 'asinh' means the mapped data are arc sin hyperbolic. 'power' means the mapped data are power-law (see also stretchpower). Defaults to 'linear'.
             stretchscale (float, optional): Color scale is asinh(data / stretchscale). Defaults to None.
-            stretchpower (float, optional): Color scale is ((data / stretchscale)**stretchpower - 1) / stretchpower / ln(10). 1 means the linear scale, while 0 means the logarithmic scale. Defaults to 0.5.
+            stretchpower (float, optional): Color scale is data**stretchpower / stretchpower. 1 means the linear scale, while 0 means the logarithmic scale. Defaults to 0.5.
             show_cbar (bool, optional): Show color bar. Defaults to True.
             cblabel (str, optional): Colorbar label. Defaults to None.
             cbformat (float, optional): Format for ticklabels of colorbar. Defaults to '%.1e'.
@@ -1023,7 +995,7 @@ class PlotAstroData(AstroFrame):
         Args:
             stretch (str, optional): 'log', 'asinh', 'power', or 'linear'. Any other means 'linear'. 'log' means the mapped data are logarithmic. 'asinh' means the mapped data are arc sin hyperbolic. 'power' means the mapped data are power-law (see also stretchpower). Defaults to 'linear'.
             stretchscale (float, optional): Color scale is asinh(data / stretchscale). Defaults to None.
-            stretchpower (float, optional): Color scale is ((data / stretchscale)**stretchpower - 1) / stretchpower / ln(10). 1 means the linear scale, while 0 means the logarithmic scale. Defaults to 1.
+            stretchpower (float, optional): Color scale is data**stretchpower / stretchpower. 1 means the linear scale, while 0 means the logarithmic scale. Defaults to 1.
         """
         from PIL import Image
 
@@ -1253,7 +1225,8 @@ class PlotAstroData(AstroFrame):
             tuple: (fig, ax)
         """
         if len(self.ax) > 1:
-            print('get_figax is not supported with channel maps')
+            print('PlotAstroData.get_figax() is not supported'
+                  + ' with channel maps')
             return
 
         fig = plt.figure(0) if self.fig is None else self.fig
