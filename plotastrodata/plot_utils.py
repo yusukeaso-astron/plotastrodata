@@ -831,13 +831,14 @@ class PlotAstroData(AstroFrame):
         else:
             cbticks = cb.get_ticks()
         cond = (vmin <= cbticks) * (cbticks <= vmax)
-        cb.set_ticks(cbticks[cond])
+        cbticks = cbticks[cond]
+        cb.set_ticks(cbticks)
         if cbticklabels is not None:
-            tl = np.array(cbticklabels)[cond]
+            cbticklabels = np.array(cbticklabels)[cond]
         else:
-            t = undo_stretch(cb.get_ticks(), *stretch_args)
-            tl = [f'{d:{cbformat[1:]}}' for d in t]
-        cb.set_ticklabels(tl)
+            t = undo_stretch(cbticks, *stretch_args)
+            cbticklabels = [f'{d:{cbformat[1:]}}' for d in t]
+        cb.set_ticklabels(cbticklabels)
 
     def add_color(self,
                   stretch: str = 'linear',
