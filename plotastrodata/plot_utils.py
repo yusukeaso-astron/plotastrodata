@@ -274,13 +274,8 @@ def set_minmax(data: np.ndarray, stretch: str, stretchscale: float,
         stretchscale = [stretchscale]
         stretchpower = [stretchpower]
         for k in ['vmin', 'vmax']:
-            if k in kw:
-                kw[k] = [kw[k]]
+            kw[k] = [kw[k]]
 
-    n = len(data)
-    for k in ['vmin', 'vmax']:
-        if k not in kw:
-            kw[k] = [None] * n
     isnan = np.equal(stretchscale, None)
     stretchscale = np.where(isnan, sigma, stretchscale)
     isnan = np.equal(kw['vmin'], None)
@@ -299,7 +294,7 @@ def set_minmax(data: np.ndarray, stretch: str, stretchscale: float,
             else:
                 kw[k][i] = do_stretch(kw[k][i], *stretch_args)
     data = [c.clip(a, b) for c, a, b in zip(data, kw['vmin'], kw['vmax'])]
-    if n == 1:
+    if len(data) == 1:
         data = data[0]
         for k in ['vmin', 'vmax']:
             kw[k] = kw[k][0]
@@ -865,7 +860,8 @@ class PlotAstroData(AstroFrame):
             cblocation (str, optional): 'left', 'top', 'left', 'right'. Only for 2D images. Defaults to 'right'.
         """
         self._kw = {'cmap': 'cubehelix', 'alpha': 1,
-                    'edgecolors': 'none', 'zorder': 1}
+                    'edgecolors': 'none', 'zorder': 1,
+                    'vmin': None, 'vmax': None}
         c, x, y, v, beam, sigma, bunit, _kw, beam_kwargs, singlepix \
             = self._map_init(kwargs)
         if singlepix:
@@ -993,7 +989,7 @@ class PlotAstroData(AstroFrame):
         """
         from PIL import Image
 
-        self._kw = {}
+        self._kw = {'vmin': [None] * 3, 'vmax': [None] * 3}
         c, x, y, v, beam, sigma, _, _kw, beam_kwargs, singlepix \
             = self._map_init(kwargs)
         if singlepix:
