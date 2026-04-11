@@ -117,22 +117,23 @@ class Stretcher():
     
     def __post_init__(self):
         self.n = 1 if type(self.stretch) is str else len(self.stretch)
+        stretch = self.stretch
+        stsc = self.stretchscale
+        vmin = self.vmin
+        sigma = self.sigma
         if self.n == 1:
-            if self.stretchscale is None:
-                self.stretchscale = self.sigma
-            self.cutlow = self.vmin
-            if self.stretch in ['log', 'power'] and self.cutlow is None:
-                self.cutlow = self.sigma
+            if stsc is None:
+                self.stretchscale = sigma
+            if (stretch == 'log' or stretch == 'power') and vmin is None:
+                self.vmin = sigma
         else:
-            self.stretchscale = np.array(self.stretchscale)
-            self.vmin = np.array(self.vmin)
-            self.sigma = np.array(self.sigma)
-            cond = np.equal(self.stretchscale, None)
-            self.stretchscale[cond] = self.sigma[cond]
-            self.cutlow = self.vmin.copy()
-            if self.stretch in ['log', 'power']:
-                cond = np.equal(self.cutlow, None)
-                self.cutlow[cond] = self.sigma[cond]
+            getsigma = np.equal(stsc, None)
+            self.stretchscale = np.where(getsigma, sigma, stsc)
+            islog = np.equal(stretch, 'log')
+            ispower = np.equal(stretch, 'power')
+            novmin = np.equal(vmin, None)
+            getsigma = (islog + ispower) * novmin
+            self.vmin = np.where(getsigma, sigma, vmin)
         
     def do(self, x: list | np.ndarray) -> np.ndarray:
         """Get the stretched values.
@@ -174,31 +175,31 @@ class Stretcher():
                 t = (t * p)**(1 / p)
         return t
 
-    def set_minmax(self, data: np.ndarray) -> np.ndarray:
+    def set_minmax(self, data: np.ndarray
+                   ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Set vmin and vmax for color pcolormesh and RGB maps.
 
         Args:
             data (np.ndarray): 2D/3D data to plot.
 
         Returns:
-            np.ndarray: Data clipped with the vmin and vmax.
+            tuple[np.ndarray, np.ndarray, np.ndarray]: (Clipped stretched data, new vmin, new vmax).
         """
         single = self.n == 1
-        minlist = [self.vmin] if single else self.vmin
-        maxlist = [self.vmax] if single else self.vmax
-        cutlist = [self.cutlow] if single else self.cutlow
-        clist = [data] if single else data
-        for i, (c, c0, v0, v1) in enumerate(zip(clist, cutlist, minlist, maxlist)):
-            minlist[i] = c1 = np.nanmin(c) if v0 is None else self.do(v0)
-            maxlist[i] = c2 = np.nanmin(c) if v1 is None else self.do(v1)
-            clist[i] = self.do(c.clip(c0, None)).clip(c1, c2)
+        vminout = [self.vmin] if single else self.vmin
+        vmaxout = [self.vmax] if single else self.vmax
+        dataout = [data] if single else data
+        for i, (c, v0, v1) in enumerate(zip(dataout, vminout, vmaxout)):
+            dataout[i] = cout = self.do(c.clip(v0, v1))
+            vminout[i] = np.nanmin(cout)
+            vmaxout[i] = np.nanmax(cout)
         if single:
-            clist = clist[0]
-            minlist = minlist[0]
-            maxlist = maxlist[0]
-        self.vmin = minlist
-        self.vmax = maxlist
-        return clist
+            dataout = dataout[0]
+            vminout = vminout[0]
+            vmaxout = vmaxout[0]
+        self.vmin = vminout
+        self.vmax = vmaxout
+        return dataout, vminout, vmaxout
 
 
 @dataclass
@@ -832,9 +833,6 @@ class PlotAstroData(AstroFrame):
         cb.set_ticklabels(cbticklabels)
 
     def add_color(self,
-                  stretch: str = 'linear',
-                  stretchscale: float | None = None,
-                  stretchpower: float = 0.5,
                   show_cbar: bool = True,
                   cblabel: str | None = None,
                   cbformat: float = '%.1e',
@@ -842,12 +840,9 @@ class PlotAstroData(AstroFrame):
                   cbticklabels: list[str] | None = None,
                   cblocation: str = 'right',
                   **kwargs) -> None:
-        """Use Axes.pcolormesh of matplotlib. kwargs must include the arguments of AstroData to specify the data to be plotted. kwargs may include arguments for add_beam() and a dict of beam_kwargs to specify the beam patch in more detail. kwargs may include xskiip and yskip.
+        """Use Axes.pcolormesh of matplotlib. kwargs must include the arguments of AstroData to specify the data to be plotted. kwargs may include the arguments for Stretcher (stretch, stretchscale, and stretchpower) to specify the stretch parameters. kwargs may include arguments for add_beam() and a dict of beam_kwargs to specify the beam patch in more detail. kwargs may include xskiip and yskip.
 
         Args:
-            stretch (str, optional): 'log', 'asinh', 'power', or 'linear'. Any other means 'linear'. 'log' means the mapped data are logarithmic. 'asinh' means the mapped data are arc sin hyperbolic. 'power' means the mapped data are power-law (see also stretchpower). Defaults to 'linear'.
-            stretchscale (float, optional): Color scale is asinh(data / stretchscale). Defaults to None.
-            stretchpower (float, optional): Color scale is data**stretchpower / stretchpower. 1 means the linear scale, while 0 means the logarithmic scale. Defaults to 0.5.
             show_cbar (bool, optional): Show color bar. Defaults to True.
             cblabel (str, optional): Colorbar label. Defaults to None.
             cbformat (float, optional): Format for ticklabels of colorbar. Defaults to '%.1e'.
@@ -867,11 +862,15 @@ class PlotAstroData(AstroFrame):
         if cblabel is None:
             cblabel = bunit
 
-        st = Stretcher(stretch, stretchscale, stretchpower,
-                       _kw['vmin'], _kw['vmax'], sigma)
-        c = st.set_minmax(c)
-        _kw['vmin'] = st.vmin
-        _kw['vmax'] = st.vmax
+        stretch_params = {}
+        for k in ['stretch', 'stretchscale', 'stretchpower']:
+            if k in _kw:
+                stretch_params[k] = _kw.pop(k)
+        st = Stretcher(vmin=_kw['vmin'], vmax=_kw['vmax'],
+                       sigma=sigma, **stretch_params)
+        c, cmin, cmax = st.set_minmax(c)
+        _kw['vmin'] = cmin
+        _kw['vmax'] = cmax
         c = self.vskipfill(c, v)
         if type(self.channelnumber) is int:
             c = [c[self.channelnumber]]
@@ -974,14 +973,14 @@ class PlotAstroData(AstroFrame):
     def add_rgb(self,
                 stretch: list[str, str, str] = ['linear'] * 3,
                 stretchscale: list[float | None, float | None, float | None] = [None] * 3,
-                stretchpower: list[float, float, float] = [1, 1, 1],
+                stretchpower: list[float, float, float] = [0.5, 0.5, 0.5],
                 **kwargs) -> None:
-        """Use PIL.Image and imshow of matplotlib. kwargs must include the arguments of AstroData to specify the data to be plotted. A three-element array ([red, green, blue]) is supposed for all arguments, except for xskip, yskip and show_beam, including vmax and vmin. kwargs may include arguments for add_beam() and a dict of beam_kwargs to specify the beam patch in more detail. kwargs may include xskiip and yskip.
+        """Use PIL.Image and imshow of matplotlib. kwargs must include the arguments of AstroData to specify the data to be plotted. A three-element array ([red, green, blue]) is supposed for all arguments, except for xskip, yskip and show_beam, including vmax and vmin. kwargs may include the arguments for Stretcher (stretch, stretchscale, and stretchpower; three-element array for each) to specify the stretch parameters. kwargs may include arguments for add_beam() and a dict of beam_kwargs to specify the beam patch in more detail. kwargs may include xskiip and yskip.
 
         Args:
             stretch (str, optional): 'log', 'asinh', 'power', or 'linear'. Any other means 'linear'. 'log' means the mapped data are logarithmic. 'asinh' means the mapped data are arc sin hyperbolic. 'power' means the mapped data are power-law (see also stretchpower). Defaults to 'linear'.
             stretchscale (float, optional): Color scale is asinh(data / stretchscale). Defaults to None.
-            stretchpower (float, optional): Color scale is data**stretchpower / stretchpower. 1 means the linear scale, while 0 means the logarithmic scale. Defaults to 1.
+            stretchpower (float, optional): Color scale is data**stretchpower / stretchpower. 1 means the linear scale, while 0 means the logarithmic scale. Defaults to 0.5.
         """
         from PIL import Image
 
@@ -992,18 +991,16 @@ class PlotAstroData(AstroFrame):
             print('No pixel size. Skip add_rgb.')
             return
 
-        st = Stretcher(stretch, stretchscale, stretchpower,
-                       _kw['vmin'], _kw['vmax'], sigma)
-        c = st.set_minmax(c)
-        _kw['vmin'] = st.vmin
-        _kw['vmax'] = st.vmax
         if not (np.shape(c[0]) == np.shape(c[1]) == np.shape(c[2])):
             print('RGB shapes mismatch. Skip add_rgb.')
             return
 
-        for i, (cmin, cmax) in enumerate(zip(_kw['vmin'], _kw['vmax'])):
-            if cmax > cmin:
-                c[i] = (c[i] - cmin) / (cmax - cmin) * 255
+        st = Stretcher(stretch, stretchscale, stretchpower,
+                       _kw['vmin'], _kw['vmax'], sigma)
+        c, cmin, cmax = st.set_minmax(c)
+        for i in range(st.n):
+            if cmax[i] > cmin[i]:
+                c[i] = (c[i] - cmin[i]) / (cmax[i] - cmin[i]) * 255
             c[i] = self.vskipfill(c[i], v)
         size = np.shape(c[0][0])[::-1]
         c = np.moveaxis(c, 1, 0)[:, :, ::-self.ydir, ::-self.xdir]
