@@ -96,56 +96,109 @@ def logcbticks(vmin: float = 1e-3, vmax: float = 1e3
     return ticks[cond], ticklabels[cond]
 
 
-def do_stretch(x: list | np.ndarray,
-               stretch: str, stretchscale: float,
-               stretchpower: float) -> np.ndarray:
+@dataclass
+class Stretcher():
     """Get the stretched values.
 
-    Args:
-        x (list | np.ndarray): Input array in the linear scale.
-        stretch (str): 'log', 'asinh', 'power', or 'linear'. Any other means 'linear'. 'log' means the mapped data are logarithmic. 'asinh' means the mapped data are arc sin hyperbolic. 'power' means the mapped data are power-law (see also stretchpower). Defaults to 'linear'.
-        stretchscale (float): The output is asinh(data / stretchscale).
-        stretchpower (float): The output is data**stretchpower / stretchpower. 1 means the linear scale, while 0 means the logarithmic scale.
+        Args:
+            stretch (str, optional): 'log', 'asinh', 'power', or 'linear'. Any other means 'linear'. 'log' means the mapped data are logarithmic. 'asinh' means the mapped data are arc sin hyperbolic. 'power' means the mapped data are power-law (see also stretchpower). Defaults to 'linear'.
+            stretchscale (float, optional): The output is asinh(data / stretchscale). Defaults to None.
+            stretchpower (float, optional): The output is data**stretchpower / stretchpower. 1 means the linear scale, while 0 means the logarithmic scale. Defaults to 0.5.
+            vmin (float, optional): The minimum value for Axes.pcolormesh() of matplotlib. Defaults to None.
+            vmax (float, optional): The maximum value for Axes.pcolormesh() of matplotlib. Defaults to None.
+            sigma (float, optional): Noise level. Defaults to 0.
+    """        
+    stretch: str = 'linear'
+    stretchscale: float | None = None
+    stretchpower: float = 0.5
+    vmin: float | None = None
+    vmax: float | None = None
+    sigma: float = 0
+    
+    def __post_init__(self):
+        self.n = 1 if type(self.stretch) is str else len(self.stretch)
+        if self.n == 1:
+            if self.stretchscale is None:
+                self.stretchscale = self.sigma
+            self.cutlow = self.vmin
+            if self.stretch in ['log', 'power'] and self.cutlow is None:
+                self.cutlow = self.sigma
+        else:
+            self.stretchscale = np.array(self.stretchscale)
+            self.vmin = np.array(self.vmin)
+            self.sigma = np.array(self.sigma)
+            cond = np.equal(self.stretchscale, None)
+            self.stretchscale[cond] = self.sigma[cond]
+            self.cutlow = self.vmin.copy()
+            if self.stretch in ['log', 'power']:
+                cond = np.equal(self.cutlow, None)
+                self.cutlow[cond] = self.sigma[cond]
+        
+    def do(self, x: list | np.ndarray) -> np.ndarray:
+        """Get the stretched values.
 
-    Returns:
-        np.ndarray: Output stretched array.
-    """
-    t = np.array(x)
-    match stretch:
-        case 'log':
-            t = np.log10(t)  # To be consistent with logcbticks().
-        case 'asinh':
-            t = np.arcsinh(t / stretchscale)
-        case 'power':
-            p = 1e-6 if stretchpower == 0 else stretchpower
-            t = t**p / p
-    return t
+        Args:
+            x (list | np.ndarray): Input array in the linear scale.
 
+        Returns:
+            np.ndarray: Output stretched array.
+        """
+        t = np.array(x)
+        match self.stretch:
+            case 'log':
+                t = np.log10(t)  # To be consistent with logcbticks().
+            case 'asinh':
+                t = np.arcsinh(t / self.stretchscale)
+            case 'power':
+                p = 1e-6 if self.stretchpower == 0 else self.stretchpower
+                t = t**p / p
+        return t
 
-def undo_stretch(x: list | np.ndarray,
-                 stretch: str, stretchscale: float,
-                 stretchpower: float) -> np.ndarray:
-    """Get the linear values from the stretched values.
+    def undo(self, x: list | np.ndarray) -> np.ndarray:
+        """Get the linear values from the stretched values.
 
-    Args:
-        x (list | np.ndarray): Input stretched array.
-        stretch (str): 'log', 'asinh', 'power', or 'linear'. Any other means 'linear'. 'log' means the mapped data are logarithmic. 'asinh' means the mapped data are arc sin hyperbolic. 'power' means the mapped data are power-law (see also stretchpower). Defaults to 'linear'.
-        stretchscale (float): The input is asinh(data / stretchscale).
-        stretchpower (float): The input is data**stretchpower / stretchpower. 1 means the linear scale, while 0 means the logarithmic scale.
+        Args:
+            x (list | np.ndarray): Input stretched array.
 
-    Returns:
-        np.ndarray: Output array in the linear scale.
-    """
-    t = np.array(x)
-    match stretch:
-        case 'log':
-            t = 10**t  # To be consistent with logcbticks().
-        case 'asinh':
-            t = np.sinh(t) * stretchscale
-        case 'power':
-            p = 1e-6 if stretchpower == 0 else stretchpower
-            t = (t * p)**(1 / p)
-    return t
+        Returns:
+            np.ndarray: Output array in the linear scale.
+        """
+        t = np.array(x)
+        match self.stretch:
+            case 'log':
+                t = 10**t  # To be consistent with logcbticks().
+            case 'asinh':
+                t = np.sinh(t) * self.stretchscale
+            case 'power':
+                p = 1e-6 if self.stretchpower == 0 else self.stretchpower
+                t = (t * p)**(1 / p)
+        return t
+
+    def set_minmax(self, data: np.ndarray) -> np.ndarray:
+        """Set vmin and vmax for color pcolormesh and RGB maps.
+
+        Args:
+            data (np.ndarray): 2D/3D data to plot.
+
+        Returns:
+            np.ndarray: Data clipped with the vmin and vmax.
+        """
+        single = self.n == 1
+        minlist = [self.vmin] if single else self.vmin
+        maxlist = [self.vmax] if single else self.vmax
+        cutlist = [self.cutlow] if single else self.cutlow
+        clist = [data] if single else data
+        for i, (c, c0, v0, v1) in enumerate(zip(clist, cutlist, minlist, maxlist)):
+            minlist[i] = c1 = np.nanmin(c) if v0 is None else self.do(v0)
+            maxlist[i] = c2 = np.nanmin(c) if v1 is None else self.do(v1)
+            clist[i] = self.do(c.clip(c0, None)).clip(c1, c2)
+        if single:
+            clist = clist[0]
+            minlist = minlist[0]
+            maxlist = maxlist[0]
+        self.vmin = minlist
+        self.vmax = maxlist
+        return clist
 
 
 @dataclass
@@ -249,56 +302,6 @@ class PlotAxes2D():
                 ax.set_aspect(**self.aspect)
             else:
                 ax.set_aspect(self.aspect)
-
-
-def set_minmax(data: np.ndarray, stretch: str, stretchscale: float,
-               stretchpower: float, sigma: float, kw: dict
-               ) -> np.ndarray:
-    """Set vmin and vmax for color pcolormesh and RGB maps.
-
-    Args:
-        data (np.ndarray): Plotted data.
-        stretch (str): 'log', 'asinh', 'power', or 'linear'. Any other means 'linear'. 'log' means the mapped data are logarithmic. 'asinh' means the mapped data are arc sin hyperbolic. 'power' means the mapped data are power-law (see also stretchpower). Defaults to 'linear'.
-        stretchscale (float): The input is asinh(data / stretchscale).
-        stretchpower (float): The input is data**stretchpower / stretchpower. 1 means the linear scale, while 0 means the logarithmic scale.
-        sigma (float): Noise level.
-        kw (dict): Probably like {'vmin':0, 'vmax':1}.
-
-    Returns:
-        np.ndarray: Data clipped with the vmin and vmax.
-    """
-    if type(stretch) is str:
-        data = [data]
-        sigma = [sigma]
-        stretch = [stretch]
-        stretchscale = [stretchscale]
-        stretchpower = [stretchpower]
-        for k in ['vmin', 'vmax']:
-            kw[k] = [kw[k]]
-
-    isnan = np.equal(stretchscale, None)
-    stretchscale = np.where(isnan, sigma, stretchscale)
-    isnan = np.equal(kw['vmin'], None)
-    cmin = np.where(isnan, sigma, kw['vmin'])
-
-    argslist = (stretch, stretchscale, stretchpower)
-    for i, stretch_args in enumerate(zip(*argslist)):
-        c = data[i]
-        if stretch_args[0] in ['log', 'power']:
-            c = c.clip(cmin[i], None)
-        c = do_stretch(c, *stretch_args)
-        data[i] = c
-        for k in ['vmin', 'vmax']:
-            if kw[k][i] is None:
-                kw[k][i] = np.nanmin(c) if k == 'vmin' else np.nanmax(c)
-            else:
-                kw[k][i] = do_stretch(kw[k][i], *stretch_args)
-    data = [c.clip(a, b) for c, a, b in zip(data, kw['vmin'], kw['vmax'])]
-    if len(data) == 1:
-        data = data[0]
-        for k in ['vmin', 'vmax']:
-            kw[k] = kw[k][0]
-    return data
 
 
 def kwargs2AstroData(kw: dict) -> AstroData:
@@ -797,9 +800,7 @@ class PlotAstroData(AstroFrame):
     def _set_colorbar(self, mappable, ch: int, show_cbar: bool,
                       cblabel: str, cbformat: str,
                       cbticks: list | None, cbticklabels: list | None,
-                      cblocation: str, stretch: str,
-                      stretchscale: float, stretchpower: float,
-                      vmin: float, vmax: float):
+                      cblocation: str, st: Stretcher):
         if not show_cbar:
             return
 
@@ -818,21 +819,16 @@ class PlotAstroData(AstroFrame):
         cb.ax.tick_params(labelsize=14)
         font = mpl.font_manager.FontProperties(size=16)
         cb.ax.yaxis.label.set_font_properties(font)
-        stretch_args = (stretch, stretchscale, stretchpower)
-        if cbticks is None and stretch == 'log':
-            cbticks, cbticklabels = logcbticks(10**vmin, 10**vmax)
-        if cbticks is not None:
-            cbticks = do_stretch(cbticks, *stretch_args)
-        else:
-            cbticks = cb.get_ticks()
-        cond = (vmin <= cbticks) * (cbticks <= vmax)
+        if cbticks is None and st.stretch == 'log':
+            cbticks, cbticklabels = logcbticks(10**st.vmin, 10**st.vmax)
+        cbticks = cb.get_ticks() if cbticks is None else st.do(cbticks)
+        cond = (st.vmin <= cbticks) * (cbticks <= st.vmax)
         cbticks = cbticks[cond]
         cb.set_ticks(cbticks)
-        if cbticklabels is not None:
-            cbticklabels = np.array(cbticklabels)[cond]
+        if cbticklabels is None:
+            cbticklabels = [f'{t:{cbformat[1:]}}' for t in st.undo(cbticks)]
         else:
-            t = undo_stretch(cbticks, *stretch_args)
-            cbticklabels = [f'{d:{cbformat[1:]}}' for d in t]
+            cbticklabels = np.array(cbticklabels)[cond]
         cb.set_ticklabels(cbticklabels)
 
     def add_color(self,
@@ -870,11 +866,12 @@ class PlotAstroData(AstroFrame):
 
         if cblabel is None:
             cblabel = bunit
-        if stretchscale is None:
-            stretchscale = sigma
 
-        stretch_args = (stretch, stretchscale, stretchpower)
-        c = set_minmax(c, *stretch_args, sigma, _kw)
+        st = Stretcher(stretch, stretchscale, stretchpower,
+                       _kw['vmin'], _kw['vmax'], sigma)
+        c = st.set_minmax(c)
+        _kw['vmin'] = st.vmin
+        _kw['vmax'] = st.vmax
         c = self.vskipfill(c, v)
         if type(self.channelnumber) is int:
             c = [c[self.channelnumber]]
@@ -885,8 +882,7 @@ class PlotAstroData(AstroFrame):
                 p[ch] = pnow
         for ch in self.bottomleft:
             self._set_colorbar(p, ch, show_cbar, cblabel, cbformat,
-                               cbticks, cbticklabels, cblocation,
-                               *stretch_args, _kw['vmin'], _kw['vmax'])
+                               cbticks, cbticklabels, cblocation, st)
         self.add_beam(beam=beam, **beam_kwargs)
 
     def add_contour(self,
@@ -996,8 +992,11 @@ class PlotAstroData(AstroFrame):
             print('No pixel size. Skip add_rgb.')
             return
 
-        stretch_args = (stretch, stretchscale, stretchpower)
-        c = set_minmax(c, *stretch_args, sigma, _kw)
+        st = Stretcher(stretch, stretchscale, stretchpower,
+                       _kw['vmin'], _kw['vmax'], sigma)
+        c = st.set_minmax(c)
+        _kw['vmin'] = st.vmin
+        _kw['vmax'] = st.vmax
         if not (np.shape(c[0]) == np.shape(c[1]) == np.shape(c[2])):
             print('RGB shapes mismatch. Skip add_rgb.')
             return
