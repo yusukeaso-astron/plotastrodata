@@ -442,7 +442,6 @@ class AstroData():
             xlist, ylist = coord2xy(coords, self.center) * 3600.
         nprof = len(xlist)
         v = self.v
-        dv = self.dv
         data, xf, yf = filled2d(self.data, self.x, self.y, ninterp)
         x, y = np.meshgrid(xf, yf)
         prof = np.empty((nprof, len(v)))
@@ -469,7 +468,6 @@ class AstroData():
                 prof *= np.abs(self.dx * self.dy) / Omega
         gfitres = {}
         if gaussfit:
-            nprof = len(prof)
             best, error = [None] * nprof, [None] * nprof
             for i in range(nprof):
                 res = gaussfit1d(xdata=v, ydata=prof[i], sigma=None)
@@ -477,7 +475,8 @@ class AstroData():
                 perr = res['perr'][:3]
                 print('Gauss (peak, center, FWHM):', popt)
                 print('Gauss uncertainties:', perr)
-                best[i], error[i] = popt, perr
+                best[i] = popt
+                error[i] = perr
             gfitres = {'best': best, 'error': error}
         return v, prof, gfitres
 
