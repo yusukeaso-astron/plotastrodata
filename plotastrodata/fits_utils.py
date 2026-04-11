@@ -420,12 +420,14 @@ def data2fits(d: np.ndarray, h: dict = {},
     defaults = {'CTYPE': ['RA---SIN', 'DEC--SIN', 'FREQ'],
                 'CUNIT': ['deg', 'deg', 'Hz']}
     for k, v in defaults.items():
-        setattr(w.wcs, k.lower(),
-                [_h.get(f'{k}{i+1:d}', v[i]) for i in range(naxis)])
-    header = w.to_header()
+        for i in range(naxis):
+            _h.setdefault(f'{k}{i+1:d}', v[i])
+    w.wcs.ctype = [_h[f'CTYPE{i+1}'] for i in range(naxis)]
+    w.wcs.cunit = [_h[f'CUNIT{i+1}'] for i in range(naxis)]
     _h.setdefault('BUNIT', 'Jy/beam')
     if naxis >= 3:
         _h.setdefault('SPECSYS', 'LSRK')
+    header = w.to_header()
     hdu = fits.PrimaryHDU(d, header=header)
     for k, v in _h.items():
         if v is not None and 'COMMENT' not in k and 'HISTORY' not in k:
