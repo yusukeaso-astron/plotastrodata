@@ -396,7 +396,19 @@ class EmceeCorner():
 
 
 def gaussfit1d(xdata: np.ndarray, ydata: np.ndarray,
-               sigma: float | np.ndarray | None, **kwargs) -> dict:
+               sigma: float | np.ndarray | None,
+               show: bool = False, **kwargs) -> dict:
+    """Gaussian fitting to a pair of 1D arrays.
+
+    Args:
+        xdata (np.ndarray): ydata is compared with Gauss(xdata).
+        ydata (np.ndarray): ydata is compared with Gauss(xdata).
+        sigma (float | np.ndarray | None): Noise level of ydata. If None is given, sigma is also a free parameter. Defaults to None.
+        show (bool, optional): True means to show the best-fit parameters and uncertainties. Defaults to False.
+
+    Returns:
+        dict: _description_
+    """
     if sigma is not None and np.shape(sigma) == ():
         sigma = [sigma] * len(xdata)
     xmin, xmax = np.min(xdata), np.max(xdata)
@@ -426,4 +438,7 @@ def gaussfit1d(xdata: np.ndarray, ydata: np.ndarray,
     plow = fitter.plow
     phigh = fitter.phigh
     perr = (phigh - plow) / 2
+    if show:
+        print('Gauss (peak, center, FWHM):', popt)
+        print('Gauss uncertainties:', perr)
     return {'popt': popt, 'perr': perr}

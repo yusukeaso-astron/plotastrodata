@@ -470,13 +470,10 @@ class AstroData():
         if gaussfit:
             best, error = [None] * nprof, [None] * nprof
             for i in range(nprof):
-                res = gaussfit1d(xdata=v, ydata=prof[i], sigma=None)
-                popt = res['popt'][:3]
-                perr = res['perr'][:3]
-                print('Gauss (peak, center, FWHM):', popt)
-                print('Gauss uncertainties:', perr)
-                best[i] = popt
-                error[i] = perr
+                res = gaussfit1d(xdata=v, ydata=prof[i],
+                                 sigma=None, show=False)
+                best[i] = res['popt'][:3]
+                error[i] = res['perr'][:3]
             gfitres = {'best': best, 'error': error}
         return v, prof, gfitres
 
