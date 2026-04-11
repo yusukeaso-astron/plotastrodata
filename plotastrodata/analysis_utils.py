@@ -631,34 +631,24 @@ class AstroFrame():
     def __post_init__(self):
         self.xdir = -1 if self.xflip else 1
         self.ydir = -1 if self.yflip else 1
-        if self.xmax is None:
-            self.xmax = self.rmax
-        if self.xmin is None:
-            self.xmin = -self.rmax
-        if self.ymax is None:
-            self.ymax = self.rmax
-        if self.ymin is None:
-            self.ymin = -self.rmax
-        if self.xdir == -1:
+        self.xmin = -self.rmax if self.xmin is None else self.xmin
+        self.xmax = self.rmax if self.xmax is None else self.xmax
+        self.ymin = -self.rmax if self.ymin is None else self.ymin
+        self.ymax = self.rmax if self.ymax is None else self.ymax
+        if self.xflip:
             self.xmin, self.xmax = self.xmax, self.xmin
-        if self.ydir == -1:
+        if self.yflip:
             self.ymin, self.ymax = self.ymax, self.ymin
         xlim = [self.xoff + self.xmin, self.xoff + self.xmax]
         ylim = [self.yoff + self.ymin, self.yoff + self.ymax]
         vlim = [self.vmin, self.vmax]
         if self.pv:
-            xlim = np.sort(xlim)
+            xlim = sorted(xlim)
             if not self.xflip:
-                xlim = xlim[::-1]
-        self.xlim = xlim
-        self.ylim = ylim
-        self.vlim = vlim
-        if self.pv:
-            self.Xlim = vlim if self.swapxy else xlim
-            self.Ylim = xlim if self.swapxy else vlim
-        else:
-            self.Xlim = ylim if self.swapxy else xlim
-            self.Ylim = xlim if self.swapxy else ylim
+                xlim.reverse()
+        self.xlim, self.ylim, self.vlim = xlim, ylim, vlim
+        _x, _y = (xlim, vlim) if self.pv else (xlim, ylim)
+        self.Xlim, self.Ylim = (_y, _x) if self.swapxy else (_x, _y)
         if self.quadrants is not None:
             self.Xlim = [0, self.rmax]
             self.Ylim = [0, min(self.vmax, -self.vmin)]
