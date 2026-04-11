@@ -107,14 +107,14 @@ class Stretcher():
             vmin (float, optional): The minimum value for Axes.pcolormesh() of matplotlib. Defaults to None.
             vmax (float, optional): The maximum value for Axes.pcolormesh() of matplotlib. Defaults to None.
             sigma (float, optional): Noise level. Defaults to 0.
-    """        
+    """
     stretch: str = 'linear'
     stretchscale: float | None = None
     stretchpower: float = 0.5
     vmin: float | None = None
     vmax: float | None = None
     sigma: float = 0
-    
+
     def __post_init__(self):
         self.n = 1 if type(self.stretch) is str else len(self.stretch)
         stretch = self.stretch
@@ -134,7 +134,7 @@ class Stretcher():
             novmin = np.equal(vmin, None)
             getsigma = (islog + ispower) * novmin
             self.vmin = np.where(getsigma, sigma, vmin)
-        
+
     def do(self, x: list | np.ndarray) -> np.ndarray:
         """Get the stretched values.
 

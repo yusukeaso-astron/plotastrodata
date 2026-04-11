@@ -70,7 +70,7 @@ def trim(data: np.ndarray | None = None, x: np.ndarray | None = None,
 
     if data is None:
         return None, [xout, yout, vout]
-    
+
     d = np.squeeze(data)
 
     if d.ndim == 0:
