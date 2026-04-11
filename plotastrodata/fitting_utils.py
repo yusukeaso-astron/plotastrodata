@@ -438,7 +438,8 @@ def gaussfit1d(xdata: np.ndarray, ydata: np.ndarray,
     plow = fitter.plow
     phigh = fitter.phigh
     perr = (phigh - plow) / 2
+    pars = 'peak, center, FWHM' + (', lnsigma' if sigma is None else '')
     if show:
-        print('Gauss (peak, center, FWHM):', popt)
+        print(f'Gauss ({pars}):', popt)
         print('Gauss uncertainties:', perr)
     return {'popt': popt, 'perr': perr}
