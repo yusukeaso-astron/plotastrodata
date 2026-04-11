@@ -393,3 +393,52 @@ class EmceeCorner():
         error = evidence * results.logzerr[-1]
         self.evidence = evidence
         return {'evidence': evidence, 'error': error}
+
+
+def gaussfit1d(xdata: np.ndarray, ydata: np.ndarray,
+               sigma: float | np.ndarray | None,
+               show: bool = False, **kwargs) -> dict:
+    """Gaussian fitting to a pair of 1D arrays.
+
+    Args:
+        xdata (np.ndarray): ydata is compared with Gauss(xdata).
+        ydata (np.ndarray): ydata is compared with Gauss(xdata).
+        sigma (float | np.ndarray | None): Noise level of ydata. If None is given, sigma is also a free parameter. Defaults to None.
+        show (bool, optional): True means to show the best-fit parameters and uncertainties. Defaults to False.
+
+    Returns:
+        dict: _description_
+    """
+    if sigma is not None and np.shape(sigma) == ():
+        sigma = [sigma] * len(xdata)
+    xmin, xmax = np.min(xdata), np.max(xdata)
+    ymin, ymax = np.min(ydata), np.max(ydata)
+    dx = np.abs(xdata[1] - xdata[0])
+    bounds = [[ymin, ymax], [xmin, xmax], [dx, xmax - xmin]]
+    if sigma is None:
+        bounds.append([np.log(ymax * 1e-6), np.log(ymax)])
+
+    def g(x, p):
+        a, c, w = p
+        return a * np.exp(-4. * np.log(2.) * ((x - c) / w)**2)
+
+    if sigma is None:
+        def logl(p):
+            sigmdl = np.exp(p[3])
+            chi2 = np.sum(((ydata - g(xdata, p[:3])) / sigmdl)**2)
+            return -0.5 * chi2 - p[3]
+    else:
+        def logl(p):
+            chi2 = np.sum(((ydata - g(xdata, p)) / sigma)**2)
+            return -0.5 * chi2
+
+    fitter = EmceeCorner(bounds=bounds, logl=logl)
+    fitter.fit(**kwargs)
+    popt = fitter.popt
+    plow = fitter.plow
+    phigh = fitter.phigh
+    perr = (phigh - plow) / 2
+    if show:
+        print('Gauss (peak, center, FWHM):', popt)
+        print('Gauss uncertainties:', perr)
+    return {'popt': popt, 'perr': perr}

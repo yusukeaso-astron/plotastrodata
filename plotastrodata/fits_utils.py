@@ -398,49 +398,39 @@ def fits2data(fitsimage: str, Tb: bool = False, log: bool = False,
     return fd.data, (fd.x, fd.y, fd.v), beam, bunit, rms
 
 
-def data2fits(d: np.ndarray | None = None, h: dict = {},
+def data2fits(d: np.ndarray, h: dict = {},
               templatefits: str | None = None,
               fitsimage: str = 'test') -> None:
     """Make a fits file from a N-D array.
 
     Args:
-        d (np.ndarray, optional): N-D array. Defaults to None.
-        h (dict, optional): Fits header. Defaults to {}.
-        templatefits (str, optional): Fits file to copy header. Defaults to None.
-        fitsimage (str, optional): Output name. Defaults to 'test'.
+        d (np.ndarray): N-D array.
+        h (dict, optional): Additional FITS header. Defaults to {}.
+        templatefits (str, optional): FITS file whose header is used as a temperate. Defaults to None.
+        fitsimage (str, optional): Output filename, with or without '.fits'. Defaults to 'test'.
     """
-    naxis = np.ndim(d)
-    w = wcs.WCS(naxis=naxis)
     _h = {} if templatefits is None else FitsData(templatefits).get_header()
     _h.update(h)
+    naxis = np.ndim(d)
+    w = wcs.WCS(naxis=naxis)
     if _h == {}:
         w.wcs.crpix = [0] * naxis
         w.wcs.crval = [0] * naxis
         w.wcs.cdelt = [1] * naxis
-    ctype = ['RA---SIN', 'DEC--SIN', 'FREQ']
-    if 'CTYPE1' in _h:
-        ctype[0] = _h['CTYPE1']
-    if 'CTYPE2' in _h:
-        ctype[1] = _h['CTYPE2']
-    if 'CTYPE3' in _h:
-        ctype[2] = _h['CTYPE3']
-    w.wcs.ctype = ctype[:naxis]
-    cunit = ['deg', 'deg', 'Hz']
-    if 'CUNIT1' in _h:
-        cunit[0] = _h['CUNIT1']
-    if 'CUNIT2' in _h:
-        cunit[1] = _h['CUNIT2']
-    if 'CUNIT3' in _h:
-        cunit[2] = _h['CUNIT3']
-    w.wcs.cunit = cunit[:naxis]
+    defaults = {'CTYPE': ['RA---SIN', 'DEC--SIN', 'FREQ'],
+                'CUNIT': ['deg', 'deg', 'Hz']}
+    for k, v in defaults.items():
+        for i in range(naxis):
+            _h.setdefault(f'{k}{i+1:d}', v[i])
+    w.wcs.ctype = [_h[f'CTYPE{i+1}'] for i in range(naxis)]
+    w.wcs.cunit = [_h[f'CUNIT{i+1}'] for i in range(naxis)]
+    _h.setdefault('BUNIT', 'Jy/beam')
+    if naxis >= 3:
+        _h.setdefault('SPECSYS', 'LSRK')
     header = w.to_header()
     hdu = fits.PrimaryHDU(d, header=header)
-    if 'BUNIT' not in _h:
-        _h['BUNIT'] = 'Jy/beam'
-    if naxis >= 3 and 'SPECSYS' not in _h:
-        _h['SPECSYS'] = 'LSRK'
-    for k in _h:
-        if not ('COMMENT' in k or 'HISTORY' in k) and _h[k] is not None:
-            hdu.header[k] = _h[k]
+    for k, v in _h.items():
+        if v is not None and 'COMMENT' not in k and 'HISTORY' not in k:
+            hdu.header[k] = v
     hdu = fits.HDUList([hdu])
-    hdu.writeto(fitsimage.replace('.fits', '') + '.fits', overwrite=True)
+    hdu.writeto(fitsimage.removesuffix('.fits') + '.fits', overwrite=True)

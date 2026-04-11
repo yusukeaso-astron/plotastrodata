@@ -8,7 +8,7 @@ from scipy.signal import convolve
 from plotastrodata import const_utils as cu
 from plotastrodata.coord_utils import coord2xy, rel2abs, xy2coord
 from plotastrodata.fits_utils import data2fits, FitsData, Jy2K
-from plotastrodata.fitting_utils import EmceeCorner
+from plotastrodata.fitting_utils import EmceeCorner, gaussfit1d
 from plotastrodata.matrix_utils import dot2d, Mfac, Mrot
 from plotastrodata.noise_utils import estimate_rms
 from plotastrodata.other_utils import (gaussian2d, isdeg,
@@ -442,7 +442,6 @@ class AstroData():
             xlist, ylist = coord2xy(coords, self.center) * 3600.
         nprof = len(xlist)
         v = self.v
-        dv = self.dv
         data, xf, yf = filled2d(self.data, self.x, self.y, ninterp)
         x, y = np.meshgrid(xf, yf)
         prof = np.empty((nprof, len(v)))
@@ -469,22 +468,12 @@ class AstroData():
                 prof *= np.abs(self.dx * self.dy) / Omega
         gfitres = {}
         if gaussfit:
-            xmin, xmax = np.min(v), np.max(v)
-            ymin, ymax = np.min(prof), np.max(prof)
-            bounds = [[ymin, xmin, np.abs(dv)], [ymax, xmax, xmax - xmin]]
-
-            def gauss(x, p, c, w):
-                return p * np.exp(-4. * np.log(2.) * ((x - c) / w)**2)
-
-            nprof = len(prof)
-            best, error = [None] * nprof, [None] * nprof
+            res = [None] * nprof
             for i in range(nprof):
-                popt, pcov = curve_fit(gauss, v, prof[i], bounds=bounds)
-                perr = np.sqrt(np.diag(pcov))
-                print('Gauss (peak, center, FWHM):', popt)
-                print('Gauss uncertainties:', perr)
-                best[i], error[i] = popt, perr
-            gfitres = {'best': best, 'error': error}
+                res[i] = gaussfit1d(xdata=v, ydata=prof[i],
+                                    sigma=None, show=True)
+            gfitres['best'] = [a['popt'][:3] for a in res]
+            gfitres['error'] = [a['perr'][:3] for a in res]
         return v, prof, gfitres
 
     def rotate(self, pa: float = 0, **kwargs):
@@ -642,34 +631,24 @@ class AstroFrame():
     def __post_init__(self):
         self.xdir = -1 if self.xflip else 1
         self.ydir = -1 if self.yflip else 1
-        if self.xmax is None:
-            self.xmax = self.rmax
-        if self.xmin is None:
-            self.xmin = -self.rmax
-        if self.ymax is None:
-            self.ymax = self.rmax
-        if self.ymin is None:
-            self.ymin = -self.rmax
-        if self.xdir == -1:
+        self.xmin = -self.rmax if self.xmin is None else self.xmin
+        self.xmax = self.rmax if self.xmax is None else self.xmax
+        self.ymin = -self.rmax if self.ymin is None else self.ymin
+        self.ymax = self.rmax if self.ymax is None else self.ymax
+        if self.xflip:
             self.xmin, self.xmax = self.xmax, self.xmin
-        if self.ydir == -1:
+        if self.yflip:
             self.ymin, self.ymax = self.ymax, self.ymin
         xlim = [self.xoff + self.xmin, self.xoff + self.xmax]
         ylim = [self.yoff + self.ymin, self.yoff + self.ymax]
         vlim = [self.vmin, self.vmax]
         if self.pv:
-            xlim = np.sort(xlim)
+            xlim = sorted(xlim)
             if not self.xflip:
-                xlim = xlim[::-1]
-        self.xlim = xlim
-        self.ylim = ylim
-        self.vlim = vlim
-        if self.pv:
-            self.Xlim = vlim if self.swapxy else xlim
-            self.Ylim = xlim if self.swapxy else vlim
-        else:
-            self.Xlim = ylim if self.swapxy else xlim
-            self.Ylim = xlim if self.swapxy else ylim
+                xlim.reverse()
+        self.xlim, self.ylim, self.vlim = xlim, ylim, vlim
+        _x, _y = (xlim, vlim) if self.pv else (xlim, ylim)
+        self.Xlim, self.Ylim = (_y, _x) if self.swapxy else (_x, _y)
         if self.quadrants is not None:
             self.Xlim = [0, self.rmax]
             self.Ylim = [0, min(self.vmax, -self.vmin)]
