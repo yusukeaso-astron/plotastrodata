@@ -37,11 +37,11 @@ def isdeg(s: str) -> bool:
 
 def trim(data: np.ndarray | None = None, x: np.ndarray | None = None,
          y: np.ndarray | None = None, v: np.ndarray | None = None,
-         xlim: list[float, float] | None = None,
-         ylim: list[float, float] | None = None,
-         vlim: list[float, float] | None = None,
+         xlim: list[float] | None = None,
+         ylim: list[float] | None = None,
+         vlim: list[float] | None = None,
          pv: bool = False
-         ) -> tuple[np.ndarray, list[np.ndarray, np.ndarray, np.ndarray]]:
+         ) -> tuple[np.ndarray | None, list[np.ndarray | None]]:
     """Trim 2D or 3D data by given coordinates and their limits.
 
     Args:
@@ -56,44 +56,37 @@ def trim(data: np.ndarray | None = None, x: np.ndarray | None = None,
     Returns:
         tuple: Trimmed (data, [x,y,v]).
     """
-    xout, yout, vout, dataout = x, y, v, data
-    i0 = j0 = k0 = 0
-    i1 = j1 = k1 = 100000
-    if x is not None and xlim is not None and None not in xlim:
-        x0 = np.max([np.min(x), xlim[0]])
-        x1 = np.min([np.max(x), xlim[1]])
-        i0 = np.argmin(np.abs(x - x0))
-        i1 = np.argmin(np.abs(x - x1))
-        i0, i1 = sorted([i0, i1])
-        xout = x[i0:i1+1]
-    if y is not None and ylim is not None and None not in ylim:
-        y0 = np.max([np.min(y), ylim[0]])
-        y1 = np.min([np.max(y), ylim[1]])
-        j0 = np.argmin(np.abs(y - y0))
-        j1 = np.argmin(np.abs(y - y1))
-        j0, j1 = sorted([j0, j1])
-        yout = y[j0:j1+1]
-    if v is not None and vlim is not None and None not in vlim:
-        v0 = np.max([np.min(v), vlim[0]])
-        v1 = np.min([np.max(v), vlim[1]])
-        k0 = np.argmin(np.abs(v - v0))
-        k1 = np.argmin(np.abs(v - v1))
-        k0, k1 = sorted([k0, k1])
-        vout = v[k0:k1+1]
-    if data is not None:
-        d = np.squeeze(data)
-        if np.ndim(d) == 0:
-            print('data has only one pixel.')
-            d = data
-        if np.ndim(d) == 2:
-            if pv:
-                j0, j1 = k0, k1
-            dataout = d[j0:j1+1, i0:i1+1]
-        else:
-            d = np.moveaxis(d, [-3, -2, -1], [0, 1, 2])
-            d = d[k0:k1+1, j0:j1+1, i0:i1+1]
-            d = np.moveaxis(d, [0, 1, 2], [-3, -2, -1])
-            dataout = d
+    def get_bounds(arr, lim):
+        if arr is None or lim is None or None in lim:
+            return arr, 0, None
+        lo = np.argmin(np.abs(arr - max(np.min(arr), lim[0])))
+        hi = np.argmin(np.abs(arr - min(np.max(arr), lim[1])))
+        lo, hi = sorted((lo, hi))
+        return arr[lo:hi + 1], lo, hi + 1
+
+    xout, i0, i1 = get_bounds(x, xlim)
+    yout, j0, j1 = get_bounds(y, ylim)
+    vout, k0, k1 = get_bounds(v, vlim)
+
+    if data is None:
+        return None, [xout, yout, vout]
+    
+    d = np.squeeze(data)
+
+    if d.ndim == 0:
+        print("data has only one pixel.")
+        return data, [xout, yout, vout]
+
+    if d.ndim == 2:
+        if pv:
+            j0, j1 = k0, k1
+        dataout = d[j0:j1, i0:i1]
+    else:
+        d = np.moveaxis(d, [-3, -2, -1], [0, 1, 2])
+        d = d[k0:k1, j0:j1, i0:i1]
+        d = np.moveaxis(d, [0, 1, 2], [-3, -2, -1])
+        dataout = d
+
     return dataout, [xout, yout, vout]
 
 
