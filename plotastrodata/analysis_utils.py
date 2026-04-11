@@ -8,7 +8,7 @@ from scipy.signal import convolve
 from plotastrodata import const_utils as cu
 from plotastrodata.coord_utils import coord2xy, rel2abs, xy2coord
 from plotastrodata.fits_utils import data2fits, FitsData, Jy2K
-from plotastrodata.fitting_utils import EmceeCorner
+from plotastrodata.fitting_utils import EmceeCorner, gaussfit1d
 from plotastrodata.matrix_utils import dot2d, Mfac, Mrot
 from plotastrodata.noise_utils import estimate_rms
 from plotastrodata.other_utils import (gaussian2d, isdeg,
@@ -469,18 +469,12 @@ class AstroData():
                 prof *= np.abs(self.dx * self.dy) / Omega
         gfitres = {}
         if gaussfit:
-            xmin, xmax = np.min(v), np.max(v)
-            ymin, ymax = np.min(prof), np.max(prof)
-            bounds = [[ymin, xmin, np.abs(dv)], [ymax, xmax, xmax - xmin]]
-
-            def gauss(x, p, c, w):
-                return p * np.exp(-4. * np.log(2.) * ((x - c) / w)**2)
-
             nprof = len(prof)
             best, error = [None] * nprof, [None] * nprof
             for i in range(nprof):
-                popt, pcov = curve_fit(gauss, v, prof[i], bounds=bounds)
-                perr = np.sqrt(np.diag(pcov))
+                res = gaussfit1d(xdata=v, ydata=prof[i], sigma=None)
+                popt = res['popt'][:3]
+                perr = res['perr'][:3]
                 print('Gauss (peak, center, FWHM):', popt)
                 print('Gauss uncertainties:', perr)
                 best[i], error[i] = popt, perr
