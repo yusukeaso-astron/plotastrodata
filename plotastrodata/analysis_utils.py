@@ -468,13 +468,12 @@ class AstroData():
                 prof *= np.abs(self.dx * self.dy) / Omega
         gfitres = {}
         if gaussfit:
-            best, error = [None] * nprof, [None] * nprof
+            res = [None] * nprof
             for i in range(nprof):
-                res = gaussfit1d(xdata=v, ydata=prof[i],
-                                 sigma=None, show=False)
-                best[i] = res['popt'][:3]
-                error[i] = res['perr'][:3]
-            gfitres = {'best': best, 'error': error}
+                res[i] = gaussfit1d(xdata=v, ydata=prof[i],
+                                    sigma=None, show=True)
+            gfitres = {'best': [a['popt'][:3] for a in res],
+                       'error': [a['perr'][:3] for a in res]}
         return v, prof, gfitres
 
     def rotate(self, pa: float = 0, **kwargs):
