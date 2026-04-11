@@ -472,8 +472,8 @@ class AstroData():
             for i in range(nprof):
                 res[i] = gaussfit1d(xdata=v, ydata=prof[i],
                                     sigma=None, show=True)
-            gfitres = {'best': [a['popt'][:3] for a in res],
-                       'error': [a['perr'][:3] for a in res]}
+            gfitres['best'] = [a['popt'][:3] for a in res]
+            gfitres['error'] = [a['perr'][:3] for a in res]
         return v, prof, gfitres
 
     def rotate(self, pa: float = 0, **kwargs):
