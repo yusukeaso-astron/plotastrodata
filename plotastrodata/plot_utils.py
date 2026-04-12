@@ -357,6 +357,8 @@ def kwargs2instance(cls: type[T], kw: dict) -> T:
         exkeys = {'fitsimage', 'center'}
     elif cls == Stretcher:
         exkeys = {'vmin', 'vmax'}
+    elif cls == Beam:
+        exkeys = {'beam'}
     keys = vars(cls(**kw0)).keys()
     tmp = {k: kw[k] for k in keys if k in kw}
     for k in keys - exkeys:
@@ -611,10 +613,9 @@ class PlotAstroData(AstroFrame):
         """Use add_region(). kwargs may include the arguments of Beam, except for beam_kwargs, to specify the beam apparance. Those arguments may be a list of each format.
         """
         b = kwargs2instance(Beam, kwargs)
-        show_beam = b.show_beam
+        show_beam, beamcolor, beampos = b.show_beam, b.beamcolor, b.beampos
         beam = b.beam
-        beamcolor = b.beamcolor
-        beampos = b.beampos
+        del kwargs['beam']
         if not show_beam:
             return
 
@@ -938,23 +939,15 @@ class PlotAstroData(AstroFrame):
         for axnow, unow, vnow in zip(self.ax, U, V):
             axnow.quiver(x, y, unow, vnow, **_kw)
 
-    def add_rgb(self,
-                stretch: list[str] = ['linear'] * 3,
-                stretchscale: list[float | None] = [None] * 3,
-                stretchpower: list[float] = [0.5] * 3,
-                **kwargs) -> None:
-        """Use PIL.Image and imshow of matplotlib. kwargs must include the arguments of AstroData to specify the data to be plotted. A three-element array ([red, green, blue]) is supposed for all arguments, except for xskip, yskip and show_beam, including vmax and vmin. kwargs may include the arguments for Stretcher (stretch, stretchscale, and stretchpower; three-element array for each) to specify the stretch parameters. kwargs may include arguments of Beam; a dict of beam_kwargs specifies the beam patch in more detail. kwargs may include xskiip and yskip.
-
-        Args:
-            stretch (str, optional): 'log', 'asinh', 'power', or 'linear'. Any other means 'linear'. 'log' means the mapped data are logarithmic. 'asinh' means the mapped data are arc sin hyperbolic. 'power' means the mapped data are power-law (see also stretchpower). Defaults to 'linear'.
-            stretchscale (float, optional): Color scale is asinh(data / stretchscale). Defaults to None.
-            stretchpower (float, optional): Color scale is data**stretchpower / stretchpower. 1 means the linear scale, while 0 means the logarithmic scale. Defaults to 0.5.
+    def add_rgb(self, **kwargs) -> None:
+        """Use PIL.Image and imshow of matplotlib. kwargs must include the arguments of AstroData to specify the data to be plotted. A three-element array ([red, green, blue]) is supposed for all arguments, including vmax and vmin, except for xskip, yskip and show_beam. kwargs may include the arguments for Stretcher (stretch, stretchscale, and stretchpower; three-element array for each) to specify the stretch parameters. kwargs may include arguments of Beam (three-element arrays); a single dict of beam_kwargs specifies the beam patch in more detail. kwargs may include xskiip and yskip.
         """
         from PIL import Image
 
         self._kw = {'vmin': [None] * 3, 'vmax': [None] * 3,
-                    'stretch': stretch, 'stretchscale': stretchscale,
-                    'stretchpower': stretchpower}
+                    'stretch': ['linear'] * 3,
+                    'stretchscale': [None] * 3,
+                    'stretchpower': [0.5] * 3}
         c, x, y, v, _, _, _kw, singlepix = self._map_init(kwargs)
         if singlepix:
             print('No pixel size. Skip add_rgb.')
