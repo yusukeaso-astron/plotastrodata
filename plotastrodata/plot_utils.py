@@ -207,7 +207,7 @@ class Stretcher():
 
 class Beam():
     """Arguments for PlotAstroData.add_beam().
-    
+
         Args:
             show_beam (bool, optional): Defaults to True.
             beam (list, optional): [bmaj, bmin, bpa]. This may be a list of list. Defaults to [None, None, None].
@@ -225,7 +225,7 @@ class Beam():
         self.beam = beam
         self.beamcolor = beamcolor
         self.beampos = beampos
-        self.beam_kwargs= beam_kwargs
+        self.beam_kwargs = beam_kwargs
 
     def todict(self):
         tmp = {'show_beam': self.show_beam,
