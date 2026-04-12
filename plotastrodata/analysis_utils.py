@@ -438,15 +438,15 @@ class AstroData():
             print('Data must be 3D with the v, y, and x axes.')
             return
 
-        if len(coords) > 0:
-            xlist, ylist = coord2xy(coords, self.center) * 3600.
-        nprof = len(xlist)
         v = self.v
         data, xf, yf = filled2d(self.data, self.x, self.y, ninterp)
         x, y = np.meshgrid(xf, yf)
+        if len(coords) > 0:
+            xlist, ylist = coord2xy(coords, self.center) * 3600.
+        nprof = len(xlist)
         prof = np.empty((nprof, len(v)))
-        if ellipse is None:
-            ellipse = [[0, 0, 0]] * nprof
+        ellipse = ellipse or [[0, 0, 0]] * nprof
+        calc = np.sum if flux else np.mean
         for i, (xc, yc, e) in enumerate(zip(xlist, ylist, ellipse)):
             major, minor, pa = e
             z = dot2d(Mrot(-pa), [y - yc, x - xc])
@@ -455,11 +455,8 @@ class AstroData():
                 idx = np.unravel_index(np.argmin(r), np.shape(r))
                 prof[i] = [d[idx] for d in data]
             else:
-                r = np.hypot(*dot2d(Mfac(2/major, 2/minor), z))
-                if flux:
-                    prof[i] = [np.sum(d[r <= 1]) for d in data]
-                else:
-                    prof[i] = [np.mean(d[r <= 1]) for d in data]
+                r = np.hypot(*dot2d(Mfac(2 / major, 2 / minor), z))
+                prof[i] = [calc(d[r <= 1]) for d in data]
         if flux:
             if None in self.beam or None in [self.dx, self.dy]:
                 print('None in beam, dx, or dy. Flux is not converted.')

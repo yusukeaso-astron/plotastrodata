@@ -859,15 +859,11 @@ class PlotAstroData(AstroFrame):
             print('No pixel size. Skip add_color.')
             return
 
-        if cblabel is None:
-            cblabel = bunit
+        cblabel = bunit if cblabel is None else cblabel
 
-        stretch_params = {}
-        for k in ['stretch', 'stretchscale', 'stretchpower']:
-            if k in _kw:
-                stretch_params[k] = _kw.pop(k)
-        st = Stretcher(vmin=_kw['vmin'], vmax=_kw['vmax'],
-                       sigma=sigma, **stretch_params)
+        keys = ['stretch', 'stretchscale', 'stretchpower', 'vmin', 'vmax']
+        st = {k: _kw.pop(k) for k in keys if k in _kw}
+        st = Stretcher(sigma=sigma, **st)
         c, cmin, cmax = st.set_minmax(c)
         _kw['vmin'] = cmin
         _kw['vmax'] = cmax
