@@ -4,6 +4,7 @@ import numpy as np
 import warnings
 from dataclasses import dataclass
 from matplotlib.patches import Ellipse, Rectangle
+from typing import TypeVar
 
 from plotastrodata.analysis_utils import AstroData, AstroFrame
 from plotastrodata.coord_utils import coord2xy, xy2coord
@@ -12,6 +13,8 @@ from plotastrodata.other_utils import close_figure, listing
 
 
 plt.ioff()  # force to turn off interactive mode
+
+T = TypeVar('T')
 
 
 def set_rcparams(fontsize: int = 18, nancolor: str = 'w',
@@ -305,79 +308,42 @@ class PlotAxes2D():
                 ax.set_aspect(self.aspect)
 
 
-def kwargs2AstroData(kw: dict) -> AstroData:
-    """Get AstroData and remove its arguments from kwargs.
+def kwargs2instance(cls: type[T], kw: dict) -> T:
+    """Get an instance and remove its arguments from kwargs.
 
     Args:
-        kw (dict): Parameters to make AstroData.
+        cls (class): Class to make the instance.
+        kw (dict): Parameters to make Stretcher.
 
     Returns:
-        AstroData: AstroData made from the parameters in kwargs.
+        instance: an instance of cls made from the parameters in kwargs.
     """
-    tmp = {}
-    d = AstroData(data=np.zeros((2, 2)))
-    for k in vars(d):
-        if k in kw:
-            tmp[k] = kw.pop(k)
-    if tmp == {}:
-        print('No argument given.')
-        return None
-    else:
-        d = AstroData(**tmp)
-        return d
-
-
-def kwargs2AstroFrame(kw: dict) -> AstroFrame:
-    """Get AstroFrame from kwargs.
-
-    Args:
-        kw (dict): Parameters to make AstroFrame.
-
-    Returns:
-        AstroFrame: AstroFrame made from the parameters in kwargs.
-    """
-    tmp = {}
-    f = AstroFrame()
-    for k in vars(f):
-        if k in kw:
-            tmp[k] = kw[k]
-            if k not in ['fitsimage', 'center']:
-                del kw[k]
-    f = AstroFrame(**tmp)
-    return f
-
-
-def kwargs2PlotAxes2D(kw: dict) -> PlotAxes2D:
-    """Get PlotAxes2D and remove its arguments from kwargs.
-
-    Args:
-        kw (dict): Parameters to make PlotAxes2D.
-
-    Returns:
-        PlotAxes2D: PlotAxes2D made from the parameters in kwargs.
-    """
-    tmp = {}
-    d = PlotAxes2D()
-    for k in vars(d):
-        if k in kw:
-            tmp[k] = kw.pop(k)
-    d = PlotAxes2D(**tmp)
-    return d
+    kw0 = {}
+    if cls == AstroData:
+        kw0 = {'data': np.zeros((2, 2))}
+    exkeys = {}
+    if cls == AstroFrame:
+        exkeys = {'fitsimage', 'center'}
+    elif cls == Stretcher:
+        exkeys = {'vmin', 'vmax'}
+    keys = vars(cls(**kw0)).keys()
+    tmp = {k: kw[k] for k in keys if k in kw}
+    for k in keys - exkeys:
+        kw.pop(k, None)
+    return cls(**tmp)
 
 
 def kwargs2beamargs(kw: dict) -> dict:
     """Get arguments for add_beam() from kwargs.
 
     Args:
-        kw (dict): Parameters to make beam.
+        kw (dict): Parameters to make and plot a beam. Particularly, the dict 'beam_kwargs' is for matplotlib.patches.
 
     Returns:
         dict: Arguments for add_beam().
     """
-    tmp = {}
-    for k in ['show_beam', 'beamcolor', 'beampos']:
-        if k in kw:
-            tmp[k] = kw.pop(k)
+    keys = ('show_beam', 'beamcolor', 'beampos')
+    tmp = {k: kw.pop(k) for k in keys if k in kw}
     tmp.update(kw.pop('beam_kwargs', {}))
     return tmp
 
@@ -567,7 +533,7 @@ class PlotAstroData(AstroFrame):
         self._kw.update(kw)
         xskip = self._kw.pop('xskip', 1)
         yskip = self._kw.pop('yskip', 1)
-        d = kwargs2AstroData(self._kw)
+        d = kwargs2instance(AstroData, self._kw)
         self.read(d, xskip, yskip)
         self.beam = d.beam
         self.sigma = d.sigma
@@ -861,9 +827,8 @@ class PlotAstroData(AstroFrame):
 
         cblabel = bunit if cblabel is None else cblabel
 
-        keys = ['stretch', 'stretchscale', 'stretchpower', 'vmin', 'vmax']
-        st = {k: _kw.pop(k) for k in keys if k in _kw}
-        st = Stretcher(sigma=sigma, **st)
+        _kw['sigma'] = sigma
+        st = kwargs2instance(Stretcher, _kw)
         c, cmin, cmax = st.set_minmax(c)
         _kw['vmin'] = cmin
         _kw['vmax'] = cmax
@@ -967,9 +932,9 @@ class PlotAstroData(AstroFrame):
         self.add_beam(beam=beam, **beam_kwargs)
 
     def add_rgb(self,
-                stretch: list[str, str, str] = ['linear'] * 3,
-                stretchscale: list[float | None, float | None, float | None] = [None] * 3,
-                stretchpower: list[float, float, float] = [0.5, 0.5, 0.5],
+                stretch: list[str] = ['linear'] * 3,
+                stretchscale: list[float | None] = [None] * 3,
+                stretchpower: list[float] = [0.5] * 3,
                 **kwargs) -> None:
         """Use PIL.Image and imshow of matplotlib. kwargs must include the arguments of AstroData to specify the data to be plotted. A three-element array ([red, green, blue]) is supposed for all arguments, except for xskip, yskip and show_beam, including vmax and vmin. kwargs may include the arguments for Stretcher (stretch, stretchscale, and stretchpower; three-element array for each) to specify the stretch parameters. kwargs may include arguments for add_beam() and a dict of beam_kwargs to specify the beam patch in more detail. kwargs may include xskiip and yskip.
 
@@ -980,7 +945,9 @@ class PlotAstroData(AstroFrame):
         """
         from PIL import Image
 
-        self._kw = {'vmin': [None] * 3, 'vmax': [None] * 3}
+        self._kw = {'vmin': [None] * 3, 'vmax': [None] * 3,
+                    'stretch': stretch, 'stretchscale': stretchscale,
+                    'stretchpower': stretchpower}
         c, x, y, v, beam, sigma, _, _kw, beam_kwargs, singlepix \
             = self._map_init(kwargs)
         if singlepix:
@@ -991,8 +958,7 @@ class PlotAstroData(AstroFrame):
             print('RGB shapes mismatch. Skip add_rgb.')
             return
 
-        st = Stretcher(stretch, stretchscale, stretchpower,
-                       _kw['vmin'], _kw['vmax'], sigma)
+        st = kwargs2instance(Stretcher, _kw)
         c, cmin, cmax = st.set_minmax(c)
         for i in range(st.n):
             if cmax[i] > cmin[i]:
@@ -1068,7 +1034,7 @@ class PlotAstroData(AstroFrame):
             _kw['xlim'] = self.Xlim
         if 'ylim' not in _kw:
             _kw['ylim'] = self.Ylim
-        pa2 = kwargs2PlotAxes2D(_kw)
+        pa2 = kwargs2instance(PlotAxes2D, _kw)
         self._set_axis_shared(pa2=pa2, title=title)
 
     def set_axis_radec(self, center: str | None = None,
@@ -1261,8 +1227,8 @@ def plotprofile(coords: list[str] | str = [],
     _kwgauss.update(gauss_kwargs)
     if type(coords) is str:
         coords = [coords]
-    f = kwargs2AstroFrame(_kw)
-    d = kwargs2AstroData(_kw)
+    f = kwargs2instance(AstroFrame, _kw)
+    d = kwargs2instance(AstroData, _kw)
     f.read(d)
     d.binning([width, 1, 1])
     v, prof, gfitres = d.profile(coords=coords, xlist=xlist, ylist=ylist,
@@ -1297,7 +1263,7 @@ def plotprofile(coords: list[str] | str = [],
     if 'xlim' not in _kw:
         _kw['xlim'] = [v.min(), v.max()]
     _kw['samexy'] = False
-    pa2 = kwargs2PlotAxes2D(_kw)
+    pa2 = kwargs2instance(PlotAxes2D, _kw)
     for i in range(nprof):
         sharex = None if i < nrows - 1 else ax[i - 1]
         ax[i] = fig.add_subplot(nrows, ncols, i + 1, sharex=sharex)
@@ -1346,8 +1312,8 @@ def plotslice(length: float, dx: float | None = None, pa: float = 0,
     _kw = {'linestyle': '-', 'marker': 'o'}
     _kw.update(kwargs)
     _kw['rmax'] = length / 2
-    f = kwargs2AstroFrame(_kw)
-    d = kwargs2AstroData(_kw)
+    f = kwargs2instance(AstroFrame, _kw)
+    d = kwargs2instance(AstroData, _kw)
     f.read(d)
     if np.ndim(d.data) > 2:
         print('Only 2D map is supported.')
@@ -1374,7 +1340,7 @@ def plotslice(length: float, dx: float | None = None, pa: float = 0,
         fig = plt.figure()
     if ax is None:
         ax = fig.add_subplot(1, 1, 1)
-    pa2 = kwargs2PlotAxes2D(_kw)
+    pa2 = kwargs2instance(PlotAxes2D, _kw)
     ax.plot(r, z, **_kw)
     if d.sigma is not None:
         ax.plot(r, r * 0 + 3 * d.sigma, 'k--')
@@ -1427,8 +1393,8 @@ def plot3d(levels: list[float] = [3, 6, 12],
     import plotly.graph_objs as go
     from skimage import measure
 
-    f = kwargs2AstroFrame(kwargs)
-    d = kwargs2AstroData(kwargs)
+    f = kwargs2instance(AstroFrame, kwargs)
+    d = kwargs2instance(AstroData, kwargs)
     f.read(d, xskip, yskip)
     volume, x, y, v, sigma = d.data, d.x, d.y, d.v, d.sigma
     dx, dy, dv = d.dx, d.dy, d.dv
