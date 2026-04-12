@@ -607,19 +607,14 @@ class PlotAstroData(AstroFrame):
                       angle=angle * self.xdir, **_kw)
                 axnow.add_patch(p)
 
-    def add_beam(self, show_beam: bool = True,
-                 beam: list[float | None] = [None] * 3,
-                 beamcolor: str = 'gray',
-                 beampos: list[float, float] | None = None,
-                 **kwargs) -> None:
-        """Use add_region(). All the arguments may be a list of each format.
-
-        Args:
-            show_beam (bool, optional): Defaults to True.
-            beam (list, optional): [bmaj, bmin, bpa]. This may be a list of list. Defaults to [None, None, None].
-            beamcolor (str, optional): matplotlib color. This may be a list of str. Defaults to 'gray'.
-            beampos (list, optional): Relative position. This may be a list of list or a list of None. Defaults to None.
+    def add_beam(self, **kwargs) -> None:
+        """Use add_region(). kwargs may include the arguments of Beam, except for beam_kwargs, to specify the beam apparance. Those arguments may be a list of each format.
         """
+        b = kwargs2instance(Beam, kwargs)
+        show_beam = b.show_beam
+        beam = b.beam
+        beamcolor = b.beamcolor
+        beampos = b.beampos
         if not show_beam:
             return
 
