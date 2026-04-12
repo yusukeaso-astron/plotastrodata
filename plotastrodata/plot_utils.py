@@ -101,7 +101,7 @@ def logcbticks(vmin: float = 1e-3, vmax: float = 1e3
 
 @dataclass
 class Stretcher():
-    """Get the stretched values.
+    """Arguments and methods related to the stretch in PlotAstroData.add_color() and add_rgb().
 
         Args:
             stretch (str, optional): 'log', 'asinh', 'power', or 'linear'. Any other means 'linear'. 'log' means the mapped data are logarithmic. 'asinh' means the mapped data are arc sin hyperbolic. 'power' means the mapped data are power-law (see also stretchpower). Defaults to 'linear'.
@@ -203,6 +203,37 @@ class Stretcher():
         self.vmin = vminout
         self.vmax = vmaxout
         return dataout, vminout, vmaxout
+
+
+class Beam():
+    """Arguments for PlotAstroData.add_beam().
+    
+        Args:
+            show_beam (bool, optional): Defaults to True.
+            beam (list, optional): [bmaj, bmin, bpa]. This may be a list of list. Defaults to [None, None, None].
+            beamcolor (str, optional): matplotlib color. This may be a list of str. Defaults to 'gray'.
+            beampos (list, optional): Relative position. This may be a list of list or a list of None. Defaults to None.
+            beam_kwargs (dict, optional): Additional arguments for matplotlib.patches. Defaults to {}.
+    """
+    def __init__(self,
+                 show_beam: bool = True,
+                 beam: list[float | None] = [None] * 3,
+                 beamcolor: str = 'gray',
+                 beampos: list[float] | None = None,
+                 beam_kwargs: dict = {}):
+        self.show_beam = show_beam
+        self.beam = beam
+        self.beamcolor = beamcolor
+        self.beampos = beampos
+        self.beam_kwargs= beam_kwargs
+
+    def todict(self):
+        tmp = {'show_beam': self.show_beam,
+               'beam': self.beam,
+               'beamcolor': self.beamcolor,
+               'beampos': self.beampos}
+        tmp.update(self.beam_kwargs)
+        return tmp
 
 
 @dataclass
@@ -331,21 +362,6 @@ def kwargs2instance(cls: type[T], kw: dict) -> T:
     for k in keys - exkeys:
         kw.pop(k, None)
     return cls(**tmp)
-
-
-def kwargs2beamargs(kw: dict) -> dict:
-    """Get arguments for add_beam() from kwargs.
-
-    Args:
-        kw (dict): Parameters to make and plot a beam. Particularly, the dict 'beam_kwargs' is for matplotlib.patches.
-
-    Returns:
-        dict: Arguments for add_beam().
-    """
-    keys = ('show_beam', 'beamcolor', 'beampos')
-    tmp = {k: kw.pop(k) for k in keys if k in kw}
-    tmp.update(kw.pop('beam_kwargs', {}))
-    return tmp
 
 
 class PlotAstroData(AstroFrame):
@@ -529,17 +545,21 @@ class PlotAstroData(AstroFrame):
         Returns:
             tuple: Data and parameters used in each method.
         """
-        beam_kwargs = kwargs2beamargs(kw)
+        b = kwargs2instance(Beam, kw)
         self._kw.update(kw)
         xskip = self._kw.pop('xskip', 1)
         yskip = self._kw.pop('yskip', 1)
         d = kwargs2instance(AstroData, self._kw)
         self.read(d, xskip, yskip)
-        self.beam = d.beam
         self.sigma = d.sigma
         singlepix = d.dx is None or d.dy is None
-        return (d.data, d.x, d.y, d.v, d.beam, d.sigma, d.bunit,
-                self._kw, beam_kwargs, singlepix)
+        if len(d.beam) == 4:
+            b.beam = self.beam = next(b for b in d.beam if None not in b)
+        else:
+            b.beam = self.beam = d.beam
+        self.add_beam(**b.todict())
+        return (d.data, d.x, d.y, d.v, d.sigma, d.bunit,
+                self._kw, singlepix)
 
     def add_region(self, patch: str = 'ellipse',
                    poslist: list[str | list[float, float]] = [],
@@ -588,7 +608,7 @@ class PlotAstroData(AstroFrame):
                 axnow.add_patch(p)
 
     def add_beam(self, show_beam: bool = True,
-                 beam: list[float | None, float | None, float | None] = [None, None, None],
+                 beam: list[float | None] = [None] * 3,
                  beamcolor: str = 'gray',
                  beampos: list[float, float] | None = None,
                  **kwargs) -> None:
@@ -819,8 +839,7 @@ class PlotAstroData(AstroFrame):
         self._kw = {'cmap': 'cubehelix', 'alpha': 1,
                     'edgecolors': 'none', 'zorder': 1,
                     'vmin': None, 'vmax': None}
-        c, x, y, v, beam, sigma, bunit, _kw, beam_kwargs, singlepix \
-            = self._map_init(kwargs)
+        c, x, y, v, sigma, bunit, _kw, singlepix = self._map_init(kwargs)
         if singlepix:
             print('No pixel size. Skip add_color.')
             return
@@ -843,7 +862,6 @@ class PlotAstroData(AstroFrame):
         for ch in self.bottomleft:
             self._set_colorbar(p, ch, show_cbar, cblabel, cbformat,
                                cbticks, cbticklabels, cblocation, st)
-        self.add_beam(beam=beam, **beam_kwargs)
 
     def add_contour(self,
                     levels: list[float] = [-12, -6, -3, 3, 6, 12, 24, 48, 96, 192, 384],
@@ -854,8 +872,7 @@ class PlotAstroData(AstroFrame):
             levels (list, optional): Contour levels in the unit of sigma. Defaults to [-12,-6,-3,3,6,12,24,48,96,192,384].
         """
         self._kw = {'colors': 'gray', 'linewidths': 1.0, 'zorder': 2}
-        c, x, y, v, beam, sigma, _, _kw, beam_kwargs, singlepix \
-            = self._map_init(kwargs)
+        c, x, y, v, sigma, _, _kw, singlepix = self._map_init(kwargs)
         if singlepix:
             print('No pixel size. Skip add_contour.')
             return
@@ -865,7 +882,6 @@ class PlotAstroData(AstroFrame):
             c = [c[self.channelnumber]]
         for axnow, cnow in zip(self.ax, c):
             axnow.contour(x, y, cnow, np.sort(levels) * sigma, **_kw)
-        self.add_beam(beam=beam, **beam_kwargs)
 
     def add_segment(self,
                     ampfits: str = None, angfits: str = None,
@@ -899,16 +915,13 @@ class PlotAstroData(AstroFrame):
                     'headaxislength': 0, 'width': 0.007, 'zorder': 3,
                     'fitsimage': [ampfits, angfits, Ufits, Qfits],
                     'data': [amp, ang, stU, stQ]}
-        c, x, y, v, beam, sigma, _, _kw, beam_kwargs, singlepix \
-            = self._map_init(kwargs)
+        c, x, y, v, sigma, _, _kw, singlepix = self._map_init(kwargs)
         if singlepix:
             print('No pixel size. Skip add_segment.')
             return
 
         amp, ang, stU, stQ = c
         sigmaU, sigmaQ = sigma[2:]
-        beam = [beam[i] for i in range(4) if beam[i][0] is not None][0]
-        self.beam = beam
         if stU is not None and stQ is not None:
             self.sigma = sigma = (sigmaU + sigmaQ) / 2.
             ang = np.degrees(np.arctan2(stU, stQ) / 2.)
@@ -929,7 +942,6 @@ class PlotAstroData(AstroFrame):
         _kw['scale'] = 1. / np.abs(x[1] - x[0])
         for axnow, unow, vnow in zip(self.ax, U, V):
             axnow.quiver(x, y, unow, vnow, **_kw)
-        self.add_beam(beam=beam, **beam_kwargs)
 
     def add_rgb(self,
                 stretch: list[str] = ['linear'] * 3,
@@ -948,8 +960,7 @@ class PlotAstroData(AstroFrame):
         self._kw = {'vmin': [None] * 3, 'vmax': [None] * 3,
                     'stretch': stretch, 'stretchscale': stretchscale,
                     'stretchpower': stretchpower}
-        c, x, y, v, beam, sigma, _, _kw, beam_kwargs, singlepix \
-            = self._map_init(kwargs)
+        c, x, y, v, _, _, _kw, singlepix = self._map_init(kwargs)
         if singlepix:
             print('No pixel size. Skip add_rgb.')
             return
@@ -974,7 +985,6 @@ class PlotAstroData(AstroFrame):
                     im.putpixel((i, j), value)
             axnow.imshow(im, extent=[x[0], x[-1], y[0], y[-1]])
             axnow.set_aspect(np.abs((x[-1]-x[0]) / (y[-1]-y[0])))
-        self.add_beam(beam=beam, **beam_kwargs)
 
     def _set_axis_shared(self, pa2: PlotAxes2D, title: dict | str | None):
         """Internal method used in set_axis() and set_axis_radec().
