@@ -457,7 +457,7 @@ def gaussfit1d(xdata: np.ndarray, ydata: np.ndarray,
     yw = ymax - ymin
     dx = np.abs(xdata[1] - xdata[0])
     bounds = [[ymin - yw * 10, ymax + yw * 10], [xmin, xmax], [dx, xw]]
-    sigtmp = sigma or max(np.abs(ymin), np.abs(ymax)) * 0.01 
+    sigtmp = sigma or max(np.abs(ymin), np.abs(ymax)) * 0.01
     for i in range(2 if sigma is None else 1):
         fitter = EmceeCorner(bounds=bounds, model=gaussian1d,
                              sigma=sigtmp, xdata=xdata, ydata=ydata)
@@ -469,7 +469,7 @@ def gaussfit1d(xdata: np.ndarray, ydata: np.ndarray,
     phigh = fitter.phigh
     perr = (phigh - plow) / 2
     if show:
-        print(f'Gauss (peak, center, FWHM):', popt)
+        print('Gauss (peak, center, FWHM):', popt)
         print('Gauss uncertainties:', perr)
         if sigma is None:
             print('Estimated sigma: ', sigtmp)
