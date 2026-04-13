@@ -332,13 +332,13 @@ class AstroData():
 
     @_need_multipixels
     def gaussfit2d(self, chan: int | None = None) -> dict:
-        """Fit a 2D Gaussian function to self.data.
+        """Fit a 2D Gaussian function to self.data using fitting_utils.gaussfit2d().
 
         Args:
             chan (int): The channel number where the 2D Gaussian is fitted. Defaults to None.
 
         Returns:
-            dict: The best parameter set (popt), the covariance set (pcov), the best 2D Gaussian array (model), the residual from the model (residual), and the coordinates of the best-fit center (center).
+            dict: The best parameter set (popt), the error set (perr), the best 2D Gaussian array (model), the residual from the model (residual), and the coordinates of the best-fit center (center).
         """
         z = self.data if chan is None else self.data[chan]
         Omega = np.pi * self.beam[0] * self.beam[1] / 4 / np.log(2)
@@ -353,8 +353,8 @@ class AstroData():
         popt, perr = res['popt'], res['perr']
         model = gaussian2d(np.meshgrid(self.x, self.y), *popt)
         residual = z - model
-        if (center := self.center) is not None:
-            newcenter = xy2coord(popt[1:3] / 3600, coordorg=center)
+        if self.center is not None:
+            newcenter = xy2coord(popt[1:3] / 3600, coordorg=self.center)
         else:
             newcenter = None
         return {'popt': popt, 'perr': perr,
