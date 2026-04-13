@@ -409,37 +409,30 @@ def gaussfit1d(xdata: np.ndarray, ydata: np.ndarray,
     Returns:
         dict: _description_
     """
-    if sigma is not None and np.shape(sigma) == ():
-        sigma = [sigma] * len(xdata)
     xmin, xmax = np.min(xdata), np.max(xdata)
     ymin, ymax = np.min(ydata), np.max(ydata)
+    xw = xmax - xmin
+    yw = ymax - ymin
     dx = np.abs(xdata[1] - xdata[0])
-    bounds = [[ymin, ymax], [xmin, xmax], [dx, xmax - xmin]]
-    if sigma is None:
-        bounds.append([np.log(ymax * 1e-6), np.log(ymax)])
+    bounds = [[ymin - yw * 10, ymax + yw * 10], [xmin, xmax], [dx, xw]]
+    sigtmp = sigma or max(np.abs(ymin), np.abs(ymax)) * 0.01 
 
-    def g(x, p):
-        a, c, w = p
+    def g(x, a, c, w):
         return a * np.exp(-4. * np.log(2.) * ((x - c) / w)**2)
 
-    if sigma is None:
-        def logl(p):
-            sigmdl = np.exp(p[3])
-            chi2 = np.sum(((ydata - g(xdata, p[:3])) / sigmdl)**2)
-            return -0.5 * chi2 - p[3]
-    else:
-        def logl(p):
-            chi2 = np.sum(((ydata - g(xdata, p)) / sigma)**2)
-            return -0.5 * chi2
-
-    fitter = EmceeCorner(bounds=bounds, logl=logl)
-    fitter.fit(**kwargs)
+    for i in range(2 if sigma is None else 1):
+        fitter = EmceeCorner(bounds=bounds, model=g, sigma=sigtmp,
+                             xdata=xdata, ydata=ydata)
+        fitter.fit(**kwargs)
+        if i == 0:
+            sigtmp = np.std(ydata - g(xdata, *fitter.popt))
     popt = fitter.popt
     plow = fitter.plow
     phigh = fitter.phigh
     perr = (phigh - plow) / 2
-    pars = 'peak, center, FWHM' + (', lnsigma' if sigma is None else '')
     if show:
-        print(f'Gauss ({pars}):', popt)
+        print(f'Gauss (peak, center, FWHM):', popt)
         print('Gauss uncertainties:', perr)
-    return {'popt': popt, 'perr': perr}
+        if sigma is None:
+            print('Estimated sigma: ', sigtmp)
+    return {'popt': popt, 'perr': perr, 'sigma': sigtmp}

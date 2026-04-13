@@ -468,7 +468,8 @@ class AstroData():
             res = [None] * nprof
             for i in range(nprof):
                 res[i] = gaussfit1d(xdata=v, ydata=prof[i],
-                                    sigma=None, show=True)
+                                    sigma=None, show=True,
+                                    nwalkersperdim=8)
             gfitres['best'] = [a['popt'][:3] for a in res]
             gfitres['error'] = [a['perr'][:3] for a in res]
         return v, prof, gfitres
