@@ -1079,7 +1079,7 @@ class PlotAstroData(AstroFrame):
             else:
                 base = 5
             return base * 10**order, int(order)
-        
+
         def get_formatted_unit(is_dec, no_sec):
             if no_sec:
                 minute = r"$^{\prime}$" if is_dec else r"$^\mathrm{m}$"
