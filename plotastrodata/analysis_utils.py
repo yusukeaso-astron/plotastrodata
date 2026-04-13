@@ -354,8 +354,7 @@ class AstroData():
         model = gaussian2d(np.meshgrid(self.x, self.y), *popt)
         residual = z - model
         if (center := self.center) is not None:
-            xy = popt[1:3] / 3600
-            newcenter = xy2coord(xy, coordorg=center)
+            newcenter = xy2coord(popt[1:3] / 3600, coordorg=center)
         else:
             newcenter = None
         return {'popt': popt, 'perr': perr,

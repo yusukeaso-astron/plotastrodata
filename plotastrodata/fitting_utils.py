@@ -501,22 +501,31 @@ def gaussfit2d(xdata: np.ndarray, ydata: np.ndarray, zdata: np.ndarray,
     xw = max(xw, yw)
     xy = np.meshgrid(xdata, ydata)
     sigtmp = sigma or max(np.abs(zmin), np.abs(zmax)) * 0.01
-    pa0 = 0
+
+    def model(xy, a, cx, cy, wmaj, wmin, pa):
+        if wmaj < wmin:
+            return np.inf
+        else:
+            return gaussian2d(xy, a, cx, cy, wmaj, wmin, pa)
+
+    bounds = [[zmin - zw * 10, zmax + zw * 10],
+              [xmin, xmax], [ymin, ymax],
+              [dx, xw], [dx, xw], [-90, 90]]
     for i in range(2):
-        bounds = [[zmin - zw * 10, zmax + zw * 10],
-                  [xmin, xmax], [ymin, ymax],
-                  [dx, xw], [dx, xw], [pa0 - 90, pa0 + 90]]
-        fitter = EmceeCorner(bounds=bounds, model=gaussian2d,
+        fitter = EmceeCorner(bounds=bounds, model=model,
                              sigma=sigtmp, xdata=xy, ydata=zdata)
         fitter.fit(**kwargs)
-        pa0 = fitter.popt[-1]
-        fitter.plotcorner(show=True, cornerrange=[0.9] * 6)
+        a, cx, cy, wmaj, wmin, pa = fitter.popt
+        wmax = max(wmaj, wmin)
+        bounds = [sorted([a / 2, a * 2]),
+                  [cx - wmax, cx + wmax], [cy - wmax, cy + wmax],
+                  [wmaj / 2, wmaj * 2], [wmin / 2, wmin * 2],
+                  [pa - 45, pa + 45]]
         if i == 0 and sigma is None:
             sigtmp = np.std(ydata - gaussian2d(xy, *fitter.popt))
     popt = fitter.popt
-    plow = fitter.plow
-    phigh = fitter.phigh
-    perr = (phigh - plow) / 2
+    popt[-1] = (popt[-1] + 90) % 180 - 90
+    perr = (fitter.phigh - fitter.plow) / 2
     if show:
         print('Gauss (peak, center, FWHM):', popt)
         print('Gauss uncertainties:', perr)
