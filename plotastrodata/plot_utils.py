@@ -1068,6 +1068,27 @@ class PlotAstroData(AstroFrame):
         def get_hmdm(x, i):
             return x.split(' ')[i].split('m')[0] + 'm'
 
+        def get_grid_spacing(log2r, scale):
+            x = log2r - scale
+            order = np.floor(x)
+            frac = x - order
+            if frac <= 0.33:
+                base = 1
+            elif frac <= 0.68:
+                base = 2
+            else:
+                base = 5
+            return base * 10**order, int(order)
+        
+        def get_formatted_unit(is_dec, no_sec):
+            if no_sec:
+                minute = r"$^{\prime}$" if is_dec else r"$^\mathrm{m}$"
+                return minute
+
+            dot = r'.$\hspace{-0.4}$'
+            second = r"$^{\prime\prime}$" if is_dec else r"$^\mathrm{s}$"
+            return dot + second
+
         on_min_scale = self.rmax >= 60.0
         if on_min_scale:
             ra_s = np.floor(float(get_sec(center, 0)) / 5) * 5
@@ -1082,24 +1103,13 @@ class PlotAstroData(AstroFrame):
 
         def makegrid(second, mode):
             second = float(second)
-            is_dec = mode == 'dec'
+            is_dec = (mode == 'dec')
+            no_sec = on_min_scale and is_dec
             scale = 0.5 if is_dec else 1.5
             factor = 1 if is_dec else 15 * np.cos(dec)
-            no_sec = on_min_scale and is_dec
-            if no_sec:
-                unit = r'$^{\prime}$' if is_dec else r'$^\mathrm{m}$'
-            else:
-                unit = r'$^{\prime\prime}$' if is_dec else r'$^\mathrm{s}$'
-                unit = r'.$\hspace{-0.4}$' + unit
-            dorder = log2r - scale - (order := np.floor(log2r - scale))
-            if 0.00 < dorder <= 0.33:
-                g = 1
-            elif 0.33 < dorder <= 0.68:
-                g = 2
-            elif 0.68 < dorder <= 1.00:
-                g = 5
-            g *= 10**order
-            decimals = max(-int(order), -1)
+            g, order = get_grid_spacing(log2r, scale)
+            unit = get_formatted_unit(is_dec, no_sec)
+            decimals = max(-order, -1)
             rounded = round(second, decimals)
             lastdigit = round(rounded // 10**(-decimals-1) % 100 / 10) % 10
             rounded -= lastdigit * 10**(-decimals) % g
