@@ -106,7 +106,7 @@ class AstroData():
     beam: np.ndarray | tuple[None] = (None, None, None)
     fitsimage: str | None = None
     Tb: bool = False
-    sigma: str = 'hist'
+    sigma: str | float | None = 'hist'
     center: str = 'common'
     restfreq: float | None = None
     cfactor: float = 1
