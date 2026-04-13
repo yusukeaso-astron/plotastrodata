@@ -440,7 +440,7 @@ def gaussian2d(xy: np.ndarray,
 def gaussfit1d(xdata: np.ndarray, ydata: np.ndarray,
                sigma: float | np.ndarray | None,
                show: bool = False, **kwargs) -> dict:
-    f"""Gaussian fitting to a pair of 1D arrays.
+    """Gaussian fitting to a pair of 1D arrays.
 
     Args:
         xdata (np.ndarray): ydata is compared with Gauss(xdata).
@@ -479,7 +479,7 @@ def gaussfit1d(xdata: np.ndarray, ydata: np.ndarray,
 def gaussfit2d(xdata: np.ndarray, ydata: np.ndarray, zdata: np.ndarray,
                sigma: float | np.ndarray | None,
                show: bool = False, **kwargs) -> dict:
-    f"""Gaussian fitting to a pair of 1D arrays.
+    """Gaussian fitting to a pair of 1D arrays.
 
     Args:
         xdata (np.ndarray): zdata is compared with Gauss(xdata, ydata).
@@ -500,7 +500,7 @@ def gaussfit2d(xdata: np.ndarray, ydata: np.ndarray, zdata: np.ndarray,
     dx = min(np.abs(xdata[1] - xdata[0]), np.abs(ydata[1] - ydata[0]))
     xw = max(xw, yw)
     xy = np.meshgrid(xdata, ydata)
-    sigtmp = sigma or max(np.abs(zmin), np.abs(zmax)) * 0.01 
+    sigtmp = sigma or max(np.abs(zmin), np.abs(zmax)) * 0.01
     pa0 = 0
     for i in range(2):
         bounds = [[zmin - zw * 10, zmax + zw * 10],
@@ -518,7 +518,7 @@ def gaussfit2d(xdata: np.ndarray, ydata: np.ndarray, zdata: np.ndarray,
     phigh = fitter.phigh
     perr = (phigh - plow) / 2
     if show:
-        print(f'Gauss (peak, center, FWHM):', popt)
+        print('Gauss (peak, center, FWHM):', popt)
         print('Gauss uncertainties:', perr)
         if sigma is None:
             print('Estimated sigma: ', sigtmp)
