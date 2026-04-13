@@ -1089,7 +1089,7 @@ class PlotAstroData(AstroFrame):
             second = r"$^{\prime\prime}$" if is_dec else r"$^\mathrm{s}$"
             return dot + second
 
-        on_min_scale = self.rmax >= 60.0
+        on_min_scale = (self.rmax >= 60.0)
         if on_min_scale:
             ra_s = np.floor(float(get_sec(center, 0)) / 5) * 5
             dec_s = 0.0
@@ -1107,6 +1107,7 @@ class PlotAstroData(AstroFrame):
             no_sec = on_min_scale and is_dec
             scale = 0.5 if is_dec else 1.5
             factor = 1 if is_dec else 15 * np.cos(dec)
+            i_axis = 1 if is_dec else 0
             g, order = get_grid_spacing(log2r, scale)
             unit = get_formatted_unit(is_dec, no_sec)
             decimals = max(-order, -1)
@@ -1118,12 +1119,12 @@ class PlotAstroData(AstroFrame):
             decimals = max(decimals, 0)
             decimals = f'{decimals:d}'
             if mode == 'ra':
-                xy, i = [ticks / 3600., ticks * 0], 0
+                xy = [ticks / 3600., ticks * 0]
             else:
-                xy, i = [ticks * 0, ticks / 3600.], 1
+                xy = [ticks * 0, ticks / 3600.]
             tickvalues = xy2coord(xy, center)
             _get = get_min if no_sec else get_sec
-            tickvalues = np.array([float(_get(t, i)) for t in tickvalues])
+            tickvalues = np.array([float(_get(t, i_axis)) for t in tickvalues])
             tickvalues = np.divmod(tickvalues + 1e-7, 1)
             tickvalues = (tickvalues[0] % 60, tickvalues[1])
             ticklabels = [f'{int(i):02d}{unit}' + f'{j:.{decimals}f}'[2:]
