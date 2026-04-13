@@ -8,6 +8,7 @@ from dynesty import DynamicNestedSampler as DNS
 from multiprocessing import Pool
 from tqdm import tqdm
 
+from plotastrodata.matrix_utils import Mrot, dot2d
 from plotastrodata.other_utils import close_figure
 
 
@@ -395,6 +396,47 @@ class EmceeCorner():
         return {'evidence': evidence, 'error': error}
 
 
+def gaussian1d(x: np.ndarray | float,
+               amplitude: float, xo: float, fwhm: float,
+               ) -> np.ndarray:
+    """One dimensional Gaussian function.
+
+    Args:
+        x (np.ndarray): Variable of the Gaussian function.
+        amplitude (float): Peak value.
+        xo (float): Offset in the x direction.
+        fwhm (float): Full width at half maximum.
+
+    Returns:
+        g (np.ndarray): 1D numpy array.
+    """
+    g = amplitude * np.exp2(-4 * (((x - xo) / fwhm)**2))
+    return g
+
+
+def gaussian2d(xy: np.ndarray,
+               amplitude: float, xo: float, yo: float,
+               fwhm_major: float, fwhm_minor: float, pa: float
+               ) -> np.ndarray:
+    """Two dimensional Gaussian function.
+
+    Args:
+        xy (np.ndarray): A pair of (x, y).
+        amplitude (float): Peak value.
+        xo (float): Offset in the x direction.
+        yo (float): Offset in the y direction.
+        fwhm_major (float): Full width at half maximum in the major axis (but can be shorter than the minor axis).
+        fwhm_minor (float): Full width at half maximum in the minor axis (but can be longer then the major axis).
+        pa (float): Position angle of the major axis from the +y axis to the +x axis in the unit of degree.
+
+    Returns:
+        g (np.ndarray): Output array in the same shape as xy.
+    """
+    s, t = dot2d(Mrot(-pa), [xy[1] - yo, xy[0] - xo])
+    g = amplitude * np.exp2(-4 * ((s / fwhm_major)**2 + (t / fwhm_minor)**2))
+    return g
+
+
 def gaussfit1d(xdata: np.ndarray, ydata: np.ndarray,
                sigma: float | np.ndarray | None,
                show: bool = False, **kwargs) -> dict:
@@ -416,16 +458,61 @@ def gaussfit1d(xdata: np.ndarray, ydata: np.ndarray,
     dx = np.abs(xdata[1] - xdata[0])
     bounds = [[ymin - yw * 10, ymax + yw * 10], [xmin, xmax], [dx, xw]]
     sigtmp = sigma or max(np.abs(ymin), np.abs(ymax)) * 0.01 
-
-    def g(x, a, c, w):
-        return a * np.exp(-4. * np.log(2.) * ((x - c) / w)**2)
-
     for i in range(2 if sigma is None else 1):
-        fitter = EmceeCorner(bounds=bounds, model=g, sigma=sigtmp,
-                             xdata=xdata, ydata=ydata)
+        fitter = EmceeCorner(bounds=bounds, model=gaussian1d,
+                             sigma=sigtmp, xdata=xdata, ydata=ydata)
         fitter.fit(**kwargs)
         if i == 0:
-            sigtmp = np.std(ydata - g(xdata, *fitter.popt))
+            sigtmp = np.std(ydata - gaussian1d(xdata, *fitter.popt))
+    popt = fitter.popt
+    plow = fitter.plow
+    phigh = fitter.phigh
+    perr = (phigh - plow) / 2
+    if show:
+        print(f'Gauss (peak, center, FWHM):', popt)
+        print('Gauss uncertainties:', perr)
+        if sigma is None:
+            print('Estimated sigma: ', sigtmp)
+    return {'popt': popt, 'perr': perr, 'sigma': sigtmp}
+
+
+def gaussfit2d(xdata: np.ndarray, ydata: np.ndarray, zdata: np.ndarray,
+               sigma: float | np.ndarray | None,
+               show: bool = False, **kwargs) -> dict:
+    f"""Gaussian fitting to a pair of 1D arrays.
+
+    Args:
+        xdata (np.ndarray): zdata is compared with Gauss(xdata, ydata).
+        ydata (np.ndarray): zdata is compared with Gauss(xdata, ydata).
+        zdata (np.ndarray): zdata is compared with Gauss(xdata, ydata).
+        sigma (float | np.ndarray | None): Noise level of ydata. If None is given, sigma is estimated by a temporary fitting. Defaults to None.
+        show (bool, optional): True means to show the best-fit parameters and uncertainties. Defaults to False.
+
+    Returns:
+        dict: The keys are popt, perr, and sigma.
+    """
+    xmin, xmax = np.min(xdata), np.max(xdata)
+    ymin, ymax = np.min(ydata), np.max(ydata)
+    zmin, zmax = np.min(zdata), np.max(zdata)
+    xw = xmax - xmin
+    yw = ymax - ymin
+    zw = zmax - zmin
+    dx = min(np.abs(xdata[1] - xdata[0]), np.abs(ydata[1] - ydata[0]))
+    xw = max(xw, yw)
+    xy = np.meshgrid(xdata, ydata)
+    sigtmp = sigma or max(np.abs(zmin), np.abs(zmax)) * 0.01 
+    pa0 = 0
+    for i in range(2):
+        bounds = [[zmin - zw * 10, zmax + zw * 10],
+                  [xmin, xmax], [ymin, ymax],
+                  [dx, xw], [dx, xw], [pa0 - 90, pa0 + 90]]
+        fitter = EmceeCorner(bounds=bounds, model=gaussian2d,
+                             sigma=sigtmp, xdata=xy, ydata=zdata)
+        fitter.fit(**kwargs)
+        pa0 = fitter.popt[-1]
+        fitter.plotcorner(show=True, cornerrange=[0.9] * 6)
+        if i == 0 and sigma is None:
+            sigtmp = np.std(ydata - gaussian2d(xy, *fitter.popt))
     popt = fitter.popt
     plow = fitter.plow
     phigh = fitter.phigh

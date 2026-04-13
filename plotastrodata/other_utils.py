@@ -2,8 +2,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator as RGI
 
-from plotastrodata.matrix_utils import Mrot, dot2d
-
 
 def listing(*args) -> list:
     """Output a list of the input when the input is string or number.
@@ -174,29 +172,6 @@ def RGIxyv(v: np.ndarray, y: np.ndarray, x: np.ndarray, data: np.ndarray,
         return f
     else:
         return np.squeeze([f3d(tuple(vyxnew)) for f3d in f])
-
-
-def gaussian2d(xy: np.ndarray,
-               amplitude: float, xo: float, yo: float,
-               fwhm_major: float, fwhm_minor: float, pa: float
-               ) -> np.ndarray:
-    """Two dimensional Gaussian function.
-
-    Args:
-        xy (np.ndarray): A pair of (x, y).
-        amplitude (float): Peak value.
-        xo (float): Offset in the x direction.
-        yo (float): Offset in the y direction.
-        fwhm_major (float): Full width at half maximum in the major axis (but can be shorter than the minor axis).
-        fwhm_minor (float): Full width at half maximum in the minor axis (but can be longer then the major axis).
-        pa (float): Position angle of the major axis from the +y axis to the +x axis in the unit of degree.
-
-    Returns:
-        g (np.ndarray): 2D numpy array.
-    """
-    s, t = dot2d(Mrot(-pa), [xy[1] - yo, xy[0] - xo])
-    g = amplitude * np.exp2(-4 * ((s / fwhm_major)**2 + (t / fwhm_minor)**2))
-    return g
 
 
 def close_figure(fig: object, savefig: dict | str | None = None,

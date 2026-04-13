@@ -2,17 +2,16 @@ import numpy as np
 import warnings
 from dataclasses import dataclass
 from scipy.interpolate import RegularGridInterpolator as RGI
-from scipy.optimize import curve_fit
 from scipy.signal import convolve
 
 from plotastrodata import const_utils as cu
 from plotastrodata.coord_utils import coord2xy, rel2abs, xy2coord
 from plotastrodata.fits_utils import data2fits, FitsData, Jy2K
-from plotastrodata.fitting_utils import EmceeCorner, gaussfit1d
+from plotastrodata.fitting_utils import (EmceeCorner, gaussian2d,
+                                         gaussfit1d, gaussfit2d)
 from plotastrodata.matrix_utils import dot2d, Mfac, Mrot
 from plotastrodata.noise_utils import estimate_rms
-from plotastrodata.other_utils import (gaussian2d, isdeg,
-                                       RGIxy, RGIxyv, to4dim, trim)
+from plotastrodata.other_utils import isdeg, RGIxy, RGIxyv, to4dim, trim
 
 
 def quadrantmean(data: np.ndarray, x: np.ndarray, y: np.ndarray,
@@ -341,39 +340,25 @@ class AstroData():
         Returns:
             dict: The best parameter set (popt), the covariance set (pcov), the best 2D Gaussian array (model), the residual from the model (residual), and the coordinates of the best-fit center (center).
         """
-        d = self.data if chan is None else self.data[chan]
-        x = self.x
-        y = self.y
-        ds = np.min([np.abs(self.dx), np.abs(self.dy)])
-        p0 = (np.max(d), np.median(x), np.median(y), 5 * ds, 5 * ds, 0)
-        amax = np.max(np.abs(d))
-        xmin = np.min(x)
-        xmax = np.max(x)
-        ymin = np.min(y)
-        ymax = np.max(y)
-        smax = np.max([xmax - xmin, ymax - ymin])
-        bounds = [[-amax, xmin, ymin, ds, ds, -90],
-                  [amax, xmax, ymax, smax, smax, 90]]
-        x, y = np.meshgrid(x, y)
+        z = self.data if chan is None else self.data[chan]
         Omega = np.pi * self.beam[0] * self.beam[1] / 4 / np.log(2)
         pixelperbeam = Omega / np.abs(self.dx * self.dy)
         s = 'sigma is multiplied by sqrt(pixel-per-beam)' \
             + ' to consider the noise correlation in a beam.' \
             + ' This correction is relatively conservative.'
         warnings.warn(s, UserWarning)
-        popt, pcov = curve_fit(gaussian2d,
-                               (x.ravel(), y.ravel()), d.ravel(),
-                               p0=p0, bounds=bounds,
-                               sigma=self.sigma * np.sqrt(pixelperbeam),
-                               absolute_sigma=True)
-        model = gaussian2d((x, y), *popt)
-        residual = d - model
+        res = gaussfit2d(xdata=self.x, ydata=self.y, zdata=z,
+                         sigma=self.sigma * np.sqrt(pixelperbeam),
+                         show=False, nwalkersperdim=4)
+        popt, perr = res['popt'], res['perr']
+        model = gaussian2d(np.meshgrid(self.x, self.y), *popt)
+        residual = z - model
         if (center := self.center) is not None:
             xy = popt[1:3] / 3600
             newcenter = xy2coord(xy, coordorg=center)
         else:
             newcenter = None
-        return {'popt': popt, 'pcov': pcov,
+        return {'popt': popt, 'perr': perr,
                 'model': model, 'residual': residual,
                 'center': newcenter}
 
