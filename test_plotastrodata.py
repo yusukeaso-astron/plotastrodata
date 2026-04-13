@@ -5,11 +5,13 @@ from plotastrodata.coord_utils import (abs2rel, coord2xy,
 from plotastrodata.ext_utils import BnuT, JnuT
 from plotastrodata.fft_utils import fftcentering2, ifftcentering2
 from plotastrodata.fits_utils import data2fits, fits2data, FitsData
-from plotastrodata.fitting_utils import EmceeCorner
+from plotastrodata.fitting_utils import (EmceeCorner,
+                                         gaussian1d, gaussian2d,
+                                         gaussfit1d, gaussfit2d)
 from plotastrodata.los_utils import obs2sys, polarvel2losvel, sys2obs
 from plotastrodata.matrix_utils import dot2d, Mfac, Mrot, Mrot3d
 from plotastrodata.noise_utils import estimate_rms
-from plotastrodata.other_utils import trim, gaussian2d
+from plotastrodata.other_utils import trim
 from plotastrodata.plot_utils import (plot3d, PlotAstroData,
                                       plotprofile, plotslice,
                                       set_rcparams)
@@ -21,11 +23,11 @@ def test_import():
          BnuT, JnuT,
          fftcentering2, ifftcentering2,
          data2fits, fits2data, FitsData,
-         EmceeCorner,
+         EmceeCorner, gaussian1d, gaussian2d, gaussfit1d, gaussfit2d,
          obs2sys, polarvel2losvel, sys2obs,
          dot2d, Mfac, Mrot, Mrot3d,
          estimate_rms,
-         trim, gaussian2d,
+         trim,
          plot3d, PlotAstroData, plotprofile, plotslice, set_rcparams
          ]
     d = AstroData()
