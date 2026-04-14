@@ -139,7 +139,7 @@ def extend_grid(v: np.ndarray, vmin: float, vmax: float) -> np.ndarray:
     dv = v[1] - v[0]
     k0 = int(round((vmin - v[0]) / dv))
     if k0 < 0:
-        vpre = v[0] - dv * np.arange(-k0, 0, -1)
+        vpre = v[0] + dv * np.arange(k0, 0)
         v = np.concatenate((vpre, v))
     else:
         v = v[k0:]
