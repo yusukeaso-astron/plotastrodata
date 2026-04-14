@@ -99,6 +99,39 @@ def logcbticks(vmin: float = 1e-3, vmax: float = 1e3
     return ticks[cond], ticklabels[cond]
 
 
+def _get_sec(coord: str, mode: str) -> str:
+    i_axis = 0 if mode == 'ra' else 1
+    return coord.split(' ')[i_axis].split('m')[1].strip('s')
+
+
+def _get_min(coord: str, mode: str) -> str:
+    i_axis = 0 if mode == 'ra' else 1
+    s = 'h' if mode == 'ra' else 'd'
+    return coord.split(' ')[i_axis].split(s)[1].split('m')[0]
+
+
+def _get_hmdm(coord: str, mode: str) -> str:
+    i_axis = 0 if mode == 'ra' else 1
+    return coord.split(' ')[i_axis].split('m')[0] + 'm'
+
+
+def _get_gridwidth(mode: str, rmax: float) -> tuple[float, int]:
+    # 10^1.5 / 15 ~ 2 grids for R.A.
+    # 10^0.5 ~ 3 grids for Dec.
+    scale = 1.5 if mode == 'ra' else 0.5
+    log2r = np.log10(2. * rmax)
+    x = log2r - scale
+    order = np.floor(x)
+    frac = x - order
+    if frac <= 0.33:
+        base = 1
+    elif frac <= 0.68:
+        base = 2
+    else:
+        base = 5
+    return base * 10**order, int(order)
+
+
 @dataclass
 class Stretcher():
     """Arguments and methods related to the stretch in PlotAstroData.add_color() and add_rgb().
@@ -1057,86 +1090,71 @@ class PlotAstroData(AstroFrame):
             center = '00h00m00s 00d00m00s'
         if len(csplit := center.split()) == 3:
             center = f'{csplit[1]} {csplit[2]}'
-
-        def get_sec(x, i):
-            return x.split(' ')[i].split('m')[1].strip('s')
-
-        def get_min(x, i):
-            s = 'h' if i == 0 else 'd'
-            return x.split(' ')[i].split(s)[1].split('m')[0]
-
-        def get_hmdm(x, i):
-            return x.split(' ')[i].split('m')[0] + 'm'
-
-        on_min_scale = self.rmax >= 60.0
-        if on_min_scale:
-            ra_s = np.floor(float(get_sec(center, 0)) / 5) * 5
+        if on_min_scale := (self.rmax >= 60.0):
+            # On a 5-second grid.
+            ra_s = np.floor(float(_get_sec(center, 0)) / 5) * 5
             dec_s = 0.0
-            ra = get_hmdm(center, 0) + f'{ra_s:.1f}s'
-            dec = get_hmdm(center, 1) + f'{dec_s:.1f}s'
+            ra = _get_hmdm(center, 'ra') + f'{ra_s:.1f}s'
+            dec = _get_hmdm(center, 'dec') + f'{dec_s:.1f}s'
             center = f'{ra} {dec}'
 
-        dec = np.radians(coord2xy(center)[1])
-        log2r = np.log10(2. * self.rmax)
-        n = np.array([-3, -2, -1, 0, 1, 2, 3])
-
-        def makegrid(second, mode):
-            second = float(second)
-            is_dec = mode == 'dec'
-            scale = 0.5 if is_dec else 1.5
-            factor = 1 if is_dec else 15 * np.cos(dec)
-            no_sec = on_min_scale and is_dec
-            if no_sec:
-                unit = r'$^{\prime}$' if is_dec else r'$^\mathrm{m}$'
-            else:
-                unit = r'$^{\prime\prime}$' if is_dec else r'$^\mathrm{s}$'
-                unit = r'.$\hspace{-0.4}$' + unit
-            dorder = log2r - scale - (order := np.floor(log2r - scale))
-            if 0.00 < dorder <= 0.33:
-                g = 1
-            elif 0.33 < dorder <= 0.68:
-                g = 2
-            elif 0.68 < dorder <= 1.00:
-                g = 5
-            g *= 10**order
-            decimals = max(-int(order), -1)
-            rounded = round(second, decimals)
-            lastdigit = round(rounded // 10**(-decimals-1) % 100 / 10) % 10
-            rounded -= lastdigit * 10**(-decimals) % g
-            ticks = (n*g - second + rounded) * factor
-            ticksminor = np.linspace(ticks[0], ticks[-1], 6*nticksminor + 1)
-            decimals = max(decimals, 0)
-            decimals = f'{decimals:d}'
+        def get_tickvalues(ticks: np.ndarray, mode: str, no_sec: bool
+                           ) -> np.ndarray:
+            xy = [np.zeros_like(ticks), ticks / 3600.]
             if mode == 'ra':
-                xy, i = [ticks / 3600., ticks * 0], 0
-            else:
-                xy, i = [ticks * 0, ticks / 3600.], 1
+                xy.reverse()
             tickvalues = xy2coord(xy, center)
-            _get = get_min if no_sec else get_sec
-            tickvalues = np.array([float(_get(t, i)) for t in tickvalues])
-            tickvalues = np.divmod(tickvalues + 1e-7, 1)
-            tickvalues = (tickvalues[0] % 60, tickvalues[1])
-            ticklabels = [f'{int(i):02d}{unit}' + f'{j:.{decimals}f}'[2:]
-                          for i, j in zip(*tickvalues)]
+            getter = _get_min if no_sec else _get_sec
+            tickvalues = [getter(t, mode) for t in tickvalues]  # str
+            tickvalues = np.array(tickvalues, dtype=float)
+            # 7-digit precision for practical use.
+            tickvalues = np.round(tickvalues, 7)
+            return tickvalues
+
+        units = {'ra': {'h': r'$^\mathrm{h}$',
+                        'm': r'$^\mathrm{m}$',
+                        's': r'.$\hspace{-0.4}^\mathrm{s}$'},
+                 'dec': {'d': r'$^{\circ}$',
+                         'm': r'$^{\prime}$',
+                         's': r'.$\hspace{-0.4}^{\prime\prime}$'}}
+        cos_dec = np.cos(np.radians(coord2xy(center)[1]))
+        intgrid = np.array([-3, -2, -1, 0, 1, 2, 3])
+        i_mid = (len(intgrid) - 1) // 2
+
+        def makegrid(mode: str):
+            second = float(_get_sec(center, mode))
+            no_sec = on_min_scale and (mode == 'dec')
+            # gridwidth is a float like 2 x 10^order (arcsec).
+            gridwidth, order = _get_gridwidth(mode, self.rmax)
+            # ndigits = -1 is the largest case for 10", 20", ...
+            decimals = str(max(-order, 0))
+            rounded = round(second, ndigits=max(-order, -1))
+            # Get a grid point closest to the input second.
+            rounded = round(rounded / gridwidth) * gridwidth
+            factor = 15 * cos_dec if mode == 'ra' else 1
+            ticks = (intgrid * gridwidth - second + rounded) * factor
+            ticksminor = np.linspace(ticks[0], ticks[-1], 6*nticksminor + 1)
+            tickvalues = get_tickvalues(ticks, mode, no_sec)
+            whole, frac = np.divmod(tickvalues, 1)
+            u = units[mode]['m' if no_sec else 's']
+            ticklabels = [f'{int(i):02d}{u}' + f'{j:.{decimals}f}'[2:]
+                          for i, j in zip(whole % 60, frac)]
             return ticks, ticksminor, ticklabels
 
-        ra_s = get_sec(center, 0)
-        dec_s = get_sec(center, 1)
-        xticks, xticksminor, xticklabels = makegrid(ra_s, 'ra')
-        yticks, yticksminor, yticklabels = makegrid(dec_s, 'dec')
-        ra_hm = get_hmdm(xy2coord([xticks[3] / 3600., 0], center), 0)
-        dec_dm = get_hmdm(xy2coord([0, yticks[3] / 3600.], center), 1)
+        xticks, xticksminor, xticklabels = makegrid('ra')
+        yticks, yticksminor, yticklabels = makegrid('dec')
+        ra_hm = _get_hmdm(xy2coord([xticks[i_mid] / 3600., 0], center), 'ra')
+        dec_dm = _get_hmdm(xy2coord([0, yticks[i_mid] / 3600.], center), 'dec')
         if on_min_scale:
             dec_dm = dec_dm.split('d')[0] + 'd'
-        trans = {'h': r'$^\mathrm{h}$', 'm': r'$^\mathrm{m}$'}
-        ra_hm = ra_hm.translate(str.maketrans(trans))
-        trans = {'d': r'$^{\circ}$', 'm': r'$^{\prime}$'}
-        dec_dm = dec_dm.translate(str.maketrans(trans))
-        xticklabels[3] = ra_hm + xticklabels[3]
-        yticklabels[3] = dec_dm + '\n' + yticklabels[3]
-        pa2 = PlotAxes2D(True, None, 'linear', 'linear', self.Xlim, self.Ylim,
-                         xlabel, ylabel, xticks, yticks, xticklabels,
-                         yticklabels, xticksminor, yticksminor, grid)
+        ra_hm = ra_hm.translate(str.maketrans(units['ra']))
+        dec_dm = dec_dm.translate(str.maketrans(units['dec']))
+        xticklabels[i_mid] = ra_hm + xticklabels[i_mid]
+        yticklabels[i_mid] = dec_dm + '\n' + yticklabels[i_mid]
+        pa2 = PlotAxes2D(True, None, 'linear', 'linear',
+                         self.Xlim, self.Ylim, xlabel, ylabel,
+                         xticks, yticks, xticklabels, yticklabels,
+                         xticksminor, yticksminor, grid)
         self._set_axis_shared(pa2=pa2, title=title)
 
     def savefig(self, filename: str | None = None,
