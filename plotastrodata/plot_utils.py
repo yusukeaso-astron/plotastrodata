@@ -534,10 +534,11 @@ class PlotAstroData(AstroFrame):
         if self.pv or v is None or len(v) == 1:
             nv = nrows = ncols = npages = nchan = 1
         else:
-            nv = len(v := v[::vskip])
+            v = v[::vskip]
+            nv = len(v)
             npages = int(np.ceil(nv / nrows / ncols))
             nchan = npages * nrows * ncols
-            v = np.r_[v, v[-1] + (np.arange(nchan - nv) + 1) * dv]
+            v = np.r_[v, v[-1] + dv * np.arange(nchan - nv + 1)]
             if type(channelnumber) is int:
                 nchan = npages = 1
 
