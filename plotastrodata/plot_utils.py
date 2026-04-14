@@ -1126,7 +1126,6 @@ class PlotAstroData(AstroFrame):
             no_sec = on_min_scale and (mode == 'dec')
             # gridwidth is a float like 2 x 10^order (arcsec).
             gridwidth, order = _get_gridwidth(mode, self.rmax)
-            unit = units[mode]['m' if no_sec else 's']
             # ndigits = -1 is the largest case for 10", 20", ...
             decimals = str(max(-order, 0))
             rounded = round(second, ndigits=max(-order, -1))
@@ -1137,7 +1136,8 @@ class PlotAstroData(AstroFrame):
             ticksminor = np.linspace(ticks[0], ticks[-1], 6*nticksminor + 1)
             tickvalues = get_tickvalues(ticks, mode, no_sec)
             whole, frac = np.divmod(tickvalues, 1)
-            ticklabels = [f'{int(i):02d}{unit}' + f'{j:.{decimals}f}'[2:]
+            u = units[mode]['m' if no_sec else 's']
+            ticklabels = [f'{int(i):02d}{u}' + f'{j:.{decimals}f}'[2:]
                           for i, j in zip(whole % 60, frac)]
             return ticks, ticksminor, ticklabels
 
