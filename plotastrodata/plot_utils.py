@@ -1084,10 +1084,10 @@ class PlotAstroData(AstroFrame):
             if no_sec:
                 minute = r"$^{\prime}$" if is_dec else r"$^\mathrm{m}$"
                 return minute
-
-            dot = r'.$\hspace{-0.4}$'
-            second = r"$^{\prime\prime}$" if is_dec else r"$^\mathrm{s}$"
-            return dot + second
+            else:
+                dot = r'.$\hspace{-0.4}$'
+                second = r"$^{\prime\prime}$" if is_dec else r"$^\mathrm{s}$"
+                return dot + second
 
         on_min_scale = (self.rmax >= 60.0)
         if on_min_scale:
@@ -1105,46 +1105,49 @@ class PlotAstroData(AstroFrame):
             second = float(second)
             is_dec = (mode == 'dec')
             no_sec = on_min_scale and is_dec
+            # 10^0.5 ~ 3 grids for Dec.
+            # 10^1.5 / 15 ~ 2 grids for R.A.
             scale = 0.5 if is_dec else 1.5
             factor = 1 if is_dec else 15 * np.cos(dec)
             i_axis = 1 if is_dec else 0
-            g, order = get_grid_spacing(log2r, scale)
+            # grid is a float like 2 x 10^order (arcsec).
+            grid, order = get_grid_spacing(log2r, scale)
             unit = get_formatted_unit(is_dec, no_sec)
-            decimals = max(-order, -1)
-            rounded = round(second, decimals)
-            lastdigit = round(rounded // 10**(-decimals-1) % 100 / 10) % 10
-            rounded -= lastdigit * 10**(-decimals) % g
-            ticks = (n*g - second + rounded) * factor
+            # ndigits = -1 is the largest case for 10", 20", ...
+            decimals = str(max(-order, 0))
+            ndigits = max(-order, -1)
+            rounded = round(second, ndigits)
+            # Get a grid point closest to the input second.
+            rounded = round(rounded / grid) * grid
+            ticks = (n*grid - second + rounded) * factor
             ticksminor = np.linspace(ticks[0], ticks[-1], 6*nticksminor + 1)
-            decimals = max(decimals, 0)
-            decimals = f'{decimals:d}'
-            if mode == 'ra':
-                xy = [ticks / 3600., ticks * 0]
-            else:
-                xy = [ticks * 0, ticks / 3600.]
+            xy = [np.zeros_like(ticks), np.zeros_like(ticks)]
+            xy[i_axis] = ticks / 3600.  # deg
             tickvalues = xy2coord(xy, center)
-            _get = get_min if no_sec else get_sec
-            tickvalues = np.array([float(_get(t, i_axis)) for t in tickvalues])
-            tickvalues = np.divmod(tickvalues + 1e-7, 1)
-            tickvalues = (tickvalues[0] % 60, tickvalues[1])
+            getter = get_min if no_sec else get_sec
+            tickvalues = [getter(t, i_axis) for t in tickvalues]  # str
+            tickvalues = np.array(tickvalues, dtype=float)
+            # 7-digit precision for practical use.
+            whole, frac = np.divmod(np.round(tickvalues, 7), 1)
             ticklabels = [f'{int(i):02d}{unit}' + f'{j:.{decimals}f}'[2:]
-                          for i, j in zip(*tickvalues)]
+                          for i, j in zip(whole % 60, frac)]
             return ticks, ticksminor, ticklabels
 
         ra_s = get_sec(center, 0)
         dec_s = get_sec(center, 1)
         xticks, xticksminor, xticklabels = makegrid(ra_s, 'ra')
         yticks, yticksminor, yticklabels = makegrid(dec_s, 'dec')
-        ra_hm = get_hmdm(xy2coord([xticks[3] / 3600., 0], center), 0)
-        dec_dm = get_hmdm(xy2coord([0, yticks[3] / 3600.], center), 1)
+        i_mid = (len(n) - 1) // 2
+        ra_hm = get_hmdm(xy2coord([xticks[i_mid] / 3600., 0], center), 0)
+        dec_dm = get_hmdm(xy2coord([0, yticks[i_mid] / 3600.], center), 1)
         if on_min_scale:
             dec_dm = dec_dm.split('d')[0] + 'd'
         trans = {'h': r'$^\mathrm{h}$', 'm': r'$^\mathrm{m}$'}
         ra_hm = ra_hm.translate(str.maketrans(trans))
         trans = {'d': r'$^{\circ}$', 'm': r'$^{\prime}$'}
         dec_dm = dec_dm.translate(str.maketrans(trans))
-        xticklabels[3] = ra_hm + xticklabels[3]
-        yticklabels[3] = dec_dm + '\n' + yticklabels[3]
+        xticklabels[i_mid] = ra_hm + xticklabels[i_mid]
+        yticklabels[i_mid] = dec_dm + '\n' + yticklabels[i_mid]
         pa2 = PlotAxes2D(True, None, 'linear', 'linear', self.Xlim, self.Ylim,
                          xlabel, ylabel, xticks, yticks, xticklabels,
                          yticklabels, xticksminor, yticksminor, grid)
