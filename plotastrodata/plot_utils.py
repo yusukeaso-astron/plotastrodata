@@ -535,8 +535,9 @@ class PlotAstroData(AstroFrame):
             else:
                 npages = int(np.ceil(nv / nrows / ncols))
                 nchan = npages * nrows * ncols
-            v_nolabel = v[-1] + dv * np.arange(1, max(nchan, nv) - nv + 1)
-            v = np.concatenate((v, v_nolabel))
+            if nchan > nv:
+                v_nolabel = v[-1] + dv * np.arange(1, nchan - nv + 1)
+                v = np.concatenate((v, v_nolabel))
 
         def nij2ch(n: int, i: int, j: int) -> int:
             return n*nrows*ncols + i*ncols + j
