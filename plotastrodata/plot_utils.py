@@ -538,7 +538,7 @@ class PlotAstroData(AstroFrame):
             nv = len(v)
             npages = int(np.ceil(nv / nrows / ncols))
             nchan = npages * nrows * ncols
-            v = np.r_[v, v[-1] + dv * np.arange(nchan - nv + 1)]
+            v = np.concatenate((v, v[-1] + dv * np.arange(nchan - nv + 1)))
             if type(channelnumber) is int:
                 nchan = npages = 1
 
