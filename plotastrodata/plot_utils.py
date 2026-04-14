@@ -190,6 +190,7 @@ def vskipfill(c: np.ndarray,
     d = np.append(d, postnan, axis=0)
     return d
 
+
 @dataclass
 class Stretcher():
     """Arguments and methods related to the stretch in PlotAstroData.add_color() and add_rgb().
