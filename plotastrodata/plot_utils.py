@@ -132,6 +132,26 @@ def _get_gridwidth(mode: str, rmax: float) -> tuple[float, int]:
     return base * 10**order, int(order)
 
 
+def extend_grid(v: np.ndarray, vmin: float, vmax: float) -> np.ndarray:
+    if v is None or len(v) <= 1:
+        return v
+
+    dv = v[1] - v[0]
+    k0 = int(round((vmin - v[0]) / dv))
+    if k0 < 0:
+        vpre = v[0] - dv * np.arange(-k0, 0, -1)
+        v = np.concatenate((vpre, v))
+    else:
+        v = v[k0:]
+    k1 = int(round((vmax - v[-1]) / dv))
+    if k1 > 0:
+        vpost = v[-1] + dv * np.arange(1, k1 + 1)
+        v = np.concatenate((v, vpost))
+    else:
+        v = v[:len(v) + k1]
+    return v
+
+
 def vskipfill(c: np.ndarray,
               v_in: np.ndarray | None,
               nchan: int,
@@ -508,20 +528,7 @@ class PlotAstroData(AstroFrame):
             self.read(d := AstroData(fitsimage=self.fitsimage,
                                      restfreq=restfreq, sigma=None))
             v = d.v
-        if len(v) > 1:
-            dv = v[1] - v[0]
-            k0 = int(round((self.vmin - v[0]) / dv))
-            if k0 < 0:
-                vpre = v[0] - (1 + np.arange(-k0)[::-1]) * dv
-                v = np.append(vpre, v)
-            else:
-                v = v[k0:]
-            k1 = len(v) + int(round((self.vmax - v[-1]) / dv))
-            if k1 > len(v):
-                vpost = v[-1] + (1 + np.arange(k1 - len(v))) * dv
-                v = np.append(v, vpost)
-            else:
-                v = v[:k1]
+        v = extend_grid(v=v, vmin=self.vmin, vmax=self.vmax)
         if self.pv or v is None or len(v) == 1:
             nv = nrows = ncols = npages = nchan = 1
         else:
