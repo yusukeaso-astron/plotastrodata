@@ -528,7 +528,9 @@ class PlotAstroData(AstroFrame):
             self.read(d := AstroData(fitsimage=self.fitsimage,
                                      restfreq=restfreq, sigma=None))
             v = d.v
-        v = extend_grid(v=v, vmin=self.vmin, vmax=self.vmax)
+        if len(v) > 1:
+            dv = v[1] - v[0]
+            v = extend_grid(v=v, vmin=self.vmin, vmax=self.vmax)
         if self.pv or v is None or len(v) == 1:
             nv = nrows = ncols = npages = nchan = 1
         else:
