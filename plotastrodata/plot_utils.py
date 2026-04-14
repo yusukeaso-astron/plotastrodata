@@ -1111,7 +1111,7 @@ class PlotAstroData(AstroFrame):
             ra = _get_hmdm(center, 'ra') + f'{ra_s:.1f}s'
             dec = _get_hmdm(center, 'dec') + f'{dec_s:.1f}s'
             center = f'{ra} {dec}'
-            
+
         units = {'ra': {'h': r'$^\mathrm{h}$',
                         'm': r'$^\mathrm{m}$',
                         's': r'.$\hspace{-0.4}^\mathrm{s}$'},
