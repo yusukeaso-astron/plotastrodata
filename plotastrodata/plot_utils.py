@@ -152,13 +152,9 @@ def extend_grid(v: np.ndarray, vmin: float, vmax: float) -> np.ndarray:
     return v
 
 
-def vskipfill(c: np.ndarray,
-              v_in: np.ndarray | None,
-              nchan: int,
-              nv: int,
-              v: np.ndarray | None = None,
-              vskip: int = 1,
-              ) -> np.ndarray:
+def vskipfill(c: np.ndarray, v_in: np.ndarray | None,
+              nchan: int, nv: int, v: np.ndarray | None = None,
+              vskip: int = 1) -> np.ndarray:
     """Skip and fill channels with nan.
 
     Args:
@@ -536,11 +532,13 @@ class PlotAstroData(AstroFrame):
         else:
             v = v[::vskip]
             nv = len(v)  # number of channels with a label
-            npages = int(np.ceil(nv / nrows / ncols))
-            nchan = npages * nrows * ncols
-            v = np.concatenate((v, v[-1] + dv * np.arange(nchan - nv + 1)))
             if type(channelnumber) is int:
+                npages = int(np.ceil(nv / nrows / ncols))
+                nchan = npages * nrows * ncols
+            else:
                 nchan = npages = 1
+            v_nolabel = v[-1] + dv * np.arange(1, max(nchan, nv) - nv + 1)
+            v = np.concatenate((v, v_nolabel))
 
         def nij2ch(n: int, i: int, j: int) -> int:
             return n*nrows*ncols + i*ncols + j
