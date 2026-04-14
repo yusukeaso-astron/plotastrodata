@@ -132,6 +132,64 @@ def _get_gridwidth(mode: str, rmax: float) -> tuple[float, int]:
     return base * 10**order, int(order)
 
 
+def vskipfill(c: np.ndarray,
+              v_in: np.ndarray | None,
+              nchan: int,
+              nv: int,
+              v: np.ndarray | None = None,
+              vskip: int = 1,
+              channelnumber: int | None = None,
+              ) -> np.ndarray:
+    """Skip and fill channels with nan.
+
+    Args:
+        c (np.ndarray): The input 2D or 3D arrays.
+        v_in (np.ndarray): The input velocity 1D array.
+        nchan (int): The total number of channels of the output cube.
+        nv (int): The number of channels of pre-nan + main part.
+        v (np.ndarray, optional): The velocity 1D array of the output cube. Defaults to None.
+        vskip (int, optional): How many channels are skipped. Defaults to 1.
+        channelnumber (int, optional): This is used when only one channel is selected in a cube.
+
+    Returns:
+        np.ndarray: 3D arrays skipped and filled with nan.
+    """
+    if np.ndim(c) == 2:
+        d = np.full((nv, *np.shape(c)), c)
+    elif np.ndim(c) == 3:
+        if v_in is not None:
+            dv_org = v[1] - v[0]
+            dv_in = (v_in[1] - v_in[0]) * vskip
+            k0 = np.argmin(np.abs(v - v_in[0]))
+            k1 = np.argmin(np.abs(v - v_in[-1]))
+            if np.abs(dv_in - dv_org) / dv_org < 0.01:
+                d = c
+            else:
+                s = 'Velocity resolution mismatch (>1%).' \
+                    + ' The cube needs to be regridded' \
+                    + ' outside plotastrodata.'
+                warnings.warn(s, UserWarning)
+                n_valid = k1 - k0
+                d = [None] * n_valid
+                for k in range(n_valid):
+                    k_tmp = np.argmin(np.abs(v_in - v[k]))
+                    diffvel = np.abs(v_in[k_tmp] - v[k])
+                    nearby = diffvel < dv_org * 0.5
+                    d[k] = c[k_tmp] if nearby else c[0] * np.nan
+                d = np.array(d)
+            if k0 > 0:
+                prenan = np.full((k0, *np.shape(d)[1:]), np.nan)
+                d = np.append(prenan, d, axis=0)
+        d = d[::vskip]
+    else:
+        print('c must be 2D or 3D.')
+        return
+    n = nchan if channelnumber is None else nv
+    shape = (n - len(d), len(d[0]), len(d[0, 0]))
+    postnan = np.full(shape, d[0] * np.nan)
+    d = np.append(d, postnan, axis=0)
+    return d
+
 @dataclass
 class Stretcher():
     """Arguments and methods related to the stretch in PlotAstroData.add_color() and add_rgb().
@@ -520,54 +578,11 @@ class PlotAstroData(AstroFrame):
         self.channelnumber = channelnumber
         self.v = v
 
-        def vskipfill(c: np.ndarray,
-                      v_in: np.ndarray | None = None
-                      ) -> np.ndarray:
-            """Skip and fill channels with nan.
+        def vskipfill_fixed(c: np.ndarray, v_in: np.ndarray) -> np.ndarray:
+            return vskipfill(c=c, v_in=v_in, nchan=nchan, nv=nv, v=v,
+                             vskip=vskip, channelnumber=channelnumber)
 
-            Args:
-                c (np.ndarray): 2D or 3D arrays.
-                v_in (np.ndarray): 1D array.
-
-            Returns:
-                np.ndarray: 3D arrays skipped and filled with nan.
-            """
-            if np.ndim(c) == 2:
-                d = np.full((nv, *np.shape(c)), c)
-            elif np.ndim(c) == 3:
-                if v_in is not None:
-                    dv_org = self.v[1] - self.v[0]
-                    dv_in = (v_in[1] - v_in[0]) * vskip
-                    k0 = np.argmin(np.abs(self.v - v_in[0]))
-                    k1 = np.argmin(np.abs(self.v - v_in[-1]))
-                    if np.abs(dv_in - dv_org) / dv_org < 0.01:
-                        d = c
-                    else:
-                        s = 'Velocity resolution mismatch (>1%).' \
-                            + ' The cube needs to be regridded' \
-                            + ' outside plotastrodata.'
-                        warnings.warn(s, UserWarning)
-                        n_valid = k1 - k0
-                        d = [None] * n_valid
-                        for k in range(n_valid):
-                            k_tmp = np.argmin(np.abs(v_in - self.v[k]))
-                            diffvel = np.abs(v_in[k_tmp] - self.v[k])
-                            nearby = diffvel < dv_org * 0.5
-                            d[k] = c[k_tmp] if nearby else c[0] * np.nan
-                        d = np.array(d)
-                    if k0 > 0:
-                        prenan = np.full((k0, *np.shape(d)[1:]), np.nan)
-                        d = np.append(prenan, d, axis=0)
-                d = d[::vskip]
-            else:
-                print('c must be 2D or 3D.')
-                return
-            n = nchan if channelnumber is None else nv
-            shape = (n - len(d), len(d[0]), len(d[0, 0]))
-            postnan = np.full(shape, d[0] * np.nan)
-            d = np.append(d, postnan, axis=0)
-            return d
-        self.vskipfill = vskipfill
+        self.vskipfill = vskipfill_fixed
 
     def _map_init(self, kw: dict) -> tuple:
         """
