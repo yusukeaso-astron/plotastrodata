@@ -518,8 +518,6 @@ class PlotAstroData(AstroFrame):
         super().__init__(**kwargs)
         internalfig = fig is None
         internalax = ax is None
-        if type(channelnumber) is int:
-            nrows = ncols = 1
         if self.fitsimage is not None:
             self.read(d := AstroData(fitsimage=self.fitsimage,
                                      restfreq=restfreq, sigma=None))
@@ -533,7 +531,7 @@ class PlotAstroData(AstroFrame):
             v = v[::vskip]
             nv = len(v)  # number of channels with a label
             if type(channelnumber) is int:
-                nchan = npages = 1
+                nrows = ncols = npages = nchan = 1
             else:
                 npages = int(np.ceil(nv / nrows / ncols))
                 nchan = npages * nrows * ncols
