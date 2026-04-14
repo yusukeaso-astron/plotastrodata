@@ -158,25 +158,28 @@ def vskipfill(c: np.ndarray,
               nv: int,
               v: np.ndarray | None = None,
               vskip: int = 1,
-              channelnumber: int | None = None,
               ) -> np.ndarray:
     """Skip and fill channels with nan.
 
     Args:
         c (np.ndarray): The input 2D or 3D arrays.
         v_in (np.ndarray): The input velocity 1D array.
-        nchan (int): The total number of channels of the output cube.
-        nv (int): The number of channels of pre-nan + main part.
+        nchan (int): The total number of channels, including those with and without a label. nchan = nrows * ncols * npages.
+        nv (int): The number of channels with a label.
         v (np.ndarray, optional): The velocity 1D array of the output cube. Defaults to None.
         vskip (int, optional): How many channels are skipped. Defaults to 1.
-        channelnumber (int, optional): This is used when only one channel is selected in a cube.
 
     Returns:
         np.ndarray: 3D arrays skipped and filled with nan.
     """
-    if np.ndim(c) == 2:
+    ndim = np.ndim(c)
+    if ndim not in [2, 3]:
+        print('c must be 2D or 3D.')
+        return
+        
+    if ndim == 2:
         d = np.full((nv, *np.shape(c)), c)
-    elif np.ndim(c) == 3:
+    else:
         if v_in is not None:
             dv_org = v[1] - v[0]
             dv_in = (v_in[1] - v_in[0]) * vskip
@@ -201,13 +204,10 @@ def vskipfill(c: np.ndarray,
                 prenan = np.full((k0, *np.shape(d)[1:]), np.nan)
                 d = np.append(prenan, d, axis=0)
         d = d[::vskip]
-    else:
-        print('c must be 2D or 3D.')
-        return
-    n = nchan if channelnumber is None else nv
-    shape = (n - len(d), len(d[0]), len(d[0, 0]))
-    postnan = np.full(shape, d[0] * np.nan)
-    d = np.append(d, postnan, axis=0)
+    shape = np.shape(d)
+    shape = (max(nchan, nv) - shape[0], shape[1], shape[2])
+    postnan = np.full(shape, np.nan)
+    d = np.concatenate((d, postnan), axis=0)
     return d
 
 
@@ -535,17 +535,17 @@ class PlotAstroData(AstroFrame):
             nv = nrows = ncols = npages = nchan = 1
         else:
             v = v[::vskip]
-            nv = len(v)
+            nv = len(v)  # number of channels with a label
             npages = int(np.ceil(nv / nrows / ncols))
             nchan = npages * nrows * ncols
             v = np.concatenate((v, v[-1] + dv * np.arange(nchan - nv + 1)))
             if type(channelnumber) is int:
                 nchan = npages = 1
 
-        def nij2ch(n: int, i: int, j: int):
+        def nij2ch(n: int, i: int, j: int) -> int:
             return n*nrows*ncols + i*ncols + j
 
-        def ch2nij(ch: int) -> tuple:
+        def ch2nij(ch: int) -> tuple[int, int, int]:
             n = ch // (nrows*ncols)
             i = (ch - n*nrows*ncols) // ncols
             j = ch % ncols
@@ -590,8 +590,8 @@ class PlotAstroData(AstroFrame):
         self.v = v
 
         def vskipfill_fixed(c: np.ndarray, v_in: np.ndarray) -> np.ndarray:
-            return vskipfill(c=c, v_in=v_in, nchan=nchan, nv=nv, v=v,
-                             vskip=vskip, channelnumber=channelnumber)
+            return vskipfill(c=c, v_in=v_in, nchan=nchan,
+                             nv=nv, v=v, vskip=vskip)
 
         self.vskipfill = vskipfill_fixed
 
