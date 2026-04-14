@@ -533,10 +533,10 @@ class PlotAstroData(AstroFrame):
             v = v[::vskip]
             nv = len(v)  # number of channels with a label
             if type(channelnumber) is int:
+                nchan = npages = 1
+            else:
                 npages = int(np.ceil(nv / nrows / ncols))
                 nchan = npages * nrows * ncols
-            else:
-                nchan = npages = 1
             v_nolabel = v[-1] + dv * np.arange(1, max(nchan, nv) - nv + 1)
             v = np.concatenate((v, v_nolabel))
 
