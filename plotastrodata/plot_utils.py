@@ -1090,11 +1090,19 @@ class PlotAstroData(AstroFrame):
             center = '00h00m00s 00d00m00s'
         if len(csplit := center.split()) == 3:
             center = f'{csplit[1]} {csplit[2]}'
+        if on_min_scale := (self.rmax >= 60.0):
+            # On a 5-second grid.
+            ra_s = np.floor(float(_get_sec(center, 0)) / 5) * 5
+            dec_s = 0.0
+            ra = _get_hmdm(center, 'ra') + f'{ra_s:.1f}s'
+            dec = _get_hmdm(center, 'dec') + f'{dec_s:.1f}s'
+            center = f'{ra} {dec}'
 
-        def get_tickvalues(ticks: np.ndarray, mode: str, no_sec: bool):
-            i_axis = 0 if mode == 'ra' else 1
-            xy = [np.zeros_like(ticks), np.zeros_like(ticks)]
-            xy[i_axis] = ticks / 3600.  # deg
+        def get_tickvalues(ticks: np.ndarray, mode: str, no_sec: bool
+                           ) -> np.ndarray:
+            xy = [np.zeros_like(ticks), ticks / 3600.]
+            if mode == 'ra':
+                xy.reverse()
             tickvalues = xy2coord(xy, center)
             getter = _get_min if no_sec else _get_sec
             tickvalues = [getter(t, mode) for t in tickvalues]  # str
@@ -1102,15 +1110,6 @@ class PlotAstroData(AstroFrame):
             # 7-digit precision for practical use.
             tickvalues = np.round(tickvalues, 7)
             return tickvalues
-
-        on_min_scale = (self.rmax >= 60.0)
-        if on_min_scale:
-            # On a 5-second grid.
-            ra_s = np.floor(float(_get_sec(center, 0)) / 5) * 5
-            dec_s = 0.0
-            ra = _get_hmdm(center, 'ra') + f'{ra_s:.1f}s'
-            dec = _get_hmdm(center, 'dec') + f'{dec_s:.1f}s'
-            center = f'{ra} {dec}'
 
         units = {'ra': {'h': r'$^\mathrm{h}$',
                         'm': r'$^\mathrm{m}$',
