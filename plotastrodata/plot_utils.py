@@ -1058,17 +1058,21 @@ class PlotAstroData(AstroFrame):
         if len(csplit := center.split()) == 3:
             center = f'{csplit[1]} {csplit[2]}'
 
-        def get_sec(x, i):
+        def get_sec(x: str, i: int):
             return x.split(' ')[i].split('m')[1].strip('s')
 
-        def get_min(x, i):
+        def get_min(x: str, i: int):
             s = 'h' if i == 0 else 'd'
             return x.split(' ')[i].split(s)[1].split('m')[0]
 
-        def get_hmdm(x, i):
+        def get_hmdm(x: str, i: int):
             return x.split(' ')[i].split('m')[0] + 'm'
 
-        def get_grid_spacing(log2r, scale):
+        def get_grid_spacing(is_dec: bool):
+            # 10^0.5 ~ 3 grids for Dec.
+            # 10^1.5 / 15 ~ 2 grids for R.A.
+            scale = 0.5 if is_dec else 1.5
+            log2r = np.log10(2. * self.rmax)
             x = log2r - scale
             order = np.floor(x)
             frac = x - order
@@ -1080,7 +1084,7 @@ class PlotAstroData(AstroFrame):
                 base = 5
             return base * 10**order, int(order)
 
-        def get_formatted_unit(is_dec, no_sec):
+        def get_formatted_unit(is_dec: bool, no_sec: bool):
             if no_sec:
                 minute = r"$^{\prime}$" if is_dec else r"$^\mathrm{m}$"
                 return minute
@@ -1088,39 +1092,9 @@ class PlotAstroData(AstroFrame):
                 dot = r'.$\hspace{-0.4}$'
                 second = r"$^{\prime\prime}$" if is_dec else r"$^\mathrm{s}$"
                 return dot + second
-
-        on_min_scale = (self.rmax >= 60.0)
-        if on_min_scale:
-            ra_s = np.floor(float(get_sec(center, 0)) / 5) * 5
-            dec_s = 0.0
-            ra = get_hmdm(center, 0) + f'{ra_s:.1f}s'
-            dec = get_hmdm(center, 1) + f'{dec_s:.1f}s'
-            center = f'{ra} {dec}'
-
-        dec = np.radians(coord2xy(center)[1])
-        log2r = np.log10(2. * self.rmax)
-        n = np.array([-3, -2, -1, 0, 1, 2, 3])
-
-        def makegrid(second, mode):
-            second = float(second)
-            is_dec = (mode == 'dec')
-            no_sec = on_min_scale and is_dec
-            # 10^0.5 ~ 3 grids for Dec.
-            # 10^1.5 / 15 ~ 2 grids for R.A.
-            scale = 0.5 if is_dec else 1.5
-            factor = 1 if is_dec else 15 * np.cos(dec)
+        
+        def get_tickvalues(ticks: np.ndarray, is_dec: bool, no_sec: bool):
             i_axis = 1 if is_dec else 0
-            # grid is a float like 2 x 10^order (arcsec).
-            grid, order = get_grid_spacing(log2r, scale)
-            unit = get_formatted_unit(is_dec, no_sec)
-            # ndigits = -1 is the largest case for 10", 20", ...
-            decimals = str(max(-order, 0))
-            ndigits = max(-order, -1)
-            rounded = round(second, ndigits)
-            # Get a grid point closest to the input second.
-            rounded = round(rounded / grid) * grid
-            ticks = (n*grid - second + rounded) * factor
-            ticksminor = np.linspace(ticks[0], ticks[-1], 6*nticksminor + 1)
             xy = [np.zeros_like(ticks), np.zeros_like(ticks)]
             xy[i_axis] = ticks / 3600.  # deg
             tickvalues = xy2coord(xy, center)
@@ -1128,7 +1102,38 @@ class PlotAstroData(AstroFrame):
             tickvalues = [getter(t, i_axis) for t in tickvalues]  # str
             tickvalues = np.array(tickvalues, dtype=float)
             # 7-digit precision for practical use.
-            whole, frac = np.divmod(np.round(tickvalues, 7), 1)
+            tickvalues = np.round(tickvalues, 7)
+            return tickvalues
+
+        on_min_scale = (self.rmax >= 60.0)
+        if on_min_scale:
+            # On a 5-second grid.
+            ra_s = np.floor(float(get_sec(center, 0)) / 5) * 5
+            dec_s = 0.0
+            ra = get_hmdm(center, 0) + f'{ra_s:.1f}s'
+            dec = get_hmdm(center, 1) + f'{dec_s:.1f}s'
+            center = f'{ra} {dec}'
+
+        cos_dec = np.cos(np.radians(coord2xy(center)[1]))
+        n = np.array([-3, -2, -1, 0, 1, 2, 3])
+
+        def makegrid(second: str, mode: str):
+            second = float(second)
+            is_dec = (mode == 'dec')
+            no_sec = on_min_scale and is_dec
+            # gridwidth is a float like 2 x 10^order (arcsec).
+            gridwidth, order = get_grid_spacing(is_dec)
+            unit = get_formatted_unit(is_dec, no_sec)
+            # ndigits = -1 is the largest case for 10", 20", ...
+            decimals = str(max(-order, 0))
+            rounded = round(second, ndigits=max(-order, -1))
+            # Get a grid point closest to the input second.
+            rounded = round(rounded / gridwidth) * gridwidth
+            factor = 1 if is_dec else 15 * cos_dec
+            ticks = (n*gridwidth - second + rounded) * factor
+            ticksminor = np.linspace(ticks[0], ticks[-1], 6*nticksminor + 1)
+            tickvalues = get_tickvalues(ticks, is_dec, no_sec)
+            whole, frac = np.divmod(tickvalues, 1)
             ticklabels = [f'{int(i):02d}{unit}' + f'{j:.{decimals}f}'[2:]
                           for i, j in zip(whole % 60, frac)]
             return ticks, ticksminor, ticklabels
@@ -1148,9 +1153,12 @@ class PlotAstroData(AstroFrame):
         dec_dm = dec_dm.translate(str.maketrans(trans))
         xticklabels[i_mid] = ra_hm + xticklabels[i_mid]
         yticklabels[i_mid] = dec_dm + '\n' + yticklabels[i_mid]
-        pa2 = PlotAxes2D(True, None, 'linear', 'linear', self.Xlim, self.Ylim,
-                         xlabel, ylabel, xticks, yticks, xticklabels,
-                         yticklabels, xticksminor, yticksminor, grid)
+        pa2 = PlotAxes2D(True, None, 'linear', 'linear',
+                         self.Xlim, self.Ylim,
+                         xlabel, ylabel,
+                         xticks, yticks,
+                         xticklabels, yticklabels,
+                         xticksminor, yticksminor, grid)
         self._set_axis_shared(pa2=pa2, title=title)
 
     def savefig(self, filename: str | None = None,
