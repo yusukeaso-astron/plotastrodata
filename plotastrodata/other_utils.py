@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import warnings
 from scipy.interpolate import RegularGridInterpolator as RGI
 
 
@@ -103,6 +104,101 @@ def to4dim(data: np.ndarray) -> np.ndarray:
         d = np.array([data])
     else:
         d = np.array(data)
+    return d
+
+
+def reform_grid(v: np.ndarray | None = None,
+                k0: int | None = None, k1: int | None = None,
+                vmin: float | None = None, vmax: float | None = None
+                ) -> np.ndarray:
+    """Extend or cut the given 1D array based on the given range.
+
+    Args:
+        v (np.ndarray | None, optional): Input 1D array. Defaults to None.
+        k0 (int | None, optional): How many channels are added before v[0]; the minus sign means extension. k0 has the priority over vmin. Defaults to None.
+        k1 (int | None, optional): How many channels are added after v[-1]; the plus sign means extension. k1 has the priority over vmax. Defaults to None.
+        vmin (float | None, optional): New minimum velocity. Defaults to None.
+        vmax (float | None, optional): New maximum velocity. Defaults to None.
+
+    Returns:
+        np.ndarray: Extended or cut 1D array.
+    """
+    if v is None or len(v) <= 1:
+        return v
+
+    dv = v[1] - v[0]
+    if k0 is None and vmin is not None:
+        k0 = int(round((vmin - v[0]) / dv))
+    if k0 is not None and k0 != 0:
+        if k0 < 0:
+            vpre = v[0] + dv * np.arange(k0, 0)
+            v = np.concatenate((vpre, v))
+        else:
+            v = v[k0:]
+    if k1 is None and vmax is not None:
+        k1 = int(round((vmax - v[-1]) / dv))
+    if k1 is not None and k1 != 0:
+        if k1 > 0:
+            vpost = v[-1] + dv * np.arange(1, k1 + 1)
+            v = np.concatenate((v, vpost))
+        else:
+            v = v[:len(v) + k1]
+    return v
+
+
+def reform_data(c: np.ndarray, v_in: np.ndarray | None,
+                nv: int, v_org: np.ndarray | None = None,
+                vskip: int = 1) -> np.ndarray:
+    """Skip and fill channels with nan.
+
+    Args:
+        c (np.ndarray): The input 2D or 3D arrays.
+        v_in (np.ndarray): The input velocity 1D array.
+        nv (int): The number of channels with a label.
+        v (np.ndarray, optional): The velocity 1D array, including the channels with and without a label. Defaults to None.
+        vskip (int, optional): How many channels are skipped. Defaults to 1.
+
+    Returns:
+        np.ndarray: 3D arrays skipped and filled with nan.
+    """
+    if v_org is None:
+        return c
+
+    ndim = np.ndim(c)
+    if ndim not in [2, 3]:
+        print('c must be 2D or 3D.')
+        return
+
+    if ndim == 2:
+        d = np.full((nv, *np.shape(c)), c)
+    elif v_in is not None:
+        dv_org = v_org[1] - v_org[0]
+        dv_in = (v_in[1] - v_in[0]) * vskip
+        k0 = np.argmin(np.abs(v_org - v_in[0]))
+        k1 = np.argmin(np.abs(v_org - v_in[-1]))
+        if np.abs(dv_in - dv_org) / dv_org < 0.01:
+            d = c
+        else:
+            s = 'Velocity resolution mismatch (>1%).' \
+                + ' The cube needs to be regridded' \
+                + ' outside plotastrodata.'
+            warnings.warn(s, UserWarning)
+            n_valid = k1 - k0
+            d = [None] * n_valid
+            for k in range(n_valid):
+                k_tmp = np.argmin(np.abs(v_in - v_org[k]))
+                diffvel = np.abs(v_in[k_tmp] - v_org[k])
+                nearby = diffvel < dv_org * 0.5
+                d[k] = c[k_tmp] if nearby else c[0] * np.nan
+            d = np.array(d)
+        if k0 > 0:
+            prenan = np.full((k0, *np.shape(d)[1:]), np.nan)
+            d = np.concatenate((prenan, d))
+        d = d[::vskip]
+    shape = np.shape(d)
+    shape = (len(v_org) - shape[0], shape[1], shape[2])
+    postnan = np.full(shape, np.nan)
+    d = np.concatenate((d, postnan))
     return d
 
 

@@ -149,3 +149,46 @@ def abs2rel(xabs: float, yabs: float,
     xrel = (xabs - x[0]) / (x[-1] - x[0])
     yrel = (yabs - y[0]) / (y[-1] - y[0])
     return np.array([xrel, yrel])
+
+
+def get_sec(coord: str, mode: str) -> str:
+    """Pick up the second number from a hmsdms string.
+
+    Args:
+        coord (str): hmsdms string.
+        mode (str): 'ra' or 'dec'
+
+    Returns:
+        str: The second number as a string without the unit.
+    """
+    i_axis = 0 if mode == 'ra' else 1
+    return coord.split(' ')[i_axis].split('m')[1].strip('s')
+
+
+def get_min(coord: str, mode: str) -> str:
+    """Pick up the minute number from a hmsdms string.
+
+    Args:
+        coord (str): hmsdms string.
+        mode (str): 'ra' or 'dec'
+
+    Returns:
+        str: The minute number as a string without the unit.
+    """
+    i_axis = 0 if mode == 'ra' else 1
+    s = 'h' if mode == 'ra' else 'd'
+    return coord.split(' ')[i_axis].split(s)[1].split('m')[0]
+
+
+def get_hmdm(coord: str, mode: str) -> str:
+    """Pick up the coordinate string before the second part from a hsmdms string.
+
+    Args:
+        coord (str): hmsdms string.
+        mode (str): 'ra' or 'dec'
+
+    Returns:
+        str: The hm or dm string with the units.
+    """
+    i_axis = 0 if mode == 'ra' else 1
+    return coord.split(' ')[i_axis].split('m')[0] + 'm'
