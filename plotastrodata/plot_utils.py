@@ -148,23 +148,42 @@ def get_figsize(xmin: float, xmax: float, ymin: float, ymax: float,
     return figsize
 
 
-def extend_grid(v: np.ndarray, vmin: float, vmax: float) -> np.ndarray:
+def reform_grid(v: np.ndarray | None = None,
+                k0: int | None = None, k1: int | None = None,
+                vmin: float | None = None, vmax: float | None = None
+                ) -> np.ndarray:
+    """Extend or cut the given 1D array based on the given range.
+
+    Args:
+        v (np.ndarray | None, optional): Input 1D array. Defaults to None.
+        k0 (int | None, optional): How many channels are added before v[0]. k0 has the priority over vmin. Defaults to None.
+        k1 (int | None, optional): How many channels are added after v[-1]. k1 has the priority over vmax. Defaults to None.
+        vmin (float | None, optional): New minimum velocity. Defaults to None.
+        vmax (float | None, optional): New maximum velocity. Defaults to None.
+
+    Returns:
+        np.ndarray: _description_
+    """
     if v is None or len(v) <= 1:
         return v
 
     dv = v[1] - v[0]
-    k0 = int(round((vmin - v[0]) / dv))
-    if k0 < 0:
-        vpre = v[0] + dv * np.arange(k0, 0)
-        v = np.concatenate((vpre, v))
-    else:
-        v = v[k0:]
-    k1 = int(round((vmax - v[-1]) / dv))
-    if k1 > 0:
-        vpost = v[-1] + dv * np.arange(1, k1 + 1)
-        v = np.concatenate((v, vpost))
-    else:
-        v = v[:len(v) + k1]
+    if k0 is None and vmin is not None:
+        k0 = int(round((vmin - v[0]) / dv))
+    if k0 is not None and k0 != 0:
+        if k0 < 0:
+            vpre = v[0] + dv * np.arange(k0, 0)
+            v = np.concatenate((vpre, v))
+        else:
+            v = v[k0:]
+    if k1 is None and vmax is not None:
+        k1 = int(round((vmax - v[-1]) / dv))
+    if k1 is not None and k1 != 0:
+        if k1 > 0:
+            vpost = v[-1] + dv * np.arange(1, k1 + 1)
+            v = np.concatenate((v, vpost))
+        else:
+            v = v[:len(v) + k1]
     return v
 
 
@@ -178,7 +197,7 @@ def _get_v(p, v: np.ndarray | None = None,
     if v is None:
         v = np.array([0])
     if len(v) > 1:
-        v = extend_grid(v=v, vmin=p.vmin, vmax=p.vmax)
+        v = reform_grid(v=v, vmin=p.vmin, vmax=p.vmax)
         v = v[::vskip]
     return v
 
@@ -557,10 +576,7 @@ class PlotAstroData(AstroFrame):
         else:
             npages = int(np.ceil(nv / nrows / ncols))
             nchan = npages * nrows * ncols
-            if nchan > nv:
-                dv = v[1] - v[0]
-                v_nolabel = v[-1] + dv * np.arange(1, nchan - nv + 1)
-                v = np.concatenate((v, v_nolabel))
+            v = reform_grid(v, k1=nchan - nv)
 
         def nij2ch(n: int, i: int, j: int) -> int:
             return n*nrows*ncols + i*ncols + j
