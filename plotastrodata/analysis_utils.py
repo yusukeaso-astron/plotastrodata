@@ -7,11 +7,12 @@ from scipy.signal import convolve
 from plotastrodata import const_utils as cu
 from plotastrodata.coord_utils import coord2xy, rel2abs, xy2coord
 from plotastrodata.fits_utils import data2fits, FitsData, Jy2K
-from plotastrodata.fitting_utils import (EmceeCorner, gaussian2d,
-                                         gaussfit1d, gaussfit2d)
+from plotastrodata.fitting_utils import (EmceeCorner, gaussfit1d,
+                                         gaussfit2d, gaussian2d)
 from plotastrodata.matrix_utils import dot2d, Mfac, Mrot
 from plotastrodata.noise_utils import estimate_rms
-from plotastrodata.other_utils import isdeg, RGIxy, RGIxyv, to4dim, trim
+from plotastrodata.other_utils import (isdeg, nearest_index,
+                                       RGIxy, RGIxyv, to4dim, trim)
 
 
 def quadrantmean(data: np.ndarray, x: np.ndarray, y: np.ndarray,
@@ -197,10 +198,10 @@ class AstroData():
             includev (bool, optional): Centering in the v direction at each position. Defaults to False.
         """
         if includexy:
-            xnew = self.x - self.x[np.argmin(np.abs(self.x))]
-            ynew = self.y - self.y[np.argmin(np.abs(self.y))]
+            xnew = self.x - self.x[nearest_index(self.x)]
+            ynew = self.y - self.y[nearest_index(self.y)]
         if includev:
-            vnew = self.v - self.v[np.argmin(np.abs(self.v))]
+            vnew = self.v - self.v[nearest_index(self.v)]
         if includexy and includev:
             self.data = RGIxyv(self.v, self.y, self.x, self.data,
                                np.meshgrid(vnew, ynew, xnew, indexing='ij'),
@@ -518,10 +519,10 @@ class AstroData():
         """
         fhd = self.fitsheader
         h = {}
-        ci = np.argmin(np.abs(self.x))
+        ci = nearest_index(self.x)
         cx = 0
         if not self.pv:
-            cj = np.argmin(np.abs(self.y))
+            cj = nearest_index(self.y)
             if self.center is None:
                 cx, cy = self.x[ci], self.x[cj]
             else:
@@ -538,7 +539,7 @@ class AstroData():
         h['CDELT1'] = float(self.dx / (3600 if indeg('1') else 1))
         if self.dv is not None:
             vaxis = '2' if self.pv else '3'
-            ck = np.argmin(np.abs(self.v))
+            ck = nearest_index(self.v)
             cv = self.v[ck]
             dv = self.dv
             if self.restfreq is None or self.restfreq == 0:

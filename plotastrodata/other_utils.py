@@ -34,6 +34,20 @@ def isdeg(s: str) -> bool:
         return False
 
 
+def nearest_index(arr: np.ndarray, x: float = 0) -> int:
+    """Get the index of the (sorted) arrary that gives a value nearest to x. This is equivalent to np.argmin(np.abs(arr - x)) but optimized for the sorted array.
+
+    Args:
+        arr (np.ndarray): Sorted array.
+        x (float, optional): Value to approach. Defaults to 0.
+
+    Returns:
+        int: The index that gives a value nearest to x.
+    """
+    idx = np.searchsorted(arr, x).clip(1, len(arr) - 1)
+    return idx - 1 if x - arr[idx - 1] <= arr[idx] - x else idx
+
+
 def trim(data: np.ndarray | None = None, x: np.ndarray | None = None,
          y: np.ndarray | None = None, v: np.ndarray | None = None,
          xlim: list[float] | None = None,
@@ -58,8 +72,8 @@ def trim(data: np.ndarray | None = None, x: np.ndarray | None = None,
     def get_bounds(arr, lim):
         if arr is None or lim is None or None in lim:
             return arr, 0, None
-        lo = np.argmin(np.abs(arr - max(np.min(arr), lim[0])))
-        hi = np.argmin(np.abs(arr - min(np.max(arr), lim[1])))
+        lo = nearest_index(arr, max(np.min(arr), lim[0]))
+        hi = nearest_index(arr, min(np.max(arr), lim[1]))
         lo, hi = sorted((lo, hi))
         return arr[lo:hi + 1], lo, hi + 1
 
@@ -174,8 +188,8 @@ def reform_data(c: np.ndarray, v_in: np.ndarray | None,
     elif v_in is not None:
         dv_org = v_org[1] - v_org[0]
         dv_in = (v_in[1] - v_in[0]) * vskip
-        k0 = np.argmin(np.abs(v_org - v_in[0]))
-        k1 = np.argmin(np.abs(v_org - v_in[-1]))
+        k0 = nearest_index(v_org, v_in[0])
+        k1 = nearest_index(v_org, v_in[-1])
         if np.abs(dv_in - dv_org) / dv_org < 0.01:
             d = c
         else:
@@ -186,7 +200,7 @@ def reform_data(c: np.ndarray, v_in: np.ndarray | None,
             n_valid = k1 - k0
             d = [None] * n_valid
             for k in range(n_valid):
-                k_tmp = np.argmin(np.abs(v_in - v_org[k]))
+                k_tmp = nearest_index(v_in, v_org[k])
                 diffvel = np.abs(v_in[k_tmp] - v_org[k])
                 nearby = diffvel < dv_org * 0.5
                 d[k] = c[k_tmp] if nearby else c[0] * np.nan
