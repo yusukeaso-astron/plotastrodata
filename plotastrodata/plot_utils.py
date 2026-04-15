@@ -168,6 +168,21 @@ def extend_grid(v: np.ndarray, vmin: float, vmax: float) -> np.ndarray:
     return v
 
 
+def _get_v(p: PlotAstroData, v: np.ndarray | None = None, 
+           restfreq: float | None = None,
+           vskip: int = 1) -> np.ndarray:
+    if p.fitsimage is not None:
+        p.read(d := AstroData(fitsimage=p.fitsimage,
+                              restfreq=restfreq, sigma=None))
+        v = d.v
+    if v is None:
+        v = np.array([0])
+    if len(v) > 1:
+        v = extend_grid(v=v, vmin=p.vmin, vmax=p.vmax)
+        v = v[::vskip]
+    return v
+
+
 def vskipfill(c: np.ndarray, v_in: np.ndarray | None,
               nv: int, v_org: np.ndarray | None = None,
               vskip: int = 1) -> np.ndarray:
@@ -508,7 +523,7 @@ class PlotAstroData(AstroFrame):
     kwargs is the arguments of AstroFrame to define plotting ranges.
 
     Args:
-        v (np.ndarray, optional): Used to set up channels if fitsimage not given. Defaults to [0].
+        v (np.ndarray, optional): Used to set up channels if fitsimage not given. Defaults to None.
         vskip (int, optional): How many channels are skipped. Defaults to 1.
         veldigit (int, optional): How many digits after the decimal point. Defaults to 2.
         restfreq (float, optional): Used for velocity and brightness T. Defaults to None.
@@ -523,7 +538,7 @@ class PlotAstroData(AstroFrame):
         ax (optional): External fig.add_subplot(). Defaults to None.
     """
     def __init__(self,
-                 v: np.ndarray = np.array([0]), vskip: int = 1,
+                 v: np.ndarray | None = None, vskip: int = 1,
                  veldigit: int = 2, restfreq: float | None = None,
                  channelnumber: int | None = None,
                  nrows: int = 4, ncols: int = 6,
@@ -535,21 +550,15 @@ class PlotAstroData(AstroFrame):
         super().__init__(**kwargs)
         internalfig = fig is None
         internalax = ax is None
-        if self.fitsimage is not None:
-            self.read(d := AstroData(fitsimage=self.fitsimage,
-                                     restfreq=restfreq, sigma=None))
-            v = d.v or np.array([0])
-        nv = nrows = ncols = npages = nchan = 1
-        if len(v) > 1:
-            dv = v[1] - v[0]
-            v = extend_grid(v=v, vmin=self.vmin, vmax=self.vmax)
-        if not self.pv and len(v) > 1:
-            v = v[::vskip]
-            nv = len(v)  # number of channels with a label
-            if not isinstance(channelnumber, int):
-                npages = int(np.ceil(nv / nrows / ncols))
-                nchan = npages * nrows * ncols
+        v = _get_v(p=self, v=v, restfreq=restfreq, vskip=vskip)
+        nv = len(v)  # number of channels with a label
+        if self.pv or len(v) == 1 or channelnumber is not None:
+            nrows = ncols = npages = nchan = 1
+        else:
+            npages = int(np.ceil(nv / nrows / ncols))
+            nchan = npages * nrows * ncols
             if nchan > nv:
+                dv = v[1] - v[0]
                 v_nolabel = v[-1] + dv * np.arange(1, nchan - nv + 1)
                 v = np.concatenate((v, v_nolabel))
 
