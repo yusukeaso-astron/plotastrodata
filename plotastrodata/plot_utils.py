@@ -288,6 +288,13 @@ def vskipfill(c: np.ndarray, v_in: np.ndarray | None,
     return d
 
 
+def _decorate_vskipfill(nv: float, v_org: np.ndarray, vskip: int
+                        ) -> object:
+    def vskipfill_fixed(c: np.ndarray, v_in: np.ndarray) -> np.ndarray:
+        return vskipfill(c=c, v_in=v_in, nv=nv, v_org=v_org, vskip=vskip)
+    return vskipfill_fixed
+
+
 @dataclass
 class Stretcher():
     """Arguments and methods related to the stretch in PlotAstroData.add_color() and add_rgb().
@@ -643,11 +650,7 @@ class PlotAstroData(AstroFrame):
         self.bottomleft = nij2ch(np.arange(npages), nrows - 1, 0)
         self.channelnumber = channelnumber
         self.v = v
-
-        def vskipfill_fixed(c: np.ndarray, v_in: np.ndarray) -> np.ndarray:
-            return vskipfill(c=c, v_in=v_in, nv=nv, v_org=v, vskip=vskip)
-
-        self.vskipfill = vskipfill_fixed
+        self.vskipfill = _decorate_vskipfill(nv=nv, v_org=v, vskip=vskip)
 
     def _map_init(self, kw: dict) -> tuple:
         """
