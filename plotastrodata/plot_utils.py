@@ -795,7 +795,9 @@ class PlotAstroData(AstroFrame):
     def _set_colorbar(self, mappable, ch: int, show_cbar: bool,
                       cblabel: str, cbformat: str,
                       cbticks: list | None, cbticklabels: list | None,
-                      cblocation: str, st: Stretcher):
+                      cblocation: str,
+                      cblabelfontsize: int, cbtickfontsize: int,
+                      st: Stretcher):
         if not show_cbar:
             return
 
@@ -811,8 +813,8 @@ class PlotAstroData(AstroFrame):
             cax = plt.axes([0.88, 0.105, 0.015, 0.77])
             cb = fig.colorbar(mappable[ch], cax=cax, label=cblabel,
                               format=cbformat)
-        cb.ax.tick_params(labelsize=14)
-        font = mpl.font_manager.FontProperties(size=16)
+        cb.ax.tick_params(labelsize=cbtickfontsize)
+        font = mpl.font_manager.FontProperties(size=cblabelfontsize)
         cb.ax.yaxis.label.set_font_properties(font)
         if cbticks is None and st.stretch == 'log':
             cbticks, cbticklabels = logcbticks(10**st.vmin, 10**st.vmax)
@@ -833,6 +835,8 @@ class PlotAstroData(AstroFrame):
                   cbticks: list[float] | None = None,
                   cbticklabels: list[str] | None = None,
                   cblocation: str = 'right',
+                  cblabelfontsize: int = 16,
+                  cbtickfontsize: int = 14,
                   **kwargs) -> None:
         """Use Axes.pcolormesh of matplotlib. kwargs must include the arguments of AstroData to specify the data to be plotted. kwargs may include the arguments for Stretcher (stretch, stretchscale, and stretchpower) to specify the stretch parameters. kwargs may include arguments of Beam; a dict of beam_kwargs specifies the beam patch in more detail. kwargs may include xskiip and yskip.
 
@@ -843,6 +847,8 @@ class PlotAstroData(AstroFrame):
             cbticks (list, optional): Ticks of colorbar. Defaults to None.
             cbticklabels (list, optional): Ticklabels of colorbar. Defaults to None.
             cblocation (str, optional): 'left', 'top', 'left', 'right'. Only for 2D images. Defaults to 'right'.
+            cblabelfontsize (int, optional): Fontsize for the colorbar label. This is independent of set_rcparams().
+            cbtickfontsize (int, optional): Fontsize for the colorbar ticks. This is independent of set_rcparams().
         """
         self._kw = {'cmap': 'cubehelix', 'alpha': 1,
                     'edgecolors': 'none', 'zorder': 1,
@@ -869,7 +875,8 @@ class PlotAstroData(AstroFrame):
                 p[ch] = pnow
         for ch in self.bottomleft:
             self._set_colorbar(p, ch, show_cbar, cblabel, cbformat,
-                               cbticks, cbticklabels, cblocation, st)
+                               cbticks, cbticklabels, cblocation,
+                               cblabelfontsize, cbtickfontsize, st)
 
     def add_contour(self,
                     levels: list[float] = [-12, -6, -3, 3, 6, 12, 24, 48, 96, 192, 384],
