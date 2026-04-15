@@ -142,7 +142,8 @@ class EmceeCorner():
                 samples = sampler.chain[0, :, nburnin:, :]  # temperatures, walkers, steps, dim
             else:
                 if ncores > 1:
-                    print('Use logl as log_prob_fn to avoid function-in-function.')
+                    print('Use logl as log_prob_fn to avoid'
+                          + ' function-in-function.')
                     log_prob_fn = self.logl
                 else:
                     def log_prob_fn(x):
