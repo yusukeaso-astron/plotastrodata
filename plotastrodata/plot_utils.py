@@ -162,7 +162,7 @@ def reform_grid(v: np.ndarray | None = None,
         vmax (float | None, optional): New maximum velocity. Defaults to None.
 
     Returns:
-        np.ndarray: _description_
+        np.ndarray: Extended or cut 1D array.
     """
     if v is None or len(v) <= 1:
         return v
@@ -200,6 +200,21 @@ def _get_v(p, v: np.ndarray | None = None,
         v = reform_grid(v=v, vmin=p.vmin, vmax=p.vmax)
         v = v[::vskip]
     return v
+
+
+def _get_nij2ch(nrows: int = 1, ncols: int = 1) -> object:
+    def nij2ch(n: int, i: int, j: int) -> int:
+        return n*nrows*ncols + i*ncols + j
+    return nij2ch
+
+
+def _get_ch2nij(nrows: int = 1, ncols: int = 1) -> object:
+    def ch2nij(ch: int) -> tuple[int, int, int]:
+        n = ch // (nrows*ncols)
+        i = (ch - n*nrows*ncols) // ncols
+        j = ch % ncols
+        return n, i, j
+    return ch2nij
 
 
 def vskipfill(c: np.ndarray, v_in: np.ndarray | None,
@@ -577,16 +592,8 @@ class PlotAstroData(AstroFrame):
             npages = int(np.ceil(nv / nrows / ncols))
             nchan = npages * nrows * ncols
             v = reform_grid(v, k1=nchan - nv)
-
-        def nij2ch(n: int, i: int, j: int) -> int:
-            return n*nrows*ncols + i*ncols + j
-
-        def ch2nij(ch: int) -> tuple[int, int, int]:
-            n = ch // (nrows*ncols)
-            i = (ch - n*nrows*ncols) // ncols
-            j = ch % ncols
-            return n, i, j
-
+        nij2ch = _get_nij2ch(nrows=nrows, ncols=ncols)
+        ch2nij = _get_ch2nij(nrows=nrows, ncols=ncols)
         if fontsize is None:
             fontsize = 18 if nchan == 1 else 12
         set_rcparams(fontsize=fontsize, nancolor=nancolor, dpi=dpi)
