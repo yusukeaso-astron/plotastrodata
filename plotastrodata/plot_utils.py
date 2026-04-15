@@ -99,18 +99,45 @@ def logcbticks(vmin: float = 1e-3, vmax: float = 1e3
     return ticks[cond], ticklabels[cond]
 
 
-def _get_sec(coord: str, mode: str) -> str:
+def get_sec(coord: str, mode: str) -> str:
+    """Pick up the second number from a hmsdms string.
+
+    Args:
+        coord (str): hmsdms string.
+        mode (str): 'ra' or 'dec'
+
+    Returns:
+        str: The second number as a string without the unit.
+    """
     i_axis = 0 if mode == 'ra' else 1
     return coord.split(' ')[i_axis].split('m')[1].strip('s')
 
 
-def _get_min(coord: str, mode: str) -> str:
+def get_min(coord: str, mode: str) -> str:
+    """Pick up the minute number from a hmsdms string.
+
+    Args:
+        coord (str): hmsdms string.
+        mode (str): 'ra' or 'dec'
+
+    Returns:
+        str: The minute number as a string without the unit.
+    """
     i_axis = 0 if mode == 'ra' else 1
     s = 'h' if mode == 'ra' else 'd'
     return coord.split(' ')[i_axis].split(s)[1].split('m')[0]
 
 
-def _get_hmdm(coord: str, mode: str) -> str:
+def get_hmdm(coord: str, mode: str) -> str:
+    """Pick up the coordinate string before the second part from a hsmdms string.
+
+    Args:
+        coord (str): hmsdms string.
+        mode (str): 'ra' or 'dec'
+
+    Returns:
+        str: The hm or dm string with the units.
+    """
     i_axis = 0 if mode == 'ra' else 1
     return coord.split(' ')[i_axis].split('m')[0] + 'm'
 
@@ -1175,10 +1202,10 @@ class PlotAstroData(AstroFrame):
             center = f'{csplit[1]} {csplit[2]}'
         if on_min_scale := (self.rmax >= 60.0):
             # On a 5-second grid.
-            ra_s = np.floor(float(_get_sec(center, 0)) / 5) * 5
+            ra_s = np.floor(float(get_sec(center, 0)) / 5) * 5
             dec_s = 0.0
-            ra = _get_hmdm(center, 'ra') + f'{ra_s:.1f}s'
-            dec = _get_hmdm(center, 'dec') + f'{dec_s:.1f}s'
+            ra = get_hmdm(center, 'ra') + f'{ra_s:.1f}s'
+            dec = get_hmdm(center, 'dec') + f'{dec_s:.1f}s'
             center = f'{ra} {dec}'
 
         def get_tickvalues(ticks: np.ndarray, mode: str, no_sec: bool
@@ -1187,7 +1214,7 @@ class PlotAstroData(AstroFrame):
             if mode == 'ra':
                 xy.reverse()
             tickvalues = xy2coord(xy, center)
-            getter = _get_min if no_sec else _get_sec
+            getter = get_min if no_sec else get_sec
             tickvalues = [getter(t, mode) for t in tickvalues]  # str
             tickvalues = np.array(tickvalues, dtype=float)
             # 7-digit precision for practical use.
@@ -1205,7 +1232,7 @@ class PlotAstroData(AstroFrame):
         i_mid = (len(intgrid) - 1) // 2
 
         def makegrid(mode: str):
-            second = float(_get_sec(center, mode))
+            second = float(get_sec(center, mode))
             no_sec = on_min_scale and (mode == 'dec')
             # gridwidth is a float like 2 x 10^order (arcsec).
             gridwidth, order = _get_gridwidth(mode, self.rmax)
@@ -1226,8 +1253,8 @@ class PlotAstroData(AstroFrame):
 
         xticks, xticksminor, xticklabels = makegrid('ra')
         yticks, yticksminor, yticklabels = makegrid('dec')
-        ra_hm = _get_hmdm(xy2coord([xticks[i_mid] / 3600., 0], center), 'ra')
-        dec_dm = _get_hmdm(xy2coord([0, yticks[i_mid] / 3600.], center), 'dec')
+        ra_hm = get_hmdm(xy2coord([xticks[i_mid] / 3600., 0], center), 'ra')
+        dec_dm = get_hmdm(xy2coord([0, yticks[i_mid] / 3600.], center), 'dec')
         if on_min_scale:
             dec_dm = dec_dm.split('d')[0] + 'd'
         ra_hm = ra_hm.translate(str.maketrans(units['ra']))
