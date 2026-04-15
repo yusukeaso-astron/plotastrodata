@@ -132,9 +132,9 @@ def get_figsize(xmin: float, xmax: float, ymin: float, ymax: float,
 
 
 def _get_gridwidth(mode: str, rmax: float) -> tuple[float, int]:
-    # 10^1.5 / 15 ~ 2 grids for R.A.
-    # 10^0.5 ~ 3 grids for Dec.
-    scale = 1.5 if mode == 'ra' else 0.5
+    # 10^1.45 / 15 ~ 2 grids for R.A.
+    # 10^0.45 ~ 3 grids for Dec.
+    scale = 1.45 if mode == 'ra' else 0.45
     x = np.log10(2. * rmax) - scale
     order = np.floor(x)
     frac = x - order
@@ -1096,7 +1096,9 @@ class PlotAstroData(AstroFrame):
                  'dec': {'d': r'$^{\circ}$',
                          'm': r'$^{\prime}$',
                          's': r'.$\hspace{-0.4}^{\prime\prime}$'}}
-        cos_dec = np.cos(np.radians(coord2xy(center)[1]))
+        dec_center = coord2xy(center)[1]
+        sign_dec = np.sign(dec_center)
+        cos_dec = np.cos(np.radians(dec_center))
         intgrid = np.array([-3, -2, -1, 0, 1, 2, 3])
         i_mid = (len(intgrid) - 1) // 2
 
@@ -1110,7 +1112,7 @@ class PlotAstroData(AstroFrame):
             rounded = round(second, ndigits=max(-order, -1))
             # Get a grid point closest to the input second.
             rounded = round(rounded / gridwidth) * gridwidth
-            factor = 15 * cos_dec if mode == 'ra' else 1
+            factor = 15 * cos_dec if mode == 'ra' else sign_dec
             ticks = (intgrid * gridwidth - second + rounded) * factor
             ticksminor = np.linspace(ticks[0], ticks[-1], 6*nticksminor + 1)
             tickvalues = get_tickvalues(ticks, mode, no_sec)
