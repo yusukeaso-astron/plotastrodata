@@ -193,30 +193,29 @@ def vskipfill(c: np.ndarray, v_in: np.ndarray | None,
 
     if ndim == 2:
         d = np.full((nv, *np.shape(c)), c)
-    else:
-        if v_in is not None:
-            dv_org = v_org[1] - v_org[0]
-            dv_in = (v_in[1] - v_in[0]) * vskip
-            k0 = np.argmin(np.abs(v_org - v_in[0]))
-            k1 = np.argmin(np.abs(v_org - v_in[-1]))
-            if np.abs(dv_in - dv_org) / dv_org < 0.01:
-                d = c
-            else:
-                s = 'Velocity resolution mismatch (>1%).' \
-                    + ' The cube needs to be regridded' \
-                    + ' outside plotastrodata.'
-                warnings.warn(s, UserWarning)
-                n_valid = k1 - k0
-                d = [None] * n_valid
-                for k in range(n_valid):
-                    k_tmp = np.argmin(np.abs(v_in - v_org[k]))
-                    diffvel = np.abs(v_in[k_tmp] - v_org[k])
-                    nearby = diffvel < dv_org * 0.5
-                    d[k] = c[k_tmp] if nearby else c[0] * np.nan
-                d = np.array(d)
-            if k0 > 0:
-                prenan = np.full((k0, *np.shape(d)[1:]), np.nan)
-                d = np.append(prenan, d, axis=0)
+    elif v_in is not None:
+        dv_org = v_org[1] - v_org[0]
+        dv_in = (v_in[1] - v_in[0]) * vskip
+        k0 = np.argmin(np.abs(v_org - v_in[0]))
+        k1 = np.argmin(np.abs(v_org - v_in[-1]))
+        if np.abs(dv_in - dv_org) / dv_org < 0.01:
+            d = c
+        else:
+            s = 'Velocity resolution mismatch (>1%).' \
+                + ' The cube needs to be regridded' \
+                + ' outside plotastrodata.'
+            warnings.warn(s, UserWarning)
+            n_valid = k1 - k0
+            d = [None] * n_valid
+            for k in range(n_valid):
+                k_tmp = np.argmin(np.abs(v_in - v_org[k]))
+                diffvel = np.abs(v_in[k_tmp] - v_org[k])
+                nearby = diffvel < dv_org * 0.5
+                d[k] = c[k_tmp] if nearby else c[0] * np.nan
+            d = np.array(d)
+        if k0 > 0:
+            prenan = np.full((k0, *np.shape(d)[1:]), np.nan)
+            d = np.append(prenan, d, axis=0)
         d = d[::vskip]
     shape = np.shape(d)
     shape = (len(v_org) - shape[0], shape[1], shape[2])
@@ -539,18 +538,15 @@ class PlotAstroData(AstroFrame):
         if self.fitsimage is not None:
             self.read(d := AstroData(fitsimage=self.fitsimage,
                                      restfreq=restfreq, sigma=None))
-            v = d.v
+            v = d.v or np.array([0])
+        nv = nrows = ncols = npages = nchan = 1
         if len(v) > 1:
             dv = v[1] - v[0]
             v = extend_grid(v=v, vmin=self.vmin, vmax=self.vmax)
-        if self.pv or v is None or len(v) == 1:
-            nv = nrows = ncols = npages = nchan = 1
-        else:
+        if not self.pv and len(v) > 1:
             v = v[::vskip]
             nv = len(v)  # number of channels with a label
-            if type(channelnumber) is int:
-                nrows = ncols = npages = nchan = 1
-            else:
+            if not isinstance(channelnumber, int):
                 npages = int(np.ceil(nv / nrows / ncols))
                 nchan = npages * nrows * ncols
             if nchan > nv:
