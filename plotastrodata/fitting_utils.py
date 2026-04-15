@@ -34,6 +34,18 @@ def logp(x: np.ndarray) -> float:
         return -np.inf
 
 
+def _get_GR(samples: np.ndarray, nwalkers: int, ndata: int, dim: int
+            ) -> np.ndarray:
+    # Gelman-Rubin statistics #
+    B = np.std(np.mean(samples, axis=1), axis=0)
+    W = np.mean(np.std(samples, axis=1), axis=0)
+    V = (len(samples[0]) - 1) / len(samples[0]) * W \
+        + (nwalkers + 1) / (nwalkers - 1) * B
+    d = ndata - dim - 1
+    GR = np.sqrt((d + 3) / (d + 1) * V / W)
+    return GR
+
+
 class EmceeCorner():
     warnings.simplefilter('ignore', RuntimeWarning)
 
@@ -147,14 +159,8 @@ class EmceeCorner():
                     sampler.run_mcmc(pos0, nsteps)
                 samples = sampler.chain[:, nburnin:, :]  # walkers, steps, dim
             if grcheck:
-                # Gelman-Rubin statistics #
-                B = np.std(np.mean(samples, axis=1), axis=0)
-                W = np.mean(np.std(samples, axis=1), axis=0)
-                V = (len(samples[0]) - 1) / len(samples[0]) * W \
-                    + (nwalkers + 1) / (nwalkers - 1) * B
-                d = self.ndata - self.dim - 1
-                GR = np.sqrt((d + 3) / (d + 1) * V / W)
-                ###########################
+                GR = _get_GR(samples=samples, nwalkers=nwalkers,
+                             ndata=self.ndata, dim=self.dim)
             else:
                 GR = np.zeros(self.dim)
             if i == ntry - 1 and np.max(GR) > 1.25:
