@@ -168,7 +168,7 @@ def extend_grid(v: np.ndarray, vmin: float, vmax: float) -> np.ndarray:
     return v
 
 
-def _get_v(p: PlotAstroData, v: np.ndarray | None = None, 
+def _get_v(p, v: np.ndarray | None = None, 
            restfreq: float | None = None,
            vskip: int = 1) -> np.ndarray:
     if p.fitsimage is not None:
