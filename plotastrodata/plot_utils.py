@@ -136,6 +136,21 @@ def get_figsize(xmin: float, xmax: float, ymin: float, ymax: float,
                 figsize: tuple | None = None,
                 ncols: int = 1, nrows: int = 1, nchan: int = 1
                 ) -> tuple[float, float]:
+    """Get a nice figsize (tuple) with the given x and y ranges.
+
+    Args:
+        xmin (float): The figsize is based on the aspect ratio of (ymax - ymin) / (xmax - xmin).
+        xmax (float): The figsize is based on the aspect ratio of (ymax - ymin) / (xmax - xmin).
+        ymin (float): The figsize is based on the aspect ratio of (ymax - ymin) / (xmax - xmin).
+        ymax (float): The figsize is based on the aspect ratio of (ymax - ymin) / (xmax - xmin).
+        figsize (tuple | None, optional): If this is not None, this will be the output as is. Defaults to None.
+        ncols (int, optional): The number of columns for the channel map. Defaults to 1.
+        nrows (int, optional): The number of rows for the channel map. Defaults to 1.
+        nchan (int, optional): The number of total channels for the channel map. Defaults to 1.
+
+    Returns:
+        tuple[float, float]: figsize for matplotlib.pyplot.Figure.
+    """
     if figsize is not None:
         return figsize
 
