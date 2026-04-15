@@ -156,8 +156,8 @@ def reform_grid(v: np.ndarray | None = None,
 
     Args:
         v (np.ndarray | None, optional): Input 1D array. Defaults to None.
-        k0 (int | None, optional): How many channels are added before v[0]. k0 has the priority over vmin. Defaults to None.
-        k1 (int | None, optional): How many channels are added after v[-1]. k1 has the priority over vmax. Defaults to None.
+        k0 (int | None, optional): How many channels are added before v[0]; the minus sign means extension. k0 has the priority over vmin. Defaults to None.
+        k1 (int | None, optional): How many channels are added after v[-1]; the plus sign means extension. k1 has the priority over vmax. Defaults to None.
         vmin (float | None, optional): New minimum velocity. Defaults to None.
         vmax (float | None, optional): New maximum velocity. Defaults to None.
 
@@ -187,7 +187,7 @@ def reform_grid(v: np.ndarray | None = None,
     return v
 
 
-def _get_v(p, v: np.ndarray | None = None, 
+def _get_v(p, v: np.ndarray | None = None,
            restfreq: float | None = None,
            vskip: int = 1) -> np.ndarray:
     if p.fitsimage is not None:
