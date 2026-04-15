@@ -222,43 +222,51 @@ class Stretcher():
             getsigma = (islog + ispower) * novmin
             self.vmin = np.where(getsigma, sigma, vmin)
 
-    def do(self, x: list | np.ndarray) -> np.ndarray:
+    def do(self, x: list | np.ndarray, i: int = 0) -> np.ndarray:
         """Get the stretched values.
 
         Args:
             x (list | np.ndarray): Input array in the linear scale.
+            i (int): Which element is used in the case where the stretch parameters are lists.
 
         Returns:
             np.ndarray: Output stretched array.
         """
+        st = self.stretch[i] if self.n > 1 else self.stretch
+        stsc = self.stretchscale[i] if self.n > 1 else self.stretchscale
+        stpw = self.stretchpower[i] if self.n > 1 else self.stretchpower
         t = np.array(x)
-        match self.stretch:
+        match st:
             case 'log':
                 t = np.log10(t)  # To be consistent with logcbticks().
             case 'asinh':
-                t = np.arcsinh(t / self.stretchscale)
+                t = np.arcsinh(t / stsc)
             case 'power':
-                p = 1e-6 if self.stretchpower == 0 else self.stretchpower
+                p = 1e-6 if stpw == 0 else stpw
                 t = t**p / p
         return t
 
-    def undo(self, x: list | np.ndarray) -> np.ndarray:
+    def undo(self, x: list | np.ndarray, i: int = 0) -> np.ndarray:
         """Get the linear values from the stretched values.
 
         Args:
             x (list | np.ndarray): Input stretched array.
+            i (int): Which element is used in the case where the stretch parameters are lists.
 
         Returns:
             np.ndarray: Output array in the linear scale.
         """
+        st = self.stretch[i] if self.n > 1 else self.stretch
+        stsc = self.stretchscale[i] if self.n > 1 else self.stretchscale
+        stpw = self.stretchpower[i] if self.n > 1 else self.stretchpower
         t = np.array(x)
-        match self.stretch:
+        match st:
             case 'log':
                 t = 10**t  # To be consistent with logcbticks().
             case 'asinh':
-                t = np.sinh(t) * self.stretchscale
+                t = np.sinh(t) * stsc
             case 'power':
-                p = 1e-6 if self.stretchpower == 0 else self.stretchpower
+                p = 1e-6 if stpw == 0 else stpw
                 t = (t * p)**(1 / p)
         return t
 
@@ -277,7 +285,7 @@ class Stretcher():
         vmaxout = [self.vmax] if single else self.vmax
         dataout = [data] if single else data
         for i, (c, v0, v1) in enumerate(zip(dataout, vminout, vmaxout)):
-            dataout[i] = cout = self.do(c.clip(v0, v1))
+            dataout[i] = cout = self.do(c.clip(v0, v1), i)
             vminout[i] = np.nanmin(cout)
             vmaxout[i] = np.nanmax(cout)
         if single:
@@ -428,7 +436,7 @@ def kwargs2instance(cls: type[T], kw: dict) -> T:
 
     Args:
         cls (class): Class to make the instance.
-        kw (dict): Parameters to make Stretcher.
+        kw (dict): Parameters to make the instance.
 
     Returns:
         instance: an instance of cls made from the parameters in kwargs.
