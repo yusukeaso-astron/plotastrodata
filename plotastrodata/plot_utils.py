@@ -132,6 +132,169 @@ def _get_gridwidth(mode: str, rmax: float) -> tuple[float, int]:
     return base * 10**order, int(order)
 
 
+def get_figsize(xmin: float, xmax: float, ymin: float, ymax: float,
+                figsize: tuple | None = None,
+                ncols: int = 1, nrows: int = 1, nchan: int = 1
+                ) -> tuple[float, float]:
+    """Get a nice figsize (tuple) with the given x and y ranges.
+
+    Args:
+        xmin (float): The figsize is based on the aspect ratio of (ymax - ymin) / (xmax - xmin).
+        xmax (float): The figsize is based on the aspect ratio of (ymax - ymin) / (xmax - xmin).
+        ymin (float): The figsize is based on the aspect ratio of (ymax - ymin) / (xmax - xmin).
+        ymax (float): The figsize is based on the aspect ratio of (ymax - ymin) / (xmax - xmin).
+        figsize (tuple | None, optional): If this is not None, this will be the output as is. Defaults to None.
+        ncols (int, optional): The number of columns for the channel map. Defaults to 1.
+        nrows (int, optional): The number of rows for the channel map. Defaults to 1.
+        nchan (int, optional): The number of total channels for the channel map. Defaults to 1.
+
+    Returns:
+        tuple[float, float]: figsize for matplotlib.pyplot.Figure.
+    """
+    if figsize is not None:
+        return figsize
+
+    sqrt_a = (ymax - ymin) / (xmax - xmin)
+    sqrt_a = np.sqrt(np.abs(sqrt_a))
+    if nchan == 1:
+        figsize = (7 / sqrt_a, 5 * sqrt_a)
+    else:
+        figsize = (ncols * 2 / sqrt_a, max(nrows*2, 3) * sqrt_a)
+    return figsize
+
+
+def reform_grid(v: np.ndarray | None = None,
+                k0: int | None = None, k1: int | None = None,
+                vmin: float | None = None, vmax: float | None = None
+                ) -> np.ndarray:
+    """Extend or cut the given 1D array based on the given range.
+
+    Args:
+        v (np.ndarray | None, optional): Input 1D array. Defaults to None.
+        k0 (int | None, optional): How many channels are added before v[0]; the minus sign means extension. k0 has the priority over vmin. Defaults to None.
+        k1 (int | None, optional): How many channels are added after v[-1]; the plus sign means extension. k1 has the priority over vmax. Defaults to None.
+        vmin (float | None, optional): New minimum velocity. Defaults to None.
+        vmax (float | None, optional): New maximum velocity. Defaults to None.
+
+    Returns:
+        np.ndarray: Extended or cut 1D array.
+    """
+    if v is None or len(v) <= 1:
+        return v
+
+    dv = v[1] - v[0]
+    if k0 is None and vmin is not None:
+        k0 = int(round((vmin - v[0]) / dv))
+    if k0 is not None and k0 != 0:
+        if k0 < 0:
+            vpre = v[0] + dv * np.arange(k0, 0)
+            v = np.concatenate((vpre, v))
+        else:
+            v = v[k0:]
+    if k1 is None and vmax is not None:
+        k1 = int(round((vmax - v[-1]) / dv))
+    if k1 is not None and k1 != 0:
+        if k1 > 0:
+            vpost = v[-1] + dv * np.arange(1, k1 + 1)
+            v = np.concatenate((v, vpost))
+        else:
+            v = v[:len(v) + k1]
+    return v
+
+
+def _get_v(p, v: np.ndarray | None = None,
+           restfreq: float | None = None,
+           vskip: int = 1) -> np.ndarray:
+    if p.fitsimage is not None:
+        p.read(d := AstroData(fitsimage=p.fitsimage,
+                              restfreq=restfreq, sigma=None))
+        v = d.v
+    if v is None:
+        v = np.array([0])
+    if len(v) > 1:
+        v = reform_grid(v=v, vmin=p.vmin, vmax=p.vmax)
+        v = v[::vskip]
+    return v
+
+
+def _get_nij2ch(nrows: int = 1, ncols: int = 1) -> object:
+    def nij2ch(n: int, i: int, j: int) -> int:
+        return n*nrows*ncols + i*ncols + j
+    return nij2ch
+
+
+def _get_ch2nij(nrows: int = 1, ncols: int = 1) -> object:
+    def ch2nij(ch: int) -> tuple[int, int, int]:
+        n = ch // (nrows*ncols)
+        i = (ch - n*nrows*ncols) // ncols
+        j = ch % ncols
+        return n, i, j
+    return ch2nij
+
+
+def vskipfill(c: np.ndarray, v_in: np.ndarray | None,
+              nv: int, v_org: np.ndarray | None = None,
+              vskip: int = 1) -> np.ndarray:
+    """Skip and fill channels with nan.
+
+    Args:
+        c (np.ndarray): The input 2D or 3D arrays.
+        v_in (np.ndarray): The input velocity 1D array.
+        nv (int): The number of channels with a label.
+        v (np.ndarray, optional): The velocity 1D array, including the channels with and without a label. Defaults to None.
+        vskip (int, optional): How many channels are skipped. Defaults to 1.
+
+    Returns:
+        np.ndarray: 3D arrays skipped and filled with nan.
+    """
+    if v_org is None:
+        return c
+
+    ndim = np.ndim(c)
+    if ndim not in [2, 3]:
+        print('c must be 2D or 3D.')
+        return
+
+    if ndim == 2:
+        d = np.full((nv, *np.shape(c)), c)
+    elif v_in is not None:
+        dv_org = v_org[1] - v_org[0]
+        dv_in = (v_in[1] - v_in[0]) * vskip
+        k0 = np.argmin(np.abs(v_org - v_in[0]))
+        k1 = np.argmin(np.abs(v_org - v_in[-1]))
+        if np.abs(dv_in - dv_org) / dv_org < 0.01:
+            d = c
+        else:
+            s = 'Velocity resolution mismatch (>1%).' \
+                + ' The cube needs to be regridded' \
+                + ' outside plotastrodata.'
+            warnings.warn(s, UserWarning)
+            n_valid = k1 - k0
+            d = [None] * n_valid
+            for k in range(n_valid):
+                k_tmp = np.argmin(np.abs(v_in - v_org[k]))
+                diffvel = np.abs(v_in[k_tmp] - v_org[k])
+                nearby = diffvel < dv_org * 0.5
+                d[k] = c[k_tmp] if nearby else c[0] * np.nan
+            d = np.array(d)
+        if k0 > 0:
+            prenan = np.full((k0, *np.shape(d)[1:]), np.nan)
+            d = np.append(prenan, d, axis=0)
+        d = d[::vskip]
+    shape = np.shape(d)
+    shape = (len(v_org) - shape[0], shape[1], shape[2])
+    postnan = np.full(shape, np.nan)
+    d = np.concatenate((d, postnan), axis=0)
+    return d
+
+
+def _decorate_vskipfill(nv: float, v_org: np.ndarray, vskip: int
+                        ) -> object:
+    def vskipfill_fixed(c: np.ndarray, v_in: np.ndarray) -> np.ndarray:
+        return vskipfill(c=c, v_in=v_in, nv=nv, v_org=v_org, vskip=vskip)
+    return vskipfill_fixed
+
+
 @dataclass
 class Stretcher():
     """Arguments and methods related to the stretch in PlotAstroData.add_color() and add_rgb().
@@ -416,7 +579,7 @@ class PlotAstroData(AstroFrame):
     kwargs is the arguments of AstroFrame to define plotting ranges.
 
     Args:
-        v (np.ndarray, optional): Used to set up channels if fitsimage not given. Defaults to [0].
+        v (np.ndarray, optional): Used to set up channels if fitsimage not given. Defaults to None.
         vskip (int, optional): How many channels are skipped. Defaults to 1.
         veldigit (int, optional): How many digits after the decimal point. Defaults to 2.
         restfreq (float, optional): Used for velocity and brightness T. Defaults to None.
@@ -431,7 +594,7 @@ class PlotAstroData(AstroFrame):
         ax (optional): External fig.add_subplot(). Defaults to None.
     """
     def __init__(self,
-                 v: np.ndarray = np.array([0]), vskip: int = 1,
+                 v: np.ndarray | None = None, vskip: int = 1,
                  veldigit: int = 2, restfreq: float | None = None,
                  channelnumber: int | None = None,
                  nrows: int = 4, ncols: int = 6,
@@ -443,74 +606,42 @@ class PlotAstroData(AstroFrame):
         super().__init__(**kwargs)
         internalfig = fig is None
         internalax = ax is None
-        if type(channelnumber) is int:
-            nrows = ncols = 1
-        if self.fitsimage is not None:
-            self.read(d := AstroData(fitsimage=self.fitsimage,
-                                     restfreq=restfreq, sigma=None))
-            v = d.v
-        if len(v) > 1:
-            dv = v[1] - v[0]
-            k0 = int(round((self.vmin - v[0]) / dv))
-            if k0 < 0:
-                vpre = v[0] - (1 + np.arange(-k0)[::-1]) * dv
-                v = np.append(vpre, v)
-            else:
-                v = v[k0:]
-            k1 = len(v) + int(round((self.vmax - v[-1]) / dv))
-            if k1 > len(v):
-                vpost = v[-1] + (1 + np.arange(k1 - len(v))) * dv
-                v = np.append(v, vpost)
-            else:
-                v = v[:k1]
-        if self.pv or v is None or len(v) == 1:
-            nv = nrows = ncols = npages = nchan = 1
+        v = _get_v(p=self, v=v, restfreq=restfreq, vskip=vskip)
+        nv = len(v)  # number of channels with a label
+        if self.pv or len(v) == 1 or channelnumber is not None:
+            nrows = ncols = npages = nchan = 1
         else:
-            nv = len(v := v[::vskip])
             npages = int(np.ceil(nv / nrows / ncols))
             nchan = npages * nrows * ncols
-            v = np.r_[v, v[-1] + (np.arange(nchan - nv) + 1) * dv]
-            if type(channelnumber) is int:
-                nchan = npages = 1
-
-        def nij2ch(n: int, i: int, j: int):
-            return n*nrows*ncols + i*ncols + j
-
-        def ch2nij(ch: int) -> tuple:
-            n = ch // (nrows*ncols)
-            i = (ch - n*nrows*ncols) // ncols
-            j = ch % ncols
-            return n, i, j
-
+            v = reform_grid(v, k1=nchan - nv)
+        nij2ch = _get_nij2ch(nrows=nrows, ncols=ncols)
+        ch2nij = _get_ch2nij(nrows=nrows, ncols=ncols)
         if fontsize is None:
             fontsize = 18 if nchan == 1 else 12
         set_rcparams(fontsize=fontsize, nancolor=nancolor, dpi=dpi)
-        ax = np.empty(nchan, dtype='object') if internalax else [ax]
-        if figsize is None:
-            sqrt_a = (self.ymax - self.ymin) / (self.xmax - self.xmin)
-            sqrt_a = np.sqrt(np.abs(sqrt_a))
-            if nchan == 1:
-                figsize = (7 / sqrt_a, 5 * sqrt_a)
-            else:
-                figsize = (ncols * 2 / sqrt_a, max(nrows*2, 3) * sqrt_a)
+        ax = np.empty(nchan, dtype=object) if internalax else [ax]
+        figsize = get_figsize(xmin=self.xmin, xmax=self.xmax,
+                              ymin=self.ymin, ymax=self.ymax,
+                              figsize=figsize,
+                              ncols=ncols, nrows=nrows, nchan=nchan)
+        need_vlabel = nchan > 1 or type(channelnumber) is int
         for ch in range(nchan):
             n, i, j = ch2nij(ch)
             if internalfig and n not in plt.get_fignums():
                 fig = plt.figure(n, figsize=figsize)
-            sharex = ax[nij2ch(n, i - 1, j)] if i > 0 else None
-            sharey = ax[nij2ch(n, i, j - 1)] if j > 0 else None
+                if need_vlabel:
+                    fig.subplots_adjust(hspace=0, wspace=0,
+                                        right=0.87, top=0.87)
             if internalax:
+                sharex = ax[nij2ch(n, i - 1, j)] if i > 0 else None
+                sharey = ax[nij2ch(n, i, j - 1)] if j > 0 else None
                 ax[ch] = fig.add_subplot(nrows, ncols, i*ncols + j + 1,
                                          sharex=sharex, sharey=sharey)
-            if nchan > 1 or type(channelnumber) is int:
-                fig.subplots_adjust(hspace=0, wspace=0, right=0.87, top=0.87)
-                if ch < nv:
-                    chnum = channelnumber
-                    vellabel = v[ch if chnum is None else chnum]
-                    vd = f'{veldigit:d}'
-                    ax[ch].text(0.9 * self.rmax, 0.7 * self.rmax,
-                                rf'${vellabel:.{vd}f}$', color='black',
-                                backgroundcolor='white', zorder=20)
+            if need_vlabel and ch < nv:
+                vlabel = v[channelnumber or ch]
+                ax[ch].text(0.9 * self.rmax, 0.7 * self.rmax,
+                            rf'${vlabel:.{veldigit}f}$', color='black',
+                            backgroundcolor='white', zorder=20)
         self.fig = None if internalfig else fig
         self.ax = ax
         self.rowcol = nrows * ncols
@@ -519,55 +650,7 @@ class PlotAstroData(AstroFrame):
         self.bottomleft = nij2ch(np.arange(npages), nrows - 1, 0)
         self.channelnumber = channelnumber
         self.v = v
-
-        def vskipfill(c: np.ndarray,
-                      v_in: np.ndarray | None = None
-                      ) -> np.ndarray:
-            """Skip and fill channels with nan.
-
-            Args:
-                c (np.ndarray): 2D or 3D arrays.
-                v_in (np.ndarray): 1D array.
-
-            Returns:
-                np.ndarray: 3D arrays skipped and filled with nan.
-            """
-            if np.ndim(c) == 2:
-                d = np.full((nv, *np.shape(c)), c)
-            elif np.ndim(c) == 3:
-                if v_in is not None:
-                    dv_org = self.v[1] - self.v[0]
-                    dv_in = (v_in[1] - v_in[0]) * vskip
-                    k0 = np.argmin(np.abs(self.v - v_in[0]))
-                    k1 = np.argmin(np.abs(self.v - v_in[-1]))
-                    if np.abs(dv_in - dv_org) / dv_org < 0.01:
-                        d = c
-                    else:
-                        s = 'Velocity resolution mismatch (>1%).' \
-                            + ' The cube needs to be regridded' \
-                            + ' outside plotastrodata.'
-                        warnings.warn(s, UserWarning)
-                        n_valid = k1 - k0
-                        d = [None] * n_valid
-                        for k in range(n_valid):
-                            k_tmp = np.argmin(np.abs(v_in - self.v[k]))
-                            diffvel = np.abs(v_in[k_tmp] - self.v[k])
-                            nearby = diffvel < dv_org * 0.5
-                            d[k] = c[k_tmp] if nearby else c[0] * np.nan
-                        d = np.array(d)
-                    if k0 > 0:
-                        prenan = np.full((k0, *np.shape(d)[1:]), np.nan)
-                        d = np.append(prenan, d, axis=0)
-                d = d[::vskip]
-            else:
-                print('c must be 2D or 3D.')
-                return
-            n = nchan if channelnumber is None else nv
-            shape = (n - len(d), len(d[0]), len(d[0, 0]))
-            postnan = np.full(shape, d[0] * np.nan)
-            d = np.append(d, postnan, axis=0)
-            return d
-        self.vskipfill = vskipfill
+        self.vskipfill = _decorate_vskipfill(nv=nv, v_org=v, vskip=vskip)
 
     def _map_init(self, kw: dict) -> tuple:
         """
