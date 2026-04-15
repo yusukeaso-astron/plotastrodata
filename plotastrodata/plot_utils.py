@@ -132,6 +132,22 @@ def _get_gridwidth(mode: str, rmax: float) -> tuple[float, int]:
     return base * 10**order, int(order)
 
 
+def get_figsize(xmin: float, xmax: float, ymin: float, ymax: float,
+                figsize: tuple | None = None,
+                ncols: int = 1, nrows: int = 1, nchan: int = 1
+                ) -> tuple[float, float]:
+    if figsize is not None:
+        return figsize
+
+    sqrt_a = (ymax - ymin) / (xmax - xmin)
+    sqrt_a = np.sqrt(np.abs(sqrt_a))
+    if nchan == 1:
+        figsize = (7 / sqrt_a, 5 * sqrt_a)
+    else:
+        figsize = (ncols * 2 / sqrt_a, max(nrows*2, 3) * sqrt_a)
+    return figsize
+
+
 def extend_grid(v: np.ndarray, vmin: float, vmax: float) -> np.ndarray:
     if v is None or len(v) <= 1:
         return v
@@ -153,34 +169,36 @@ def extend_grid(v: np.ndarray, vmin: float, vmax: float) -> np.ndarray:
 
 
 def vskipfill(c: np.ndarray, v_in: np.ndarray | None,
-              nchan: int, nv: int, v: np.ndarray | None = None,
+              nv: int, v_org: np.ndarray | None = None,
               vskip: int = 1) -> np.ndarray:
     """Skip and fill channels with nan.
 
     Args:
         c (np.ndarray): The input 2D or 3D arrays.
         v_in (np.ndarray): The input velocity 1D array.
-        nchan (int): The total number of channels, including those with and without a label. nchan = nrows * ncols * npages.
         nv (int): The number of channels with a label.
-        v (np.ndarray, optional): The velocity 1D array of the output cube. Defaults to None.
+        v (np.ndarray, optional): The velocity 1D array, including the channels with and without a label. Defaults to None.
         vskip (int, optional): How many channels are skipped. Defaults to 1.
 
     Returns:
         np.ndarray: 3D arrays skipped and filled with nan.
     """
+    if v_org is None:
+        return c
+
     ndim = np.ndim(c)
     if ndim not in [2, 3]:
         print('c must be 2D or 3D.')
         return
-        
+
     if ndim == 2:
         d = np.full((nv, *np.shape(c)), c)
     else:
         if v_in is not None:
-            dv_org = v[1] - v[0]
+            dv_org = v_org[1] - v_org[0]
             dv_in = (v_in[1] - v_in[0]) * vskip
-            k0 = np.argmin(np.abs(v - v_in[0]))
-            k1 = np.argmin(np.abs(v - v_in[-1]))
+            k0 = np.argmin(np.abs(v_org - v_in[0]))
+            k1 = np.argmin(np.abs(v_org - v_in[-1]))
             if np.abs(dv_in - dv_org) / dv_org < 0.01:
                 d = c
             else:
@@ -191,8 +209,8 @@ def vskipfill(c: np.ndarray, v_in: np.ndarray | None,
                 n_valid = k1 - k0
                 d = [None] * n_valid
                 for k in range(n_valid):
-                    k_tmp = np.argmin(np.abs(v_in - v[k]))
-                    diffvel = np.abs(v_in[k_tmp] - v[k])
+                    k_tmp = np.argmin(np.abs(v_in - v_org[k]))
+                    diffvel = np.abs(v_in[k_tmp] - v_org[k])
                     nearby = diffvel < dv_org * 0.5
                     d[k] = c[k_tmp] if nearby else c[0] * np.nan
                 d = np.array(d)
@@ -201,7 +219,7 @@ def vskipfill(c: np.ndarray, v_in: np.ndarray | None,
                 d = np.append(prenan, d, axis=0)
         d = d[::vskip]
     shape = np.shape(d)
-    shape = (max(nchan, nv) - shape[0], shape[1], shape[2])
+    shape = (len(v_org) - shape[0], shape[1], shape[2])
     postnan = np.full(shape, np.nan)
     d = np.concatenate((d, postnan), axis=0)
     return d
@@ -551,32 +569,29 @@ class PlotAstroData(AstroFrame):
         if fontsize is None:
             fontsize = 18 if nchan == 1 else 12
         set_rcparams(fontsize=fontsize, nancolor=nancolor, dpi=dpi)
-        ax = np.empty(nchan, dtype='object') if internalax else [ax]
-        if figsize is None:
-            sqrt_a = (self.ymax - self.ymin) / (self.xmax - self.xmin)
-            sqrt_a = np.sqrt(np.abs(sqrt_a))
-            if nchan == 1:
-                figsize = (7 / sqrt_a, 5 * sqrt_a)
-            else:
-                figsize = (ncols * 2 / sqrt_a, max(nrows*2, 3) * sqrt_a)
+        ax = np.empty(nchan, dtype=object) if internalax else [ax]
+        figsize = get_figsize(xmin=self.xmin, xmax=self.xmax,
+                              ymin=self.ymin, ymax=self.ymax,
+                              figsize=figsize,
+                              ncols=ncols, nrows=nrows, nchan=nchan)
+        need_vlabel = nchan > 1 or type(channelnumber) is int
         for ch in range(nchan):
             n, i, j = ch2nij(ch)
             if internalfig and n not in plt.get_fignums():
                 fig = plt.figure(n, figsize=figsize)
-            sharex = ax[nij2ch(n, i - 1, j)] if i > 0 else None
-            sharey = ax[nij2ch(n, i, j - 1)] if j > 0 else None
+                if need_vlabel:
+                    fig.subplots_adjust(hspace=0, wspace=0,
+                                        right=0.87, top=0.87)
             if internalax:
+                sharex = ax[nij2ch(n, i - 1, j)] if i > 0 else None
+                sharey = ax[nij2ch(n, i, j - 1)] if j > 0 else None
                 ax[ch] = fig.add_subplot(nrows, ncols, i*ncols + j + 1,
                                          sharex=sharex, sharey=sharey)
-            if nchan > 1 or type(channelnumber) is int:
-                fig.subplots_adjust(hspace=0, wspace=0, right=0.87, top=0.87)
-                if ch < nv:
-                    chnum = channelnumber
-                    vellabel = v[ch if chnum is None else chnum]
-                    vd = f'{veldigit:d}'
-                    ax[ch].text(0.9 * self.rmax, 0.7 * self.rmax,
-                                rf'${vellabel:.{vd}f}$', color='black',
-                                backgroundcolor='white', zorder=20)
+            if need_vlabel and ch < nv:
+                vlabel = v[channelnumber or ch]
+                ax[ch].text(0.9 * self.rmax, 0.7 * self.rmax,
+                            rf'${vlabel:.{veldigit}f}$', color='black',
+                            backgroundcolor='white', zorder=20)
         self.fig = None if internalfig else fig
         self.ax = ax
         self.rowcol = nrows * ncols
@@ -587,8 +602,7 @@ class PlotAstroData(AstroFrame):
         self.v = v
 
         def vskipfill_fixed(c: np.ndarray, v_in: np.ndarray) -> np.ndarray:
-            return vskipfill(c=c, v_in=v_in, nchan=nchan,
-                             nv=nv, v=v, vskip=vskip)
+            return vskipfill(c=c, v_in=v_in, nv=nv, v_org=v, vskip=vskip)
 
         self.vskipfill = vskipfill_fixed
 
