@@ -169,7 +169,7 @@ class EmceeCorner():
 
         self.samples = samples
         if savechain is not None:
-            np.save(savechain.replace('.npy', '') + '.npy', samples)
+            np.save(savechain.removesuffix('.npy') + '.npy', samples)
         if pt:
             lnps = sampler.logprobability[0]  # [0] is in the temperature axis.
             idx_best = np.unravel_index(np.argmax(lnps), lnps.shape)
