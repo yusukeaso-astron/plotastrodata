@@ -35,7 +35,7 @@ def isdeg(s: str) -> bool:
 
 
 def nearest_index(arr: np.ndarray, x: float = 0) -> int:
-    """Get the index of the (sorted) arrary that gives a value nearest to x. This is equivalent to np.argmin(np.abs(arr - x)) but optimized for the sorted array.
+    """Get the index of the input arrary that gives a value nearest to the given value x. np.searchsorted() does not work with a descending array.
 
     Args:
         arr (np.ndarray): Sorted array.
@@ -44,8 +44,7 @@ def nearest_index(arr: np.ndarray, x: float = 0) -> int:
     Returns:
         int: The index that gives a value nearest to x.
     """
-    idx = np.searchsorted(arr, x).clip(1, len(arr) - 1)
-    return idx - 1 if x - arr[idx - 1] <= arr[idx] - x else idx
+    return np.argmin(np.abs(arr - x))
 
 
 def trim(data: np.ndarray | None = None, x: np.ndarray | None = None,
