@@ -71,8 +71,8 @@ def trim(data: np.ndarray | None = None, x: np.ndarray | None = None,
     def get_bounds(arr, lim):
         if arr is None or lim is None or None in lim:
             return arr, 0, None
-        lo = nearest_index(arr, max(np.min(arr), lim[0]))
-        hi = nearest_index(arr, min(np.max(arr), lim[1]))
+        lo = nearest_index(arr, max(np.min(arr), np.min(lim)))
+        hi = nearest_index(arr, min(np.max(arr), np.max(lim)))
         lo, hi = sorted((lo, hi))
         return arr[lo:hi + 1], lo, hi + 1
 
