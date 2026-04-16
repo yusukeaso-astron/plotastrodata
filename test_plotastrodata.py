@@ -9,10 +9,22 @@ from PIL import Image
 
 with open('example.py', 'r') as f:
     lines = f.readlines()
+is_animation = False
+is_html = False
 for i in range(len(lines)):
     s = lines[i]
+    if '# Animation' in s:
+         is_animation = True
+    if '# 3D html' in s:
+         is_html = True
+    if is_animation and '####' in s:
+         is_animation = False
+    if is_html and '####' in s:
+         is_html = False
     s = s.replace('show=True', 'show=False')
     s = s.replace('plt.show()', 'plt.close()')
+    if is_animation or is_html:
+         s = '\n'
     lines[i] = s
 
 with open('example_temp.py', 'w') as f:
