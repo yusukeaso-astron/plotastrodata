@@ -68,5 +68,5 @@ pnglist = np.array(pnglist)
 
 def test_pngfiles():
     if np.any(reslist):
-        print(pnglist[reslist])
+        print(pnglist[reslist], 'are different from the expected files.')
     assert np.any(reslist)
