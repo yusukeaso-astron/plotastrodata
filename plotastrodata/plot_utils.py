@@ -131,19 +131,18 @@ def get_figsize(xmin: float, xmax: float, ymin: float, ymax: float,
     return figsize
 
 
-def _get_gridwidth(mode: str, rmax: float) -> tuple[float, int]:
-    # 10^1.45 / 15 ~ 2 grids for R.A.
-    # 10^0.45 ~ 3 grids for Dec.
-    scale = 1.45 if mode == 'ra' else 0.45
-    x = np.log10(2. * rmax) - scale
-    order = np.floor(x)
-    frac = x - order
-    if frac <= 0.33:
-        base = 1
-    elif frac <= 0.68:
-        base = 2
+def _get_gridwidth(mode: str, rmax: float, cos_dec: float
+                   ) -> tuple[float, int]:
+    # Length in the units of s for R.A. and " for Dec., respectively.
+    length = 2 * rmax / (15 * cos_dec if mode == 'ra' else 1)
+    p = np.floor(np.log10(length))
+    b = length / 10**p
+    if b <= 2:
+        base, order = 5, p - 1
+    elif b <= 4:
+        base, order = 1, p
     else:
-        base = 5
+        base, order = 2, p
     return base * 10**order, int(order)
 
 
@@ -1107,13 +1106,12 @@ class PlotAstroData(AstroFrame):
         sign_dec = np.sign(dec_center)
         cos_dec = np.cos(np.radians(dec_center))
         intgrid = np.array([-3, -2, -1, 0, 1, 2, 3])
-        i_mid = (len(intgrid) - 1) // 2
 
         def makegrid(mode: str):
             second = float(get_sec(center, mode))
             no_sec = on_min_scale and (mode == 'dec')
             # gridwidth is a float like 2 x 10^order (arcsec).
-            gridwidth, order = _get_gridwidth(mode, self.rmax)
+            gridwidth, order = _get_gridwidth(mode, self.rmax, cos_dec)
             # ndigits = -1 is the largest case for 10", 20", ...
             decimals = str(max(-order, 0))
             rounded = round(second, ndigits=max(-order, -1))
@@ -1131,14 +1129,18 @@ class PlotAstroData(AstroFrame):
 
         xticks, xticksminor, xticklabels = makegrid('ra')
         yticks, yticksminor, yticklabels = makegrid('dec')
-        ra_hm = get_hmdm(xy2coord([xticks[i_mid] / 3600., 0], center), 'ra')
-        dec_dm = get_hmdm(xy2coord([0, yticks[i_mid] / 3600.], center), 'dec')
+        i_ref = np.where(np.abs(xticks) < self.rmax)[0][-1]
+        idx_top = -1 if sign_dec > 0 else 0
+        j_ref = np.where(np.abs(yticks) < self.rmax)[0][idx_top]
+        ra_hm = get_hmdm(xy2coord([xticks[i_ref] / 3600., 0], center), 'ra')
+        dec_dm = get_hmdm(xy2coord([0, yticks[j_ref] / 3600.], center), 'dec')
         if on_min_scale:
             dec_dm = dec_dm.split('d')[0] + 'd'
         ra_hm = ra_hm.translate(str.maketrans(units['ra']))
         dec_dm = dec_dm.translate(str.maketrans(units['dec']))
-        xticklabels[i_mid] = ra_hm + xticklabels[i_mid]
-        yticklabels[i_mid] = dec_dm + '\n' + yticklabels[i_mid]
+        textpad = ' ' * 12  # To shift the tick label to left.
+        xticklabels[i_ref] = ra_hm + xticklabels[i_ref] + textpad
+        yticklabels[j_ref] = dec_dm + '\n' + yticklabels[j_ref]
         pa2 = PlotAxes2D(True, None, 'linear', 'linear',
                          self.Xlim, self.Ylim, xlabel, ylabel,
                          xticks, yticks, xticklabels, yticklabels,
