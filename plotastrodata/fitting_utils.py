@@ -123,11 +123,18 @@ class EmceeCorner():
         sampler.run_mcmc(pos0, nsteps)
         return sampler
 
+    def _get_samples(self, sampler, nburnin: int, pt: bool) -> np.ndarray:
+        """Extract post-burn-in samples from sampler chain."""
+        if pt:
+            return sampler.chain[0, :, nburnin:, :]  # temperatures, walkers, steps, dim
+        else:
+            return sampler.chain[:, nburnin:, :]  # walkers, steps, dim
+
     def _get_lnp_popt(self, sampler, pt: bool, nburnin: int,
                       ) -> tuple[np.ndarray, np.ndarray]:
         """Get log probabilities and best-fit parameters from sampler."""
         if pt:
-            lnp = sampler.logprobability[0]      # temperature-0 chain
+            lnp = sampler.logprobability[0]  # 0th temperature chain
             chain = sampler.chain[0]
         else:
             lnp = sampler.lnprobability
@@ -187,10 +194,8 @@ class EmceeCorner():
             sampler = self._run_sampler(pos0=pos0, pt=pt, ncores=ncores,
                                         ntemps=ntemps, nsteps=nsteps,
                                         nwalkers=nwalkers)
-            samples = sampler.chain  # (temperatures,) walkers, steps, dim
-            if pt:
-                samples = samples[0]
-            samples = samples[:, nburnin:, :]
+            samples = self._get_samples(sampler=sampler,
+                                        nburnin=nburnin, pt=pt)
             if grcheck:
                 GR = _get_GR(samples=samples, nwalkers=nwalkers,
                              ndata=self.ndata, dim=self.dim)
