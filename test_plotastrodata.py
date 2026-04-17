@@ -69,6 +69,7 @@ for file in htmllist:
 filelist = np.concatenate((pnglist, htmllist))
 reslist = np.array(reslist)
 
+
 def test_pngfiles():
     if np.any(reslist):
         print('Mismatched files:')
