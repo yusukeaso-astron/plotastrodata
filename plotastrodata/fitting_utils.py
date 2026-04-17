@@ -46,8 +46,8 @@ def _get_GR(samples: np.ndarray, nwalkers: int, ndata: int, dim: int
     return GR
 
 
-def _check_GR(samples: np.ndarray, nwalkers: int, ndata: int, dim:int,
-              i: int, ntry: int = 1, grcheck: bool = False):
+def _check_GR(samples: np.ndarray, nwalkers: int, ndata: int, dim: int,
+              i: int, ntry: int = 1, grcheck: bool = False) -> int:
     if not grcheck:
         return ntry
 
@@ -198,8 +198,6 @@ class EmceeCorner():
             total = ntry * ntemps * nwalkers * (nsteps + 1) // ncores
             bar = tqdm(total=total)
             bar.set_description('Within the ranges')
-
-        GR = np.zeros(self.dim)
         samples = None
         sampler = None
         for i in range(1, ntry + 1):
