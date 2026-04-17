@@ -36,7 +36,7 @@ def logp(x: np.ndarray) -> float:
 
 def _get_GR(samples: np.ndarray, nwalkers: int, ndata: int, dim: int
             ) -> np.ndarray:
-    # Gelman-Rubin statistics #
+    """Calculate the Gelman-Rubin statistics."""
     B = np.std(np.mean(samples, axis=1), axis=0)
     W = np.mean(np.std(samples, axis=1), axis=0)
     V = (len(samples[0]) - 1) / len(samples[0]) * W \
