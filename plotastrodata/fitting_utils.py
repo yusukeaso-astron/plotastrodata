@@ -46,6 +46,20 @@ def _get_GR(samples: np.ndarray, nwalkers: int, ndata: int, dim: int
     return GR
 
 
+def _check_GR(samples: np.ndarray, nwalkers: int, ndata: int, dim:int,
+              i: int, ntry: int = 1, grcheck: bool = False):
+    if not grcheck:
+        return ntry
+
+    GR = _get_GR(samples=samples, nwalkers=nwalkers, ndata=ndata, dim=dim)
+    if np.max(GR) <= 1.25:
+        return ntry
+
+    if i == ntry:
+        print(f'!!! Max GR >1.25 during {ntry:d} trials.!!!')
+    return i
+
+
 class EmceeCorner():
     warnings.simplefilter('ignore', RuntimeWarning)
 
@@ -196,13 +210,9 @@ class EmceeCorner():
                                         nwalkers=nwalkers)
             samples = self._get_samples(sampler=sampler,
                                         nburnin=nburnin, pt=pt)
-            if grcheck:
-                GR = _get_GR(samples=samples, nwalkers=nwalkers,
-                             ndata=self.ndata, dim=self.dim)
-            if np.max(GR) <= 1.25:
-                break
-            if i == ntry:
-                print(f'!!! Max GR >1.25 during {ntry:d} trials.!!!')
+            i = _check_GR(samples=samples, nwalkers=nwalkers,
+                          ndata=self.ndata, dim=self.dim,
+                          i=i, ntry=ntry, grcheck=grcheck)
         if savechain is not None:
             np.save(savechain.removesuffix('.npy') + '.npy', samples)
         self.lnp, self.popt = self._get_lnp_popt(sampler=sampler, pt=pt,
