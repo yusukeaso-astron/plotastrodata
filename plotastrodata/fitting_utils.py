@@ -178,11 +178,11 @@ class EmceeCorner():
             print('nwalkersperdim < 2 is not allowed.'
                   + f' Use 2 instead of {nwalkersperdim:d}.')
         nwalkers = max(nwalkersperdim, 2) * self.dim  # must be even and >= 2 * dim
-        if ntemps > 1 and not pt:
-            print('ntemps>1 is supported only with pt=True. Set pt=True.')
+        if ntemps > 1:
             pt = True
         if global_progressbar:
-            bar = tqdm(total=ntry * ntemps * nwalkers * (nsteps + 1) // ncores)
+            total = ntry * ntemps * nwalkers * (nsteps + 1) // ncores
+            bar = tqdm(total=total)
             bar.set_description('Within the ranges')
 
         GR = np.zeros(self.dim)
@@ -203,12 +203,12 @@ class EmceeCorner():
                 break
             if i == ntry:
                 print(f'!!! Max GR >1.25 during {ntry:d} trials.!!!')
-        self.samples = samples
         if savechain is not None:
             np.save(savechain.removesuffix('.npy') + '.npy', samples)
         self.lnp, self.popt = self._get_lnp_popt(sampler=sampler, pt=pt,
                                                  nburnin=nburnin)
         self.plow, self.pmid, self.phigh = self._get_percentiles(samples)
+        self.samples = samples
         if global_progressbar:
             print()
 
