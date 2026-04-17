@@ -101,13 +101,9 @@ class EmceeCorner():
         """Create and run the sampler, then return it."""
         if pt:
             sampler_cls = ptemcee.Sampler
-            sampler_kwargs = {
-                'ntemps': ntemps,
-                'nwalkers': nwalkers,
-                'dim': self.dim,
-                'logl': self.logl,
-                'logp': self.logp,
-            }
+            sampler_kwargs = {'ntemps': ntemps,
+                              'nwalkers': nwalkers, 'dim': self.dim,
+                              'logl': self.logl, 'logp': self.logp}
         else:
             if ncores > 1:
                 print('Use logl as log_prob_fn to avoid function-in-function.')
@@ -117,12 +113,8 @@ class EmceeCorner():
                     return self.logp(x) + self.logl(x)
 
             sampler_cls = emcee.EnsembleSampler
-            sampler_kwargs = {
-                'nwalkers': nwalkers,
-                'ndim': self.dim,
-                'log_prob_fn': log_prob_fn,
-            }
-
+            sampler_kwargs = {'nwalkers': nwalkers, 'ndim': self.dim,
+                              'log_prob_fn': log_prob_fn}
         if ncores > 1:
             with Pool(ncores) as pool:
                 sampler = sampler_cls(**sampler_kwargs, pool=pool)
