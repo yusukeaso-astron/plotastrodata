@@ -95,9 +95,45 @@ class EmceeCorner():
         pos0 = np.random.rand(ntemps, nwalkers, self.dim) * width + lower
         return pos0 if pt else pos0[0]
 
-    def _get_lnp_popt(self, sampler, pt: bool
+    def _run_sampler(self, pos0: np.ndarray, pt: bool,
+                     ncores: int, ntemps: int,
+                     nsteps: int, nwalkers: int) -> object:
+        """Create and run the sampler, then return it."""
+        if pt:
+            sampler_cls = ptemcee.Sampler
+            sampler_kwargs = {
+                'ntemps': ntemps,
+                'nwalkers': nwalkers,
+                'dim': self.dim,
+                'logl': self.logl,
+                'logp': self.logp,
+            }
+        else:
+            if ncores > 1:
+                print('Use logl as log_prob_fn to avoid function-in-function.')
+                log_prob_fn = self.logl
+            else:
+                def log_prob_fn(x):
+                    return self.logp(x) + self.logl(x)
+
+            sampler_cls = emcee.EnsembleSampler
+            sampler_kwargs = {
+                'nwalkers': nwalkers,
+                'ndim': self.dim,
+                'log_prob_fn': log_prob_fn,
+            }
+
+        if ncores > 1:
+            with Pool(ncores) as pool:
+                sampler = sampler_cls(**sampler_kwargs, pool=pool)
+        else:
+            sampler = sampler_cls(**sampler_kwargs, pool=None)
+        sampler.run_mcmc(pos0, nsteps)
+        return sampler
+
+    def _get_lnp_popt(self, sampler, pt: bool, nburnin: int,
                       ) -> tuple[np.ndarray, np.ndarray]:
-        """Extract log probabilities and best-fit parameters from sampler."""
+        """Get log probabilities and best-fit parameters from sampler."""
         if pt:
             lnp = sampler.logprobability[0]      # temperature-0 chain
             chain = sampler.chain[0]
@@ -106,7 +142,17 @@ class EmceeCorner():
             chain = sampler.chain
         idx_best = np.unravel_index(np.argmax(lnp), lnp.shape)
         popt = chain[idx_best]
+        lnp = lnp[:, nburnin:]
         return lnp, popt
+
+    def _get_percentiles(self, samples: np.ndarray
+                         ) -> tuple[float, float, float]:
+        """Compute summary statistics (percentiles) from MCMC samples."""
+        s = samples.reshape(-1, self.dim)
+        plow = np.percentile(s, self.percent[0], axis=0)
+        pmid = np.percentile(s, 50, axis=0)
+        phigh = np.percentile(s, self.percent[1], axis=0)
+        return plow, pmid, phigh
 
     def fit(self, nwalkersperdim: int = 2,
             ntemps: int = 1, nsteps: int = 1000,
@@ -140,35 +186,15 @@ class EmceeCorner():
             bar = tqdm(total=ntry * ntemps * nwalkers * (nsteps + 1) // ncores)
             bar.set_description('Within the ranges')
 
-        GR = np.full(self.dim, 2.0)
+        GR = np.zeros(self.dim)
         samples = None
         sampler = None
         for i in range(1, ntry + 1):
             if pos0 is None:
                 pos0 = self._get_pos0(ntemps=ntemps, nwalkers=nwalkers, pt=pt)
-            if pt:
-                pars = {'ntemps': ntemps,
-                        'nwalkers': nwalkers, 'dim': self.dim,
-                        'logl': self.logl, 'logp': self.logp}
-                SamplerClass = ptemcee.Sampler
-            else:
-                if ncores > 1:
-                    print('Use logl as log_prob_fn to avoid'
-                          + ' function-in-function.')
-                    log_prob_fn = self.logl
-                else:
-                    def log_prob_fn(x):
-                        return self.logp(x) + self.logl(x)
-
-                pars = {'nwalkers': nwalkers, 'ndim': self.dim,
-                        'log_prob_fn': log_prob_fn}
-                SamplerClass = emcee.EnsembleSampler
-            if ncores > 1:
-                with Pool(ncores) as pool:
-                    sampler = SamplerClass(**pars, pool=pool)
-            else:
-                sampler = SamplerClass(**pars, pool=None)
-            sampler.run_mcmc(pos0, nsteps)
+            sampler = self._run_sampler(pos0=pos0, pt=pt, ncores=ncores,
+                                        ntemps=ntemps, nsteps=nsteps,
+                                        nwalkers=nwalkers)
             samples = sampler.chain  # (temperatures,) walkers, steps, dim
             if pt:
                 samples = samples[0]
@@ -176,8 +202,6 @@ class EmceeCorner():
             if grcheck:
                 GR = _get_GR(samples=samples, nwalkers=nwalkers,
                              ndata=self.ndata, dim=self.dim)
-            else:
-                GR = np.zeros(self.dim)
             if np.max(GR) <= 1.25:
                 break
             if i == ntry:
@@ -185,12 +209,9 @@ class EmceeCorner():
         self.samples = samples
         if savechain is not None:
             np.save(savechain.removesuffix('.npy') + '.npy', samples)
-        lnp, self.popt = self._get_lnp_popt(sampler=sampler, pt=pt)
-        self.lnp = lnp[:, nburnin:]
-        s = samples.reshape((-1, self.dim))
-        self.plow = np.percentile(s, self.percent[0], axis=0)
-        self.pmid = np.percentile(s, 50, axis=0)
-        self.phigh = np.percentile(s, self.percent[1], axis=0)
+        self.lnp, self.popt = self._get_lnp_popt(sampler=sampler, pt=pt,
+                                                 nburnin=nburnin)
+        self.plow, self.pmid, self.phigh = self._get_percentiles(samples)
         if global_progressbar:
             print()
 
