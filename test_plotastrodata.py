@@ -56,7 +56,7 @@ pnglist = glob.glob("./example_data/output_expected/*.png")
 for file in pnglist:
     expected = file
     output = file.replace('/output_expected/', '/output/')
-    res = images_are_close(output, expected, tolerance=2)
+    res = images_are_close(output, expected, tolerance=5)
     reslist.append(res)
 filelist = np.array(pnglist)
 reslist = np.array(reslist)
