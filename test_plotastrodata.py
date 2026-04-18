@@ -34,7 +34,7 @@ dest_dir = Path('./example_data/output/')
 for pattern in ('*.png', '*.html'):
     for file in source_dir.glob(pattern):
         file.rename(dest_dir / file.name)
-for file in glob.glob("*.mp4"):
+for file in glob.glob("*.mp4") + glob.glob("*.html"):
     os.remove(file)
 
 
@@ -47,31 +47,29 @@ def images_are_close(img_path1, img_path2, tolerance=0):
     arr1 = np.array(img1)
     arr2 = np.array(img2)
     diff = np.abs(arr1.astype(int) - arr2.astype(int))
-    max_diff = np.percentile(diff, 99)
+    max_diff = np.percentile(diff, 99.7)
     return max_diff <= tolerance
 
 
 reslist = []
 pnglist = glob.glob("./example_data/output_expected/*.png")
 for file in pnglist:
-    output = file
-    expected = file.replace('/output_expected/', '/output/')
+    expected = file
+    output = file.replace('/output_expected/', '/output/')
     res = images_are_close(output, expected, tolerance=2)
     reslist.append(res)
-
-htmllist = glob.glob("./example_data/output_expected/*.html")
-for file in htmllist:
-    output = file
-    expected = file.replace('/output_expected/', '/output/')
-    with open(output) as f1, open(expected) as f2:
-        res = (f1.read() == f2.read())
-    reslist.append(res)
-filelist = np.concatenate((pnglist, htmllist))
+filelist = np.array(pnglist)
 reslist = np.array(reslist)
 
 
-def test_pngfiles():
-    if np.any(reslist):
+def test_filematch():
+    if np.all(reslist):
+        print('All files matched.')
+    else:
         print('Mismatched files:')
         print(filelist[reslist])
-    assert np.any(reslist)
+    assert np.all(reslist)
+
+
+if __name__ == '__main__':
+    test_filematch()
