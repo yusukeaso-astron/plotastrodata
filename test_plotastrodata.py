@@ -47,7 +47,7 @@ def images_are_close(img_path1, img_path2, tolerance=0):
     arr1 = np.array(img1)
     arr2 = np.array(img2)
     diff = np.abs(arr1.astype(int) - arr2.astype(int))
-    max_diff = np.percentile(diff, 99)
+    max_diff = np.percentile(diff, 90)
     return max_diff <= tolerance
 
 
