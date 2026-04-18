@@ -42,7 +42,7 @@ def images_are_close(img_path1, img_path2, tolerance=0):
     img1 = Image.open(img_path1).convert("RGB")
     img2 = Image.open(img_path2).convert("RGB")
     if img1.size != img2.size:
-        return False
+        return False, -1
 
     arr1 = np.array(img1)
     arr2 = np.array(img2)
@@ -71,8 +71,8 @@ def test_filematch():
     else:
         print('Mismatched files:')
         print(filelist[reslist])
-        print('Differences:')
-        print(difflist[reslist])
+    print('Differences:')
+    print(difflist[reslist])
     assert np.all(reslist)
 
 
