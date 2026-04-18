@@ -48,11 +48,13 @@ p.set_axis(grid={}, title='3D channel maps')
 p.savefig('test3D.png', show=True)
 
 # PV diagram
+d = AstroData(fitsimage=f'{data_dir}/testPV.fits', Tb=True, pvpa=60)
+f = AstroFrame(pv=True)
+f.read(d)
 p = pad(rmax=0.8, pv=True, swapxy=True, vmin=-5, vmax=5, figsize=(6, 7))
-p.add_color(fitsimage=f'{data_dir}/testPV.fits', Tb=True, cblabel='Tb (K)',
-            cblocation='top', pvpa=60)
-p.add_contour(fitsimage=f'{data_dir}/testPV.fits', colors='r',
-              sigma=1e-3, pvpa=60)
+p.add_color(**d.todict(), cblabel='Tb (K)', cblocation='top')
+p.add_contour(fitsimage=f'{data_dir}/testPV.fits', sigma=1e-3, pvpa=60,
+              colors='r')
 p.add_text([0.3, 0.3], slist='text')
 p.add_marker([[0.5, 0.5]])
 p.set_axis(title='PV diagram')
@@ -326,3 +328,4 @@ from plotastrodata.ext_utils import BnuT, JnuT
 
 print(BnuT(T=30, nu=230e9))
 print(JnuT(T=30, nu=230e9))
+

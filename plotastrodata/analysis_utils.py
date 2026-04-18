@@ -147,6 +147,9 @@ class AstroData():
             width (list, optional): Number of channels, y-pixels, and x-pixels for binning. Defaults to [1, 1, 1].
         """
         w = [1] * (4 - len(width)) + list(width)
+        if self.pv:
+            w[2] = max(w[1], w[2])
+            w[1] = 1
         d = to4dim(self.data)
         size = np.array(np.shape(d))
         w = np.array(w, dtype=int)
@@ -155,11 +158,12 @@ class AstroData():
             ws = ', '.join([f'{s:d}' for s in w[1:]])
             print(f'width was changed to [{ws}].')
         newsize = size // w
-        if w[1] > 1:
-            print(f'sigma has been divided by sqrt({w[1]:d})'
+        if (not self.pv and w[1] > 1) or (self.pv and w[2] > 1):
+            width_v = w[2] if self.pv else w[1]
+            print(f'sigma has been divided by sqrt({width_v:d})'
                   + ' because of binning in the v-axis.')
-            self.sigma = self.sigma / np.sqrt(w[1])
-        if w[2] > 1 or w[3] > 1:
+            self.sigma = self.sigma / np.sqrt(width_v)
+        if (not self.pv and w[2] > 1) or w[3] > 1:
             print('Binning in the x- or y-axis does not update sigma.')
         grid = [None, self.v, self.y, self.x]
         dgrid = [None, self.dv, self.dy, self.dx]
@@ -187,6 +191,9 @@ class AstroData():
         self.data = np.squeeze(d)
         _, self.v, self.y, self.x = grid
         _, self.dv, self.dy, self.dx = dgrid
+        if self.pv:
+            self.v = self.y
+            self.dv = self.dy
 
     def centering(self, includexy: bool = True,
                   includev: bool = False,
