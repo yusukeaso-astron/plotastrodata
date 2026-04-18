@@ -328,4 +328,3 @@ from plotastrodata.ext_utils import BnuT, JnuT
 
 print(BnuT(T=30, nu=230e9))
 print(JnuT(T=30, nu=230e9))
-
