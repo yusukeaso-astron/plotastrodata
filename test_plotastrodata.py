@@ -70,9 +70,9 @@ def test_filematch():
         print('All files matched.')
     else:
         print('Mismatched files:')
-        print(filelist[reslist])
+        print(filelist[~reslist])
     print('Differences:')
-    print(difflist[reslist])
+    print(difflist)
     assert np.all(reslist)
 
 
