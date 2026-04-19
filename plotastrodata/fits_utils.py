@@ -422,6 +422,14 @@ def data2fits(d: np.ndarray, h: dict = {},
     for k, v in defaults.items():
         for i in range(naxis):
             _h.setdefault(f'{k}{i+1:d}', v[i])
+    othernames = {'deg': ['DEG', 'Deg'], 'Hz': ['HZ', 'hz']}
+    for i in range(1, 4):
+        for standard, NGlist in othernames.items():
+            key = f'CUNIT{i:d}'
+            old = _h[key].strip()
+            if old in NGlist:
+                _h[key] = standard
+                print(f'{key}={old} has been changed to {key}={standard}.')
     w.wcs.ctype = [_h[f'CTYPE{i+1}'] for i in range(naxis)]
     w.wcs.cunit = [_h[f'CUNIT{i+1}'] for i in range(naxis)]
     _h.setdefault('BUNIT', 'Jy/beam')
