@@ -423,10 +423,10 @@ def data2fits(d: np.ndarray, h: dict = {},
         for i in range(naxis):
             _h.setdefault(f'{k}{i+1:d}', v[i])
     othernames = {'deg': ['DEG', 'Deg'], 'Hz': ['HZ', 'hz']}
-    for i in range(1, 4):
+    for i in range(naxis):
+        key = f'CUNIT{i+1}'
+        old = _h[key].strip()
         for standard, NGlist in othernames.items():
-            key = f'CUNIT{i:d}'
-            old = _h[key].strip()
             if old in NGlist:
                 _h[key] = standard
                 print(f'{key}={old} has been changed to {key}={standard}.')
