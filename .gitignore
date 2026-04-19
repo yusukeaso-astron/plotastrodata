@@ -168,3 +168,4 @@ example_data/output/boxcar.png
 
 docs/_build/
 build/
+.vscode/settings.json
