@@ -47,7 +47,7 @@ def images_are_close(img_path1, img_path2, tolerance=0):
     arr1 = np.array(img1)
     arr2 = np.array(img2)
     diff = np.abs(arr1.astype(int) - arr2.astype(int))
-    ref_diff = np.percentile(diff, 50)
+    ref_diff = np.percentile(diff, 99)
     return ref_diff <= tolerance, ref_diff
 
 
