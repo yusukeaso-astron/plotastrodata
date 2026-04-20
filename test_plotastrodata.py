@@ -42,13 +42,13 @@ def images_are_close(img_path1, img_path2, tolerance=0):
     img1 = Image.open(img_path1).convert("RGB")
     img2 = Image.open(img_path2).convert("RGB")
     if img1.size != img2.size:
-        return False, -1
+        return False, (img1.size, img2.size)
 
     arr1 = np.array(img1)
     arr2 = np.array(img2)
     diff = np.abs(arr1.astype(int) - arr2.astype(int))
     ref_diff = np.percentile(diff, 99.5)
-    return ref_diff <= tolerance, ref_diff
+    return ref_diff <= tolerance, float(ref_diff)
 
 
 reslist = []
@@ -62,7 +62,6 @@ for file in pnglist:
     difflist.append(diff)
 filelist = np.array(pnglist)
 reslist = np.array(reslist)
-difflist = np.array(difflist)
 
 
 def test_filematch():
