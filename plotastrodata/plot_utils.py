@@ -366,65 +366,77 @@ class PlotAxes2D():
     grid: dict | None = None
     aspect: dict | float | None = None
 
-    def set_xyaxes(self, ax):
+    def _set_scale(self):
+        ax = self.ax
         if self.loglog is not None:
-            self.xscale = 'log'
-            self.yscale = 'log'
+            self.xscale = self.yscale = 'log'
             self.samexy = True
-            if self.xlim is not None:
-                self.xlim[0] = self.xlim[1] / self.loglog
-            if self.ylim is not None:
-                self.ylim[0] = self.ylim[1] / self.loglog
+            for axis in ["x", "y"]:
+                attr = f"{axis}lim"
+                lim = getattr(self, attr)
+                if lim is not None:
+                    lim[0] = lim[1] / self.loglog
+                setattr(self, attr, lim)
         ax.set_xscale(self.xscale)
         ax.set_yscale(self.yscale)
+
+    def _init_ticks(self, axis):
+        ax = self.ax
+        ticks_attr = f"{axis}ticks"
+        ticklabels_attr = f"{axis}ticklabels"
+        scale = getattr(self, f"{axis}scale")
+        lim = getattr(self, f"{axis}lim")
+        ticks = getattr(self, ticks_attr)
+        if ticks is None:
+            ticks = getattr(ax, f"get_{axis}ticks")()
+            if scale == "log":
+                ticks, ticklabels = logticks(ticks, lim)
+                setattr(self, ticklabels_attr, ticklabels)
+            setattr(self, ticks_attr, ticks)
+
+    def _make_ticks(self, ticks, ticksminor):
+        dt = ticks[1] - ticks[0]
+        t = np.r_[ticks[0] - dt, ticks, ticks[-1] + dt]
+        num = ticksminor * (len(t) - 1) + 1
+        return np.linspace(t[0], t[-1], num)
+
+    def _set_ticks(self, axis):
+        ax = self.ax
+        attr = f"{axis}ticks"
+        ticks = getattr(self, attr)
+        getattr(ax, f"set_{attr}")(ticks)
+        ticksminor = getattr(self, f"{attr}minor")
+        if ticksminor is not None:
+            if isinstance(ticksminor, int):
+                ticksminor = self._make_ticks(ticks, ticksminor)
+            getattr(ax, f"set_{attr}")(ticksminor, minor=True)
+
+    def _apply_if_not_none(self, axis, attr):
+        ax = self.ax
+        method = getattr(ax, f"set_{axis}{attr}")
+        value = getattr(self, f"{axis}{attr}")
+        if value is not None:
+            if attr == "lim":
+                method(*value)
+            else:
+                method(value)
+
+    def set_xyaxes(self, ax):
+        self.ax = ax
+        self._set_scale()
         if self.samexy:
             ax.set_xticks(ax.get_yticks())
             ax.set_yticks(ax.get_xticks())
             ax.set_aspect(1)
-        if self.xticks is None:
-            self.xticks = ax.get_xticks()
-            if self.xscale == 'log':
-                self.xticks, self.xticklabels \
-                    = logticks(self.xticks, self.xlim)
-        if self.yticks is None:
-            self.yticks = ax.get_yticks()
-            if self.yscale == 'log':
-                self.yticks, self.yticklabels \
-                    = logticks(self.yticks, self.ylim)
-        ax.set_xticks(self.xticks)
-        ax.set_yticks(self.yticks)
-        if self.xticksminor is not None:
-            if type(self.xticksminor) is int:
-                t = ax.get_xticks()
-                dt = t[1] - t[0]
-                t = np.r_[t[0] - dt, t, t[-1] + dt]
-                num = self.xticksminor * (len(t) - 1) + 1
-                self.xticksminor = np.linspace(t[0], t[-1], num)
-            ax.set_xticks(self.xticksminor, minor=True)
-        if self.yticksminor is not None:
-            if type(self.yticksminor) is int:
-                t = ax.get_yticks()
-                dt = t[1] - t[0]
-                t = np.r_[t[0] - dt, t, t[-1] + dt]
-                num = self.yticksminor * (len(t) - 1) + 1
-                self.yticksminor = np.linspace(t[0], t[-1], num)
-            ax.set_yticks(self.yticksminor, minor=True)
-        if self.xticklabels is not None:
-            ax.set_xticklabels(self.xticklabels)
-        if self.yticklabels is not None:
-            ax.set_yticklabels(self.yticklabels)
-        if self.xlabel is not None:
-            ax.set_xlabel(self.xlabel)
-        if self.ylabel is not None:
-            ax.set_ylabel(self.ylabel)
-        if self.xlim is not None:
-            ax.set_xlim(*self.xlim)
-        if self.ylim is not None:
-            ax.set_ylim(*self.ylim)
+        for axis in ["x", "y"]:
+            self._init_ticks(axis)
+            self._set_ticks(axis)
+            for attr in ["ticklabels", "label", "lim"]:
+                self._apply_if_not_none(axis, attr)
         if self.grid is not None:
             ax.grid(**({} if self.grid is True else self.grid))
         if self.aspect is not None:
-            if type(self.aspect) is dict:
+            if isinstance(self.aspect, dict):
                 ax.set_aspect(**self.aspect)
             else:
                 ax.set_aspect(self.aspect)
