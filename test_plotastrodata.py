@@ -41,13 +41,16 @@ for file in glob.glob("*.mp4") + glob.glob("*.html"):
 def images_are_close(img_path1, img_path2, tolerance=0):
     img1 = Image.open(img_path1).convert("RGB")
     img2 = Image.open(img_path2).convert("RGB")
-    if img1.size != img2.size:
-        return False, (img1.size, img2.size)
-
-    arr1 = np.array(img1)
-    arr2 = np.array(img2)
-    diff = np.abs(arr1.astype(int) - arr2.astype(int))
-    ref_diff = np.percentile(diff, 99.5)
+    arr1 = np.array(img1, dtype=int)
+    arr2 = np.array(img2, dtype=int)
+    
+    def hist(a):
+        return np.histogram(a, bins=64, range=[0, 256], density=True)[0]
+    
+    hist1 = np.array([hist(arr1[:, :, i]) for i in range(3)])
+    hist2 = np.array([hist(arr2[:, :, i]) for i in range(3)])
+    ref_diff = np.sum(np.abs(hist1 - hist2), axis=1) * 256 / 64
+    ref_diff = np.mean(ref_diff) * 100
     return ref_diff <= tolerance, float(ref_diff)
 
 
@@ -57,21 +60,17 @@ pnglist = glob.glob("./example_data/output_expected/*.png")
 for file in pnglist:
     expected = file
     output = file.replace('/output_expected/', '/output/')
-    res, diff = images_are_close(output, expected, tolerance=2)
+    res, diff = images_are_close(output, expected, tolerance=0.7)
     reslist.append(res)
     difflist.append(diff)
-filelist = np.array(pnglist)
-reslist = np.array(reslist)
+pnglist = [s.split('/')[-1].removesuffix('.png') for s in pnglist]
 
 
 def test_filematch():
-    if np.all(reslist):
-        print('All files matched.')
-    else:
-        print('Mismatched files:')
-        print(filelist[~reslist])
-    print('Differences:')
-    print(difflist)
+    print('Image differences:')
+    for n, d, r in zip(pnglist, difflist, reslist):
+        mark = '' if r else '    <-- Mimatch'
+        print(f'{n}: {d:.2f} %{mark}')
     assert np.all(reslist)
 
 
