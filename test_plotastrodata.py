@@ -43,10 +43,10 @@ def images_are_close(img_path1, img_path2, tolerance=0):
     img2 = Image.open(img_path2).convert("RGB")
     arr1 = np.array(img1, dtype=int)
     arr2 = np.array(img2, dtype=int)
-    
+
     def hist(a):
         return np.histogram(a, bins=64, range=[0, 256], density=True)[0]
-    
+
     hist1 = np.array([hist(arr1[:, :, i]) for i in range(3)])
     hist2 = np.array([hist(arr2[:, :, i]) for i in range(3)])
     ref_diff = np.sum(np.abs(hist1 - hist2), axis=1) * 256 / 64
