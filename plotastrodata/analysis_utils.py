@@ -586,15 +586,6 @@ def _scalar_if_single(value, n: int):
     return value[0] if n == 1 else value
 
 
-def _apply_xyskip(data: np.ndarray, grid: list, xskip: int, yskip: int):
-    grid[0] = grid[0][::xskip]
-    grid[1] = grid[1][::yskip]
-    data = np.moveaxis(data, [-2, -1], [0, 1])
-    data = data[::yskip, ::xskip]
-    data = np.moveaxis(data, [0, 1], [-2, -1])
-    return data, grid
-
-
 def _get_gridsep(axis: np.ndarray | None):
     return axis[1] - axis[0] if axis is not None and len(axis) > 1 else None
     
@@ -733,26 +724,33 @@ class AstroFrame():
                 and center is not None
                 and center != self.center)
 
-    def _trim_skip(self, d: AstroData, i: int, grid: list,
-                   xskip: int, yskip: int):
-        d.data[i], grid = trim(data=d.data[i],
-                               x=grid[0], y=grid[1], v=grid[2],
-                               xlim=self.xlim, ylim=self.ylim,
-                               vlim=self.vlim, pv=self.pv)
-        v = grid[2]
+    def _ascending_v(self, d: AstroData, i: int, v: np.ndarray | None):
         if v is not None and len(v) > 1 and v[1] < v[0]:
             d.data[i], v = d.data[i][::-1], v[::-1]
             print('Velocity has been inverted.')
         d.v = v
-        grid = [grid[0], grid[2]] if self.pv else [grid[0], grid[1]]
+
+    def _xyskip(self, d: AstroData, i: int,
+                x: np.ndarray | None, y: np.ndarray | None):
+        d.x = x[::self.xskip]
+        d.y = y[::self.yskip]
+        data = np.moveaxis(d.data[i], [-2, -1], [0, 1])
+        data = data[::self.yskip, ::self.xskip]
+        d.data[i] = np.moveaxis(data, [0, 1], [-2, -1])
+
+    def _trim_skip(self, d: AstroData, i: int, grid: list):
+        d.data[i], grid = trim(data=d.data[i],
+                               x=grid[0], y=grid[1], v=grid[2],
+                               xlim=self.xlim, ylim=self.ylim,
+                               vlim=self.vlim, pv=self.pv)
+        self._ascending_v(d, i, v=grid[2])
+        grid = [grid[0], d.v] if self.pv else [grid[0], grid[1]]
         if self.swapxy:
             grid = [grid[1], grid[0]]
             d.data[i] = np.moveaxis(d.data[i], 1, 0)
-        d.data[i], grid = _apply_xyskip(d.data[i], grid, xskip, yskip)
-        d.x, d.y = grid
+        self._xyskip(d, i, x=grid[0], y=grid[1])
         for axis in ['x', 'y', 'v']:
             setattr(d, f"d{axis}", _get_gridsep(getattr(d, axis)))
-
 
     def _convert_to_Tb(self, d: AstroData, i: int):
         """Convert Jy/beam data to brightness temperature if requested."""
@@ -784,11 +782,10 @@ class AstroFrame():
         beam_incut = 1 / np.hypot(np.cos(angle) / bmaj, np.sin(angle) / bmin)
         d.beam[i] = np.array([np.abs(d.dv), beam_incut, 0])
 
-    def _read_one(self, d: AstroData, i: int, xskip: int, yskip: int):
+    def _read_one(self, d: AstroData, i: int):
         if d.center[i] == 'common':
             d.center[i] = self.center
-        grid = [d.x, d.y, d.v].copy()
-        grid = self._read_fitsimage(d, i, grid)
+        grid = self._read_fitsimage(d, i, grid=[d.x, d.y, d.v])
         if d.data[i] is not None:
             d.sigma_org[i] = d.sigma[i]
             d.sigma[i] = estimate_rms(d.data[i], d.sigma[i])
@@ -797,7 +794,7 @@ class AstroFrame():
                 grid[0] = grid[0] + cx  # Don't use += cx.
                 grid[1] = grid[1] + cy  # Don't use += cy.
                 d.center[i] = self.center
-            self._trim_skip(d, i, grid, xskip, yskip)
+            self._trim_skip(d, i, grid)
             if self.quadrants is not None:
                 d.data[i], d.x, d.y \
                     = quadrantmean(d.data[i], d.x, d.y, self.quadrants)
@@ -820,10 +817,12 @@ class AstroFrame():
             d (AstroData): Dataclass for the add_* input.
             xskip, yskip (int): Spatial pixel skip. Defaults to 1.
         """
+        self.xskip = xskip
+        self.yskip = yskip
         for name in ASTRODATA_ARGS:
             setattr(d, name, _as_list(getattr(d, name), d.n))
         d.beam = _as_list(d.beam, d.n, isbeam=True)
         for i in range(d.n):
-            self._read_one(d, i, xskip, yskip)
+            self._read_one(d, i)
         for name in ASTRODATA_ARGS + ["beam"]:
             setattr(d, name, _scalar_if_single(getattr(d, name), d.n))
