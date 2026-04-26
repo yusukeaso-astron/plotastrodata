@@ -259,34 +259,8 @@ class FitsData:
 
         return gen_x, gen_y
 
-    def _get_array(self, i: int, crval=False) -> np.ndarray:
+    def _get_genv(self, restfreq: float | None, vsys: float, pv: bool):
         h = self.header
-        s = np.arange(h[f'NAXIS{i:d}'])
-        s = (s - h[f'CRPIX{i:d}'] + 1) * h[f'CDELT{i:d}']
-        if crval:
-            s = s + h[f'CRVAL{i:d}']
-        return s
-
-    def gen_grid(self, center: str | None = None, dist: float = 1.,
-                 restfreq: float | None = None, vsys: float = 0.,
-                 pv: bool = False) -> None:
-        """Generate grids relative to the center and vsys.
-
-        Args:
-            center (str, optional): Center for the spatial grids. Defaults to None.
-            dist (float, optional): The spatial grids are multiplied by dist. Defaults to 1..
-            restfreq (float, optional): Rest frequency for converting the frequencies to velocities. Defaults to None.
-            vsys (float, optional): The velocity is relative to vsys. Defaults to 0..
-            pv (bool, optional): Mode for position-velocity diagram. Defaults to False.
-        """
-        h = self.get_header()
-        # WCS rotation (Calabretta & Greisen 2002, Astronomy & Astrophysics, 395, 1077)
-        Mcd = self._read_cd()
-        gen_x, gen_y = self._get_genx_geny(center, dist)
-        # rest frequency
-        restfreq = restfreq or h.get('RESTFRQ') or h.get('RESTFREQ')
-        self.x, self.y, self.v = None, None, None
-        self.dx, self.dy, self.dv = None, None, None
 
         def gen_v(s_in: np.ndarray) -> None:
             if restfreq is None:
@@ -294,7 +268,6 @@ class FitsData:
                 print('restfreq is assumed to be the center.')
             else:
                 freq = restfreq
-
             vaxis = '2' if pv else '3'
             key = f'CUNIT{vaxis}'
             cunitv = h[key]
@@ -327,8 +300,39 @@ class FitsData:
                     print(f'Unknown CUNIT3 {cunitv} found.'
                           + ' v is read as is.')
                     s = s_in - vsys
-
             self.v, self.dv = s, s[1] - s[0]
+
+        return gen_v
+
+    def _get_array(self, i: int, crval=False) -> np.ndarray:
+        h = self.header
+        s = np.arange(h[f'NAXIS{i:d}'])
+        s = (s - h[f'CRPIX{i:d}'] + 1) * h[f'CDELT{i:d}']
+        if crval:
+            s = s + h[f'CRVAL{i:d}']
+        return s
+
+    def gen_grid(self, center: str | None = None, dist: float = 1.,
+                 restfreq: float | None = None, vsys: float = 0.,
+                 pv: bool = False) -> None:
+        """Generate grids relative to the center and vsys.
+
+        Args:
+            center (str, optional): Center for the spatial grids. Defaults to None.
+            dist (float, optional): The spatial grids are multiplied by dist. Defaults to 1..
+            restfreq (float, optional): Rest frequency for converting the frequencies to velocities. Defaults to None.
+            vsys (float, optional): The velocity is relative to vsys. Defaults to 0..
+            pv (bool, optional): Mode for position-velocity diagram. Defaults to False.
+        """
+        h = self.get_header()
+        # WCS rotation (Calabretta & Greisen 2002, Astronomy & Astrophysics, 395, 1077)
+        Mcd = self._read_cd()
+        gen_x, gen_y = self._get_genx_geny(center=center, dist=dist)
+        restfreq = restfreq or h.get('RESTFRQ') or h.get('RESTFREQ')
+        gen_v = self._get_genv(restfreq=restfreq, vsys=vsys, pv=pv)
+
+        self.x, self.y, self.v = None, None, None
+        self.dx, self.dy, self.dv = None, None, None
 
         f = self._get_array
         if h['NAXIS'] > 0 and h['NAXIS1'] > 1:
