@@ -177,25 +177,15 @@ class FitsData:
             self.gen_data(**kwargs)
         return self.data
 
-    def gen_grid(self, center: str | None = None, dist: float = 1.,
-                 restfreq: float | None = None, vsys: float = 0.,
-                 pv: bool = False) -> None:
-        """Generate grids relative to the center and vsys.
-
-        Args:
-            center (str, optional): Center for the spatial grids. Defaults to None.
-            dist (float, optional): The spatial grids are multiplied by dist. Defaults to 1..
-            restfreq (float, optional): Rest frequency for converting the frequencies to velocities. Defaults to None.
-            vsys (float, optional): The velocity is relative to vsys. Defaults to 0..
-            pv (bool, optional): Mode for position-velocity diagram. Defaults to False.
-        """
-        h = self.get_header()
-        # WCS rotation (Calabretta & Greisen 2002, Astronomy & Astrophysics, 395, 1077)
+    def _read_cd(self):
+        h = self.header
         self.wcsrot = False
+        Mcd = None
         cdij = ['CD1_1', 'CD1_2', 'CD2_1', 'CD2_2']
-        if np.all([s in list(h.keys()) for s in cdij]):
+        if np.all([k in list(h.keys()) for k in cdij]):
             self.wcsrot = True
-            cd11, cd12, cd21, cd22 = [h[s] for s in cdij]
+            cd11, cd12, cd21, cd22 = [h[k] for k in cdij]
+            Mcd = [[cd11, cd12], [cd21, cd22]]
             if cd21 == 0:
                 rho_a = 0
             else:
@@ -215,35 +205,45 @@ class FitsData:
             crota2 = np.degrees(crota2)
             h['CDELT1'] = cdelt1
             h['CDELT2'] = cdelt2
-            del h['CD1_1']
-            del h['CD1_2']
-            del h['CD2_1']
-            del h['CD2_2']
+            for k in cdij:
+                del h[k]
             print(f'WCS rotation was found (CROTA2 = {crota2:f} deg).')
-        # spatial center
-        if center is None or self.wcsrot:
-            cx, cy = 0, 0
-        else:
+        return Mcd
+
+    def _rotate(self, Mcd: list[list[float]]):
+        h = self.header
+        data = self.get_data()
+        self.header['CRPIX1'] = ic = len(self.x) // 2
+        self.header['CRPIX2'] = jc = len(self.y) // 2
+        xc = self.x[ic] / self.dx
+        yc = self.y[jc] / self.dy
+        xc, yc = dot2d(Mcd, [xc, yc])
+        newcenter = xy2coord(xy=[xc, yc],
+                             coordorg=self.get_center())
+        xc, yc = coord2xy(coords=newcenter)
+        self.header['CRVAL1'] = xc
+        self.header['CRVAL2'] = yc
+        self.x = self.x - self.x[ic]
+        self.y = self.y - self.y[jc]
+        x = self.x / (3600 if isdeg(h['CUNIT1']) else 1)
+        y = self.y / (3600 if isdeg(h['CUNIT2']) else 1)
+        X, Y = np.meshgrid(x, y)
+        cdinv = np.linalg.inv(Mcd)
+        xnew, ynew = dot2d(cdinv, [X, Y])
+        datanew = RGIxy(self.y / self.dy, self.x / self.dx,
+                        data, (ynew, xnew))
+        self.data = datanew
+        print('Data values were interpolated for WCS rotation.')
+
+    def _get_genx_geny(self, center: str, dist: float):
+        h = self.header
+        cx, cy = 0, 0
+        if center is not None and not self.wcsrot:
             c0 = xy2coord([h['CRVAL1'], h['CRVAL2']])
             if 'RADESYS' in h:
                 radesys = h['RADESYS']
                 c0 = f'{radesys}  {c0}'
             cx, cy = coord2xy(center, c0)
-        # rest frequency
-        if restfreq is None:
-            if 'RESTFRQ' in h:
-                restfreq = h['RESTFRQ']
-            if 'RESTFREQ' in h:
-                restfreq = h['RESTFREQ']
-        self.x, self.y, self.v = None, None, None
-        self.dx, self.dy, self.dv = None, None, None
-
-        def get_list(i: int, crval=False) -> np.ndarray:
-            s = np.arange(h[f'NAXIS{i:d}'])
-            s = (s - h[f'CRPIX{i:d}'] + 1) * h[f'CDELT{i:d}']
-            if crval:
-                s = s + h[f'CRVAL{i:d}']
-            return s
 
         def gen_x(s_in: np.ndarray) -> None:
             s = (s_in - cx) * dist
@@ -256,6 +256,37 @@ class FitsData:
             if isdeg(h['CUNIT2']):
                 s *= 3600.
             self.y, self.dy = s, s[1] - s[0]
+
+        return gen_x, gen_y
+
+    def _get_array(self, i: int, crval=False) -> np.ndarray:
+        h = self.header
+        s = np.arange(h[f'NAXIS{i:d}'])
+        s = (s - h[f'CRPIX{i:d}'] + 1) * h[f'CDELT{i:d}']
+        if crval:
+            s = s + h[f'CRVAL{i:d}']
+        return s
+
+    def gen_grid(self, center: str | None = None, dist: float = 1.,
+                 restfreq: float | None = None, vsys: float = 0.,
+                 pv: bool = False) -> None:
+        """Generate grids relative to the center and vsys.
+
+        Args:
+            center (str, optional): Center for the spatial grids. Defaults to None.
+            dist (float, optional): The spatial grids are multiplied by dist. Defaults to 1..
+            restfreq (float, optional): Rest frequency for converting the frequencies to velocities. Defaults to None.
+            vsys (float, optional): The velocity is relative to vsys. Defaults to 0..
+            pv (bool, optional): Mode for position-velocity diagram. Defaults to False.
+        """
+        h = self.get_header()
+        # WCS rotation (Calabretta & Greisen 2002, Astronomy & Astrophysics, 395, 1077)
+        Mcd = self._read_cd()
+        gen_x, gen_y = self._get_genx_geny(center, dist)
+        # rest frequency
+        restfreq = restfreq or h.get('RESTFRQ') or h.get('RESTFREQ')
+        self.x, self.y, self.v = None, None, None
+        self.dx, self.dy, self.dv = None, None, None
 
         def gen_v(s_in: np.ndarray) -> None:
             if restfreq is None:
@@ -299,38 +330,16 @@ class FitsData:
 
             self.v, self.dv = s, s[1] - s[0]
 
+        f = self._get_array
         if h['NAXIS'] > 0 and h['NAXIS1'] > 1:
-            gen_x(get_list(1))
+            gen_x(f(1))
         if h['NAXIS'] > 1 and h['NAXIS2'] > 1:
-            gen_v(get_list(2, True)) if pv else gen_y(get_list(2))
+            gen_v(f(2, True)) if pv else gen_y(f(2))
         if h['NAXIS'] > 2 and h['NAXIS3'] > 1:
-            gen_v(get_list(3, True))
+            gen_v(f(3, True))
 
         if self.wcsrot:
-            data = self.get_data()
-            self.header['CRPIX1'] = ic = len(self.x) // 2
-            self.header['CRPIX2'] = jc = len(self.y) // 2
-            xc = self.x[ic] / self.dx
-            yc = self.y[jc] / self.dy
-            Mcd = [[cd11, cd12], [cd21, cd22]]
-            xc, yc = dot2d(Mcd, [xc, yc])
-            newcenter = xy2coord(xy=[xc, yc],
-                                 coordorg=self.get_center())
-            xc, yc = coord2xy(coords=newcenter,
-                              coordorg='00h00m00s 00d00m00s')
-            self.header['CRVAL1'] = xc
-            self.header['CRVAL2'] = yc
-            self.x = self.x - self.x[ic]
-            self.y = self.y - self.y[jc]
-            x = self.x / (3600 if isdeg(h['CUNIT1']) else 1)
-            y = self.y / (3600 if isdeg(h['CUNIT2']) else 1)
-            X, Y = np.meshgrid(x, y)
-            cdinv = np.linalg.inv([[cd11, cd12], [cd21, cd22]])
-            xnew, ynew = dot2d(cdinv, [X, Y])
-            datanew = RGIxy(self.y / self.dy, self.x / self.dx,
-                            data, (ynew, xnew))
-            self.data = datanew
-            print('Data values were interpolated for WCS rotation.')
+            self._rotate(Mcd)
 
     def get_grid(self, **kwargs) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Output the grids, [x, y, v]. This method can take the arguments of gen_grid().
