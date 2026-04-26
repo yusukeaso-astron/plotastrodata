@@ -327,13 +327,11 @@ class FitsData:
         h = self.get_header()
         # WCS rotation (Calabretta & Greisen 2002, Astronomy & Astrophysics, 395, 1077)
         Mcd = self._read_cd()
-        gen_x, gen_y = self._get_genx_geny(center=center, dist=dist)
+        gen_x, gen_y = self._get_genx_geny(center, dist)
         restfreq = restfreq or h.get('RESTFRQ') or h.get('RESTFREQ')
-        gen_v = self._get_genv(restfreq=restfreq, vsys=vsys, pv=pv)
-
+        gen_v = self._get_genv(restfreq, vsys, pv)
         self.x, self.y, self.v = None, None, None
         self.dx, self.dy, self.dv = None, None, None
-
         f = self._get_array
         if h['NAXIS'] > 0 and h['NAXIS1'] > 1:
             gen_x(f(1))
@@ -341,7 +339,6 @@ class FitsData:
             gen_v(f(2, True)) if pv else gen_y(f(2))
         if h['NAXIS'] > 2 and h['NAXIS3'] > 1:
             gen_v(f(3, True))
-
         if self.wcsrot:
             self._rotate(Mcd)
 
