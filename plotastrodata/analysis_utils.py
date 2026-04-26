@@ -718,11 +718,21 @@ class AstroFrame():
         d.bunit[i] = fd.get_header("BUNIT")
         return grid
 
-    def _has_different_center(self, center: str | None):
-        return (not self.pv
-                and self.center is not None
-                and center is not None
-                and center != self.center)
+    def _no_newcenter(self, center: str | None):
+        return (self.pv
+                or self.center is None
+                or center is None
+                or center == self.center)
+
+    def _shift_center(self, d: AstroData, i: int, grid: list) -> list:
+        if self._no_newcenter(d.center[i]):
+            return grid
+
+        cx, cy = coord2xy(d.center[i], self.center) * 3600
+        grid[0] = grid[0] + cx  # Don't use += cx.
+        grid[1] = grid[1] + cy  # Don't use += cy.
+        d.center[i] = self.center
+        return grid
 
     def _ascending_v(self, d: AstroData, i: int, v: np.ndarray | None):
         if v is not None and len(v) > 1 and v[1] < v[0]:
@@ -785,15 +795,11 @@ class AstroFrame():
     def _read_one(self, d: AstroData, i: int):
         if d.center[i] == 'common':
             d.center[i] = self.center
+        d.sigma_org[i] = d.sigma[i]
         grid = self._read_fitsimage(d, i, grid=[d.x, d.y, d.v])
         if d.data[i] is not None:
-            d.sigma_org[i] = d.sigma[i]
             d.sigma[i] = estimate_rms(d.data[i], d.sigma[i])
-            if self._has_different_center(d.center[i]):
-                cx, cy = coord2xy(d.center[i], self.center) * 3600
-                grid[0] = grid[0] + cx  # Don't use += cx.
-                grid[1] = grid[1] + cy  # Don't use += cy.
-                d.center[i] = self.center
+            grid = self._shift_center(d, i, grid)
             self._trim_skip(d, i, grid)
             if self.quadrants is not None:
                 d.data[i], d.x, d.y \
