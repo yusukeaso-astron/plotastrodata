@@ -812,8 +812,7 @@ class AstroFrame():
             d.pv[i] = self.pv
         d.Tb[i] = False
         d.cfactor[i] = 1
-        if d.fitsimage[i] is not None:
-            d.fitsimage_org[i] = d.fitsimage[i]
+        d.fitsimage_org[i] = d.fitsimage[i]
         d.fitsimage[i] = None
 
     def read(self, d: AstroData, xskip: int = 1, yskip: int = 1):
