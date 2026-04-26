@@ -575,6 +575,22 @@ class AstroData():
                   fitsimage=fitsimage)
 
 
+def _as_list(value, n, beam=False):
+    if beam:
+        return [value] * n if np.ndim(value) == 1 else value
+    else:
+        return value if isinstance(value, list) else [value] * n
+
+
+def _scalar_if_single(value, n):
+    return value[0] if n == 1 else value
+
+
+ASTRODATA_ARGS = ["fitsimage", "data", "Tb", "sigma", "center", "restfreq",
+                  "cfactor", "bunit", "fitsimage_org", "sigma_org",
+                  "beam_org", "fitsheader", "pv", "pvpa"]
+
+
 @dataclass
 class AstroFrame():
     """Parameter set to limit and reshape the data in the AstroData format.
@@ -666,6 +682,102 @@ class AstroFrame():
                 x[i], y[i] = rel2abs(*p, self.Xlim, self.Ylim)
         return np.array([x, y])
 
+    def _read_one(self, d, i, xskip, yskip, grid_org):
+        if d.center[i] == 'common':
+            d.center[i] = self.center
+        grid = grid_org.copy()
+        if d.fitsimage[i] is not None:
+            fd = FitsData(d.fitsimage[i])
+            if d.fitsheader[i] is None:
+                d.fitsheader[i] = fd.get_header()
+            if d.center[i] is None and not self.pv:
+                d.center[i] = fd.get_center()
+            if d.restfreq[i] is None:
+                h = d.fitsheader[i]
+                if 'NAXIS3' in h and h['NAXIS3'] == 1 and not self.pv:
+                    d.restfreq[i] = h['CRVAL3']
+                elif 'RESTFRQ' in h:
+                    d.restfreq[i] = h['RESTFRQ']
+                elif 'RESTFREQ' in h:
+                    d.restfreq[i] = h['RESTFREQ']
+            d.data[i] = fd.get_data()
+            grid = fd.get_grid(center=d.center[i], dist=self.dist,
+                                restfreq=d.restfreq[i], vsys=self.vsys,
+                                pv=self.pv)
+            if fd.wcsrot:
+                d.center[i] = fd.get_center()  # for WCS rotation
+            d.beam[i] = fd.get_beam(dist=self.dist)
+            d.bunit[i] = fd.get_header('BUNIT')
+        if d.data[i] is not None:
+            d.sigma_org[i] = d.sigma[i]
+            d.sigma[i] = estimate_rms(d.data[i], d.sigma[i])
+            diffcent = (not self.pv
+                        and self.center is not None
+                        and d.center[i] is not None
+                        and d.center[i] != self.center)
+            if diffcent:
+                cx, cy = coord2xy(d.center[i], self.center) * 3600
+                grid[0] = grid[0] + cx  # Don't use += cx.
+                grid[1] = grid[1] + cy  # Don't use += cy.
+                d.center[i] = self.center
+            d.data[i], grid = trim(data=d.data[i],
+                                    x=grid[0], y=grid[1], v=grid[2],
+                                    xlim=self.xlim, ylim=self.ylim,
+                                    vlim=self.vlim, pv=self.pv)
+            v = grid[2]
+            has_v = v is not None and len(v) > 1
+            if has_v and v[1] < v[0]:
+                d.data[i], v = d.data[i][::-1], v[::-1]
+                print('Velocity has been inverted.')
+            d.v = v
+            d.dv = v[1] - v[0] if has_v else None
+            grid = grid[:3:2] if self.pv else grid[:2]
+            if self.swapxy:
+                grid = [grid[1], grid[0]]
+                d.data[i] = np.moveaxis(d.data[i], 1, 0)
+            grid[0] = grid[0][::xskip]
+            grid[1] = grid[1][::yskip]
+            a = d.data[i]
+            a = np.moveaxis(a, [-2, -1], [0, 1])
+            a = a[::yskip, ::xskip]
+            a = np.moveaxis(a, [0, 1], [-2, -1])
+            d.data[i] = a
+            x, y = d.x, d.y = grid
+            has_x = x is not None and len(x) > 1
+            d.dx = x[1] - x[0] if has_x else None
+            has_y = y is not None and len(y) > 1
+            d.dy = y[1] - y[0] if has_y else None
+            if self.quadrants is not None:
+                d.data[i], d.x, d.y \
+                    = quadrantmean(d.data[i], d.x, d.y, self.quadrants)
+            d.data[i] = d.data[i] * d.cfactor[i]
+            if d.sigma[i] is not None:
+                d.sigma[i] = d.sigma[i] * d.cfactor[i]
+            if d.Tb[i]:
+                dx = d.dy if self.swapxy else d.dx
+                header = {'CDELT1': dx / 3600,
+                            'CUNIT1': 'DEG',
+                            'RESTFREQ': d.restfreq[i]}
+                if None not in d.beam[i]:
+                    header['BMAJ'] = d.beam[i][0] / 3600 / self.dist
+                    header['BMIN'] = d.beam[i][1] / 3600 / self.dist
+                d.data[i] = d.data[i] * Jy2K(header=header)
+                d.sigma[i] = d.sigma[i] * Jy2K(header=header)
+            if self.pv and not d.pv[i] and None not in d.beam[i]:
+                bmaj, bmin, bpa = d.beam_org[i] = d.beam[i]
+                if d.pvpa[i] is None:
+                    d.pvpa[i] = bpa
+                    print('pvpa is not specified. pvpa=bpa is assumed.')
+                p = np.radians(bpa - d.pvpa[i])
+                b = 1 / np.hypot(np.cos(p) / bmaj, np.sin(p) / bmin)
+                d.beam[i] = np.array([np.abs(d.dv), b, 0])
+            d.pv[i] = self.pv
+        d.Tb[i] = False
+        d.cfactor[i] = 1
+        if d.fitsimage[i] is not None:
+            d.fitsimage_org[i] = d.fitsimage[i]
+        d.fitsimage[i] = None
+
     def read(self, d: AstroData, xskip: int = 1, yskip: int = 1):
         """Get data, grid, sigma, beam, and bunit from AstroData, which is a part of the input of add_color, add_contour, add_segment, and add_rgb.
 
@@ -673,145 +785,10 @@ class AstroFrame():
             d (AstroData): Dataclass for the add_* input.
             xskip, yskip (int): Spatial pixel skip. Defaults to 1.
         """
-        if type(d.fitsimage) is not list:
-            d.fitsimage = [d.fitsimage] * d.n
-        if type(d.data) is not list:
-            d.data = [d.data] * d.n
-        if np.ndim(d.beam) == 1:
-            d.beam = [d.beam] * d.n
-        if type(d.Tb) is not list:
-            d.Tb = [d.Tb] * d.n
-        if type(d.sigma) is not list:
-            d.sigma = [d.sigma] * d.n
-        if type(d.center) is not list:
-            d.center = [d.center] * d.n
-        if type(d.restfreq) is not list:
-            d.restfreq = [d.restfreq] * d.n
-        if type(d.cfactor) is not list:
-            d.cfactor = [d.cfactor] * d.n
-        if type(d.bunit) is not list:
-            d.bunit = [d.bunit] * d.n
-        if type(d.fitsimage_org) is not list:
-            d.fitsimage_org = [d.fitsimage_org] * d.n
-        if type(d.sigma_org) is not list:
-            d.sigma_org = [d.sigma_org] * d.n
-        if type(d.beam_org) is not list:
-            d.beam_org = [d.beam_org] * d.n
-        if type(d.fitsheader) is not list:
-            d.fitsheader = [d.fitsheader] * d.n
-        if type(d.pv) is not list:
-            d.pv = [d.pv] * d.n
-        if type(d.pvpa) is not list:
-            d.pvpa = [d.pvpa] * d.n
-        grid0 = [d.x, d.y, d.v]
+        for name in ASTRODATA_ARGS:
+            setattr(d, name, _as_list(getattr(d, name), d.n))
+        d.beam = _as_list(d.beam, d.n, beam=True)
         for i in range(d.n):
-            if d.center[i] == 'common':
-                d.center[i] = self.center
-            grid = grid0.copy()
-            if d.fitsimage[i] is not None:
-                fd = FitsData(d.fitsimage[i])
-                if d.fitsheader[i] is None:
-                    d.fitsheader[i] = fd.get_header()
-                if d.center[i] is None and not self.pv:
-                    d.center[i] = fd.get_center()
-                if d.restfreq[i] is None:
-                    h = d.fitsheader[i]
-                    if 'NAXIS3' in h and h['NAXIS3'] == 1 and not self.pv:
-                        d.restfreq[i] = h['CRVAL3']
-                    elif 'RESTFRQ' in h:
-                        d.restfreq[i] = h['RESTFRQ']
-                    elif 'RESTFREQ' in h:
-                        d.restfreq[i] = h['RESTFREQ']
-                d.data[i] = fd.get_data()
-                grid = fd.get_grid(center=d.center[i], dist=self.dist,
-                                   restfreq=d.restfreq[i], vsys=self.vsys,
-                                   pv=self.pv)
-                if fd.wcsrot:
-                    d.center[i] = fd.get_center()  # for WCS rotation
-                d.beam[i] = fd.get_beam(dist=self.dist)
-                d.bunit[i] = fd.get_header('BUNIT')
-            if d.data[i] is not None:
-                d.sigma_org[i] = d.sigma[i]
-                d.sigma[i] = estimate_rms(d.data[i], d.sigma[i])
-                diffcent = (not self.pv
-                            and self.center is not None
-                            and d.center[i] is not None
-                            and d.center[i] != self.center)
-                if diffcent:
-                    cx, cy = coord2xy(d.center[i], self.center) * 3600
-                    grid[0] = grid[0] + cx  # Don't use += cx.
-                    grid[1] = grid[1] + cy  # Don't use += cy.
-                    d.center[i] = self.center
-                d.data[i], grid = trim(data=d.data[i],
-                                       x=grid[0], y=grid[1], v=grid[2],
-                                       xlim=self.xlim, ylim=self.ylim,
-                                       vlim=self.vlim, pv=self.pv)
-                v = grid[2]
-                has_v = v is not None and len(v) > 1
-                if has_v and v[1] < v[0]:
-                    d.data[i], v = d.data[i][::-1], v[::-1]
-                    print('Velocity has been inverted.')
-                d.v = v
-                d.dv = v[1] - v[0] if has_v else None
-                grid = grid[:3:2] if self.pv else grid[:2]
-                if self.swapxy:
-                    grid = [grid[1], grid[0]]
-                    d.data[i] = np.moveaxis(d.data[i], 1, 0)
-                grid[0] = grid[0][::xskip]
-                grid[1] = grid[1][::yskip]
-                a = d.data[i]
-                a = np.moveaxis(a, [-2, -1], [0, 1])
-                a = a[::yskip, ::xskip]
-                a = np.moveaxis(a, [0, 1], [-2, -1])
-                d.data[i] = a
-                x, y = d.x, d.y = grid
-                has_x = x is not None and len(x) > 1
-                d.dx = x[1] - x[0] if has_x else None
-                has_y = y is not None and len(y) > 1
-                d.dy = y[1] - y[0] if has_y else None
-                if self.quadrants is not None:
-                    d.data[i], d.x, d.y \
-                        = quadrantmean(d.data[i], d.x, d.y, self.quadrants)
-                d.data[i] = d.data[i] * d.cfactor[i]
-                if d.sigma[i] is not None:
-                    d.sigma[i] = d.sigma[i] * d.cfactor[i]
-                if d.Tb[i]:
-                    dx = d.dy if self.swapxy else d.dx
-                    header = {'CDELT1': dx / 3600,
-                              'CUNIT1': 'DEG',
-                              'RESTFREQ': d.restfreq[i]}
-                    if None not in d.beam[i]:
-                        header['BMAJ'] = d.beam[i][0] / 3600 / self.dist
-                        header['BMIN'] = d.beam[i][1] / 3600 / self.dist
-                    d.data[i] = d.data[i] * Jy2K(header=header)
-                    d.sigma[i] = d.sigma[i] * Jy2K(header=header)
-                if self.pv and not d.pv[i] and None not in d.beam[i]:
-                    bmaj, bmin, bpa = d.beam_org[i] = d.beam[i]
-                    if d.pvpa[i] is None:
-                        d.pvpa[i] = bpa
-                        print('pvpa is not specified. pvpa=bpa is assumed.')
-                    p = np.radians(bpa - d.pvpa[i])
-                    b = 1 / np.hypot(np.cos(p) / bmaj, np.sin(p) / bmin)
-                    d.beam[i] = np.array([np.abs(d.dv), b, 0])
-                d.pv[i] = self.pv
-            d.Tb[i] = False
-            d.cfactor[i] = 1
-            if d.fitsimage[i] is not None:
-                d.fitsimage_org[i] = d.fitsimage[i]
-            d.fitsimage[i] = None
-        if d.n == 1:
-            d.data = d.data[0]
-            d.beam = d.beam[0]
-            d.fitsimage = d.fitsimage[0]
-            d.Tb = d.Tb[0]
-            d.sigma = d.sigma[0]
-            d.center = d.center[0]
-            d.restfreq = d.restfreq[0]
-            d.cfactor = d.cfactor[0]
-            d.bunit = d.bunit[0]
-            d.fitsimage_org = d.fitsimage_org[0]
-            d.sigma_org = d.sigma_org[0]
-            d.beam_org = d.beam_org[0]
-            d.fitsheader = d.fitsheader[0]
-            d.pv = d.pv[0]
-            d.pvpa = d.pvpa[0]
+            self._read_one(d, i, xskip, yskip, grid_org=[d.x, d.y, d.v])
+        for name in ASTRODATA_ARGS + ["beam"]:
+            setattr(d, name, _scalar_if_single(getattr(d, name), d.n))

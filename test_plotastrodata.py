@@ -29,6 +29,8 @@ with open('example_temp.py', 'w') as f:
 subprocess.run(shlex.split('python example_temp.py'))
 os.remove('example_temp.py')
 
+for file in glob.glob("./example_data/output/*.png"):
+    os.remove(file)
 source_dir = Path('./')
 dest_dir = Path('./example_data/output/')
 for pattern in ('*.png', '*.html'):
