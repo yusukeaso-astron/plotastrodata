@@ -588,7 +588,7 @@ def _scalar_if_single(value, n: int):
 
 def _get_gridsep(axis: np.ndarray | None):
     return axis[1] - axis[0] if axis is not None and len(axis) > 1 else None
-    
+
 
 ASTRODATA_ARGS = ["fitsimage", "data", "Tb", "sigma", "center", "restfreq",
                   "cfactor", "bunit", "fitsimage_org", "sigma_org",
