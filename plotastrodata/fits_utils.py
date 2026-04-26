@@ -29,7 +29,7 @@ def Jy2K(header=None, bmaj: float | None = None, bmin: float | None = None,
         else:
             print('Use CDELT1^2 for Tb conversion.')
             todiameter = np.sqrt(4 * np.log(2) / np.pi) * 3600
-            bmaj = bmin = header['CDELT1'] * todiameter
+            bmaj = bmin = np.abs(header['CDELT1']) * todiameter
             if header['CUNIT1'] == 'arcsec':
                 bmaj, bmin = bmaj / 3600, bmin / 3600
         if 'RESTFREQ' in header:

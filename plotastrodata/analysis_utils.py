@@ -586,6 +586,15 @@ def _scalar_if_single(value, n):
     return value[0] if n == 1 else value
 
 
+def _apply_xyskip(data, grid, xskip, yskip):
+    grid[0] = grid[0][::xskip]
+    grid[1] = grid[1][::yskip]
+    data = np.moveaxis(data, [-2, -1], [0, 1])
+    data = data[::yskip, ::xskip]
+    data = np.moveaxis(data, [0, 1], [-2, -1])
+    return data, grid
+
+
 ASTRODATA_ARGS = ["fitsimage", "data", "Tb", "sigma", "center", "restfreq",
                   "cfactor", "bunit", "fitsimage_org", "sigma_org",
                   "beam_org", "fitsheader", "pv", "pvpa"]
@@ -682,40 +691,83 @@ class AstroFrame():
                 x[i], y[i] = rel2abs(*p, self.Xlim, self.Ylim)
         return np.array([x, y])
 
+    def _get_restfreq(self, header):
+        """Extract rest frequency from FITS header."""
+        if "NAXIS3" in header and header["NAXIS3"] == 1 and not self.pv:
+            return header["CRVAL3"]
+        if "RESTFRQ" in header:
+            return header["RESTFRQ"]
+        if "RESTFREQ" in header:
+            return header["RESTFREQ"]
+        return None
+
+    def _read_fitsimage(self, d: AstroData, i: int, grid: list) -> list:
+        """Read FITS-derived values into d and return the FITS grid."""
+        if d.fitsimage[i] is None:
+            return grid
+
+        fd = FitsData(d.fitsimage[i])
+        if d.fitsheader[i] is None:
+            d.fitsheader[i] = fd.get_header()
+        if d.center[i] is None and not self.pv:
+            d.center[i] = fd.get_center()
+        if d.restfreq[i] is None:
+            d.restfreq[i] = self._get_restfreq(d.fitsheader[i])
+        d.data[i] = fd.get_data()
+        grid = fd.get_grid(center=d.center[i], dist=self.dist,
+                           restfreq=d.restfreq[i], vsys=self.vsys,
+                           pv=self.pv)
+        if fd.wcsrot:
+            d.center[i] = fd.get_center()
+        d.beam[i] = fd.get_beam(dist=self.dist)
+        d.bunit[i] = fd.get_header("BUNIT")
+        return grid
+
+    def _has_different_center(self, center):
+        return (not self.pv
+                and self.center is not None
+                and center is not None
+                and center != self.center)
+
+    def _convert_to_Tb(self, d: AstroData, i: int):
+        """Convert Jy/beam data to brightness temperature if requested."""
+        if not d.Tb[i]:
+            return
+
+        dx = d.dy if self.swapxy else d.dx
+        header = {"CDELT1": dx / 3600,
+                  "CUNIT1": "DEG",
+                  "RESTFREQ": d.restfreq[i]}
+        if None not in d.beam[i]:
+            header["BMAJ"] = d.beam[i][0] / 3600 / self.dist
+            header["BMIN"] = d.beam[i][1] / 3600 / self.dist
+        factor = Jy2K(header=header)
+        d.data[i] = d.data[i] * factor
+        if d.sigma[i] is not None:
+            d.sigma[i] = d.sigma[i] * factor
+
+    def _set_pv_beam(self, d: AstroData, i: int):
+        """Set effective PV beam."""
+        if not self.pv or d.pv[i] or None in d.beam[i]:
+            return
+
+        bmaj, bmin, bpa = d.beam_org[i] = d.beam[i]
+        if d.pvpa[i] is None:
+            d.pvpa[i] = bpa
+            print("pvpa is not specified. pvpa=bpa is assumed.")
+        angle = np.radians(bpa - d.pvpa[i])
+        beam_incut = 1 / np.hypot(np.cos(angle) / bmaj, np.sin(angle) / bmin)
+        d.beam[i] = np.array([np.abs(d.dv), beam_incut, 0])
+
     def _read_one(self, d, i, xskip, yskip, grid_org):
         if d.center[i] == 'common':
             d.center[i] = self.center
         grid = grid_org.copy()
-        if d.fitsimage[i] is not None:
-            fd = FitsData(d.fitsimage[i])
-            if d.fitsheader[i] is None:
-                d.fitsheader[i] = fd.get_header()
-            if d.center[i] is None and not self.pv:
-                d.center[i] = fd.get_center()
-            if d.restfreq[i] is None:
-                h = d.fitsheader[i]
-                if 'NAXIS3' in h and h['NAXIS3'] == 1 and not self.pv:
-                    d.restfreq[i] = h['CRVAL3']
-                elif 'RESTFRQ' in h:
-                    d.restfreq[i] = h['RESTFRQ']
-                elif 'RESTFREQ' in h:
-                    d.restfreq[i] = h['RESTFREQ']
-            d.data[i] = fd.get_data()
-            grid = fd.get_grid(center=d.center[i], dist=self.dist,
-                                restfreq=d.restfreq[i], vsys=self.vsys,
-                                pv=self.pv)
-            if fd.wcsrot:
-                d.center[i] = fd.get_center()  # for WCS rotation
-            d.beam[i] = fd.get_beam(dist=self.dist)
-            d.bunit[i] = fd.get_header('BUNIT')
+        grid = self._read_fitsimage(d, i, grid)
         if d.data[i] is not None:
             d.sigma_org[i] = d.sigma[i]
             d.sigma[i] = estimate_rms(d.data[i], d.sigma[i])
-            diffcent = (not self.pv
-                        and self.center is not None
-                        and d.center[i] is not None
-                        and d.center[i] != self.center)
-            if diffcent:
+            if self._has_different_center(d.center[i]):
                 cx, cy = coord2xy(d.center[i], self.center) * 3600
                 grid[0] = grid[0] + cx  # Don't use += cx.
                 grid[1] = grid[1] + cy  # Don't use += cy.
@@ -735,13 +787,7 @@ class AstroFrame():
             if self.swapxy:
                 grid = [grid[1], grid[0]]
                 d.data[i] = np.moveaxis(d.data[i], 1, 0)
-            grid[0] = grid[0][::xskip]
-            grid[1] = grid[1][::yskip]
-            a = d.data[i]
-            a = np.moveaxis(a, [-2, -1], [0, 1])
-            a = a[::yskip, ::xskip]
-            a = np.moveaxis(a, [0, 1], [-2, -1])
-            d.data[i] = a
+            d.data[i], grid = _apply_xyskip(d.data[i], grid, xskip, yskip)
             x, y = d.x, d.y = grid
             has_x = x is not None and len(x) > 1
             d.dx = x[1] - x[0] if has_x else None
@@ -753,24 +799,8 @@ class AstroFrame():
             d.data[i] = d.data[i] * d.cfactor[i]
             if d.sigma[i] is not None:
                 d.sigma[i] = d.sigma[i] * d.cfactor[i]
-            if d.Tb[i]:
-                dx = d.dy if self.swapxy else d.dx
-                header = {'CDELT1': dx / 3600,
-                            'CUNIT1': 'DEG',
-                            'RESTFREQ': d.restfreq[i]}
-                if None not in d.beam[i]:
-                    header['BMAJ'] = d.beam[i][0] / 3600 / self.dist
-                    header['BMIN'] = d.beam[i][1] / 3600 / self.dist
-                d.data[i] = d.data[i] * Jy2K(header=header)
-                d.sigma[i] = d.sigma[i] * Jy2K(header=header)
-            if self.pv and not d.pv[i] and None not in d.beam[i]:
-                bmaj, bmin, bpa = d.beam_org[i] = d.beam[i]
-                if d.pvpa[i] is None:
-                    d.pvpa[i] = bpa
-                    print('pvpa is not specified. pvpa=bpa is assumed.')
-                p = np.radians(bpa - d.pvpa[i])
-                b = 1 / np.hypot(np.cos(p) / bmaj, np.sin(p) / bmin)
-                d.beam[i] = np.array([np.abs(d.dv), b, 0])
+            self._convert_to_Tb(d, i)
+            self._set_pv_beam(d, i)
             d.pv[i] = self.pv
         d.Tb[i] = False
         d.cfactor[i] = 1
