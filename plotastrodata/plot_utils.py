@@ -1233,8 +1233,8 @@ def _prep_plotprofile(width: int, coords: list | str,
     return v, prof, gfitres, pa2, ylabel
 
 
-def _set_figax_plotprofile(fig, ax, nrows: int, ncols: int, nprof: int
-                        ) -> tuple:
+def _set_figax_plotprofile(fig, ax, nrows: int, ncols: int,
+                           nprof: int) -> tuple:
     if ncols == 1:
         nrows = nprof
     if fig is None:
@@ -1244,8 +1244,8 @@ def _set_figax_plotprofile(fig, ax, nrows: int, ncols: int, nprof: int
         ax = None
     ax = np.empty(nprof, dtype=object) if ax is None else [ax]
     for i in range(nprof):
-            sharex = None if i < nrows - 1 else ax[i - 1]
-            ax[i] = fig.add_subplot(nrows, ncols, i + 1, sharex=sharex)
+        sharex = None if i < nrows - 1 else ax[i - 1]
+        ax[i] = fig.add_subplot(nrows, ncols, i + 1, sharex=sharex)
     return fig, ax
 
 
@@ -1258,11 +1258,9 @@ def plotprofile(coords: list[str] | str = [],
                 title: list[str] | None = None,
                 text: list[str] | None = None,
                 nrows: int = 0, ncols: int = 1,
-                fig: object | None = None,
-                ax: object | None = None,
+                fig: object | None = None, ax: object | None = None,
                 getfigax: bool = False,
-                savefig: dict | str | None = None,
-                show: bool = False,
+                savefig: dict | str | None = None, show: bool = False,
                 **kwargs) -> tuple[object, object]:
     """Use Axes.plot of matplotlib to plot line profiles at given coordinates. kwargs must include the arguments of AstroData to specify the data to be plotted. kwargs must include the arguments of AstroFrame to specify the ranges and so on for plotting. kwargs can include the arguments of PlotAxes2D to adjust x and y axes.
 
