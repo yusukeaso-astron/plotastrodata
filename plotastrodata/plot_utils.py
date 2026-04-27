@@ -1383,6 +1383,67 @@ def plotslice(length: float, dx: float | None = None, pa: float = 0,
     close_figure(fig, savefig, show)
 
 
+def _plot_on_wall(d: AstroData, x: np.ndarray, y: np.ndarray, v: np.ndarray,
+                  measure: object, data: list,
+                  sign: int, axis: int, **kwargs):
+    dx, dy, dv = x[1] - x[0], y[1] - y[0], v[1] - v[0]
+    s, ds = [x, y, v], [dx, dy, dv]
+    if kwargs == {}:
+        return
+
+    match axis:
+        case 2:
+            shape = np.shape(d.data[:, :, 0])
+        case 1:
+            shape = np.shape(d.data[:, 0, :])
+        case 0:
+            shape = np.shape(d.data[0, :, :])
+    if np.shape(kwargs['data']) != shape:
+        print('The shape of the 2D data is inconsistent'
+                + ' with the shape of the 3D data.')
+        return
+
+    _kw = {'levels': [3, 6, 12, 24, 48, 96, 192, 384],
+            'sigma': 'hist', 'cmap': 'Jet', 'alpha': 0.3}
+    _kw.update(kwargs)
+    volume = _kw['data']
+    levels = _kw['levels']
+    cmap = _kw['cmap']
+    alpha = _kw['alpha']
+    sigma = estimate_rms(data=volume, sigma=_kw['sigma'])
+    volume[np.isnan(volume)] = 0
+    a = int(sign == -1)
+    b = int(sign == 1)
+    volume = np.moveaxis([volume * a, volume * b], 0, axis)
+    if d.dx < 0:
+        volume = volume[:, :, ::-1]
+    if d.dy < 0:
+        volume = volume[:, ::-1, :]
+    if d.dv < 0:
+        volume = volume[::-1, :, :]
+    for lev in levels:
+        if lev * sigma > np.max(volume):
+            continue
+        vertices, simplices, _, _ = measure.marching_cubes(volume, lev * sigma)
+        Xg, Yg, Zg = [t[0] + i * dt for t, i, dt
+                      in zip(s, vertices.T[::-1], ds)]
+        match axis:
+            case 2:
+                Xg = Xg * 0 + (x[-1] if sign == 1 else x[0])
+            case 1:
+                Yg = Yg * 0 + (y[-1] if sign == 1 else y[0])
+            case 0:
+                Zg = Zg * 0 + (v[-1] if sign == 1 else v[0])
+        i, j, k = simplices.T
+        mesh2d = dict(type='mesh3d', x=Xg, y=Yg, z=Zg,
+                        i=i, j=j, k=k,
+                        intensity=Zg * 0 + lev,
+                        colorscale=cmap, reversescale=False,
+                        cmin=np.min(levels), cmax=np.max(levels),
+                        opacity=alpha, name='', showscale=False)
+        data.append(mesh2d)
+
+
 def plot3d(levels: list[float] = [3, 6, 12],
            cmap: str = 'Jet', alpha: float = 0.08,
            xlabel: str = 'R.A. (arcsec)',
@@ -1475,67 +1536,12 @@ def plot3d(levels: list[float] = [3, 6, 12],
                      name='', line=dict(color='rgb(0,0,0)', width=1))
         data.append(lines)
 
-    def plot_on_wall(sign: int, axis: int, **kwargs):
-        if kwargs == {}:
-            return
-
-        match axis:
-            case 2:
-                shape = np.shape(d.data[:, :, 0])
-            case 1:
-                shape = np.shape(d.data[:, 0, :])
-            case 0:
-                shape = np.shape(d.data[0, :, :])
-        if np.shape(kwargs['data']) != shape:
-            print('The shape of the 2D data is inconsistent'
-                  + ' with the shape of the 3D data.')
-            return
-
-        _kw = {'levels': [3, 6, 12, 24, 48, 96, 192, 384],
-               'sigma': 'hist', 'cmap': 'Jet', 'alpha': 0.3}
-        _kw.update(kwargs)
-        volume = _kw['data']
-        levels = _kw['levels']
-        cmap = _kw['cmap']
-        alpha = _kw['alpha']
-        sigma = estimate_rms(data=volume, sigma=_kw['sigma'])
-        volume[np.isnan(volume)] = 0
-        a = int(sign == -1)
-        b = int(sign == 1)
-        volume = np.moveaxis([volume * a, volume * b], 0, axis)
-        if d.dx < 0:
-            volume = volume[:, :, ::-1]
-        if d.dy < 0:
-            volume = volume[:, ::-1, :]
-        if d.dv < 0:
-            volume = volume[::-1, :, :]
-        for lev in levels:
-            if lev * sigma > np.max(volume):
-                continue
-            vertices, simplices, _, _ = measure.marching_cubes(volume, lev * sigma)
-            Xg, Yg, Zg = [t[0] + i * dt for t, i, dt
-                          in zip(s, vertices.T[::-1], ds)]
-            match axis:
-                case 2:
-                    Xg = Xg * 0 + (x[-1] if sign == 1 else x[0])
-                case 1:
-                    Yg = Yg * 0 + (y[-1] if sign == 1 else y[0])
-                case 0:
-                    Zg = Zg * 0 + (v[-1] if sign == 1 else v[0])
-            i, j, k = simplices.T
-            mesh2d = dict(type='mesh3d', x=Xg, y=Yg, z=Zg,
-                          i=i, j=j, k=k,
-                          intensity=Zg * 0 + lev,
-                          colorscale=cmap, reversescale=False,
-                          cmin=np.min(levels), cmax=np.max(levels),
-                          opacity=alpha, name='', showscale=False)
-            data.append(mesh2d)
-
     klist = [xplus, xminus, yplus, yminus, vplus, vminus]
     slist = [1, -1, 1, -1, 1, -1]
     alist = [2, 2, 1, 1, 0, 0]
     for kw, sign, axis in zip(klist, slist, alist):
-        plot_on_wall(sign=sign, axis=axis, **kw)
+        _plot_on_wall(d, x, y, v, measure, data,
+                      sign=sign, axis=axis, **kw)
 
     if return_data_layout:
         return {'data': data, 'layout': layout}
