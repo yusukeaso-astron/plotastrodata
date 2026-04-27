@@ -752,9 +752,11 @@ class AstroFrame():
         self._ascending_v(d, i, v=grid[2])
         grid = [grid[0], d.v] if self.pv else [grid[0], grid[1]]
         if self.swapxy:
-            grid = [grid[1], grid[0]]
+            grid.reverse()
             d.data[i] = np.moveaxis(d.data[i], 1, 0)
         self._xyskip(d, i, x=grid[0], y=grid[1])
+        if self.pv:
+            d.v = d.y
         for axis in ['x', 'y', 'v']:
             setattr(d, f"d{axis}", _get_gridsep(getattr(d, axis)))
 
