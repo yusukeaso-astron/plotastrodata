@@ -1384,7 +1384,7 @@ def plotslice(length: float, dx: float | None = None, pa: float = 0,
 
 
 def _plot_on_wall(d: AstroData, x: np.ndarray, y: np.ndarray, v: np.ndarray,
-                  measure: object, data: list,
+                  measure: object, datalist: list,
                   sign: int, axis: int, **kwargs):
     dx, dy, dv = x[1] - x[0], y[1] - y[0], v[1] - v[0]
     s, ds = [x, y, v], [dx, dy, dv]
@@ -1441,11 +1441,11 @@ def _plot_on_wall(d: AstroData, x: np.ndarray, y: np.ndarray, v: np.ndarray,
                       colorscale=cmap, reversescale=False,
                       cmin=np.min(levels), cmax=np.max(levels),
                       opacity=alpha, name='', showscale=False)
-        data.append(mesh2d)
+        datalist.append(mesh2d)
 
 
 def plot3d(levels: list[float] = [3, 6, 12],
-           cmap: str = 'Jet', alpha: float = 0.08,
+           cmap: str = 'jet', alpha: float = 0.08,
            xlabel: str = 'R.A. (arcsec)',
            ylabel: str = 'Dec. (arcsec)',
            vlabel: str = 'Velocity (km/s)',
@@ -1540,8 +1540,7 @@ def plot3d(levels: list[float] = [3, 6, 12],
     slist = [1, -1, 1, -1, 1, -1]
     alist = [2, 2, 1, 1, 0, 0]
     for kw, sign, axis in zip(klist, slist, alist):
-        _plot_on_wall(d, x, y, v, measure, data,
-                      sign=sign, axis=axis, **kw)
+        _plot_on_wall(d, x, y, v, measure, data, sign, axis, **kw)
 
     if return_data_layout:
         return {'data': data, 'layout': layout}
