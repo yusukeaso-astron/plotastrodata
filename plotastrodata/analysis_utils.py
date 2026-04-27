@@ -718,20 +718,16 @@ class AstroFrame():
         d.bunit[i] = fd.get_header("BUNIT")
         return grid
 
-    def _no_newcenter(self, center: str | None):
-        return (self.pv
-                or self.center is None
-                or center is None
-                or center == self.center)
-
     def _shift_center(self, d: AstroData, i: int, grid: list) -> list:
-        if self._no_newcenter(d.center[i]):
+        corg = d.center[i]
+        cnew = self.center
+        if self.pv or cnew is None or corg is None or corg == cnew:
             return grid
 
-        cx, cy = coord2xy(d.center[i], self.center) * 3600
+        cx, cy = coord2xy(corg, cnew) * 3600
         grid[0] = grid[0] + cx  # Don't use += cx.
         grid[1] = grid[1] + cy  # Don't use += cy.
-        d.center[i] = self.center
+        d.center[i] = cnew
         return grid
 
     def _ascending_v(self, d: AstroData, i: int, v: np.ndarray | None):
