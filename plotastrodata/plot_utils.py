@@ -1209,6 +1209,7 @@ def _get_ylabel_for_profile(_kw: dict, Tb: bool, flux: bool, bunit: str):
         return "Flux (Jy)"
     return bunit
 
+
 def plotprofile(coords: list[str] | str = [],
                 xlist: list[float] = [], ylist: list[float] = [],
                 ellipse: list[float, float, float] | None = None,
@@ -1249,7 +1250,8 @@ def plotprofile(coords: list[str] | str = [],
     Returns:
         tuple: (fig, ax), where ax is a list, if getfigax=True. Otherwise, no return.
     """
-    _kw = {'drawstyle': 'steps-mid', 'color': 'k'}
+    _kw = {"drawstyle": "steps-mid", "color": "k",
+           "xlabel": r"Velocity (km s$^{-1}$)", "samexy": False}
     _kw.update(kwargs)
     _kwgauss = {'drawstyle': 'default', 'color': 'g'}
     _kwgauss.update(gauss_kwargs)
@@ -1277,9 +1279,7 @@ def plotprofile(coords: list[str] | str = [],
         print("External ax is supported only when len(coords)=1.")
         ax = None
     ax = np.empty(nprof, dtype=object) if ax is None else [ax]
-    _kw.setdefault("xlabel", "Velocity (km s$^{-1}$)")
     _kw.setdefault("xlim", [v.min(), v.max()])
-    _kw["samexy"] = False
     pa2 = kwargs2instance(PlotAxes2D, _kw)
     for i in range(nprof):
         sharex = None if i < nrows - 1 else ax[i - 1]
