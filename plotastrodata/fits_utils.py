@@ -198,7 +198,7 @@ class FitsData:
             rho_b = np.arctan2(np.abs(cd12), -np.sign(cd12) * cd22)
         if (drho := np.abs(np.degrees(rho_a - rho_b))) > 1.0:
             print('Angles from (CD21, CD11) and (CD12, CD22)'
-                    + f' are different by {drho:.2} degrees.')
+                  + f' are different by {drho:.2} degrees.')
         crota2 = (rho_a + rho_b) / 2.
         sin_rho = np.sin(crota2)
         cos_rho = np.cos(crota2)
