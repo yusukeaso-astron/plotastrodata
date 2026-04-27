@@ -179,57 +179,59 @@ class FitsData:
 
     def _read_cd(self):
         h = self.header
-        self.wcsrot = False
-        Mcd = None
         cdij = ['CD1_1', 'CD1_2', 'CD2_1', 'CD2_2']
-        if np.all([k in list(h.keys()) for k in cdij]):
-            self.wcsrot = True
-            cd11, cd12, cd21, cd22 = [h[k] for k in cdij]
-            Mcd = [[cd11, cd12], [cd21, cd22]]
-            if cd21 == 0:
-                rho_a = 0
-            else:
-                rho_a = np.arctan2(np.abs(cd21), np.sign(cd21) * cd11)
-            if cd12 == 0:
-                rho_b = 0
-            else:
-                rho_b = np.arctan2(np.abs(cd12), -np.sign(cd12) * cd22)
-            if (drho := np.abs(np.degrees(rho_a - rho_b))) > 1.0:
-                print('Angles from (CD21, CD11) and (CD12, CD22)'
-                      + f' are different by {drho:.2} degrees.')
-            crota2 = (rho_a + rho_b) / 2.
-            sin_rho = np.sin(crota2)
-            cos_rho = np.cos(crota2)
-            cdelt1 = cd11 * cos_rho + cd21 * sin_rho
-            cdelt2 = -cd12 * sin_rho + cd22 * cos_rho
-            crota2 = np.degrees(crota2)
-            h['CDELT1'] = cdelt1
-            h['CDELT2'] = cdelt2
-            for k in cdij:
-                del h[k]
-            print(f'WCS rotation was found (CROTA2 = {crota2:f} deg).')
-        return Mcd
+        if not np.all([k in list(h.keys()) for k in cdij]):
+            self.wcsrot = False
+            self.Mcd = None
+            return
 
-    def _rotate(self, Mcd: list[list[float]]):
+        self.wcsrot = True
+        cd11, cd12, cd21, cd22 = [h[k] for k in cdij]
+        self.Mcd = [[cd11, cd12], [cd21, cd22]]
+        if cd21 == 0:
+            rho_a = 0
+        else:
+            rho_a = np.arctan2(np.abs(cd21), np.sign(cd21) * cd11)
+        if cd12 == 0:
+            rho_b = 0
+        else:
+            rho_b = np.arctan2(np.abs(cd12), -np.sign(cd12) * cd22)
+        if (drho := np.abs(np.degrees(rho_a - rho_b))) > 1.0:
+            print('Angles from (CD21, CD11) and (CD12, CD22)'
+                    + f' are different by {drho:.2} degrees.')
+        crota2 = (rho_a + rho_b) / 2.
+        sin_rho = np.sin(crota2)
+        cos_rho = np.cos(crota2)
+        cdelt1 = cd11 * cos_rho + cd21 * sin_rho
+        cdelt2 = -cd12 * sin_rho + cd22 * cos_rho
+        crota2 = np.degrees(crota2)
+        h['CDELT1'] = cdelt1
+        h['CDELT2'] = cdelt2
+        for k in cdij:
+            del h[k]
+        print(f'WCS rotation was found (CROTA2 = {crota2:f} deg).')
+
+    def _rotate_cd(self):
         h = self.header
         data = self.get_data()
-        self.header['CRPIX1'] = ic = len(self.x) // 2
-        self.header['CRPIX2'] = jc = len(self.y) // 2
+        ic = len(self.x) // 2
+        jc = len(self.y) // 2
+        h['CRPIX1'] = ic + 1
+        h['CRPIX2'] = jc + 1
         xc = self.x[ic] / self.dx
         yc = self.y[jc] / self.dy
-        xc, yc = dot2d(Mcd, [xc, yc])
-        newcenter = xy2coord(xy=[xc, yc],
-                             coordorg=self.get_center())
+        xc, yc = dot2d(self.Mcd, [xc, yc])
+        newcenter = xy2coord([xc, yc], coordorg=self.get_center())
         xc, yc = coord2xy(coords=newcenter)
-        self.header['CRVAL1'] = xc
-        self.header['CRVAL2'] = yc
+        h['CRVAL1'] = xc
+        h['CRVAL2'] = yc
         self.x = self.x - self.x[ic]
         self.y = self.y - self.y[jc]
         x = self.x / (3600 if isdeg(h['CUNIT1']) else 1)
         y = self.y / (3600 if isdeg(h['CUNIT2']) else 1)
         X, Y = np.meshgrid(x, y)
-        cdinv = np.linalg.inv(Mcd)
-        xnew, ynew = dot2d(cdinv, [X, Y])
+        Mcdinv = np.linalg.inv(self.Mcd)
+        xnew, ynew = dot2d(Mcdinv, [X, Y])
         datanew = RGIxy(self.y / self.dy, self.x / self.dx,
                         data, (ynew, xnew))
         self.data = datanew
@@ -237,79 +239,73 @@ class FitsData:
 
     def _get_genx_geny(self, center: str, dist: float):
         h = self.header
-        cx, cy = 0, 0
+        cxy = (0, 0)
         if center is not None and not self.wcsrot:
-            c0 = xy2coord([h['CRVAL1'], h['CRVAL2']])
-            if 'RADESYS' in h:
-                radesys = h['RADESYS']
-                c0 = f'{radesys}  {c0}'
-            cx, cy = coord2xy(center, c0)
+            coordorg = xy2coord([h["CRVAL1"], h["CRVAL2"]])
+            if (radesys := h.get("RADESYS")) is not None:
+                coordorg = f"{radesys}  {coordorg}"
+            cxy = coord2xy(center, coordorg)
+        slabel = ["x", "y"]
 
-        def gen_x(s_in: np.ndarray) -> None:
-            s = (s_in - cx) * dist
-            if isdeg(h['CUNIT1']):
-                s *= 3600.
-            self.x, self.dx = s, s[1] - s[0]
+        def wrapper(i: int):
+            def gen_s(s_in: np.ndarray | None) -> None:
+                if h.get(f"NAXIS{i+1}") is None or s_in is None:
+                    s, ds = None, None
+                else:
+                    s = (s_in - cxy[i]) * dist
+                    if isdeg(h[f"CUNIT{i+1}"]):
+                        s *= 3600.
+                    ds = None if len(s) == 0 else s[1] - s[0]
+                setattr(self, f"{slabel[i]}", s)
+                setattr(self, f"d{slabel[i]}", ds)
+            return gen_s
 
-        def gen_y(s_in: np.ndarray) -> None:
-            s = (s_in - cy) * dist
-            if isdeg(h['CUNIT2']):
-                s *= 3600.
-            self.y, self.dy = s, s[1] - s[0]
-
-        return gen_x, gen_y
+        return wrapper(0), wrapper(1)
 
     def _get_genv(self, restfreq: float | None, vsys: float, pv: bool):
         h = self.header
 
-        def gen_v(s_in: np.ndarray) -> None:
+        def gen_v(v_in: np.ndarray) -> None:
+            vaxis = "2" if pv else "3"
+            if h.get(f"NAXIS{vaxis}") is None or v_in is None:
+                self.v, self.dv = None, None
+                return
+
             if restfreq is None:
-                freq = np.mean(s_in)
-                print('restfreq is assumed to be the center.')
+                freq = np.mean(v_in)
+                print("restfreq is assumed to be the center.")
             else:
                 freq = restfreq
-            vaxis = '2' if pv else '3'
+            v = v_in + h[f"CRVAL{vaxis}"]
             key = f'CUNIT{vaxis}'
-            cunitv = h[key]
-            match cunitv.strip():
-                case 'Hz':
+            cunitv = h[key].strip()
+            match cunitv:
+                case "Hz" | "HZ":
                     if freq == 0:
-                        print('v is frequency because restfreq=0.')
-                        s = s_in * 1
+                        print("v is read as is, because restfreq=0.")
                     else:
-                        s = (1 - s_in / freq) * cu.c_kms - vsys
-                case 'HZ':
-                    if freq == 0:
-                        print('v is frequency because restfreq=0.')
-                        s = s_in * 1
-                    else:
-                        s = (1 - s_in / freq) * cu.c_kms - vsys
-                case 'm/s':
-                    print(f'{key}=\'m/s\' found.')
-                    s = s_in * 1e-3 - vsys
-                case 'M/S':
-                    print(f'{key}=\'M/S\' found.')
-                    s = s_in * 1e-3 - vsys
-                case 'km/s':
-                    print(f'{key}=\'km/s\' found.')
-                    s = s_in - vsys
-                case 'KM/S':
-                    print(f'{key}=\'KM/S\' found.')
-                    s = s_in - vsys
+                        v = (1 - v / freq) * cu.c_kms - vsys
+                case "m/s" | "M/S":
+                    print(f'{key}={cunitv} found.')
+                    v = v * 1e-3 - vsys
+                case 'km/s' | "KM/S":
+                    print(f'{key}={cunitv} found.')
+                    v = v - vsys
                 case _:
                     print(f'Unknown CUNIT3 {cunitv} found.'
                           + ' v is read as is.')
-                    s = s_in - vsys
-            self.v, self.dv = s, s[1] - s[0]
+            dv = None if len(v) == 0 else v[1] - v[0]
+            self.v, self.dv = v, dv
 
         return gen_v
 
-    def _get_array(self, i: int, crval=False) -> np.ndarray:
+    def _get_array(self, i: int) -> np.ndarray:
         h = self.header
-        s = np.arange(h[f'NAXIS{i:d}'])
-        s = (s - h[f'CRPIX{i:d}'] + 1) * h[f'CDELT{i:d}']
-        if crval:
-            s = s + h[f'CRVAL{i:d}']
+        n = h.get(f"NAXIS{i:d}")
+        if n is None:
+            return None
+
+        s = (np.arange(n) - h[f"CRPIX{i:d}"] + 1) * h[f"CDELT{i:d}"]
         return s
 
     def gen_grid(self, center: str | None = None, dist: float = 1.,
@@ -326,21 +322,20 @@ class FitsData:
         """
         h = self.get_header()
         # WCS rotation (Calabretta & Greisen 2002, Astronomy & Astrophysics, 395, 1077)
-        Mcd = self._read_cd()
+        self._read_cd()
         gen_x, gen_y = self._get_genx_geny(center, dist)
         restfreq = restfreq or h.get('RESTFRQ') or h.get('RESTFREQ')
         gen_v = self._get_genv(restfreq, vsys, pv)
-        self.x, self.y, self.v = None, None, None
-        self.dx, self.dy, self.dv = None, None, None
-        f = self._get_array
-        if h['NAXIS'] > 0 and h['NAXIS1'] > 1:
-            gen_x(f(1))
-        if h['NAXIS'] > 1 and h['NAXIS2'] > 1:
-            gen_v(f(2, True)) if pv else gen_y(f(2))
-        if h['NAXIS'] > 2 and h['NAXIS3'] > 1:
-            gen_v(f(3, True))
+        if pv:
+            gen_x(self._get_array(1))
+            gen_v(self._get_array(2))
+            self.y, self.dy = None, None
+        else:
+            gen_x(self._get_array(1))
+            gen_y(self._get_array(2))
+            gen_v(self._get_array(3))
         if self.wcsrot:
-            self._rotate(Mcd)
+            self._rotate_cd()
 
     def get_grid(self, **kwargs) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Output the grids, [x, y, v]. This method can take the arguments of gen_grid().
@@ -348,7 +343,7 @@ class FitsData:
         Returns:
             tuple: (x, y, v).
         """
-        if not hasattr(self, 'x') or not hasattr(self, 'y'):
+        if not np.all([hasattr(self, s) for s in ["x", "y", "v"]]):
             self.gen_grid(**kwargs)
         return self.x, self.y, self.v
 

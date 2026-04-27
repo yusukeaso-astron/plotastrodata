@@ -688,12 +688,12 @@ class AstroFrame():
 
     def _get_restfreq(self, header: dict):
         """Extract rest frequency from FITS header."""
-        if "NAXIS3" in header and header["NAXIS3"] == 1 and not self.pv:
-            return header["CRVAL3"]
         if "RESTFRQ" in header:
             return header["RESTFRQ"]
         if "RESTFREQ" in header:
             return header["RESTFREQ"]
+        if "NAXIS3" in header and header["NAXIS3"] == 1 and not self.pv:
+            return header["CRVAL3"]
         return None
 
     def _read_fitsimage(self, d: AstroData, i: int, grid: list) -> list:
