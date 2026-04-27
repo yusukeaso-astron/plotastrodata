@@ -149,7 +149,7 @@ def _get_gridwidth(mode: str, rmax: float, cos_dec: float
 def _get_v(p, v: np.ndarray | None = None,
            restfreq: float | None = None,
            vskip: int = 1) -> np.ndarray:
-    if p.fitsimage is not None:
+    if p.fitsimage is not None and v is None:
         p.read(d := AstroData(fitsimage=p.fitsimage,
                               restfreq=restfreq, sigma=None))
         v = d.v
