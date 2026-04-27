@@ -1210,6 +1210,28 @@ def _get_ylabel_for_profile(_kw: dict, Tb: bool, flux: bool, bunit: str):
     return bunit
 
 
+def _prep_plotprofile(width: int, coords: list | str,
+                      xlist: list, ylist: list, ellipse: list,
+                      ninterp: int, flux: bool, gaussfit: bool,
+                      _kw: dict):
+    if isinstance(coords, str):
+        coords = [coords]
+    Tb = _kw.get("Tb", False)
+    f = kwargs2instance(AstroFrame, _kw)
+    d = kwargs2instance(AstroData, _kw)
+    f.read(d)
+    d.binning([width, 1, 1])
+    v, prof, gfitres = d.profile(coords=coords, xlist=xlist, ylist=ylist,
+                                 ellipse=ellipse, ninterp=ninterp,
+                                 flux=flux, gaussfit=gaussfit)
+    ylabel = _get_ylabel_for_profile(_kw, Tb, flux, d.bunit)
+    if isinstance(ylabel, str):
+        ylabel = [ylabel] * len(prof)
+    _kw.setdefault("xlim", [v.min(), v.max()])
+    pa2 = kwargs2instance(PlotAxes2D, _kw)
+    return v, prof, gfitres, pa2, ylabel
+
+
 def plotprofile(coords: list[str] | str = [],
                 xlist: list[float] = [], ylist: list[float] = [],
                 ellipse: list[float, float, float] | None = None,
@@ -1255,21 +1277,10 @@ def plotprofile(coords: list[str] | str = [],
     _kw.update(kwargs)
     _kwgauss = {'drawstyle': 'default', 'color': 'g'}
     _kwgauss.update(gauss_kwargs)
-    if isinstance(coords, str):
-        coords = [coords]
-    Tb = _kw.get("Tb", False)
-    f = kwargs2instance(AstroFrame, _kw)
-    d = kwargs2instance(AstroData, _kw)
-    f.read(d)
-    d.binning([width, 1, 1])
-    v, prof, gfitres = d.profile(coords=coords, xlist=xlist, ylist=ylist,
-                                 ellipse=ellipse, ninterp=ninterp,
-                                 flux=flux, gaussfit=gaussfit)
+    v, prof, gfitres, pa2, ylabel \
+        = _prep_plotprofile(width, coords, xlist, ylist, ellipse,
+                            ninterp, flux, gaussfit, _kw)
     nprof = len(prof)
-    ylabel = _get_ylabel_for_profile(_kw, Tb, flux, d.bunit)
-    if isinstance(ylabel, str):
-        ylabel = [ylabel] * nprof
-
     set_rcparams(20, "w")
     if ncols == 1:
         nrows = nprof
@@ -1279,8 +1290,6 @@ def plotprofile(coords: list[str] | str = [],
         print("External ax is supported only when len(coords)=1.")
         ax = None
     ax = np.empty(nprof, dtype=object) if ax is None else [ax]
-    _kw.setdefault("xlim", [v.min(), v.max()])
-    pa2 = kwargs2instance(PlotAxes2D, _kw)
     for i in range(nprof):
         sharex = None if i < nrows - 1 else ax[i - 1]
         ax[i] = fig.add_subplot(nrows, ncols, i + 1, sharex=sharex)
