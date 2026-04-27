@@ -590,9 +590,9 @@ def _get_gridsep(axis: np.ndarray | None):
     return axis[1] - axis[0] if axis is not None and len(axis) > 1 else None
 
 
-ASTRODATA_ARGS = ["fitsimage", "data", "Tb", "sigma", "center", "restfreq",
-                  "cfactor", "bunit", "fitsimage_org", "sigma_org",
-                  "beam_org", "fitsheader", "pv", "pvpa"]
+ASTRODATA_ARGS = ['fitsimage', 'data', 'Tb', 'sigma', 'center', 'restfreq',
+                  'cfactor', 'bunit', 'fitsimage_org', 'sigma_org',
+                  'beam_org', 'fitsheader', 'pv', 'pvpa']
 
 
 @dataclass
@@ -688,12 +688,12 @@ class AstroFrame():
 
     def _get_restfreq(self, header: dict):
         """Extract rest frequency from FITS header."""
-        if "RESTFRQ" in header:
-            return header["RESTFRQ"]
-        if "RESTFREQ" in header:
-            return header["RESTFREQ"]
-        if "NAXIS3" in header and header["NAXIS3"] == 1 and not self.pv:
-            return header["CRVAL3"]
+        if 'RESTFRQ' in header:
+            return header['RESTFRQ']
+        if 'RESTFREQ' in header:
+            return header['RESTFREQ']
+        if 'NAXIS3' in header and header['NAXIS3'] == 1 and not self.pv:
+            return header['CRVAL3']
         return None
 
     def _read_fitsimage(self, d: AstroData, i: int, grid: list) -> list:
@@ -715,7 +715,7 @@ class AstroFrame():
         if fd.wcsrot:
             d.center[i] = fd.get_center()
         d.beam[i] = fd.get_beam(dist=self.dist)
-        d.bunit[i] = fd.get_header("BUNIT")
+        d.bunit[i] = fd.get_header('BUNIT')
         return grid
 
     def _shift_center(self, d: AstroData, i: int, grid: list) -> list:
@@ -758,7 +758,7 @@ class AstroFrame():
         if self.pv:
             d.v = d.y
         for axis in ['x', 'y', 'v']:
-            setattr(d, f"d{axis}", _get_gridsep(getattr(d, axis)))
+            setattr(d, f'd{axis}', _get_gridsep(getattr(d, axis)))
 
     def _convert_to_Tb(self, d: AstroData, i: int):
         """Convert Jy/beam data to brightness temperature if requested."""
@@ -766,12 +766,12 @@ class AstroFrame():
             return
 
         dx = d.dy if self.swapxy else d.dx
-        header = {"CDELT1": dx / 3600,
-                  "CUNIT1": "DEG",
-                  "RESTFREQ": d.restfreq[i]}
+        header = {'CDELT1': dx / 3600,
+                  'CUNIT1': 'deg',
+                  'RESTFREQ': d.restfreq[i]}
         if None not in d.beam[i]:
-            header["BMAJ"] = d.beam[i][0] / 3600 / self.dist
-            header["BMIN"] = d.beam[i][1] / 3600 / self.dist
+            header['BMAJ'] = d.beam[i][0] / 3600 / self.dist
+            header['BMIN'] = d.beam[i][1] / 3600 / self.dist
         factor = Jy2K(header=header)
         d.data[i] = d.data[i] * factor
         if d.sigma[i] is not None:
@@ -785,7 +785,7 @@ class AstroFrame():
         bmaj, bmin, bpa = d.beam_org[i] = d.beam[i]
         if d.pvpa[i] is None:
             d.pvpa[i] = bpa
-            print("pvpa is not specified. pvpa=bpa is assumed.")
+            print('pvpa is not specified. pvpa=bpa is assumed.')
         angle = np.radians(bpa - d.pvpa[i])
         beam_incut = 1 / np.hypot(np.cos(angle) / bmaj, np.sin(angle) / bmin)
         d.beam[i] = np.array([np.abs(d.dv), beam_incut, 0])
@@ -827,5 +827,5 @@ class AstroFrame():
         d.beam = _as_list(d.beam, d.n, isbeam=True)
         for i in range(d.n):
             self._read_one(d, i)
-        for name in ASTRODATA_ARGS + ["beam"]:
+        for name in ASTRODATA_ARGS + ['beam']:
             setattr(d, name, _scalar_if_single(getattr(d, name), d.n))

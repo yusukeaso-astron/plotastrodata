@@ -121,7 +121,7 @@ f = AstroFrame(rmax=0.8, center='B1950 04h01m40.5705s +26d10m47.285s')
 f.read(d)
 d.data = np.sum(d.data, axis=0) * d.dv
 d.sigma = d.sigma * d.dv * np.sqrt(len(d.v))
-vplus = {"data": d.data, "sigma": d.sigma, "cmap": "gray"}
+vplus = {'data': d.data, 'sigma': d.sigma, 'cmap': 'gray'}
 plot3d(rmax=0.8, vmin=-5, vmax=5, fitsimage=f'{data_dir}/test3D.fits',
        outname='test3D.html', levels=[3, 6, 9],
        vplus=vplus, show=False)

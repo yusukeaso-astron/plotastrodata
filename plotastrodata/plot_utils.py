@@ -372,8 +372,8 @@ class PlotAxes2D():
         if self.loglog is not None:
             self.xscale = self.yscale = 'log'
             self.samexy = True
-            for axis in ["x", "y"]:
-                attr = f"{axis}lim"
+            for axis in ['x', 'y']:
+                attr = f'{axis}lim'
                 lim = getattr(self, attr)
                 if lim is not None:
                     lim[0] = lim[1] / self.loglog
@@ -383,14 +383,14 @@ class PlotAxes2D():
 
     def _init_ticks(self, axis):
         ax = self.ax
-        ticks_attr = f"{axis}ticks"
-        ticklabels_attr = f"{axis}ticklabels"
-        scale = getattr(self, f"{axis}scale")
-        lim = getattr(self, f"{axis}lim")
+        ticks_attr = f'{axis}ticks'
+        ticklabels_attr = f'{axis}ticklabels'
+        scale = getattr(self, f'{axis}scale')
+        lim = getattr(self, f'{axis}lim')
         ticks = getattr(self, ticks_attr)
         if ticks is None:
-            ticks = getattr(ax, f"get_{axis}ticks")()
-            if scale == "log":
+            ticks = getattr(ax, f'get_{axis}ticks')()
+            if scale == 'log':
                 ticks, ticklabels = logticks(ticks, lim)
                 setattr(self, ticklabels_attr, ticklabels)
             setattr(self, ticks_attr, ticks)
@@ -403,21 +403,21 @@ class PlotAxes2D():
 
     def _set_ticks(self, axis):
         ax = self.ax
-        attr = f"{axis}ticks"
+        attr = f'{axis}ticks'
         ticks = getattr(self, attr)
-        getattr(ax, f"set_{attr}")(ticks)
-        ticksminor = getattr(self, f"{attr}minor")
+        getattr(ax, f'set_{attr}')(ticks)
+        ticksminor = getattr(self, f'{attr}minor')
         if ticksminor is not None:
             if isinstance(ticksminor, int):
                 ticksminor = self._make_ticks(ticks, ticksminor)
-            getattr(ax, f"set_{attr}")(ticksminor, minor=True)
+            getattr(ax, f'set_{attr}')(ticksminor, minor=True)
 
     def _apply_if_not_none(self, axis, attr):
         ax = self.ax
-        method = getattr(ax, f"set_{axis}{attr}")
-        value = getattr(self, f"{axis}{attr}")
+        method = getattr(ax, f'set_{axis}{attr}')
+        value = getattr(self, f'{axis}{attr}')
         if value is not None:
-            if attr == "lim":
+            if attr == 'lim':
                 method(*value)
             else:
                 method(value)
@@ -429,10 +429,10 @@ class PlotAxes2D():
             ax.set_xticks(ax.get_yticks())
             ax.set_yticks(ax.get_xticks())
             ax.set_aspect(1)
-        for axis in ["x", "y"]:
+        for axis in ['x', 'y']:
             self._init_ticks(axis)
             self._set_ticks(axis)
-            for attr in ["ticklabels", "label", "lim"]:
+            for attr in ['ticklabels', 'label', 'lim']:
                 self._apply_if_not_none(axis, attr)
         if self.grid is not None:
             ax.grid(**({} if self.grid is True else self.grid))
@@ -1202,12 +1202,12 @@ class PlotAstroData(AstroFrame):
 
 def _get_ylabel_profile(_kw: dict, Tb: bool, flux: bool, bunit: str
                         ) -> str:
-    if "ylabel" in _kw:
-        return _kw["ylabel"]
+    if 'ylabel' in _kw:
+        return _kw['ylabel']
     if Tb:
-        return r"$T_b$ (K)"
+        return r'$T_b$ (K)'
     if flux:
-        return "Flux (Jy)"
+        return 'Flux (Jy)'
     return bunit
 
 
@@ -1217,7 +1217,7 @@ def _prep_plotprofile(width: int, coords: list | str,
                       _kw: dict) -> tuple:
     if isinstance(coords, str):
         coords = [coords]
-    Tb = _kw.get("Tb", False)
+    Tb = _kw.get('Tb', False)
     f = kwargs2instance(AstroFrame, _kw)
     d = kwargs2instance(AstroData, _kw)
     f.read(d)
@@ -1228,7 +1228,7 @@ def _prep_plotprofile(width: int, coords: list | str,
     ylabel = _get_ylabel_profile(_kw, Tb, flux, d.bunit)
     if isinstance(ylabel, str):
         ylabel = [ylabel] * len(prof)
-    _kw.setdefault("xlim", [v.min(), v.max()])
+    _kw.setdefault('xlim', [v.min(), v.max()])
     pa2 = kwargs2instance(PlotAxes2D, _kw)
     return v, prof, gfitres, pa2, ylabel
 
@@ -1240,7 +1240,7 @@ def _set_figax_plotprofile(fig, ax, nrows: int, ncols: int,
     if fig is None:
         fig = plt.figure(figsize=(6 * ncols, 3 * nrows))
     if nprof > 1 and ax is not None:
-        print("External ax is supported only when len(coords)=1.")
+        print('External ax is supported only when len(coords)=1.')
         ax = None
     ax = np.empty(nprof, dtype=object) if ax is None else [ax]
     for i in range(nprof):
@@ -1287,8 +1287,8 @@ def plotprofile(coords: list[str] | str = [],
     Returns:
         tuple: (fig, ax), where ax is a list, if getfigax=True. Otherwise, no return.
     """
-    _kw = {"drawstyle": "steps-mid", "color": "k",
-           "xlabel": r"Velocity (km s$^{-1}$)", "samexy": False}
+    _kw = {'drawstyle': 'steps-mid', 'color': 'k',
+           'xlabel': r'Velocity (km s$^{-1}$)', 'samexy': False}
     _kw.update(kwargs)
     _kwgauss = {'drawstyle': 'default', 'color': 'g'}
     _kwgauss.update(gauss_kwargs)
@@ -1296,20 +1296,20 @@ def plotprofile(coords: list[str] | str = [],
         = _prep_plotprofile(width, coords, xlist, ylist, ellipse,
                             ninterp, flux, gaussfit, _kw)
     nprof = len(prof)
-    set_rcparams(20, "w")
+    set_rcparams(20, 'w')
     fig, ax = _set_figax_plotprofile(fig, ax, nrows, ncols, nprof)
     for i in range(nprof):
         if gaussfit:
-            ax[i].plot(v, gaussian1d(v, *gfitres["best"][i]), **_kwgauss)
+            ax[i].plot(v, gaussian1d(v, *gfitres['best'][i]), **_kwgauss)
         ax[i].plot(v, prof[i], **_kw)
-        ax[i].hlines([0], v.min(), v.max(), linestyle="dashed", color="k")
+        ax[i].hlines([0], v.min(), v.max(), linestyle='dashed', color='k')
         ax[i].set_ylabel(ylabel[i])
         pa2.set_xyaxes(ax[i])
         if text is not None:
             ax[i].text(**text[i])
         if title is not None:
             if isinstance(title[i], str):
-                title[i] = {"label": title[i]}
+                title[i] = {'label': title[i]}
             ax[i].set_title(**title[i])
         if i <= nprof - ncols - 1:
             plt.setp(ax[i].get_xticklabels(), visible=False)

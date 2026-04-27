@@ -241,23 +241,23 @@ class FitsData:
         h = self.header
         cxy = (0, 0)
         if center is not None and not self.wcsrot:
-            coordorg = xy2coord([h["CRVAL1"], h["CRVAL2"]])
-            if (radesys := h.get("RADESYS")) is not None:
-                coordorg = f"{radesys}  {coordorg}"
+            coordorg = xy2coord([h['CRVAL1'], h['CRVAL2']])
+            if (radesys := h.get('RADESYS')) is not None:
+                coordorg = f'{radesys}  {coordorg}'
             cxy = coord2xy(center, coordorg)
-        slabel = ["x", "y"]
+        slabel = ['x', 'y']
 
         def wrapper(i: int):
             def gen_s(s_in: np.ndarray | None) -> None:
-                if h.get(f"NAXIS{i+1}") is None or s_in is None:
+                if h.get(f'NAXIS{i+1}') is None or s_in is None:
                     s, ds = None, None
                 else:
                     s = (s_in - cxy[i]) * dist
-                    if isdeg(h[f"CUNIT{i+1}"]):
+                    if isdeg(h[f'CUNIT{i+1}']):
                         s *= 3600.
                     ds = None if len(s) == 0 else s[1] - s[0]
-                setattr(self, f"{slabel[i]}", s)
-                setattr(self, f"d{slabel[i]}", ds)
+                setattr(self, f'{slabel[i]}', s)
+                setattr(self, f'd{slabel[i]}', ds)
             return gen_s
 
         return wrapper(0), wrapper(1)
@@ -266,29 +266,29 @@ class FitsData:
         h = self.header
 
         def gen_v(v_in: np.ndarray) -> None:
-            vaxis = "2" if pv else "3"
-            if h.get(f"NAXIS{vaxis}") is None or v_in is None:
+            vaxis = '2' if pv else '3'
+            if h.get(f'NAXIS{vaxis}') is None or v_in is None:
                 self.v, self.dv = None, None
                 return
 
             if restfreq is None:
                 freq = np.mean(v_in)
-                print("restfreq is assumed to be the center.")
+                print('restfreq is assumed to be the center.')
             else:
                 freq = restfreq
-            v = v_in + h[f"CRVAL{vaxis}"]
+            v = v_in + h[f'CRVAL{vaxis}']
             key = f'CUNIT{vaxis}'
             cunitv = h[key].strip()
             match cunitv:
-                case "Hz" | "HZ":
+                case 'Hz' | 'HZ':
                     if freq == 0:
-                        print("v is read as is, because restfreq=0.")
+                        print('v is read as is, because restfreq=0.')
                     else:
                         v = (1 - v / freq) * cu.c_kms - vsys
-                case "m/s" | "M/S":
+                case 'm/s' | 'M/S':
                     print(f'{key}={cunitv} found.')
                     v = v * 1e-3 - vsys
-                case 'km/s' | "KM/S":
+                case 'km/s' | 'KM/S':
                     print(f'{key}={cunitv} found.')
                     v = v - vsys
                 case _:
@@ -301,11 +301,11 @@ class FitsData:
 
     def _get_array(self, i: int) -> np.ndarray:
         h = self.header
-        n = h.get(f"NAXIS{i:d}")
+        n = h.get(f'NAXIS{i:d}')
         if n is None:
             return None
 
-        s = (np.arange(n) - h[f"CRPIX{i:d}"] + 1) * h[f"CDELT{i:d}"]
+        s = (np.arange(n) - h[f'CRPIX{i:d}'] + 1) * h[f'CDELT{i:d}']
         return s
 
     def gen_grid(self, center: str | None = None, dist: float = 1.,
@@ -343,7 +343,7 @@ class FitsData:
         Returns:
             tuple: (x, y, v).
         """
-        if not np.all([hasattr(self, s) for s in ["x", "y", "v"]]):
+        if not np.all([hasattr(self, s) for s in ['x', 'y', 'v']]):
             self.gen_grid(**kwargs)
         return self.x, self.y, self.v
 

@@ -86,7 +86,7 @@ def trim(data: np.ndarray | None = None, x: np.ndarray | None = None,
     d = np.squeeze(data)
 
     if d.ndim == 0:
-        print("data has only one pixel.")
+        print('data has only one pixel.')
         return data, [xout, yout, vout]
 
     if d.ndim == 2:
