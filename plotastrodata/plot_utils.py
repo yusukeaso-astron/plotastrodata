@@ -8,6 +8,7 @@ from typing import TypeVar
 from plotastrodata.analysis_utils import AstroData, AstroFrame
 from plotastrodata.coord_utils import (coord2xy, xy2coord,
                                        get_hmdm, get_min, get_sec)
+from plotastrodata.fitting_utils import gaussian1d
 from plotastrodata.noise_utils import estimate_rms
 from plotastrodata.other_utils import (close_figure, listing,
                                        reform_grid, reform_data)
@@ -1199,6 +1200,15 @@ class PlotAstroData(AstroFrame):
         return fig, self.ax[0]
 
 
+def _get_ylabel_for_profile(_kw: dict, Tb: bool, flux: bool, bunit: str):
+    if "ylabel" in _kw:
+        return _kw["ylabel"]
+    if Tb:
+        return r"$T_b$ (K)"
+    if flux:
+        return "Flux (Jy)"
+    return bunit
+
 def plotprofile(coords: list[str] | str = [],
                 xlist: list[float] = [], ylist: list[float] = [],
                 ellipse: list[float, float, float] | None = None,
@@ -1243,8 +1253,9 @@ def plotprofile(coords: list[str] | str = [],
     _kw.update(kwargs)
     _kwgauss = {'drawstyle': 'default', 'color': 'g'}
     _kwgauss.update(gauss_kwargs)
-    if type(coords) is str:
+    if isinstance(coords, str):
         coords = [coords]
+    Tb = _kw.get("Tb", False)
     f = kwargs2instance(AstroFrame, _kw)
     d = kwargs2instance(AstroData, _kw)
     f.read(d)
@@ -1253,49 +1264,37 @@ def plotprofile(coords: list[str] | str = [],
                                  ellipse=ellipse, ninterp=ninterp,
                                  flux=flux, gaussfit=gaussfit)
     nprof = len(prof)
-    if 'ylabel' in _kw:
-        ylabel = _kw['ylabel']
-    elif d.Tb:
-        ylabel = r'$T_b$ (K)'
-    elif flux:
-        ylabel = 'Flux (Jy)'
-    else:
-        ylabel = d.bunit
-    if type(ylabel) is str:
+    ylabel = _get_ylabel_for_profile(_kw, Tb, flux, d.bunit)
+    if isinstance(ylabel, str):
         ylabel = [ylabel] * nprof
 
-    def gauss(x, p, c, w):
-        return p * np.exp(-4. * np.log(2.) * ((x - c) / w)**2)
-
-    set_rcparams(20, 'w')
+    set_rcparams(20, "w")
     if ncols == 1:
         nrows = nprof
     if fig is None:
         fig = plt.figure(figsize=(6 * ncols, 3 * nrows))
     if nprof > 1 and ax is not None:
-        print('External ax is supported only when len(coords)=1.')
+        print("External ax is supported only when len(coords)=1.")
         ax = None
-    ax = np.empty(nprof, dtype='object') if ax is None else [ax]
-    if 'xlabel' not in _kw:
-        _kw['xlabel'] = 'Velocity (km s$^{-1}$)'
-    if 'xlim' not in _kw:
-        _kw['xlim'] = [v.min(), v.max()]
-    _kw['samexy'] = False
+    ax = np.empty(nprof, dtype=object) if ax is None else [ax]
+    _kw.setdefault("xlabel", "Velocity (km s$^{-1}$)")
+    _kw.setdefault("xlim", [v.min(), v.max()])
+    _kw["samexy"] = False
     pa2 = kwargs2instance(PlotAxes2D, _kw)
     for i in range(nprof):
         sharex = None if i < nrows - 1 else ax[i - 1]
         ax[i] = fig.add_subplot(nrows, ncols, i + 1, sharex=sharex)
         if gaussfit:
-            ax[i].plot(v, gauss(v, *gfitres['best'][i]), **_kwgauss)
+            ax[i].plot(v, gaussian1d(v, *gfitres["best"][i]), **_kwgauss)
         ax[i].plot(v, prof[i], **_kw)
-        ax[i].hlines([0], v.min(), v.max(), linestyle='dashed', color='k')
+        ax[i].hlines([0], v.min(), v.max(), linestyle="dashed", color="k")
         ax[i].set_ylabel(ylabel[i])
         pa2.set_xyaxes(ax[i])
         if text is not None:
             ax[i].text(**text[i])
         if title is not None:
-            if type(title[i]) is str:
-                title[i] = {'label': title[i]}
+            if isinstance(title[i], str):
+                title[i] = {"label": title[i]}
             ax[i].set_title(**title[i])
         if i <= nprof - ncols - 1:
             plt.setp(ax[i].get_xticklabels(), visible=False)
