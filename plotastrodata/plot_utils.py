@@ -1200,7 +1200,8 @@ class PlotAstroData(AstroFrame):
         return fig, self.ax[0]
 
 
-def _get_ylabel_for_profile(_kw: dict, Tb: bool, flux: bool, bunit: str):
+def _get_ylabel_for_profile(_kw: dict, Tb: bool, flux: bool, bunit: str
+                            ) -> str:
     if "ylabel" in _kw:
         return _kw["ylabel"]
     if Tb:
@@ -1213,7 +1214,7 @@ def _get_ylabel_for_profile(_kw: dict, Tb: bool, flux: bool, bunit: str):
 def _prep_plotprofile(width: int, coords: list | str,
                       xlist: list, ylist: list, ellipse: list,
                       ninterp: int, flux: bool, gaussfit: bool,
-                      _kw: dict):
+                      _kw: dict) -> tuple:
     if isinstance(coords, str):
         coords = [coords]
     Tb = _kw.get("Tb", False)
@@ -1230,6 +1231,22 @@ def _prep_plotprofile(width: int, coords: list | str,
     _kw.setdefault("xlim", [v.min(), v.max()])
     pa2 = kwargs2instance(PlotAxes2D, _kw)
     return v, prof, gfitres, pa2, ylabel
+
+
+def _set_figax_plotprofile(fig, ax, nrows: int, ncols: int, nprof: int
+                        ) -> tuple:
+    if ncols == 1:
+        nrows = nprof
+    if fig is None:
+        fig = plt.figure(figsize=(6 * ncols, 3 * nrows))
+    if nprof > 1 and ax is not None:
+        print("External ax is supported only when len(coords)=1.")
+        ax = None
+    ax = np.empty(nprof, dtype=object) if ax is None else [ax]
+    for i in range(nprof):
+            sharex = None if i < nrows - 1 else ax[i - 1]
+            ax[i] = fig.add_subplot(nrows, ncols, i + 1, sharex=sharex)
+    return fig, ax
 
 
 def plotprofile(coords: list[str] | str = [],
@@ -1282,17 +1299,8 @@ def plotprofile(coords: list[str] | str = [],
                             ninterp, flux, gaussfit, _kw)
     nprof = len(prof)
     set_rcparams(20, "w")
-    if ncols == 1:
-        nrows = nprof
-    if fig is None:
-        fig = plt.figure(figsize=(6 * ncols, 3 * nrows))
-    if nprof > 1 and ax is not None:
-        print("External ax is supported only when len(coords)=1.")
-        ax = None
-    ax = np.empty(nprof, dtype=object) if ax is None else [ax]
+    fig, ax = _set_figax_plotprofile(fig, ax, nrows, ncols, nprof)
     for i in range(nprof):
-        sharex = None if i < nrows - 1 else ax[i - 1]
-        ax[i] = fig.add_subplot(nrows, ncols, i + 1, sharex=sharex)
         if gaussfit:
             ax[i].plot(v, gaussian1d(v, *gfitres["best"][i]), **_kwgauss)
         ax[i].plot(v, prof[i], **_kw)
