@@ -1200,7 +1200,7 @@ class PlotAstroData(AstroFrame):
         return fig, self.ax[0]
 
 
-def _get_ylabel_for_profile(_kw: dict, Tb: bool, flux: bool, bunit: str
+def _get_ylabel_profile(_kw: dict, Tb: bool, flux: bool, bunit: str
                             ) -> str:
     if "ylabel" in _kw:
         return _kw["ylabel"]
@@ -1225,7 +1225,7 @@ def _prep_plotprofile(width: int, coords: list | str,
     v, prof, gfitres = d.profile(coords=coords, xlist=xlist, ylist=ylist,
                                  ellipse=ellipse, ninterp=ninterp,
                                  flux=flux, gaussfit=gaussfit)
-    ylabel = _get_ylabel_for_profile(_kw, Tb, flux, d.bunit)
+    ylabel = _get_ylabel_profile(_kw, Tb, flux, d.bunit)
     if isinstance(ylabel, str):
         ylabel = [ylabel] * len(prof)
     _kw.setdefault("xlim", [v.min(), v.max()])
