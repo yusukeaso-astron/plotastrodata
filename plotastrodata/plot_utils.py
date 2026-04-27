@@ -1201,7 +1201,7 @@ class PlotAstroData(AstroFrame):
 
 
 def _get_ylabel_profile(_kw: dict, Tb: bool, flux: bool, bunit: str
-                            ) -> str:
+                        ) -> str:
     if "ylabel" in _kw:
         return _kw["ylabel"]
     if Tb:
@@ -1400,11 +1400,11 @@ def _plot_on_wall(d: AstroData, x: np.ndarray, y: np.ndarray, v: np.ndarray,
             shape = np.shape(d.data[0, :, :])
     if np.shape(kwargs['data']) != shape:
         print('The shape of the 2D data is inconsistent'
-                + ' with the shape of the 3D data.')
+              + ' with the shape of the 3D data.')
         return
 
     _kw = {'levels': [3, 6, 12, 24, 48, 96, 192, 384],
-            'sigma': 'hist', 'cmap': 'Jet', 'alpha': 0.3}
+           'sigma': 'hist', 'cmap': 'Jet', 'alpha': 0.3}
     _kw.update(kwargs)
     volume = _kw['data']
     levels = _kw['levels']
@@ -1436,11 +1436,11 @@ def _plot_on_wall(d: AstroData, x: np.ndarray, y: np.ndarray, v: np.ndarray,
                 Zg = Zg * 0 + (v[-1] if sign == 1 else v[0])
         i, j, k = simplices.T
         mesh2d = dict(type='mesh3d', x=Xg, y=Yg, z=Zg,
-                        i=i, j=j, k=k,
-                        intensity=Zg * 0 + lev,
-                        colorscale=cmap, reversescale=False,
-                        cmin=np.min(levels), cmax=np.max(levels),
-                        opacity=alpha, name='', showscale=False)
+                      i=i, j=j, k=k,
+                      intensity=Zg * 0 + lev,
+                      colorscale=cmap, reversescale=False,
+                      cmin=np.min(levels), cmax=np.max(levels),
+                      opacity=alpha, name='', showscale=False)
         data.append(mesh2d)
 
 
