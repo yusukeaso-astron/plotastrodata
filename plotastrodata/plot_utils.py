@@ -203,7 +203,7 @@ class Stretcher():
     sigma: float = 0
 
     def __post_init__(self):
-        self.n = 1 if type(self.stretch) is str else len(self.stretch)
+        self.n = 1 if isinstance(self.stretch, str) else len(self.stretch)
         stretch = self.stretch
         stsc = self.stretchscale
         vmin = self.vmin
@@ -532,7 +532,7 @@ class PlotAstroData(AstroFrame):
                               ymin=self.ymin, ymax=self.ymax,
                               figsize=figsize,
                               ncols=ncols, nrows=nrows, nchan=nchan)
-        need_vlabel = nchan > 1 or type(channelnumber) is int
+        need_vlabel = nchan > 1 or isinstance(channelnumber, int)
         for ch in range(nchan):
             n, i, j = ch2nij(ch)
             if internalfig and n not in plt.get_fignums():
@@ -615,7 +615,7 @@ class PlotAstroData(AstroFrame):
         z = listing(*self.pos2xy(poslist), minlist, majlist, palist)
         for x, y, width, height, angle in zip(*z):
             for ch, axnow in enumerate(self.ax):
-                if type(self.channelnumber) is int:
+                if isinstance(self.channelnumber, int):
                     ch = self.channelnumber
                 if ch not in include_chan:
                     continue
@@ -648,7 +648,7 @@ class PlotAstroData(AstroFrame):
         patch = 'rectangle' if self.pv else 'ellipse'
         blist = [beam] if np.ndim(beam) == 1 else beam
         n = len(blist)
-        bclist = beamcolor if type(beamcolor) is list else [beamcolor] * n
+        bclist = beamcolor if isinstance(beamcolor, list) else [beamcolor] * n
         islist = beampos == [None] * 3 or np.ndim(beampos) == 2
         bplist = beampos if islist else [beampos] * n
         for (bmaj, bmin, bpa), bc, bp in zip(blist, bclist, bplist):
@@ -682,7 +682,7 @@ class PlotAstroData(AstroFrame):
         if include_chan is None:
             include_chan = self.allchan
         for ch, axnow in enumerate(self.ax):
-            if type(self.channelnumber) is int:
+            if isinstance(self.channelnumber, int):
                 ch = self.channelnumber
             if ch not in include_chan:
                 continue
@@ -710,7 +710,7 @@ class PlotAstroData(AstroFrame):
         if include_chan is None:
             include_chan = self.allchan
         for ch, axnow in enumerate(self.ax):
-            if type(self.channelnumber) is int:
+            if isinstance(self.channelnumber, int):
                 ch = self.channelnumber
             if ch not in include_chan:
                 continue
@@ -736,7 +736,7 @@ class PlotAstroData(AstroFrame):
         if include_chan is None:
             include_chan = self.allchan
         for ch, axnow in enumerate(self.ax):
-            if type(self.channelnumber) is int:
+            if isinstance(self.channelnumber, int):
                 ch = self.channelnumber
             if ch not in include_chan:
                 continue
@@ -764,7 +764,7 @@ class PlotAstroData(AstroFrame):
         if include_chan is None:
             include_chan = self.allchan
         for ch, axnow in enumerate(self.ax):
-            if type(self.channelnumber) is int:
+            if isinstance(self.channelnumber, int):
                 ch = self.channelnumber
             if ch not in include_chan:
                 continue
@@ -878,7 +878,7 @@ class PlotAstroData(AstroFrame):
         _kw['vmin'] = cmin
         _kw['vmax'] = cmax
         c = self.vskipfill(c, v)
-        if type(self.channelnumber) is int:
+        if isinstance(self.channelnumber, int):
             c = [c[self.channelnumber]]
         p = [None] * len(self.ax)
         for ch, (axnow, cnow) in enumerate(zip(self.ax, c)):
@@ -905,7 +905,7 @@ class PlotAstroData(AstroFrame):
             return
 
         c = self.vskipfill(c, v)
-        if type(self.channelnumber) is int:
+        if isinstance(self.channelnumber, int):
             c = [c[self.channelnumber]]
         for axnow, cnow in zip(self.ax, c):
             axnow.contour(x, y, cnow, np.sort(levels) * sigma, **_kw)
@@ -963,7 +963,7 @@ class PlotAstroData(AstroFrame):
         V = ampfactor * amp * np.cos(np.radians(ang + rotation))
         U = self.vskipfill(U, v)
         V = self.vskipfill(V, v)
-        if type(self.channelnumber) is int:
+        if isinstance(self.channelnumber, int):
             U = [U[self.channelnumber]]
             V = [V[self.channelnumber]]
         _kw['scale'] = 1. / np.abs(x[1] - x[0])
@@ -1027,13 +1027,13 @@ class PlotAstroData(AstroFrame):
         if title is not None:
             if len(self.ax) > 1:
                 t = {'y': 0.9}
-                t_in = {'t': title} if type(title) is str else title
+                t_in = {'t': title} if isinstance(title, str) else title
                 t.update(t_in)
                 for i in range(self.npages):
                     fig = plt.figure(i)
                     fig.suptitle(**t)
             else:
-                t = {'label': title} if type(title) is str else title
+                t = {'label': title} if isinstance(title, str) else title
                 axnow.set_title(**t)
 
     def set_axis(self, title: dict | str | None = None, **kwargs) -> None:
@@ -1173,7 +1173,7 @@ class PlotAstroData(AstroFrame):
         for axnow in self.ax:
             axnow.set_xlim(*self.Xlim)
             axnow.set_ylim(*self.Ylim)
-        if type(filename) is str:
+        if isinstance(filename, str):
             ext = filename.split('.')[-1]
             for i in range(self.npages):
                 ver = '' if self.npages == 1 else f'_{i:d}'

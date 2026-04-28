@@ -18,7 +18,7 @@ def _updateframe(frame: str) -> str:
         a = FK5(equinox='J2000')
     elif 'B1950' in frame or 'FK4' in frame:
         a = FK4(equinox='B1950')
-    elif type(frame) is str:
+    elif isinstance(frame, str):
         print(f'Unknown frame ({frame}) was found. Use ICRS instead.')
         a = 'icrs'
     else:
@@ -26,7 +26,7 @@ def _updateframe(frame: str) -> str:
     return a
 
 
-def _getframe(coord: str) -> tuple:
+def _getframe(coord: str | list) -> tuple:
     """Internal function to pick up the frame name from the coordinates. When coord is a list, frame and framename are picked up from the first element.
 
     Args:
@@ -43,7 +43,7 @@ def _getframe(coord: str) -> tuple:
         framename = c[0] if hasframe else None
         return hmsdms, frame, framename
 
-    if type(coord) is str:
+    if isinstance(coord, str):
         return getframe_single(coord)
     else:
         outlist = [getframe_single(c) for c in coord]
@@ -108,7 +108,7 @@ def xy2coord(xy: list, coordorg: str = '00h00m00s 00d00m00s',
         coords = coords.transform_to(frame=frame)
     coords = coords.to_string('hmsdms')
     if framename is not None:
-        if type(coords) is str:
+        if isinstance(coords, str):
             coords = f'{framename} {coords}'
         else:
             coords = np.array([f'{framename} {s}' for s in coords])

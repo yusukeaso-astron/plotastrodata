@@ -290,9 +290,9 @@ class EmceeCorner():
             log (list, optional): Whether to search in the logarithmic space. The percentile is counted in the linear space regardless of this option. Defaults to False.
             pcut (float, optional): Posterior is reset to be zero if it is below this cut off.
         """
-        if type(ngrid) is int:
+        if isinstance(ngrid, int):
             ngrid = [ngrid] * self.dim
-        if type(log) is bool:
+        if isinstance(log, bool):
             log = [log] * self.dim
         pargrid = []
         inzip = [self.bounds[:, 0], self.bounds[:, 1], ngrid, log]

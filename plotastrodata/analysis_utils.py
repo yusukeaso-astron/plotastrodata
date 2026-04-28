@@ -117,7 +117,7 @@ class AstroData():
     def __post_init__(self):
         n = 0
         if self.fitsimage is not None:
-            if type(self.fitsimage) is not list:
+            if not isinstance(self.fitsimage, list):
                 n = 1
             elif any(a is not None for a in self.fitsimage):
                 n = len(self.fitsimage)
@@ -126,7 +126,7 @@ class AstroData():
             if n > 0:
                 self.data = None
         if self.data is not None:
-            if type(self.data) is not list:
+            if not isinstance(self.data, list):
                 n = 1
             elif any(a is not None for a in self.data):
                 n = len(self.data)
@@ -675,12 +675,12 @@ class AstroFrame():
          Returns:
             np.ndarray: absolute coordinates.
          """
-        onexy = np.shape(poslist) == (2,) and type(poslist[0]) is not str
+        onexy = np.shape(poslist) == (2,) and not isinstance(poslist[0], str)
         if np.shape(poslist) == () or onexy:
             poslist = [poslist]
         x, y = [None] * len(poslist), [None] * len(poslist)
         for i, p in enumerate(poslist):
-            if type(p) is str:
+            if isinstance(p, str):
                 x[i], y[i] = coord2xy(p, self.center) * 3600.
             else:
                 x[i], y[i] = rel2abs(*p, self.Xlim, self.Ylim)

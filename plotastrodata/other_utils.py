@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import numbers
 import numpy as np
 import warnings
 from scipy.interpolate import RegularGridInterpolator as RGI
@@ -10,10 +11,9 @@ def listing(*args) -> list:
     Returns:
         list: With a single non-list input, the output is a list like ['a'], rather than [['a']].
     """
-    strnum = [str, float, int, np.float64, np.int64, np.float32, np.int32]
     b = [None] * len(args)
     for i, a in enumerate(args):
-        b[i] = [a] if type(a) in strnum else a
+        b[i] = [a] if isinstance(a, (str, numbers.Number)) else a
     if len(args) == 1:
         b = b[0]
     return b
@@ -28,7 +28,7 @@ def isdeg(s: str) -> bool:
     Returns:
         bool: Whether the given string means degree.
     """
-    if type(s) is str:
+    if isinstance(s, str):
         return s.strip() in ['deg', 'DEG', 'degree', 'DEGREE']
     else:
         return False

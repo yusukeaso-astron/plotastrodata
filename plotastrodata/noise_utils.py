@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import numbers
 import numpy as np
 import warnings
 from scipy.special import erf
@@ -12,7 +13,7 @@ def normalize(range: tuple = (-3.5, 3.5), bins: int = 100):
     def decorator(f):
         h = np.linspace(*range, bins + 1)
         h = (h[1:] + h[:-1]) / 2
-        dh = (range[1] - range[0]) / 100
+        dh = h[1] - h[0]
 
         def wrapper(x, *args):
             area = np.sum(f(h, *args)) * dh
@@ -73,7 +74,7 @@ def select_noise(data: np.ndarray, sigma: str) -> np.ndarray:
     Returns:
         np.ndarray: 1D array that includes only the selected pixels.
     """
-    n = data * 1
+    n = np.array(data) * 1
     if 'edge' in sigma:
         if np.ndim(n) <= 2:
             print('\'edge\' is ignored because ndim <= 2.')
@@ -194,8 +195,7 @@ def estimate_rms(data: np.ndarray,
     Returns:
         float: The estimated standard deviation of noise.
     """
-    nums = [float, int, np.float64, np.int64, np.float32, np.int32]
-    if sigma is None or type(sigma) in nums:
+    if sigma is None or isinstance(sigma, numbers.Number):
         return sigma
 
     if np.ndim(np.squeeze(data)) == 0:
