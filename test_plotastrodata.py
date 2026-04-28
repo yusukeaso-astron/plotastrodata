@@ -29,20 +29,18 @@ with open('example_temp.py', 'w') as f:
 subprocess.run(shlex.split('python example_temp.py'))
 os.remove('example_temp.py')
 
-for file in glob.glob("./example_data/output/*.png"):
+for file in glob.glob('./example_data/output/*.png'):
     os.remove(file)
 source_dir = Path('./')
 dest_dir = Path('./example_data/output/')
-for pattern in ('*.png', '*.html'):
+for pattern in ('*.png', '*.html', '*.mp4'):
     for file in source_dir.glob(pattern):
         file.rename(dest_dir / file.name)
-for file in glob.glob("*.mp4") + glob.glob("*.html"):
-    os.remove(file)
 
 
 def images_are_close(img_path1, img_path2, tolerance=0):
-    img1 = Image.open(img_path1).convert("RGB")
-    img2 = Image.open(img_path2).convert("RGB")
+    img1 = Image.open(img_path1).convert('RGB')
+    img2 = Image.open(img_path2).convert('RGB')
     arr1 = np.array(img1, dtype=int)
     arr2 = np.array(img2, dtype=int)
 
@@ -58,7 +56,7 @@ def images_are_close(img_path1, img_path2, tolerance=0):
 
 reslist = []
 difflist = []
-pnglist = glob.glob("./example_data/output_expected/*.png")
+pnglist = glob.glob('./example_data/output_expected/*.png')
 for file in pnglist:
     expected = file
     output = file.replace('/output_expected/', '/output/')
