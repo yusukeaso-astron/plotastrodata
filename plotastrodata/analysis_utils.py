@@ -35,7 +35,7 @@ def quadrantmean(data: np.ndarray, x: np.ndarray, y: np.ndarray,
 
     if quadrants not in ['13', '24']:
         print("quadrants must be '13' or '24'.")
-        return 
+        return
 
     dx = x[1] - x[0]
     dy = y[1] - y[0]
@@ -142,29 +142,29 @@ class AstroData():
         self.fitsheader = None
 
     def _binning_one(self, i: int, t: str, width: float):
-        oldgrid = getattr(self, t)
-        if width == 1 or oldgrid is None:
+        grid = getattr(self, t)
+        if width == 1 or grid is None:
             return
 
         dt = f'd{t}'
-        oldsep = getattr(self, dt)
-        if oldsep is None:
+        sep = getattr(self, dt)
+        if sep is None:
             s = f'Skip binning in the {t}-axis because {dt} is None.'
             warnings.warn(s, UserWarning)
             return
 
-        newsize = self.size[i] // width
-        self.size[i] = newsize
-        olddata = np.moveaxis(self.data, i, 0)
-        newdata = np.moveaxis(np.zeros(self.size), i, 0)
-        newgrid = np.zeros(newsize)
+        sizenew = self.size[i] // width
+        self.size[i] = sizenew
+        data = np.moveaxis(self.data, i, 0)
+        datanew = np.moveaxis(np.zeros(self.size), i, 0)
+        gridnew = np.zeros(sizenew)
         for start in range(width):
-            stop = start + newsize * width
-            newdata += olddata[start:stop:width]
-            newgrid += oldgrid[start:stop:width]
-        self.data = np.moveaxis(newdata, 0, i) / width
-        setattr(self, t, newgrid / width)
-        setattr(self, dt, oldsep * width)
+            stop = start + sizenew * width
+            datanew += data[start:stop:width]
+            gridnew += grid[start:stop:width]
+        self.data = np.moveaxis(datanew, 0, i) / width
+        setattr(self, t, gridnew / width)
+        setattr(self, dt, sep * width)
 
     def binning(self, width: list[int] = [1, 1, 1]):
         """Binning up neighboring pixels in the v, y, and x domain.
