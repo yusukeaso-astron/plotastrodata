@@ -143,12 +143,11 @@ class AstroData():
 
     def _binning_one(self, n: int, width: np.ndarray,
                      data: np.ndarray,
-                     grid: list, dgrid: list,
                      size: np.ndarray, newsize: np.ndarray):
-        if width[n] == 1 or grid[n] is None:
+        if width[n] == 1 or self.grid[n] is None:
             return data
 
-        if dgrid[n] is None:
+        if self.dgrid[n] is None:
             t = ['v', 'y', 'x'][n - 1]
             s = f'Skip binning in the {t}-axis' \
                 + f' because d{t} is None.'
@@ -162,10 +161,10 @@ class AstroData():
         for i in range(width[n]):
             i_stop = i + newsize[n] * width[n]
             i_step = width[n]
-            t += grid[n][i:i_stop:i_step]
+            t += self.grid[n][i:i_stop:i_step]
             newdata += olddata[i:i_stop:i_step]
-        grid[n] = t / width[n]
-        dgrid[n] = dgrid[n] * width[n]
+        self.grid[n] = t / width[n]
+        self.dgrid[n] = self.dgrid[n] * width[n]
         newdata = np.moveaxis(newdata, 0, n) / width[n]
         return newdata
 
@@ -194,13 +193,13 @@ class AstroData():
             self.sigma = self.sigma / np.sqrt(width_v)
         if (not self.pv and w[2] > 1) or w[3] > 1:
             print('Binning in the x- or y-axis does not update sigma.')
-        grid = [None, self.v, self.y, self.x]
-        dgrid = [None, self.dv, self.dy, self.dx]
+        self.grid = [None, self.v, self.y, self.x]
+        self.dgrid = [None, self.dv, self.dy, self.dx]
         for n in range(1, 4):
-            d = self._binning_one(n, w, d, grid, dgrid, size, newsize)
+            d = self._binning_one(n, w, d, size, newsize)
         self.data = np.squeeze(d)
-        _, self.v, self.y, self.x = grid
-        _, self.dv, self.dy, self.dx = dgrid
+        _, self.v, self.y, self.x = self.grid
+        _, self.dv, self.dy, self.dx = self.dgrid
         if self.pv:
             self.v = self.y
             self.dv = self.dy
