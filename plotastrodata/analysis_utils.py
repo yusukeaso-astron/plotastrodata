@@ -33,18 +33,19 @@ def quadrantmean(data: np.ndarray, x: np.ndarray, y: np.ndarray,
         print('data must be 2D.')
         return
 
-    dx, dy = x[1] - x[0], y[1] - y[0]
-    nx = int(np.floor(max(np.abs(x[0]), np.abs(x[-1])) / dx))
-    ny = int(np.floor(max(np.abs(y[0]), np.abs(y[-1])) / dy))
-    xnew = np.linspace(-nx * dx, nx * dx, 2 * nx + 1)
-    ynew = np.linspace(-ny * dy, ny * dy, 2 * ny + 1)
-    Xnew, Ynew = np.meshgrid(xnew, ynew)
-    if quadrants in ['13', '24']:
-        s = 1 if quadrants == '13' else -1
-        f = RGI((y, s * x), data, bounds_error=False, fill_value=np.nan)
-        datanew = f((Ynew, Xnew))
-    else:
-        print('quadrants must be \'13\' or \'24\'.')
+    if quadrants not in ['13', '24']:
+        print("quadrants must be '13' or '24'.")
+        return 
+
+    dx = x[1] - x[0]
+    dy = y[1] - y[0]
+    nx = int(np.ceil(np.max(np.abs(x)) / dx))
+    ny = int(np.ceil(np.max(np.abs(y)) / dy))
+    xnew = np.linspace(-nx, nx, 2 * nx + 1) * dx
+    ynew = np.linspace(-ny, ny, 2 * ny + 1) * dy
+    s = 1 if quadrants == '13' else -1
+    f = RGI((y, s * x), data, bounds_error=False, fill_value=np.nan)
+    datanew = f(np.meshgrid(ynew, xnew, indexing='ij'))
     datanew = (datanew + datanew[::-1, ::-1]) / 2.
     return datanew[ny:, nx:], xnew[nx:], ynew[ny:]
 
@@ -70,12 +71,12 @@ def filled2d(data: np.ndarray, x: np.ndarray, y: np.ndarray, n: int = 1,
 
 
 def _need_multipixels(method):
-    def wrapper(self, *args, **kwargs):
-        singlepixel = self.dx is None or self.dy is None
+    def wrapper(cls, *args, **kwargs):
+        singlepixel = cls.dx is None or cls.dy is None
         if singlepixel:
             print('No pixel size.')
             return
-        return method(self, *args, **kwargs)
+        return method(cls, *args, **kwargs)
     return wrapper
 
 
@@ -140,7 +141,35 @@ class AstroData():
         self.beam_org = None
         self.fitsheader = None
 
-    def binning(self, width: list[int, int, int] = [1, 1, 1]):
+    def _binning_one(self, n: int, width: np.ndarray,
+                     data: np.ndarray,
+                     grid: list, dgrid: list,
+                     size: np.ndarray, newsize: np.ndarray):
+        if width[n] == 1 or grid[n] is None:
+            return data
+
+        if dgrid[n] is None:
+            t = ['v', 'y', 'x'][n - 1]
+            s = f'Skip binning in the {t}-axis' \
+                + f' because d{t} is None.'
+            warnings.warn(s, UserWarning)
+            return data
+
+        size[n] = newsize[n]
+        olddata = np.moveaxis(data, n, 0)
+        newdata = np.moveaxis(np.zeros(size), n, 0)
+        t = np.zeros(newsize[n])
+        for i in range(width[n]):
+            i_stop = i + newsize[n] * width[n]
+            i_step = width[n]
+            t += grid[n][i:i_stop:i_step]
+            newdata += olddata[i:i_stop:i_step]
+        grid[n] = t / width[n]
+        dgrid[n] = dgrid[n] * width[n]
+        newdata = np.moveaxis(newdata, 0, n) / width[n]
+        return newdata
+
+    def binning(self, width: list[int] = [1, 1, 1]):
         """Binning up neighboring pixels in the v, y, and x domain.
 
         Args:
@@ -168,26 +197,7 @@ class AstroData():
         grid = [None, self.v, self.y, self.x]
         dgrid = [None, self.dv, self.dy, self.dx]
         for n in range(1, 4):
-            if w[n] == 1 or grid[n] is None:
-                continue
-            if dgrid[n] is None:
-                t = ['v', 'y', 'x'][n - 1]
-                s = f'Skip binning in the {t}-axis' \
-                    + f' because d{t} is None.'
-                warnings.warn(s, UserWarning)
-                continue
-            size[n] = newsize[n]
-            olddata = np.moveaxis(d, n, 0)
-            newdata = np.moveaxis(np.zeros(size), n, 0)
-            t = np.zeros(newsize[n])
-            for i in range(w[n]):
-                i_stop = i + newsize[n] * w[n]
-                i_step = w[n]
-                t += grid[n][i:i_stop:i_step]
-                newdata += olddata[i:i_stop:i_step]
-            grid[n] = t / w[n]
-            dgrid[n] = dgrid[n] * w[n]
-            d = np.moveaxis(newdata, 0, n) / w[n]
+            d = self._binning_one(n, w, d, grid, dgrid, size, newsize)
         self.data = np.squeeze(d)
         _, self.v, self.y, self.x = grid
         _, self.dv, self.dy, self.dx = dgrid
