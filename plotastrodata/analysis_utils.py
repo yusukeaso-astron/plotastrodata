@@ -141,29 +141,30 @@ class AstroData():
         self.beam_org = None
         self.fitsheader = None
 
-    def _binning_one(self, n: int, width: float):
-        if width == 1 or self.grid[n] is None:
+    def _binning_one(self, i: int, t: str, width: float):
+        oldgrid = getattr(self, t)
+        if width == 1 or oldgrid is None:
             return
 
-        if self.dgrid[n] is None:
-            t = ['v', 'y', 'x'][n]
-            s = f'Skip binning in the {t}-axis because d{t} is None.'
+        dt = f'd{t}'
+        oldsep = getattr(self, dt)
+        if oldsep is None:
+            s = f'Skip binning in the {t}-axis because {dt} is None.'
             warnings.warn(s, UserWarning)
             return
 
-        newsize = self.size[n+1] // width
-        self.size[n+1] = newsize
-        olddata = np.moveaxis(self.data, n+1, 0)
-        newdata = np.moveaxis(np.zeros(self.size), n+1, 0)
-        t = np.zeros(newsize)
-        for i in range(width):
-            i_stop = i + newsize * width
-            i_step = width
-            t += self.grid[n][i:i_stop:i_step]
-            newdata += olddata[i:i_stop:i_step]
-        self.grid[n] = t / width
-        self.dgrid[n] = self.dgrid[n] * width
-        self.data = np.moveaxis(newdata, 0, n+1) / width
+        newsize = self.size[i] // width
+        self.size[i] = newsize
+        olddata = np.moveaxis(self.data, i, 0)
+        newdata = np.moveaxis(np.zeros(self.size), i, 0)
+        newgrid = np.zeros(newsize)
+        for start in range(width):
+            stop = start + newsize * width
+            newdata += olddata[start:stop:width]
+            newgrid += oldgrid[start:stop:width]
+        self.data = np.moveaxis(newdata, 0, i) / width
+        setattr(self, t, newgrid / width)
+        setattr(self, dt, oldsep * width)
 
     def binning(self, width: list[int] = [1, 1, 1]):
         """Binning up neighboring pixels in the v, y, and x domain.
@@ -188,16 +189,10 @@ class AstroData():
             self.sigma = self.sigma / np.sqrt(width_v)
         if (not self.pv and w[1] > 1) or w[2] > 1:
             print('Binning in the x- or y-axis does not update sigma.')
-        self.grid = [self.v, self.y, self.x]
-        self.dgrid = [self.dv, self.dy, self.dx]
         self.size = size
-        for n in range(3):
-            self._binning_one(n, w[n])
+        for i, t, ww in zip([1, 2, 3], ['v', 'y', 'x'], w):
+            self._binning_one(i, t, ww)
         self.data = np.squeeze(self.data)
-        self.v, self.y, self.x = self.grid
-        self.dv, self.dy, self.dx = self.dgrid
-        del self.grid
-        del self.dgrid
         del self.size
         if self.pv:
             self.v = self.y
