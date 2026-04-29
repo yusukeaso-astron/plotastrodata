@@ -141,7 +141,7 @@ class AstroData():
         self.beam_org = None
         self.fitsheader = None
 
-    def _binning_one(self, i: int, t: str, width: float):
+    def _binning_one(self, t: str, width: float):
         grid = getattr(self, t)
         if width == 1 or grid is None:
             return
@@ -153,6 +153,7 @@ class AstroData():
             warnings.warn(s, UserWarning)
             return
 
+        i = {'v': 1, 'y': 2, 'x': 3}[t]
         sizenew = self.size[i] // width
         self.size[i] = sizenew
         data = np.moveaxis(self.data, i, 0)
@@ -190,8 +191,8 @@ class AstroData():
         if (not self.pv and w[1] > 1) or w[2] > 1:
             print('Binning in the x- or y-axis does not update sigma.')
         self.size = size
-        for i, t, ww in zip([1, 2, 3], ['v', 'y', 'x'], w):
-            self._binning_one(i, t, ww)
+        for t, ww in zip(['v', 'y', 'x'], w):
+            self._binning_one(t, ww)
         self.data = np.squeeze(self.data)
         del self.size
         if self.pv:
