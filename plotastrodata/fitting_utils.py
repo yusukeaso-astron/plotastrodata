@@ -343,7 +343,7 @@ class EmceeCorner():
         self.evidence = evidence
         self._set_results_posteriorongrid()
 
-    def _i_eq_j(self, fig, ax, i, k):
+    def _i_eq_j(self, fig, ax, i: int, k: int) -> None:
         x = self.pargrid
         y = self.p1d
         s0 = self.pmid[i]
@@ -369,18 +369,18 @@ class EmceeCorner():
         else:
             plt.setp(ax[k].get_xticklabels(), visible=False)
 
-    def _i_neq_j(self, fig, ax, i, j, k, adim, cmap, levels):
+    def _i_neq_j(self, fig, ax, i: int, j: int, k: int) -> None:
         x = self.pargrid
         sharex = ax[self.dim * (i - 1) + j]
         sharey = ax[self.dim * i + (j - 1)] if j > 1 else None
         ax[k] = fig.add_subplot(self.dim, self.dim, k + 1,
                                 sharex=sharex, sharey=sharey)
-        axis = tuple(np.delete(adim[::-1], [i, j]))
+        axis = tuple(np.delete(self.adim_r, [i, j]))
         yy = np.sum(self.p * self.vol, axis=axis) \
             / np.sum(self.vol, axis=axis)
-        ax[k].pcolormesh(x[j], x[i], yy, cmap=cmap)
+        ax[k].pcolormesh(x[j], x[i], yy, cmap=self.cmap)
         ax[k].contour(x[j], x[i], yy, colors='k',
-                      levels=np.array(levels) * np.nanmax(yy))
+                      levels=self.levels * np.nanmax(yy))
         ax[k].plot(self.popt[j], self.popt[i], 'o')
         ax[k].axvline(self.popt[j])
         ax[k].axhline(self.popt[i])
@@ -413,12 +413,15 @@ class EmceeCorner():
             levels: (list, optional): levels for matplotlib.pyplot.plt.contour() relative to the peak. Defaults to [exp(-0.5*3^2), exp(-0.5*2^2), exp(-0.5*1^2)].
         """
         adim = np.arange(self.dim)
+        self.adim_r = adim[::-1]
         if labels is None:
             labels = [f'Par {i:d}' for i in adim]
         if cornerrange is None:
             cornerrange = self.bounds
         self.labels = labels
         self.cornerrange = cornerrange
+        self.cmap = cmap
+        self.levels = np.array(levels)
         fig = plt.figure(figsize=(2 * self.dim * 1.2, 2 * self.dim * 1.2))
         fig.subplots_adjust(hspace=0.05, wspace=0.05, top=0.87, right=0.87)
         ax = np.empty(self.dim * self.dim, dtype='object')
@@ -430,9 +433,11 @@ class EmceeCorner():
                 if i == j:
                     self._i_eq_j(fig, ax, i, k)
                 else:
-                    self._i_neq_j(fig, ax, i, j, k, adim, cmap, levels)
+                    self._i_neq_j(fig, ax, i, j, k)
         del self.labels
         del self.cornerrange
+        del self.cmap
+        del self.levels
         close_figure(fig, savefig, show, tight=False)
 
     def getDNSevidence(self, **kwargs):
