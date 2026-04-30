@@ -74,7 +74,7 @@ def select_noise(data: np.ndarray, sigma: str) -> np.ndarray:
     Returns:
         np.ndarray: 1D array that includes only the selected pixels.
     """
-    n = np.array(data) * 1
+    n = np.array(data).copy()
     if 'edge' in sigma:
         if np.ndim(n) <= 2:
             print('\'edge\' is ignored because ndim <= 2.')

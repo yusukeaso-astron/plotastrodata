@@ -254,16 +254,14 @@ class AstroData():
         nx = len(self.x) if len(self.x) % 2 == 1 else len(self.x) - 1
         ny = len(self.y) if len(self.y) % 2 == 1 else len(self.y) - 1
         y = np.linspace(-(ny-1) / 2, (ny-1) / 2, ny) * np.abs(self.dy)
-        g1 = np.exp(-4*np.log(2) * y**2 / (bmaj**2 - bmin**2))
+        g1 = np.exp(-4 * np.log(2) * y**2 / (bmaj**2 - bmin**2))
         e = np.sqrt(1 - bmin**2 / bmaj**2)
         g1 /= np.sqrt(np.pi / 4 / np.log(2) * bmin * e)
         g = np.zeros((ny, nx))
         g[:, (nx - 1) // 2] = g1
         d = self.data.copy()
         d[np.isnan(d)] = 0
-        d = to4dim(d)
-        d = [[convolve(c, g, mode='same') for c in cc] for cc in d]
-        self.data = np.squeeze(d)
+        self.data = np.squeeze(convolve(to4dim(d), [[g]], mode='same'))
         self.rotate(bpa)
         self.beam[1] = self.beam[0]
         self.beam[2] = 0
@@ -281,8 +279,10 @@ class AstroData():
         self.data = RGIxy(self.y, self.x, self.data, yxnew, **kwargs)
         if None not in self.beam:
             bmaj, bmin, bpa = self.beam
-            a, b = np.linalg.multi_dot([Mfac(1/bmaj, 1/bmin), Mrot(pa-bpa),
-                                        Mfac(1, ci), Mrot(-pa)]).T
+            a, b = np.linalg.multi_dot([Mfac(1 / bmaj, 1 / bmin),
+                                        Mrot(pa - bpa),
+                                        Mfac(1, ci),
+                                        Mrot(-pa)]).T
             alpha = (np.dot(a, a) + np.dot(b, b)) / 2
             beta = np.dot(a, b)
             gamma = (np.dot(a, a) - np.dot(b, b)) / 2
@@ -415,6 +415,21 @@ class AstroData():
         if len(excludepix) == 2:
             self.data[(excludepix[0] < mask) * (mask < excludepix[1])] = np.nan
 
+    def _gfit_profile(self, prof: list, gaussfit: bool):
+        if not gaussfit:
+            return {}
+
+        gfitres = {}
+        nprof = len(prof)
+        res = [None] * nprof
+        for i in range(nprof):
+            res[i] = gaussfit1d(xdata=self.v, ydata=prof[i],
+                                sigma=None, show=True,
+                                nwalkersperdim=8)
+        gfitres['best'] = [a['popt'][:3] for a in res]
+        gfitres['error'] = [a['perr'][:3] for a in res]
+        return gfitres
+
     def profile(self, coords: list[str] = [],
                 xlist: list[float] = [], ylist: list[float] = [],
                 ellipse: list[float, float, float] | None = None,
@@ -439,13 +454,12 @@ class AstroData():
             print('Data must be 3D with the v, y, and x axes.')
             return
 
-        v = self.v
         data, xf, yf = filled2d(self.data, self.x, self.y, ninterp)
         x, y = np.meshgrid(xf, yf)
         if len(coords) > 0:
             xlist, ylist = coord2xy(coords, self.center) * 3600.
         nprof = len(xlist)
-        prof = np.empty((nprof, len(v)))
+        prof = np.empty((nprof, len(self.v)))
         ellipse = ellipse or [[0, 0, 0]] * nprof
         calc = np.sum if flux else np.mean
         for i, (xc, yc, e) in enumerate(zip(xlist, ylist, ellipse)):
@@ -464,16 +478,8 @@ class AstroData():
             else:
                 Omega = np.pi * self.beam[0] * self.beam[1] / 4. / np.log(2.)
                 prof *= np.abs(self.dx * self.dy) / Omega
-        gfitres = {}
-        if gaussfit:
-            res = [None] * nprof
-            for i in range(nprof):
-                res[i] = gaussfit1d(xdata=v, ydata=prof[i],
-                                    sigma=None, show=True,
-                                    nwalkersperdim=8)
-            gfitres['best'] = [a['popt'][:3] for a in res]
-            gfitres['error'] = [a['perr'][:3] for a in res]
-        return v, prof, gfitres
+        gfitres = self._gfit_profile(prof, gaussfit)
+        return self.v, prof, gfitres
 
     def rotate(self, pa: float = 0, **kwargs):
         """Counter clockwise rotation with respect to the center.
@@ -524,6 +530,32 @@ class AstroData():
              'bunit': self.bunit}
         return d
 
+    def _put_header(self, h: dict, t: str, crpix: int, crval: float,
+                    cdelt: float | None = None) -> None:
+        fhd = self.fitsheader
+        axis = {'x': 1, 'y': 2, 'v': 2 if self.pv else 3}[t]
+        u = f'CUNIT{axis}'
+        indeg = fhd is None or u not in fhd or isdeg(fhd[u])
+        h[f'NAXIS{axis}'] = len(getattr(self, t))
+        h[f'CRPIX{axis}'] = int(crpix)
+        h[f'CRVAL{axis}'] = float(crval)
+        if cdelt is None:
+            cdelt = getattr(self, f'd{t}') / (3600 if indeg else 1)
+        h[f'CDELT{axis}'] = float(cdelt)
+
+    def _get_cvdv_in_freq(self, ck: int) -> tuple[float, float]:
+        cv = self.v[ck]
+        dv = self.dv
+        if self.restfreq is None or self.restfreq == 0:
+            s = 'No valid restfreq.' \
+                + f' The velocity axis is saved as is.'
+            warnings.warn(s, UserWarning)
+            return cv, dv
+
+        cv = (1 - cv / cu.c_kms) * self.restfreq
+        dv = -dv / cu.c_kms * self.restfreq
+        return cv, dv
+
     @_need_multipixels
     def writetofits(self, fitsimage: str = 'out.fits',
                     header: dict = {}) -> None:
@@ -533,7 +565,6 @@ class AstroData():
             fitsimage (str, optional): Output FITS file name. Defaults to 'out.fits'.
             header (dict, optional): Header dictionary. Defaults to {}.
         """
-        fhd = self.fitsheader
         h = {}
         ci = nearest_index(self.x)
         cx = 0
@@ -545,35 +576,13 @@ class AstroData():
                 xy = [self.x[ci] / 3600, self.y[cj] / 3600]
                 cx, cy = coord2xy(xy2coord(xy, self.center))
 
-        def indeg(s):
-            u = f'CUNIT{s}'
-            return fhd is None or u not in fhd or isdeg(fhd[u])
-
-        h['NAXIS1'] = len(self.x)
-        h['CRPIX1'] = int(ci + 1)
-        h['CRVAL1'] = float(cx)
-        h['CDELT1'] = float(self.dx / (3600 if indeg('1') else 1))
-        if self.dv is not None:
-            vaxis = '2' if self.pv else '3'
-            ck = nearest_index(self.v)
-            cv = self.v[ck]
-            dv = self.dv
-            if self.restfreq is None or self.restfreq == 0:
-                s = 'No valid restfreq.' \
-                    + f' Axis {vaxis} is saved as is.'
-                warnings.warn(s, UserWarning)
-            else:
-                cv = (1 - cv / cu.c_kms) * self.restfreq
-                dv = -dv / cu.c_kms * self.restfreq
-            h[f'NAXIS{vaxis}'] = len(self.v)
-            h[f'CRPIX{vaxis}'] = int(ck + 1)
-            h[f'CRVAL{vaxis}'] = float(cv)
-            h[f'CDELT{vaxis}'] = float(dv)
+        self._put_header(h, 'x', crpix=ci + 1, crval=cx)
         if not self.pv:
-            h['NAXIS2'] = len(self.y)
-            h['CRPIX2'] = int(cj + 1)
-            h['CRVAL2'] = float(cy)
-            h['CDELT2'] = float(self.dy / (3600 if indeg('2') else 1))
+            self._put_header(h, 'y', crpix=cj + 1, crval=cy)
+        if self.dv is not None:
+            ck = nearest_index(self.v)
+            cv, dv = self._get_cvdv_in_freq(ck)
+            self._put_header(h, 'v', crpix=ck + 1, crval=cv, cdelt=dv)
         if None not in self.beam:
             beam = self.beam_org if self.pv else self.beam
             h['BMAJ'] = float(beam[0] / 3600)
