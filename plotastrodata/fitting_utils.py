@@ -337,6 +337,60 @@ class EmceeCorner():
         self.vol = vol
         self.evidence = evidence
 
+    def _i_eq_j(self, fig, ax, i, k):
+        x = self.pargrid
+        y = self.p1d
+        s0 = self.pmid[i]
+        s1 = self.phigh[i] - self.pmid[i]
+        s2 = self.pmid[i] - self.plow[i]
+        s0 = f'{s0:.2f}'
+        s1 = '^{+' + f'{s1:.2f}' + '}'
+        s2 = '_{-' + f'{s2:.2f}' + '}'
+        s0 = s0 + s1 + s2
+        ax[k] = fig.add_subplot(self.dim, self.dim, k + 1)
+        ax[k].plot(x[i], y[i], 'k-', drawstyle='steps-mid')
+        ax[k].axvline(self.popt[i])
+        ax[k].axvline(self.plow[i], linestyle='--', color='k')
+        ax[k].axvline(self.pmid[i], linestyle='--', color='k')
+        ax[k].axvline(self.phigh[i], linestyle='--', color='k')
+        ax[k].set_title(rf'{self.labels[i]}=${s0}$')
+        ax[k].set_xlim(self.cornerrange[i])
+        ax[k].set_ylim([0, np.max(y[i]) * 1.2])
+        ax[k].set_yticks([])
+        if i == self.dim - 1:
+            plt.setp(ax[k].get_xticklabels(), rotation=45)
+            ax[k].set_xlabel(self.labels[i])
+        else:
+            plt.setp(ax[k].get_xticklabels(), visible=False)
+
+    def _i_neq_j(self, fig, ax, i, j, k, adim, cmap, levels):
+        x = self.pargrid
+        sharex = ax[self.dim * (i - 1) + j]
+        sharey = ax[self.dim * i + (j - 1)] if j > 1 else None
+        ax[k] = fig.add_subplot(self.dim, self.dim, k + 1,
+                                sharex=sharex, sharey=sharey)
+        axis = tuple(np.delete(adim[::-1], [i, j]))
+        yy = np.sum(self.p * self.vol, axis=axis) \
+            / np.sum(self.vol, axis=axis)
+        ax[k].pcolormesh(x[j], x[i], yy, cmap=cmap)
+        ax[k].contour(x[j], x[i], yy, colors='k',
+                      levels=np.array(levels) * np.nanmax(yy))
+        ax[k].plot(self.popt[j], self.popt[i], 'o')
+        ax[k].axvline(self.popt[j])
+        ax[k].axhline(self.popt[i])
+        ax[k].set_xlim(self.cornerrange[j])
+        ax[k].set_ylim(self.cornerrange[i])
+        if j == 0:
+            ax[k].set_ylabel(self.labels[i])
+            plt.setp(ax[k].get_yticklabels(), rotation=45)
+        else:
+            plt.setp(ax[k].get_yticklabels(), visible=False)
+        if i == self.dim - 1:
+            ax[k].set_xlabel(self.labels[j])
+            plt.setp(ax[k].get_xticklabels(), rotation=45)
+        else:
+            plt.setp(ax[k].get_xticklabels(), visible=False)
+
     def plotongrid(self, show: bool = False, savefig: str | None = None,
                    labels: list[str] = None,
                    cornerrange: list[float] = None, cmap: str = 'binary',
@@ -357,8 +411,8 @@ class EmceeCorner():
             labels = [f'Par {i:d}' for i in adim]
         if cornerrange is None:
             cornerrange = self.bounds
-        x = self.pargrid
-        y = self.p1d
+        self.labels = labels
+        self.cornerrange = cornerrange
         fig = plt.figure(figsize=(2 * self.dim * 1.2, 2 * self.dim * 1.2))
         fig.subplots_adjust(hspace=0.05, wspace=0.05, top=0.87, right=0.87)
         ax = np.empty(self.dim * self.dim, dtype='object')
@@ -368,54 +422,11 @@ class EmceeCorner():
                     continue
                 k = self.dim * i + j
                 if i == j:
-                    s0 = self.pmid[i]
-                    s1 = self.phigh[i] - self.pmid[i]
-                    s2 = self.pmid[i] - self.plow[i]
-                    s0 = f'{s0:.2f}'
-                    s1 = '^{+' + f'{s1:.2f}' + '}'
-                    s2 = '_{-' + f'{s2:.2f}' + '}'
-                    s0 = s0 + s1 + s2
-                    ax[k] = fig.add_subplot(self.dim, self.dim, k + 1)
-                    ax[k].plot(x[i], y[i], 'k-', drawstyle='steps-mid')
-                    ax[k].axvline(self.popt[i])
-                    ax[k].axvline(self.plow[i], linestyle='--', color='k')
-                    ax[k].axvline(self.pmid[i], linestyle='--', color='k')
-                    ax[k].axvline(self.phigh[i], linestyle='--', color='k')
-                    ax[k].set_title(rf'{labels[i]}=${s0}$')
-                    ax[k].set_xlim(cornerrange[i])
-                    ax[k].set_ylim([0, np.max(y[i]) * 1.2])
-                    ax[k].set_yticks([])
-                    if i == self.dim - 1:
-                        plt.setp(ax[k].get_xticklabels(), rotation=45)
-                        ax[k].set_xlabel(labels[i])
-                    else:
-                        plt.setp(ax[k].get_xticklabels(), visible=False)
+                    self._i_eq_j(fig, ax, i, k)
                 else:
-                    sharex = ax[self.dim * (i - 1) + j]
-                    sharey = ax[self.dim * i + (j - 1)] if j > 1 else None
-                    ax[k] = fig.add_subplot(self.dim, self.dim, k + 1,
-                                            sharex=sharex, sharey=sharey)
-                    axis = tuple(np.delete(adim[::-1], [i, j]))
-                    yy = np.sum(self.p * self.vol, axis=axis) \
-                        / np.sum(self.vol, axis=axis)
-                    ax[k].pcolormesh(x[j], x[i], yy, cmap=cmap)
-                    ax[k].contour(x[j], x[i], yy, colors='k',
-                                  levels=np.array(levels) * np.nanmax(yy))
-                    ax[k].plot(self.popt[j], self.popt[i], 'o')
-                    ax[k].axvline(self.popt[j])
-                    ax[k].axhline(self.popt[i])
-                    ax[k].set_xlim(cornerrange[j])
-                    ax[k].set_ylim(cornerrange[i])
-                    if j == 0:
-                        ax[k].set_ylabel(labels[i])
-                        plt.setp(ax[k].get_yticklabels(), rotation=45)
-                    else:
-                        plt.setp(ax[k].get_yticklabels(), visible=False)
-                    if i == self.dim - 1:
-                        ax[k].set_xlabel(labels[j])
-                        plt.setp(ax[k].get_xticklabels(), rotation=45)
-                    else:
-                        plt.setp(ax[k].get_xticklabels(), visible=False)
+                    self._i_neq_j(fig, ax, i, j, k, adim, cmap, levels)
+        del self.labels
+        del self.cornerrange
         close_figure(fig, savefig, show, tight=False)
 
     def getDNSevidence(self, **kwargs):
