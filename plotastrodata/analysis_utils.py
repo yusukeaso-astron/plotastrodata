@@ -542,8 +542,7 @@ class AstroData():
         cv = self.v[ck]
         dv = self.dv
         if self.restfreq is None or self.restfreq == 0:
-            s = 'No valid restfreq.' \
-                + f' The velocity axis is saved as is.'
+            s = 'No valid restfreq. The velocity axis is saved as is.'
             warnings.warn(s, UserWarning)
             return cv, dv
 
