@@ -376,7 +376,7 @@ def fits2data(fitsimage: str, Tb: bool = False, log: bool = False,
               restfreq: float | None = None, center: str | None = None,
               vsys: float = 0., pv: bool = False, **kwargs
               ) -> tuple[np.ndarray, tuple[np.ndarray, np.ndarray, np.ndarray],
-                         tuple[float, float, float], float, float]:
+                         np.ndarray, str, float]:
     """Extract data from a fits file. kwargs are arguments of FitsData.trim().
 
     Args:
