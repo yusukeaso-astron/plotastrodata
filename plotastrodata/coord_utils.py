@@ -3,7 +3,7 @@ from astropy import units
 from astropy.coordinates import FK4, FK5, SkyCoord
 
 
-def _updateframe(frame: str) -> str:
+def _updateframe(frame: str | None) -> str:
     """Internal function to str frame to astropy frame.
 
     Args:
