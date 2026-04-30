@@ -281,6 +281,29 @@ class EmceeCorner():
                 ax.set_xlabel('Step')
         close_figure(fig, savefig, show)
 
+    def _set_results_posteriorongrid(self) -> None:
+        p = self.p
+        p1d = self.p1d
+        pargrid = self.pargrid
+        if np.all(p == 0):
+            print('All posterior is below pcut.')
+            self.popt = np.full(self.dim, np.nan)
+            self.plow = np.full(self.dim, np.nan)
+            self.pmid = np.full(self.dim, np.nan)
+            self.phigh = np.full(self.dim, np.nan)
+        else:
+            i_max = np.unravel_index(np.argmax(p), np.shape(p))[::-1]
+            self.popt = np.array([p[i] for p, i in zip(pargrid, i_max)])
+
+            def getpercentile(percent: float):
+                a = [np.percentile(g, percent, method='inverted_cdf', weights=p)
+                     for g, p in zip(pargrid, p1d)]
+                return np.array(a)
+
+            self.plow = getpercentile(self.percent[0])
+            self.pmid = getpercentile(50)
+            self.phigh = getpercentile(self.percent[1])
+
     def posteriorongrid(self, ngrid: list[int] | int = 100,
                         log: list[bool] | bool = False, pcut: float = 0):
         """Calculate the posterior on a grid of ngrid x ngrid x ... x ngrid.
@@ -313,29 +336,12 @@ class EmceeCorner():
         axlist = [tuple(np.delete(adim, i)) for i in adim[::-1]]  # adim[::-1] is becuase the 0th parameter is the innermost axis.
         p1d = [np.sum(p * vol, axis=a) / np.sum(vol, axis=a) for a in axlist]
         evidence = np.sum(p * vol) / np.sum(vol)
-        if np.all(p == 0):
-            print('All posterior is below pcut.')
-            self.popt = np.full(self.dim, np.nan)
-            self.plow = np.full(self.dim, np.nan)
-            self.pmid = np.full(self.dim, np.nan)
-            self.phigh = np.full(self.dim, np.nan)
-        else:
-            i_max = np.unravel_index(np.argmax(p), np.shape(p))[::-1]
-            self.popt = np.array([p[i] for p, i in zip(pargrid, i_max)])
-
-            def getpercentile(percent: float):
-                a = [np.percentile(g, percent, method='inverted_cdf', weights=p)
-                     for g, p in zip(pargrid, p1d)]
-                return np.array(a)
-
-            self.plow = getpercentile(self.percent[0])
-            self.pmid = getpercentile(50)
-            self.phigh = getpercentile(self.percent[1])
         self.p = p
         self.p1d = p1d
         self.pargrid = pargrid
         self.vol = vol
         self.evidence = evidence
+        self._set_results_posteriorongrid()
 
     def _i_eq_j(self, fig, ax, i, k):
         x = self.pargrid
