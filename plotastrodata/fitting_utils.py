@@ -332,8 +332,10 @@ class EmceeCorner():
             else:
                 dpar.append(pg * 0 + pg[1] - pg[0])
         vol = np.prod(np.meshgrid(*dpar[::-1], indexing='ij')[::-1], axis=0)
-        adim = np.arange(self.dim)
-        axlist = [tuple(np.delete(adim, i)) for i in adim[::-1]]  # adim[::-1] is becuase the 0th parameter is the innermost axis.
+        self.adim = np.arange(self.dim)
+        self.adim_r = self.adim[::-1]
+        # adim[::-1] is becuase the 0th parameter is the innermost axis.
+        axlist = [tuple(np.delete(self.adim, i)) for i in self.adim_r]
         p1d = [np.sum(p * vol, axis=a) / np.sum(vol, axis=a) for a in axlist]
         evidence = np.sum(p * vol) / np.sum(vol)
         self.p = p
@@ -412,10 +414,8 @@ class EmceeCorner():
             cmap: (str, optional): cmap for matplotlib.pyplot.plt.pcolormesh(). Defaults to 'binary'.
             levels: (list, optional): levels for matplotlib.pyplot.plt.contour() relative to the peak. Defaults to [exp(-0.5*3^2), exp(-0.5*2^2), exp(-0.5*1^2)].
         """
-        adim = np.arange(self.dim)
-        self.adim_r = adim[::-1]
         if labels is None:
-            labels = [f'Par {i:d}' for i in adim]
+            labels = [f'Par {i:d}' for i in self.adim]
         if cornerrange is None:
             cornerrange = self.bounds
         self.labels = labels
@@ -425,8 +425,8 @@ class EmceeCorner():
         fig = plt.figure(figsize=(2 * self.dim * 1.2, 2 * self.dim * 1.2))
         fig.subplots_adjust(hspace=0.05, wspace=0.05, top=0.87, right=0.87)
         ax = np.empty(self.dim * self.dim, dtype='object')
-        for i in adim:
-            for j in adim:
+        for i in self.adim:
+            for j in self.adim:
                 if i < j:
                     continue
                 k = self.dim * i + j
