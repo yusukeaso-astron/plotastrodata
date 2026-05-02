@@ -332,10 +332,10 @@ class EmceeCorner():
             else:
                 dpar.append(pg * 0 + pg[1] - pg[0])
         vol = np.prod(np.meshgrid(*dpar[::-1], indexing='ij')[::-1], axis=0)
-        self.adim = np.arange(self.dim)
-        self.adim_r = self.adim[::-1]
-        # adim[::-1] is becuase the 0th parameter is the innermost axis.
-        axlist = [tuple(np.delete(self.adim, i)) for i in self.adim_r]
+        arrdim = np.arange(self.dim)
+        arrdim_r = arrdim[::-1]
+        # arrdim[::-1] is becuase the 0th parameter is the innermost axis.
+        axlist = [tuple(np.delete(arrdim, i)) for i in arrdim_r]
         p1d = [np.sum(p * vol, axis=a) / np.sum(vol, axis=a) for a in axlist]
         evidence = np.sum(p * vol) / np.sum(vol)
         self.p = p
@@ -343,6 +343,8 @@ class EmceeCorner():
         self.pargrid = pargrid
         self.vol = vol
         self.evidence = evidence
+        self.arrdim = arrdim
+        self.arrdim_r = arrdim_r
         self._set_results_posteriorongrid()
 
     def _i_eq_j(self, fig, ax, i: int, k: int) -> None:
@@ -377,7 +379,7 @@ class EmceeCorner():
         sharey = ax[self.dim * i + (j - 1)] if j > 1 else None
         ax[k] = fig.add_subplot(self.dim, self.dim, k + 1,
                                 sharex=sharex, sharey=sharey)
-        axis = tuple(np.delete(self.adim_r, [i, j]))
+        axis = tuple(np.delete(self.arrdim_r, [i, j]))
         yy = np.sum(self.p * self.vol, axis=axis) \
             / np.sum(self.vol, axis=axis)
         ax[k].pcolormesh(x[j], x[i], yy, cmap=self.cmap)
@@ -415,7 +417,7 @@ class EmceeCorner():
             levels: (list, optional): levels for matplotlib.pyplot.plt.contour() relative to the peak. Defaults to [exp(-0.5*3^2), exp(-0.5*2^2), exp(-0.5*1^2)].
         """
         if labels is None:
-            labels = [f'Par {i:d}' for i in self.adim]
+            labels = [f'Par {i:d}' for i in self.arrdim]
         if cornerrange is None:
             cornerrange = self.bounds
         self.labels = labels
@@ -425,8 +427,8 @@ class EmceeCorner():
         fig = plt.figure(figsize=(2 * self.dim * 1.2, 2 * self.dim * 1.2))
         fig.subplots_adjust(hspace=0.05, wspace=0.05, top=0.87, right=0.87)
         ax = np.empty(self.dim * self.dim, dtype='object')
-        for i in self.adim:
-            for j in self.adim:
+        for i in self.arrdim:
+            for j in self.arrdim:
                 if i < j:
                     continue
                 k = self.dim * i + j
