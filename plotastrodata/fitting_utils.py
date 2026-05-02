@@ -320,8 +320,8 @@ class EmceeCorner():
         pargrid = []
         inzip = [self.bounds[:, 0], self.bounds[:, 1], ngrid, log]
         for start, stop, num, uselog in zip(*inzip):
-            args = [start, stop, num]
-            pargrid.append(np.geomspace(*args) if uselog else np.linspace(*args))
+            spacer = np.geomspace if uselog else np.linspace
+            pargrid.append(spacer(start, stop, num))
         p = np.exp(self.logl(np.meshgrid(*pargrid[::-1], indexing='ij')[::-1]))
         p[p < pcut] = 0
         dpar = []
