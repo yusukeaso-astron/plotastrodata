@@ -215,6 +215,6 @@ def estimate_rms(data: np.ndarray,
         ave = n.m0
         noise = n.s0
     if np.abs(ave) > 0.2 * noise:
-        s = 'Mean > 0.2 x standard deviation.'
+        s = '|mean| > 0.2 x standard deviation.'
         warnings.warn(s, UserWarning)
     return noise
