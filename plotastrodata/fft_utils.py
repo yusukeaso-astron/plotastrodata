@@ -11,7 +11,7 @@ def shiftphase(F: np.ndarray, u: np.ndarray,
 
     Args:
         F (np.ndarray): 1D FFT.
-        u (np.ndarray): 1D array. The first frequency coordinate.
+        u (np.ndarray): 1D array. The frequency coordinate.
         xoff (float): From old to new center. Defaults to 0.
 
     Returns:
@@ -27,7 +27,7 @@ def shiftphase2(F: np.ndarray, u: np.ndarray, v: np.ndarray,
     Args:
         F (np.ndarray): 2D FFT.
         u (np.ndarray): 1D or 2D array. The first frequency coordinate.
-        v (np.ndarray): 1D or 2D array. The second frequency coordinate. Defaults to None.
+        v (np.ndarray): 1D or 2D array. The second frequency coordinate.
         xoff (float): From old to new center. Defaults to 0.
         yoff (float): From old to new center. Defaults to 0.
 
@@ -119,7 +119,7 @@ def ifftcentering(F: np.ndarray, u: np.ndarray | None = None,
         x0 (float, optional): spatial coordinate of x[0]. Defaults to None.
         outreal (bool, optional): whether output only the real part. Defaults to False.
         rfft (bool, optional): True means using rFFT. Defaults to False.
-        dx (float, optional): spatial interval. Defaults to 1.
+        dx (float, optional): spatial interval, used if rfft is True. Defaults to 1.
 
     Returns:
         tuple: (f, x). f is iFFT of F. x is a 1D array of the spatial coordinate.
@@ -170,8 +170,8 @@ def ifftcentering2(F: np.ndarray,
         y0 (float, optional): spatial coordinate of y[0]. Defaults to None.
         outreal (bool, optional): whether output only the real part. Defaults to False.
         rfft (bool, optional): True means using rFFT. Defaults to False.
-        dx (float, optional): spatial interval. Defaults to 1.
-        dy (float, optional): spatial interval. Defaults to 1.
+        dx (float, optional): spatial interval, used if rfft is True. Defaults to 1.
+        dy (float, optional): spatial interval, used if rfft is True. Defaults to 1.
 
     Returns:
         tuple: (f, x, y). f is iFFT of F. x and y are 1D arrays of the spatial coordinates.
