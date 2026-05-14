@@ -11,7 +11,7 @@ def shiftphase(F: np.ndarray, u: np.ndarray,
 
     Args:
         F (np.ndarray): 1D FFT.
-        u (np.ndarray): 1D array. The first frequency coordinate.
+        u (np.ndarray): 1D array. The frequency coordinate.
         xoff (float): From old to new center. Defaults to 0.
 
     Returns:
@@ -27,7 +27,7 @@ def shiftphase2(F: np.ndarray, u: np.ndarray, v: np.ndarray,
     Args:
         F (np.ndarray): 2D FFT.
         u (np.ndarray): 1D or 2D array. The first frequency coordinate.
-        v (np.ndarray): 1D or 2D array. The second frequency coordinate. Defaults to None.
+        v (np.ndarray): 1D or 2D array. The second frequency coordinate.
         xoff (float): From old to new center. Defaults to 0.
         yoff (float): From old to new center. Defaults to 0.
 
@@ -39,7 +39,7 @@ def shiftphase2(F: np.ndarray, u: np.ndarray, v: np.ndarray,
 
 
 def fftcentering(f: np.ndarray, x: np.ndarray | None = None,
-                 xcenter: float = 0
+                 xcenter: float = 0, rfft: bool = False
                  ) -> tuple[np.ndarray, np.ndarray]:
     """FFT with the phase referring to a specific point.
 
@@ -47,6 +47,7 @@ def fftcentering(f: np.ndarray, x: np.ndarray | None = None,
         f (np.ndarray): 1D array for FFT.
         x (np.ndarray, optional): 1D array. The spatial coordinate. Defaults to None.
         xcenter (float, optional): x of phase reference. Defaults to 0.
+        rfft (bool, optional): True means using rFFT. Defaults to False.
 
     Returns:
         tuple: (F, u). F is FFT of f. u is a 1D array of the frequency coordinate.
@@ -56,15 +57,19 @@ def fftcentering(f: np.ndarray, x: np.ndarray | None = None,
         x = np.arange(nx)
     X = x[0, :] if np.ndim(x) == 2 else x
     dx = X[1] - X[0]
-    u = np.fft.fftshift(np.fft.fftfreq(nx, d=dx))
-    F = np.fft.fftshift(np.fft.fft(f))
+    if rfft:
+        u = np.fft.rfftfreq(nx, d=dx)
+        F = np.fft.rfft(f)
+    else:
+        u = np.fft.fftshift(np.fft.fftfreq(nx, d=dx))
+        F = np.fft.fftshift(np.fft.fft(f))
     F = shiftphase(F, u=u, xoff=xcenter - X[0])
     return F, u
 
 
 def fftcentering2(f: np.ndarray,
                   x: np.ndarray | None = None, y: np.ndarray | None = None,
-                  xcenter: float = 0, ycenter: float = 0
+                  xcenter: float = 0, ycenter: float = 0, rfft: bool = False
                   ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """FFT with the phase referring to a specific point.
 
@@ -74,6 +79,7 @@ def fftcentering2(f: np.ndarray,
         y (np.ndarray, optional): 1D or 2D array. The second spatial coordinate. Defaults to None.
         xcenter (float, optional): x of phase reference. Defaults to 0.
         ycenter (float, optional): y of phase reference. Defaults to 0.
+        rfft (bool, optional): True means using rFFT. Defaults to False.
 
     Returns:
         tuple: (F, u, v). F is FFT of f. u and v are 1D arrays of the frequency coordinates.
@@ -85,39 +91,60 @@ def fftcentering2(f: np.ndarray,
         y = np.arange(ny)
     X = x[0, :] if np.ndim(x) == 2 else x
     Y = y[:, 0] if np.ndim(y) == 2 else y
-    dx, dy = X[1] - X[0], Y[1] - Y[0]
-    u = np.fft.fftshift(np.fft.fftfreq(nx, d=dx))
-    v = np.fft.fftshift(np.fft.fftfreq(ny, d=dy))
-    F = np.fft.fftshift(np.fft.fft2(f))
+    dx = X[1] - X[0]
+    dy = Y[1] - Y[0]
+    if rfft:
+        u = np.fft.rfftfreq(nx, d=dx)
+        v = np.fft.fftshift(np.fft.fftfreq(ny, d=dy))
+        F = np.fft.fftshift(np.fft.rfft2(f), axes=0)
+    else:
+        u = np.fft.fftshift(np.fft.fftfreq(nx, d=dx))
+        v = np.fft.fftshift(np.fft.fftfreq(ny, d=dy))
+        F = np.fft.fftshift(np.fft.fft2(f))
     F = shiftphase2(F, u, v, xcenter - X[0], ycenter - Y[0])
     return F, u, v
 
 
 def ifftcentering(F: np.ndarray, u: np.ndarray | None = None,
-                  xcenter: float = 0,
-                  x0: float = None,
-                  outreal: bool = True
+                  xcenter: float = 0, x0: float = None,
+                  dx: float = 1,
+                  outreal: bool = False, rfft: bool = False
                   ) -> tuple[np.ndarray, np.ndarray]:
     """inverse FFT with the phase referring to a specific point.
 
     Args:
-        F (np.ndarray): 1D array. A result of FFT.
+        F (np.ndarray): 1D array. An FFT result in the frequency domain.
         u (np.ndarray, optional): 1D array. The frequency coordinate. Defaults to None.
         xcenter (float, optional): x of phase reference (used in fftcentering). Defaults to 0.
         x0 (float, optional): spatial coordinate of x[0]. Defaults to None.
-        outreal (bool, optional): whether output only the real part. Defaults to True.
+        dx (float, optional): spatial interval. Defaults to 1.
+        outreal (bool, optional): whether output only the real part. Defaults to False.
+        rfft (bool, optional): True means using rFFT. Defaults to False.
 
     Returns:
         tuple: (f, x). f is iFFT of F. x is a 1D array of the spatial coordinate.
     """
     nx = np.shape(F)[0]
     if u is None:
-        u = np.fft.fftshift(np.fft.fftfreq(nx, d=1))
+        if rfft:
+            nx = 2 * (nx - 1)  # Follow numpy.fft.irfft behavior.
+            u = np.fft.rfftfreq(nx, d=dx)
+        else:
+            u = np.fft.fftshift(np.fft.fftfreq(nx, d=dx))
+    else:
+        if rfft:
+            if np.isclose(u[-1], 1 / (2 * dx)):
+                nx = 2 * (nx - 1)
+            else:
+                nx = 2 * (nx - 1) + 1
     x = (np.arange(nx) - (nx-1)/2.) / (u[1]-u[0]) / nx + xcenter
     if x0 is not None:
         x = x - x[0] + x0
     F = shiftphase(F, u=u, xoff=x[0] - xcenter)
-    f = np.fft.ifft(np.fft.ifftshift(F))
+    if rfft:
+        f = np.fft.irfft(F, n=nx)
+    else:
+        f = np.fft.ifft(np.fft.ifftshift(F))
     if outreal:
         f = np.real(f)
     return f, x
@@ -127,28 +154,42 @@ def ifftcentering2(F: np.ndarray,
                    u: np.ndarray | None = None, v: np.ndarray | None = None,
                    xcenter: float = 0, ycenter: float = 0,
                    x0: float | None = None, y0: float | None = None,
-                   outreal: bool = True
+                   dx: float = 1, dy: float = 1,
+                   outreal: bool = False, rfft: bool = False
                    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """inverse FFT with the phase referring to a specific point.
 
     Args:
-        F (np.ndarray): 2D array. A result of FFT.
+        F (np.ndarray): 2D array. An FFT result in the frequency domain.
         u (np.ndarray, optional): 1D or 2D array. The first frequency coordinate. Defaults to None.
         v (np.ndarray, optional): 1D or 2D array. The second frequency cooridnate. Defaults to None.
         xcenter (float, optional): x of phase reference (used in fftcentering2). Defaults to 0.
         ycenter (float, optional): y of phase reference (used in fftcentering2). Defaults to 0.
         x0 (float, optional): spatial coordinate of x[0]. Defaults to None.
         y0 (float, optional): spatial coordinate of y[0]. Defaults to None.
-        outreal (bool, optional): whether output only the real part. Defaults to True.
+        dx (float, optional): spatial interval. Defaults to 1.
+        dy (float, optional): spatial interval. Defaults to 1.
+        outreal (bool, optional): whether output only the real part. Defaults to False.
+        rfft (bool, optional): True means using rFFT. Defaults to False.
 
     Returns:
         tuple: (f, x, y). f is iFFT of F. x and y are 1D arrays of the spatial coordinates.
     """
     ny, nx = np.shape(F)
     if u is None:
-        u = np.fft.fftshift(np.fft.fftfreq(nx, d=1))
+        if rfft:
+            nx = 2 * (nx - 1)  # Follow numpy.fft.irfft behavior.
+            u = np.fft.rfftfreq(nx, d=dx)
+        else:
+            u = np.fft.fftshift(np.fft.fftfreq(nx, d=dy))
+    else:
+        if rfft:
+            if np.isclose(u[-1], 1 / (2 * dx)):
+                nx = 2 * (nx - 1)
+            else:
+                nx = 2 * (nx - 1) + 1
     if v is None:
-        v = np.fft.fftshift(np.fft.fftfreq(ny, d=1))
+        v = np.fft.fftshift(np.fft.fftfreq(ny, d=dy))
     x = (np.arange(nx) - (nx-1)/2.) / (u[1]-u[0]) / nx + xcenter
     y = (np.arange(ny) - (ny-1)/2.) / (v[1]-v[0]) / ny + ycenter
     if x0 is not None:
@@ -156,7 +197,10 @@ def ifftcentering2(F: np.ndarray,
     if y0 is not None:
         y = y - y[0] + y0
     F = shiftphase2(F, u, v, x[0] - xcenter, y[0] - ycenter)
-    f = np.fft.ifft2(np.fft.ifftshift(F))
+    if rfft:
+        f = np.fft.irfft2(np.fft.ifftshift(F, axes=0), s=(ny, nx))
+    else:
+        f = np.fft.ifft2(np.fft.ifftshift(F))
     if outreal:
         f = np.real(f)
     return f, x, y
