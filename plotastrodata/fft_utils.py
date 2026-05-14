@@ -155,8 +155,7 @@ def ifftcentering2(F: np.ndarray,
                    xcenter: float = 0, ycenter: float = 0,
                    x0: float | None = None, y0: float | None = None,
                    outreal: bool = False,
-                   rfft: bool = False,
-                   dx: float = 1, dy: float = 1
+                   rfft: bool = False, dx: float = 1, dy: float = 1
                    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """inverse FFT with the phase referring to a specific point.
 
