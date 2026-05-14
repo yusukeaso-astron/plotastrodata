@@ -107,8 +107,8 @@ def fftcentering2(f: np.ndarray,
 
 def ifftcentering(F: np.ndarray, u: np.ndarray | None = None,
                   xcenter: float = 0, x0: float = None,
-                  outreal: bool = False,
-                  rfft: bool = False, dx: float = 1
+                  dx: float = 1,
+                  outreal: bool = False, rfft: bool = False
                   ) -> tuple[np.ndarray, np.ndarray]:
     """inverse FFT with the phase referring to a specific point.
 
@@ -117,9 +117,9 @@ def ifftcentering(F: np.ndarray, u: np.ndarray | None = None,
         u (np.ndarray, optional): 1D array. The frequency coordinate. Defaults to None.
         xcenter (float, optional): x of phase reference (used in fftcentering). Defaults to 0.
         x0 (float, optional): spatial coordinate of x[0]. Defaults to None.
+        dx (float, optional): spatial interval. Defaults to 1.
         outreal (bool, optional): whether output only the real part. Defaults to False.
         rfft (bool, optional): True means using rFFT. Defaults to False.
-        dx (float, optional): spatial interval. Defaults to 1.
 
     Returns:
         tuple: (f, x). f is iFFT of F. x is a 1D array of the spatial coordinate.
@@ -154,8 +154,8 @@ def ifftcentering2(F: np.ndarray,
                    u: np.ndarray | None = None, v: np.ndarray | None = None,
                    xcenter: float = 0, ycenter: float = 0,
                    x0: float | None = None, y0: float | None = None,
-                   outreal: bool = False,
-                   rfft: bool = False, dx: float = 1, dy: float = 1
+                   dx: float = 1, dy: float = 1,
+                   outreal: bool = False, rfft: bool = False
                    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """inverse FFT with the phase referring to a specific point.
 
@@ -167,10 +167,10 @@ def ifftcentering2(F: np.ndarray,
         ycenter (float, optional): y of phase reference (used in fftcentering2). Defaults to 0.
         x0 (float, optional): spatial coordinate of x[0]. Defaults to None.
         y0 (float, optional): spatial coordinate of y[0]. Defaults to None.
-        outreal (bool, optional): whether output only the real part. Defaults to False.
-        rfft (bool, optional): True means using rFFT. Defaults to False.
         dx (float, optional): spatial interval. Defaults to 1.
         dy (float, optional): spatial interval. Defaults to 1.
+        outreal (bool, optional): whether output only the real part. Defaults to False.
+        rfft (bool, optional): True means using rFFT. Defaults to False.
 
     Returns:
         tuple: (f, x, y). f is iFFT of F. x and y are 1D arrays of the spatial coordinates.
