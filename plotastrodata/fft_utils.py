@@ -206,6 +206,107 @@ def ifftcentering2(F: np.ndarray,
     return f, x, y
 
 
+class FftCentering():
+    """Set FFT conditions and functions.
+
+    Args:
+        x (np.ndarray): 1D array.
+        y (np.ndarray, optional): 1D array. Defaults to None.
+        xcenter (float, optional): x of phase reference. Defaults to 0.
+        ycenter (float, optional): y of phase reference. Defaults to 0.
+        rfft (bool, optional): True means using rFFT. Defaults to False.
+    """
+    def __init__(self, x: np.ndarray,
+                 y: np.ndarray | None = None,
+                 xcenter: float = 0,
+                 ycenter: float = 0,
+                 rfft: bool = False):
+        nx = len(x)
+        self.x = x
+        self.dx = dx = x[1] - x[0]
+        self.xcenter = xcenter
+        self.ndim = 2 if isinstance(y, np.ndarray) else 1
+        self.rfft = rfft
+        if rfft:
+            u = np.fft.rfftfreq(nx, d=dx)
+        else:
+            u = np.fft.fftshift(np.fft.fftfreq(nx, d=dx))
+        self.u = u
+        if self.ndim == 2:
+            ny = len(y)
+            self.y = y
+            self.dy = dy = y[1] - y[0]
+            self.ycenter = ycenter
+            v = np.fft.fftshift(np.fft.fftfreq(ny, d=dy))
+            self.v = v
+
+    def fft(self, f: np.ndarray | None = None) -> np.ndarray:
+        """FFT calculation done by considering 1D/2D and fft/rfft.
+
+        Args:
+            f (np.ndarray | None, optional): 1D or 2D array. Defaults to None.
+
+        Returns:
+            np.ndarray: FFT result. When f is None, the return is the FFT function.
+        """
+        if self.ndim == 1:
+            def func(f: np.ndarray):
+                F, _ = fftcentering(f=f, x=self.x,
+                                    xcenter=self.xcenter,
+                                    rfft=self.rfft)
+                return F
+
+        else:
+            def func(f: np.ndarray):
+                F, _, _ = fftcentering2(f=f, x=self.x, y=self.y,
+                                        xcenter=self.xcenter,
+                                        ycenter=self.ycenter,
+                                        rfft=self.rfft)
+                return F
+
+        if f is None:
+            return func
+        else:
+            return func(f)
+        
+    def ifft(self, F: np.ndarray | None = None, outreal: bool = False):
+        """iFFT calculation done by considering 1D/2D and fft/rfft.
+
+        Args:
+            F (np.ndarray | None, optional): An FFT result. Defaults to None.
+
+        Returns:
+            np.ndarray: iFFT result. When F is None, the return is the iFFT function.
+        """
+        if self.ndim == 1:
+            def func(F: np.ndarray):
+                f, _ = ifftcentering(F=F, u=self.u,
+                                     xcenter=self.xcenter,
+                                     x0=self.x[0],
+                                     dx=self.dx,
+                                     outreal=outreal,
+                                     rfft=self.rfft)
+                return f
+
+        else:
+            def func(F: np.ndarray):
+                f, _, _ = ifftcentering2(F=F, u=self.u, v=self.v,
+                                         xcenter=self.xcenter,
+                                         ycenter=self.ycenter,
+                                         x0 = self.x[0],
+                                         y0 = self.y[0],
+                                         dx=self.dx,
+                                         dy=self.dy,
+                                         outreal=outreal,
+                                         rfft=self.rfft)
+                return f
+
+        if F is None:
+            return func
+        else:
+            return func(F)
+
+
 def zeropadding(f: np.ndarray, x: np.ndarray, y: np.ndarray,
                 xlim: list, ylim: list
                 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
