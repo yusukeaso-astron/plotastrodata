@@ -264,10 +264,7 @@ class FftCentering():
                                         rfft=self.rfft)
                 return F
 
-        if f is None:
-            return func
-        else:
-            return func(f)
+        return func if f is None else func(f)
         
     def ifft(self, F: np.ndarray | None = None, outreal: bool = False):
         """iFFT calculation done by considering 1D/2D and fft/rfft.
@@ -300,11 +297,8 @@ class FftCentering():
                                          outreal=outreal,
                                          rfft=self.rfft)
                 return f
-
-        if F is None:
-            return func
-        else:
-            return func(F)
+        
+        return func if F is None else func(F)
 
 
 def zeropadding(f: np.ndarray, x: np.ndarray, y: np.ndarray,
