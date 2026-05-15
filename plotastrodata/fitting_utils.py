@@ -7,6 +7,7 @@ import warnings
 from dynesty import DynamicNestedSampler as DNS
 from multiprocessing import Pool
 from tqdm import tqdm
+from typing import Callable
 
 from plotastrodata.matrix_utils import Mrot, dot2d
 from plotastrodata.other_utils import close_figure
@@ -63,8 +64,8 @@ def _check_GR(samples: np.ndarray, nwalkers: int, ndata: int, dim: int,
 class EmceeCorner():
     warnings.simplefilter('ignore', RuntimeWarning)
 
-    def __init__(self, bounds: np.ndarray, logl: object | None = None,
-                 model: object | None = None,
+    def __init__(self, bounds: np.ndarray, logl: Callable | None = None,
+                 model: Callable | None = None,
                  xdata: np.ndarray | None = None,
                  ydata: np.ndarray | None = None,
                  sigma: np.ndarray = 1, progressbar: bool = False,
@@ -111,7 +112,8 @@ class EmceeCorner():
 
     def _run_sampler(self, pos0: np.ndarray, pt: bool,
                      ncores: int, ntemps: int,
-                     nsteps: int, nwalkers: int) -> object:
+                     nsteps: int, nwalkers: int
+                     ) -> ptemcee.Sampler | emcee.EnsembleSampler:
         """Create and run the sampler, then return it."""
         if pt:
             sampler_cls = ptemcee.Sampler

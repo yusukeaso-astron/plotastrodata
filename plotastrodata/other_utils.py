@@ -3,6 +3,7 @@ import numbers
 import numpy as np
 import warnings
 from scipy.interpolate import RegularGridInterpolator as RGI
+from typing import Callable
 
 
 def listing(*args) -> list:
@@ -217,7 +218,7 @@ def reform_data(c: np.ndarray, v_in: np.ndarray | None,
 
 def RGIxy(y: np.ndarray, x: np.ndarray, data: np.ndarray,
           yxnew: tuple[np.ndarray, np.ndarray] | None = None,
-          **kwargs) -> object | np.ndarray:
+          **kwargs) -> Callable | np.ndarray:
     """RGI for x and y at each channel.
 
     Args:
@@ -252,7 +253,7 @@ def RGIxy(y: np.ndarray, x: np.ndarray, data: np.ndarray,
 
 def RGIxyv(v: np.ndarray, y: np.ndarray, x: np.ndarray, data: np.ndarray,
            vyxnew: tuple[np.ndarray, np.ndarray, np.ndarray] | None = None,
-           **kwargs) -> object | np.ndarray:
+           **kwargs) -> Callable | np.ndarray:
     """RGI in the x-y-v space.
 
     Args:

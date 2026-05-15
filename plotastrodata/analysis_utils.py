@@ -3,6 +3,7 @@ import warnings
 from dataclasses import dataclass
 from scipy.interpolate import RegularGridInterpolator as RGI
 from scipy.signal import convolve
+from typing import Callable
 
 from plotastrodata import const_utils as cu
 from plotastrodata.coord_utils import coord2xy, rel2abs, xy2coord
@@ -290,7 +291,7 @@ class AstroData():
             self.beam = np.array([bmaj_new, bmin_new, bpa_new])
 
     @_need_multipixels
-    def fit2d(self, model: object, bounds: np.ndarray,
+    def fit2d(self, model: Callable, bounds: np.ndarray,
               progressbar: bool = False,
               kwargs_fit: dict = {}, kwargs_plotcorner: dict = {},
               chan: int | None = None):

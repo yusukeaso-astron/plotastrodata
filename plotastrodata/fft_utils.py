@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+from typing import Callable
 
 from plotastrodata.fits_utils import fits2data
 from plotastrodata.other_utils import close_figure
@@ -240,7 +241,8 @@ class FftCentering():
             v = np.fft.fftshift(np.fft.fftfreq(ny, d=dy))
             self.v = v
 
-    def fft(self, f: np.ndarray | None = None) -> np.ndarray:
+    def fft(self, f: np.ndarray | None = None
+            ) -> np.ndarray | Callable:
         """FFT calculation done by considering 1D/2D and fft/rfft.
 
         Args:
@@ -266,7 +268,8 @@ class FftCentering():
 
         return func if f is None else func(f)
 
-    def ifft(self, F: np.ndarray | None = None, outreal: bool = False):
+    def ifft(self, F: np.ndarray | None = None, outreal: bool = False
+             ) -> np.ndarray | Callable:
         """iFFT calculation done by considering 1D/2D and fft/rfft.
 
         Args:

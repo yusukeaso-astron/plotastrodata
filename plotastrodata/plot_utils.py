@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from dataclasses import dataclass
 from matplotlib.patches import Ellipse, Rectangle
-from typing import TypeVar
+from typing import TypeVar, Callable
 
 from plotastrodata.analysis_utils import AstroData, AstroFrame
 from plotastrodata.coord_utils import (coord2xy, xy2coord,
@@ -162,13 +162,13 @@ def _get_v(p, v: np.ndarray | None = None,
     return v
 
 
-def _get_nij2ch(nrows: int = 1, ncols: int = 1) -> object:
+def _get_nij2ch(nrows: int = 1, ncols: int = 1) -> Callable:
     def nij2ch(n: int, i: int, j: int) -> int:
         return n*nrows*ncols + i*ncols + j
     return nij2ch
 
 
-def _get_ch2nij(nrows: int = 1, ncols: int = 1) -> object:
+def _get_ch2nij(nrows: int = 1, ncols: int = 1) -> Callable:
     def ch2nij(ch: int) -> tuple[int, int, int]:
         n = ch // (nrows*ncols)
         i = (ch - n*nrows*ncols) // ncols
@@ -178,7 +178,7 @@ def _get_ch2nij(nrows: int = 1, ncols: int = 1) -> object:
 
 
 def _get_vskipfill(nv: float, v_org: np.ndarray, vskip: int,
-                   channelnumber: int) -> object:
+                   channelnumber: int) -> Callable:
     def vskipfill(c: np.ndarray, v_in: np.ndarray) -> np.ndarray:
         c = reform_data(c=c, v_in=v_in, nv=nv, v_org=v_org, vskip=vskip)
         if isinstance(channelnumber, int):
