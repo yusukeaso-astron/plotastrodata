@@ -265,7 +265,7 @@ class FftCentering():
                 return F
 
         return func if f is None else func(f)
-        
+
     def ifft(self, F: np.ndarray | None = None, outreal: bool = False):
         """iFFT calculation done by considering 1D/2D and fft/rfft.
 
@@ -290,14 +290,12 @@ class FftCentering():
                 f, _, _ = ifftcentering2(F=F, u=self.u, v=self.v,
                                          xcenter=self.xcenter,
                                          ycenter=self.ycenter,
-                                         x0 = self.x[0],
-                                         y0 = self.y[0],
-                                         dx=self.dx,
-                                         dy=self.dy,
+                                         x0=self.x[0], y0=self.y[0],
+                                         dx=self.dx, dy=self.dy,
                                          outreal=outreal,
                                          rfft=self.rfft)
                 return f
-        
+
         return func if F is None else func(F)
 
 
