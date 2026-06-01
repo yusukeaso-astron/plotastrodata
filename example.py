@@ -134,7 +134,7 @@ d.sigma = d.sigma * d.dv * np.sqrt(len(d.v))
 vplus = {'data': d.data, 'sigma': d.sigma, 'cmap': 'gray'}
 plot3d(rmax=0.8, vmin=-5, vmax=5, fitsimage=f'{data_dir}/test3D.fits',
        outname='test3D.html', levels=[3, 6, 9],
-       vplus=vplus, show=False)
+       sigma='hist,edge', vplus=vplus, show=False)
 
 ################################################################################
 # Animation
