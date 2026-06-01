@@ -152,7 +152,10 @@ class Noise:
         if 'pbcor' in self.sigma:
             bounds.append([0.1, 2])
         # curve_fit does not work for this fitting.
-        # 0.01 in sigma is set only to search the best-fit parameters.
+        # For binned data, sigma^2 is the expected number of data in each bin.
+        # However, compared to the idea, this fitting puts more weight
+        # on the bins with more data to selectively fit the noise.
+        # In addition, 0.01 in sigma is set only to find the best parameters.
         # Thus, this sigma does not justify the parameter errors.
         fitter = EmceeCorner(bounds=bounds, model=model,
                              xdata=self.hbin, ydata=self.hist,
