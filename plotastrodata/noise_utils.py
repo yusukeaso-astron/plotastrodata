@@ -153,13 +153,16 @@ class Noise:
             bounds.append([0.1, 2])
         # curve_fit does not work for this fitting.
         # For binned data, sigma^2 is the expected number of data in each bin.
-        # However, compared to the idea, this fitting puts more weight
-        # on the bins with more data to selectively fit the noise.
-        # In addition, 0.01 in sigma is set only to find the best parameters.
-        # Thus, this sigma does not justify the parameter errors.
-        fitter = EmceeCorner(bounds=bounds, model=model,
-                             xdata=self.hbin, ydata=self.hist,
-                             sigma=np.max(self.hist) * 0.01)
+
+        def logl(p):
+            dh = self.hbin[1] - self.hbin[0]
+            ndata = len(np.ravel(self.data)) * dh
+            numobs = self.hist * ndata
+            numexp = model(self.hbin, *p) * ndata
+            chi2 = np.sum((numobs - numexp)**2 / numexp.clip(1, None))
+            return -0.5 * chi2
+
+        fitter = EmceeCorner(bounds=bounds, logl=logl)
         fitter.fit(**_kw)
         self.popt = fitter.popt
         self.mean = float(self.popt[1] * self.s0 + self.m0)

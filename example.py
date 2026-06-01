@@ -15,9 +15,11 @@ f.read(d)
 p = pad(rmax=0.8, center='ICRS 04h04m43.07s 26d18m56.20s')
 p.add_color(**d.todict(), cblabel='Tb (K)')
 p.add_contour(fitsimage=f'{data_dir}/test2D_2.fits', colors='r', sigma=5e-3)
-p.add_contour(fitsimage=f'{data_dir}/test2D.fits', xskip=2, yskip=2, sigma=5e-3)
+p.add_contour(fitsimage=f'{data_dir}/test2D.fits',
+              xskip=2, yskip=2, sigma=5e-3)
 p.add_segment(ampfits=f'{data_dir}/test2Damp.fits',
-              angfits=f'{data_dir}/test2Dang.fits', xskip=3, yskip=3)
+              angfits=f'{data_dir}/test2Dang.fits',
+              xskip=3, yskip=3, sigma=None)
 p.add_scalebar(length=50 / 140, label='50 au')
 p.add_text([0.3, 0.3], slist='text')
 p.add_marker('04h04m43.07s 26d18m56.20s')
@@ -28,12 +30,17 @@ p.set_axis_radec(nticksminor=5, title={'label': '2D image', 'loc': 'right'})
 p.savefig('test2D.png', show=True)
 
 # 3D channel maps
-p = pad(rmax=0.8, fitsimage=f'{data_dir}/test3D.fits', vmin=-5, vmax=5, vskip=2)
-p.add_color(fitsimage=f'{data_dir}/test3D.fits', stretch='log')
-p.add_contour(fitsimage=f'{data_dir}/test3D.fits', colors='r')
-p.add_contour(fitsimage=f'{data_dir}/test2D.fits', colors='b', sigma=5e-3)
+p = pad(rmax=0.8, fitsimage=f'{data_dir}/test3D.fits',
+        vmin=-5, vmax=5, vskip=2)
+p.add_color(fitsimage=f'{data_dir}/test3D.fits',
+            stretch='log', sigma='hist,edge')
+p.add_contour(fitsimage=f'{data_dir}/test3D.fits',
+              colors='r', sigma='hist,edge')
+p.add_contour(fitsimage=f'{data_dir}/test2D.fits',
+              colors='b', sigma=5e-3)
 p.add_segment(ampfits=f'{data_dir}/test2Damp.fits',
-              angfits=f'{data_dir}/test2Dang.fits', xskip=3, yskip=3)
+              angfits=f'{data_dir}/test2Dang.fits',
+              xskip=3, yskip=3, sigma=None)
 p.add_scalebar(length=50 / 140, label='50 au')
 p.add_text([[0.3, 0.3]], slist=['text'], include_chan=[0, 1, 2])
 p.add_marker([0.7, 0.7])
@@ -48,7 +55,8 @@ p.set_axis(grid={}, title='3D channel maps')
 p.savefig('test3D.png', show=True)
 
 # PV diagram
-d = AstroData(fitsimage=f'{data_dir}/testPV.fits', Tb=True, pvpa=60)
+d = AstroData(fitsimage=f'{data_dir}/testPV.fits',
+              Tb=True, sigma=None, pvpa=60)
 f = AstroFrame(pv=True)
 f.read(d)
 p = pad(rmax=0.8, pv=True, swapxy=True, vmin=-5, vmax=5, figsize=(6, 7))
@@ -62,7 +70,7 @@ p.savefig('testPV.png', show=True)
 
 # log log PV
 p = pad(rmax=0.8 * 140, pv=True, quadrants='13', vmin=-5, vmax=5, dist=140)
-p.add_color(fitsimage=f'{data_dir}/testPV.fits', Tb=True,
+p.add_color(fitsimage=f'{data_dir}/testPV.fits', Tb=True, sigma=None,
             cblabel='Tb (K)', show_beam=False, pvpa=60)
 p.add_contour(fitsimage=f'{data_dir}/testPV.fits', colors='r',
               sigma=1e-3, show_beam=False, pvpa=60)
@@ -81,9 +89,11 @@ d.sigma = [d.sigma * d.dv * np.sqrt(20)] * 3
 p = pad(rmax=0.8, center='ICRS 04h04m43.07s 26d18m56.20s')
 p.add_rgb(**d.todict())
 p.add_contour(fitsimage=f'{data_dir}/test2D_2.fits', colors='r', sigma=5e-3)
-p.add_contour(fitsimage=f'{data_dir}/test2D.fits', xskip=2, yskip=2, sigma=5e-3)
+p.add_contour(fitsimage=f'{data_dir}/test2D.fits',
+              xskip=2, yskip=2, sigma=5e-3)
 p.add_segment(ampfits=f'{data_dir}/test2Damp.fits',
-              angfits=f'{data_dir}/test2Dang.fits', xskip=3, yskip=3)
+              angfits=f'{data_dir}/test2Dang.fits',
+              xskip=3, yskip=3, sigma=None)
 p.add_scalebar(length=50 / 140, label='50 au')
 p.add_text([0.3, 0.3], slist='text')
 p.add_marker('04h04m43.07s 26d18m56.20s')
@@ -99,7 +109,7 @@ from plotastrodata.plot_utils import plotprofile
 
 
 plotprofile(fitsimage=f'{data_dir}/test3D.fits', ellipse=[[0.2, 0.2, 0]] * 2,
-            flux=True,
+            flux=True, sigma='hist,edge',
             coords=['04h04m43.045s 26d18m55.766s',
                     '04h04m43.109s 26d18m56.704s'],
             gaussfit=True, savefig='testprofile.png', show=True, width=2)
