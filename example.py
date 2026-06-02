@@ -149,7 +149,8 @@ def update_plot(i):
     p = pad(rmax=0.8, fitsimage=f'{data_dir}/test3D.fits',
             vmin=-5, vmax=5, vskip=4,
             channelnumber=i, fig=fig)
-    p.add_color(fitsimage=f'{data_dir}/test3D.fits', stretch='log')
+    p.add_color(fitsimage=f'{data_dir}/test3D.fits',
+                stretch='log', sigma='hist,edge')
     p.add_scalebar(length=50 / 140, label='50 au')
     p.set_axis_radec(grid={}, title='3D channel maps')
     p.fig.tight_layout()
