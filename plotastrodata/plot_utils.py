@@ -845,9 +845,13 @@ class PlotAstroData(AstroFrame):
 
         Keyword groups accepted in ``**kwargs``:
             AstroData: Data input and metadata, such as ``fitsimage``, ``data``, ``x``, ``y``, ``v``, ``beam``, ``Tb``, ``sigma``, ``center``, ``restfreq``, ``cfactor``, ``pvpa``, ``pv``, and ``bunit``.
+
             Stretcher: Color scaling, such as ``stretch``, ``stretchscale``, ``stretchpower``, ``vmin``, and ``vmax``.
+
             Beam: Beam display, such as ``show_beam``, ``beamcolor``, ``beampos``, and ``beam_kwargs``.
+
             Sampling: ``xskip`` and ``yskip``.
+
             Matplotlib: Additional keyword arguments are passed to ``matplotlib.axes.Axes.pcolormesh``.
 
         Args:
