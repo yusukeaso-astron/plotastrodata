@@ -845,13 +845,9 @@ class PlotAstroData(AstroFrame):
 
         Keyword groups accepted in ``**kwargs``:
             AstroData: Data input and metadata, such as ``fitsimage``, ``data``, ``x``, ``y``, ``v``, ``beam``, ``Tb``, ``sigma``, ``center``, ``restfreq``, ``cfactor``, ``pvpa``, ``pv``, and ``bunit``.
-
             Stretcher: Color scaling, such as ``stretch``, ``stretchscale``, ``stretchpower``, ``vmin``, and ``vmax``.
-
             Beam: Beam display, such as ``show_beam``, ``beamcolor``, ``beampos``, and ``beam_kwargs``.
-
             Sampling: ``xskip`` and ``yskip``.
-
             Matplotlib: Additional keyword arguments are passed to ``matplotlib.axes.Axes.pcolormesh``.
 
         Args:
@@ -1281,7 +1277,13 @@ def plotprofile(coords: list[str] | str = [],
                 getfigax: bool = False,
                 savefig: dict | str | None = None, show: bool = False,
                 **kwargs) -> tuple[object, object]:
-    """Use Axes.plot of matplotlib to plot line profiles at given coordinates. kwargs must include the arguments of AstroData to specify the data to be plotted. kwargs must include the arguments of AstroFrame to specify the ranges and so on for plotting. kwargs can include the arguments of PlotAxes2D to adjust x and y axes.
+    """Plot line profiles extracted from a spectral cube.
+
+    Keyword groups accepted in ``**kwargs``:
+        AstroData: Data input and metadata for the cube, such as ``fitsimage``, ``data``, ``x``, ``y``, ``v``, ``beam``, ``Tb``, ``sigma``, ``center``, ``restfreq``, ``cfactor``, and ``bunit``.
+        AstroFrame: Data trimming and coordinate-frame options, such as ``rmax``, ``center``, ``dist``, ``xoff``, ``yoff``, ``vsys``, ``vmin``, and ``vmax``.
+        PlotAxes2D: Axis formatting, such as ``xlim``, ``ylim``, ``xlabel``, ``ylabel``, ``grid``, ``xscale``, ``yscale``, and tick options.
+        Matplotlib: Additional keyword arguments are passed to ``matplotlib.axes.Axes.plot`` for the profile curve.
 
     Args:
         coords (list, optional): Coordinates. Defaults to [].
@@ -1344,7 +1346,13 @@ def plotslice(length: float, dx: float | None = None, pa: float = 0,
               getfigax: bool = False,
               savefig: str | dict | None = None, show: bool = False,
               **kwargs) -> tuple[object, object]:
-    """Use Axes.plot of matplotlib to plot a 1D spatial slice in a 2D map. kwargs must include the arguments of AstroData to specify the data to be plotted. kwargs must include the arguments of AstroFrame to specify the ranges and so on for plotting. kwargs can include the arguments of PlotAxes2D to adjust x and y axes.
+    """Plot a one-dimensional spatial slice through a 2D map.
+
+    Keyword groups accepted in ``**kwargs``:
+        AstroData: Data input and metadata for the 2D map, such as ``fitsimage``, ``data``, ``x``, ``y``, ``beam``, ``Tb``, ``sigma``, ``center``, ``restfreq``, ``cfactor``, and ``bunit``.
+        AstroFrame: Data trimming and coordinate-frame options, such as ``rmax``, ``center``, ``dist``, ``xoff``, ``yoff``, ``xflip``, ``yflip``, and ``swapxy``.
+        PlotAxes2D: Axis formatting, such as ``xlim``, ``ylim``, ``xlabel``, ``ylabel``, ``grid``, ``xscale``, ``yscale``, and tick options.
+        Matplotlib: Additional keyword arguments are passed to ``matplotlib.axes.Axes.plot`` for the slice curve.
 
     Args:
         length (float): Slice length.
@@ -1476,7 +1484,12 @@ def plot3d(levels: list[float] = [3, 6, 12],
            outname: str = 'plot3d', show: bool = False,
            return_data_layout: bool = False,
            **kwargs) -> None | dict:
-    """Use Plotly. kwargs must include the arguments of AstroData to specify the data to be plotted. kwargs must include the arguments of AstroFrame to specify the ranges and so on for plotting.
+    """Create an interactive Plotly 3D isosurface visualization of a spectral cube.
+
+    Keyword groups accepted in ``**kwargs``:
+        AstroData: Data input and metadata for the cube, such as ``fitsimage``, ``data``, ``x``, ``y``, ``v``, ``beam``, ``Tb``, ``sigma``, ``center``, ``restfreq``, ``cfactor``, and ``bunit``.
+        AstroFrame: Data trimming and coordinate-frame options, such as ``rmax``, ``center``, ``dist``, ``xoff``, ``yoff``, ``vsys``, ``vmin``, ``vmax``, ``xflip``, ``yflip``, and ``swapxy``.
+        Wall maps: ``xplus``, ``xminus``, ``yplus``, ``yminus``, ``vplus``, and ``vminus`` can contain 2D ``data`` plus optional ``levels``, ``sigma``, ``cmap``, and ``alpha``.
 
     Args:
         levels (list, optional): Contour levels. Defaults to [3,6,12].
