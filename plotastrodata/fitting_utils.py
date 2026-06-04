@@ -62,6 +62,21 @@ def _check_GR(samples: np.ndarray, nwalkers: int, ndata: int, dim: int,
 
 
 class EmceeCorner():
+    """Run MCMC fitting and summarize posterior distributions.
+
+    This class wraps ``emcee`` and ``ptemcee`` for simple bounded-parameter fitting.  The likelihood can be supplied directly through ``logl``, or it can be constructed from ``model``, ``xdata``, ``ydata``, and ``sigma``. Parameters are sampled with a uniform prior inside ``bounds`` and zero prior probability outside them.
+
+    After calling :meth:`fit`, the main results are stored as attributes:``samples`` for the post-burn-in chain, ``popt`` for the maximum-likelihood parameter set, and ``plow``, ``pmid``, and ``phigh`` for posterior percentiles.  The samples can be visualized with :meth:`plotcorner` and :meth:`plotchain`.
+
+    Args:
+        bounds (np.ndarray): Parameter bounds with shape ``(dim, 2)``. logl (Callable, optional): Log-likelihood function. Defaults to None.
+        model (Callable, optional): Model function used to construct a Gaussian log likelihood. Defaults to None.
+        xdata (np.ndarray, optional): Independent data passed to ``model``. Defaults to None.
+        ydata (np.ndarray, optional): Observed values compared with ``model(xdata, *params)``. Defaults to None.
+        sigma (np.ndarray, optional): Uncertainty used in the Gaussian likelihood. Defaults to 1.
+        progressbar (bool, optional): Whether to show a progress bar. Defaults to False.
+        percent (list, optional): Lower and upper posterior percentiles. Defaults to [16, 84].
+    """
     warnings.simplefilter('ignore', RuntimeWarning)
 
     def __init__(self, bounds: np.ndarray, logl: Callable | None = None,
@@ -70,18 +85,6 @@ class EmceeCorner():
                  ydata: np.ndarray | None = None,
                  sigma: np.ndarray = 1, progressbar: bool = False,
                  percent: list = [16, 84]):
-        """Make bounds, logl, and logp for ptemcee.
-
-        Args:
-            bounds (np.ndarray): Bounds for ptemcee in the shape of (dim, 2).
-            logl (function, optional): Log likelihood for ptemcee. Defaults to None.
-            model (function, optional): Model function to make a log likelihood function. Defaults to None.
-            xdata (np.ndarray, optional): Input for the model function. Defaults to None.
-            ydata (np.ndarray, optional): Values to be compared with the model. Defaults to None.
-            sigma (np.ndarray, optional): Uncertainty to make a log likelihood function from the model. Defaults to 1.
-            progressbar (bool, optional): Whether to show a progress bar. Defaults to False.
-            percent (list, optional): The lower and upper percentiles to be calculated. Defaults to [16, 84].
-        """
         global global_bounds, global_progressbar
         if len(bounds[0]) > 3:
             global_bounds = np.transpose(bounds)
