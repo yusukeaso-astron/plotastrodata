@@ -841,7 +841,14 @@ class PlotAstroData(AstroFrame):
                   cblabelfontsize: int = 16,
                   cbtickfontsize: int = 14,
                   **kwargs) -> None:
-        """Use Axes.pcolormesh of matplotlib. kwargs must include the arguments of AstroData to specify the data to be plotted. kwargs may include the arguments for Stretcher (stretch, stretchscale, and stretchpower) to specify the stretch parameters. kwargs may include arguments of Beam; a dict of beam_kwargs specifies the beam patch in more detail. kwargs may include xskip and yskip.
+        """Use Axes.pcolormesh of matplotlib.
+
+        Keyword groups accepted in ``**kwargs``:
+            AstroData: Data input and metadata, such as ``fitsimage``, ``data``, ``x``, ``y``, ``v``, ``beam``, ``Tb``, ``sigma``, ``center``, ``restfreq``, ``cfactor``, ``pvpa``, ``pv``, and ``bunit``.
+            Stretcher: Color scaling, such as ``stretch``, ``stretchscale``, ``stretchpower``, ``vmin``, and ``vmax``.
+            Beam: Beam display, such as ``show_beam``, ``beamcolor``, ``beampos``, and ``beam_kwargs``.
+            Sampling: ``xskip`` and ``yskip``.
+            Matplotlib: Additional keyword arguments are passed to ``matplotlib.axes.Axes.pcolormesh``.
 
         Args:
             show_cbar (bool, optional): Show color bar. Defaults to True.
@@ -882,7 +889,13 @@ class PlotAstroData(AstroFrame):
     def add_contour(self,
                     levels: list[float] = [-12, -6, -3, 3, 6, 12, 24, 48, 96, 192, 384],
                     **kwargs) -> None:
-        """Use Axes.contour of matplotlib. kwargs must include the arguments of AstroData to specify the data to be plotted. kwargs may include arguments of Beam; a dict of beam_kwargs specifies the beam patch in more detail. kwargs may include xskip and yskip.
+        """Use Axes.contour of matplotlib.
+
+        Keyword groups accepted in ``**kwargs``:
+            AstroData: Data input and metadata, such as ``fitsimage``, ``data``, ``x``, ``y``, ``v``, ``beam``, ``Tb``, ``sigma``, ``center``, ``restfreq``, ``cfactor``, ``pvpa``, ``pv``, and ``bunit``.
+            Beam: Beam display, such as ``show_beam``, ``beamcolor``, ``beampos``, and ``beam_kwargs``.
+            Sampling: ``xskip`` and ``yskip``.
+            Matplotlib: Additional keyword arguments are passed to ``matplotlib.axes.Axes.contour``.
 
         Args:
             levels (list, optional): Contour levels in the unit of sigma. Defaults to [-12,-6,-3,3,6,12,24,48,96,192,384].
@@ -908,7 +921,15 @@ class PlotAstroData(AstroFrame):
                     rotation: float = 0.,
                     cutoff: float = 3.,
                     **kwargs) -> None:
-        """Use Axes.quiver of matplotlib. kwargs must include the arguments of AstroData to specify the data to be plotted. fitsimage = [ampfits, angfits, Ufits, Qfits]. data = [amp, ang, stU, stQ]. kwargs may include arguments of Beam; a dict of beam_kwargs specifies the beam patch in more detail. kwargs may include xskip and yskip.
+        """Use Axes.quiver of matplotlib.
+
+        ``fitsimage`` is built from ``[ampfits, angfits, Ufits, Qfits]``, and ``data`` is built from ``[amp, ang, stU, stQ]``.
+
+        Keyword groups accepted in ``**kwargs``:
+            AstroData: Data input and metadata, such as ``x``, ``y``, ``v``, ``beam``, ``Tb``, ``sigma``, ``center``, ``restfreq``, ``cfactor``, ``pvpa``, ``pv``, and ``bunit``. The ``fitsimage`` and ``data`` arguments are assembled from the segment-specific arguments above.
+            Beam: Beam display, such as ``show_beam``, ``beamcolor``, ``beampos``, and ``beam_kwargs``.
+            Sampling: ``xskip`` and ``yskip``.
+            Matplotlib: Additional keyword arguments are passed to ``matplotlib.axes.Axes.quiver``.
 
         Args:
             ampfits (str, optional): Input FITS file name. Length of segment. Defaults to None.
@@ -955,7 +976,17 @@ class PlotAstroData(AstroFrame):
             axnow.quiver(x, y, unow, vnow, **_kw)
 
     def add_rgb(self, **kwargs) -> None:
-        """Use PIL.Image and imshow of matplotlib. kwargs must include the arguments of AstroData to specify the data to be plotted. A three-element array ([red, green, blue]) is supposed for all arguments, including vmax and vmin, except for xskip, yskip and show_beam. kwargs may include the arguments for Stretcher (stretch, stretchscale, and stretchpower; three-element array for each) to specify the stretch parameters. kwargs may include arguments of Beam (three-element arrays); a single dict of beam_kwargs specifies the beam patch in more detail. kwargs may include xskip and yskip.
+        """Use PIL.Image and imshow of matplotlib.
+
+        A three-element array ([red, green, blue]) is expected for most data, stretch, and beam arguments, including ``vmin`` and ``vmax``.
+        ``xskip``, ``yskip``, and ``show_beam`` are single values.
+
+        Keyword groups accepted in ``**kwargs``:
+            AstroData: Data input and metadata, such as ``fitsimage``, ``data``, ``x``, ``y``, ``v``, ``beam``, ``Tb``, ``sigma``, ``center``, ``restfreq``, ``cfactor``, ``pvpa``, ``pv``, and ``bunit``.
+            Stretcher: RGB scaling, such as ``stretch``, ``stretchscale``, ``stretchpower``, ``vmin``, and ``vmax``.
+            Beam: Beam display, such as ``show_beam``, ``beamcolor``, ``beampos``, and ``beam_kwargs``.
+            Sampling: ``xskip`` and ``yskip``.
+            Matplotlib: Additional keyword arguments are passed to ``matplotlib.axes.Axes.imshow``.
         """
         from PIL import Image
 
