@@ -1489,7 +1489,6 @@ def plot3d(levels: list[float] = [3, 6, 12],
     Keyword groups accepted in ``**kwargs``:
         AstroData: Data input and metadata for the cube, such as ``fitsimage``, ``data``, ``x``, ``y``, ``v``, ``beam``, ``Tb``, ``sigma``, ``center``, ``restfreq``, ``cfactor``, and ``bunit``.
         AstroFrame: Data trimming and coordinate-frame options, such as ``rmax``, ``center``, ``dist``, ``xoff``, ``yoff``, ``vsys``, ``vmin``, ``vmax``, ``xflip``, ``yflip``, and ``swapxy``.
-        Wall maps: ``xplus``, ``xminus``, ``yplus``, ``yminus``, ``vplus``, and ``vminus`` can contain 2D ``data`` plus optional ``levels``, ``sigma``, ``cmap``, and ``alpha``.
 
     Args:
         levels (list, optional): Contour levels. Defaults to [3,6,12].
