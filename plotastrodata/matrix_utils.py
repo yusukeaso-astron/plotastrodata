@@ -29,11 +29,11 @@ def Mrot(pa: float = 0) -> np.ndarray:
 
 def dot2d(M: np.ndarray = [[1, 0], [0, 1]],
           a: np.ndarray = [0, 0]) -> np.ndarray:
-    """To maltiply a 2 x 2 matrix to (x,y) with arrays of x and y.
+    """Multiply a 2 x 2 matrix by (x,y) with arrays of x and y.
 
     Args:
         M (np.ndarray, optional): 2 x 2 matrix. Defaults to [[1, 0], [0, 1]].
-        a (np.ndarray, optional): 2D vector (of 1D arrays). Defaults to [0].
+        a (np.ndarray, optional): 2D vector (of 1D arrays). Defaults to [0, 0].
 
     Returns:
         np.ndarray: The 2D vector after the matrix multiplied.

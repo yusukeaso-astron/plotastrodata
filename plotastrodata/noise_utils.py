@@ -111,8 +111,8 @@ class Noise:
        'iter': exclude outliers.
        The following methods are acceptable for noise estimation. Only single option is possible.
        'med': calculate rms from the median of data^2 assuming Gaussian.
-       'hist': fit histgram with Gaussian.
-       'hist-pbcor': fit histgram with PB-corrected Gaussian.
+       'hist': fit histogram with Gaussian.
+       'hist-pbcor': fit histogram with PB-corrected Gaussian.
        '(no string)': calculate the mean and standard deviation.
 
     Args:
@@ -126,7 +126,7 @@ class Noise:
         self.s0 = np.std(self.data)
 
     def gen_histogram(self, **kwargs):
-        """Generage a pair of histogram and bins using numpy.histogram. The data values are shifted and scaled by the mean and standard deviation, respectively, to generate the histogram. The mean and standard deviation are stored as self.m0 and self.s0, respectively.
+        """Generate a pair of histogram and bins using numpy.histogram. The data values are shifted and scaled by the mean and standard deviation, respectively, to generate the histogram. The mean and standard deviation are stored as self.m0 and self.s0, respectively.
         """
         _kw = {'bins': 100, 'range': (-3.5, 3.5), 'density': True}
         _kw.update(kwargs)

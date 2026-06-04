@@ -79,8 +79,8 @@ class EmceeCorner():
             xdata (np.ndarray, optional): Input for the model function. Defaults to None.
             ydata (np.ndarray, optional): Values to be compared with the model. Defaults to None.
             sigma (np.ndarray, optional): Uncertainty to make a log likelihood function from the model. Defaults to 1.
-            progressbar (bool, optional): Whether to show a progress bar. Defaults to True.
-            percent (list, optional): The lower and upper percnetiles to be calculated. Defaults to [16, 84].
+            progressbar (bool, optional): Whether to show a progress bar. Defaults to False.
+            percent (list, optional): The lower and upper percentiles to be calculated. Defaults to [16, 84].
         """
         global global_bounds, global_progressbar
         if len(bounds[0]) > 3:
@@ -179,7 +179,7 @@ class EmceeCorner():
 
         Args:
             nwalkersperdim (int, optional): Number of walkers per dimension. Defaults to 2.
-            ntemps (int, optional): Number of temperatures. Defaults to 2.
+            ntemps (int, optional): Number of temperatures. Defaults to 1.
             nsteps (int, optional): Number of steps, including the steps for burn-in. Defaults to 1000.
             nburnin (int, optional): Number of burn-in steps. Defaults to 500.
             ntry (int, optional): Number of trials for the Gelman-Rubin check. Defaults to 1.

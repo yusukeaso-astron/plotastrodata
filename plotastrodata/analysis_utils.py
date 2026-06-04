@@ -90,7 +90,7 @@ class AstroData():
         x (np.ndarray, optional): 1D array. Defaults to None.
         y (np.ndarray, optional): 1D array. Defaults to None.
         v (np.ndarray, optional): 1D array. Defaults to None.
-        beam (np.ndarray, optional): [bmaj, bmin, bpa]. Defaults ot [None, None, None].
+        beam (np.ndarray, optional): [bmaj, bmin, bpa]. Defaults to [None, None, None].
         fitsimage (str, optional): Input fits name. Defaults to None.
         Tb (bool, optional): True means the data array is brightness temperature. Defaults to False.
         sigma (float or str, optional): Noise level or method for measuring it. Defaults to 'hist'.
@@ -392,7 +392,7 @@ class AstroData():
 
         Args:
             dataformask (np.ndarray, optional): 2D or 3D array is used for specifying the mask.
-            includepix (list, optional): Data in this range survivies. Defaults to [].
+            includepix (list, optional): Data in this range survives. Defaults to [].
             excludepix (list, optional): Data in this range is masked. Defaults to [].
         """
         if dataformask is None:
@@ -618,7 +618,7 @@ class AstroFrame():
         vsys (float, optional): Each channel shows v-vsys. Defaults to 0..
         center (str, optional): Central coordinate like '12h34m56.7s 12d34m56.7s'. Defaults to None.
         fitsimage (str, optional): Fits to get center. Defaults to None.
-        rmax (float, optional): The x range is [-rmax, rmax]. The y range is [-rmax, ramx]. Defaults to 1e10.
+        rmax (float, optional): The x range is [-rmax, rmax]. The y range is [-rmax, rmax]. Defaults to 1e10.
         xmax (float, optional): The x range is [xmin, xmax]. Defaults to None.
         xmin (float, optional): The x range is [xmin, xmax]. Defaults to None.
         ymax (float, optional): The y range is [ymin, ymax]. Defaults to None.

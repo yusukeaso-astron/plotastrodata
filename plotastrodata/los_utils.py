@@ -15,7 +15,7 @@ def obs2sys(xobs: np.ndarray, yobs: np.ndarray, zobs: np.ndarray,
         pa (float, optional): Position angle of the "blueshifted outflow" (not the disk major axis) in degrees from yobs (north) to xobs (east). Defaults to 0.
         incl (float, optional): Inclination of the system in degrees. i=0 means face-on. Defaults to 0.
         phi0 (float, optional): Azimuthal angle of the system in degrees, relative to the system that is observed. Defaults to 0.
-        theta0 (float, optional): Polar angle of the x-axis of the system in degrees, relative to the x-axis of the system that is observed. Defaults to pi/2.
+        theta0 (float, optional): Polar angle of the x-axis of the system in degrees, relative to the x-axis of the system that is observed. Defaults to 90.
         polar (bool, optional): If True, the coordinates are in polar coordinates, where theta and phi are in radian. Defaults to False.
 
     Returns:
@@ -50,7 +50,7 @@ def sys2obs(xsys: np.ndarray, ysys: np.ndarray, zsys: np.ndarray,
         pa (float, optional): Position angle of the "blueshifted outflow" (not the disk major axis) in degrees from yobs (north) to xobs (east). Defaults to 0.
         incl (float, optional): Inclination of the system in degrees. i=0 means face-on. Defaults to 0.
         phi0 (float, optional): Azimuthal angle of the system in degrees, relative to the system that is observed. Defaults to 0.
-        theta0 (float, optional): Polar angle of the x-axis of the system in degrees, relative to the x-axis of the system that is observed. Defaults to pi/2.
+        theta0 (float, optional): Polar angle of the x-axis of the system in degrees, relative to the x-axis of the system that is observed. Defaults to 90.
         polar (bool, optional): If True, the coordinates are in polar coordinates, where theta and phi are in radian. Defaults to False.
 
     Returns:
@@ -86,7 +86,7 @@ def polarvel2losvel(v_r: np.ndarray, v_theta: np.ndarray, v_phi: np.ndarray,
         phi (np.ndarray): The azimuthal angle in radian from the x-axis.
         incl (float, optional): Inclination of the system in degrees. i=0 means face-on. Defaults to 0.
         phi0 (float, optional): Azimuthal angle of the system in degrees, relative to the system that is observed. Defaults to 0.
-        theta0 (float, optional): Polar angle of the x-axis of the system in degrees, relative to the x-axis of the system that is observed. Defaults to pi/2.
+        theta0 (float, optional): Polar angle of the x-axis of the system in degrees, relative to the x-axis of the system that is observed. Defaults to 90.
 
     Returns:
         np.ndarray: The line-of-sight velocity.

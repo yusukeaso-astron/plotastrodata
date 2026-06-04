@@ -15,9 +15,9 @@ def Jy2K(header=None, bmaj: float | None = None, bmin: float | None = None,
 
     Args:
         header (optional): astropy.io.fits.open('a.fits')[0].header. Defaults to None.
-        bmaj (float, optional): beam major axis in degree. Defaults to None.
-        bmin (float, optional): beam minor axis in degree. Defaults to None.
-        freq (float, optional): rest frequency in Hz. Defaults to None.
+        bmaj (float, optional): Beam major axis in arcsec. Defaults to None.
+        bmin (float, optional): Beam minor axis in arcsec. Defaults to None.
+        restfreq (float, optional): Rest frequency in Hz. Defaults to None.
 
     Returns:
         float: the conversion factor in the unit of K/Jy.
@@ -57,7 +57,7 @@ class FitsData:
         self.fitsimage = fitsimage
 
     def gen_hdu(self) -> None:
-        """Generate self.hdu, which is astropy,io.fits.open()[0].
+        """Generate self.hdu, which is astropy.io.fits.open()[0].
         """
         hdu = fits.open(self.fitsimage)
         self.hdu = hdu[0]
@@ -94,7 +94,7 @@ class FitsData:
         return None
 
     def gen_beam(self, dist: float = 1.) -> None:
-        """Generate sef.bmaj, self.bmin, self.bpa from header['BMAJ'], etc.
+        """Generate self.bmaj, self.bmin, self.bpa from header['BMAJ'], etc.
 
         Args:
             dist (float, optional): bmaj and bmin are multiplied by dist. Defaults to 1..
@@ -381,8 +381,8 @@ def fits2data(fitsimage: str, Tb: bool = False, log: bool = False,
 
     Args:
         fitsimage (str): Input fits name.
-        Tb (bool, optional): True means ouput data are brightness temperature. Defaults to False.
-        log (bool, optional): True means output data are logarhismic. Defaults to False.
+        Tb (bool, optional): True means output data are brightness temperature. Defaults to False.
+        log (bool, optional): True means output data are logarithmic. Defaults to False.
         dist (float, optional): Change x and y in arcsec to au. Defaults to 1..
         sigma (str, optional): Noise level or method for measuring it. Defaults to None.
         restfreq (float, optional): Used for velocity and brightness temperature. Defaults to None.
@@ -411,7 +411,7 @@ def data2fits(d: np.ndarray, h: dict = {},
     Args:
         d (np.ndarray): N-D array.
         h (dict, optional): Additional FITS header. Defaults to {}.
-        templatefits (str, optional): FITS file whose header is used as a temperate. Defaults to None.
+        templatefits (str, optional): FITS file whose header is used as a template. Defaults to None.
         fitsimage (str, optional): Output filename, with or without '.fits'. Defaults to 'test'.
     """
     _h = {} if templatefits is None else FitsData(templatefits).get_header()

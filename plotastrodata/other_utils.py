@@ -292,7 +292,7 @@ def close_figure(fig: object, savefig: dict | str | None = None,
         fig (object): External plt.figure(). Defaults to None.
         savefig (dict or str, optional): For plt.figure().savefig(). Defaults to None.
         show (bool, optional): True means doing plt.show(). Defaults to False.
-        tight (bool, optional): True means doing fig.tight_layout(). Defaults to False.
+        tight (bool, optional): True means doing fig.tight_layout(). Defaults to True.
     """
     savefig0 = {'bbox_inches': 'tight', 'transparent': True}
     if tight:

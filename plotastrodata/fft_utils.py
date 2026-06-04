@@ -163,7 +163,7 @@ def ifftcentering2(F: np.ndarray,
     Args:
         F (np.ndarray): 2D array. An FFT result in the frequency domain.
         u (np.ndarray, optional): 1D or 2D array. The first frequency coordinate. Defaults to None.
-        v (np.ndarray, optional): 1D or 2D array. The second frequency cooridnate. Defaults to None.
+        v (np.ndarray, optional): 1D or 2D array. The second frequency coordinate. Defaults to None.
         xcenter (float, optional): x of phase reference (used in fftcentering2). Defaults to 0.
         ycenter (float, optional): y of phase reference (used in fftcentering2). Defaults to 0.
         x0 (float, optional): spatial coordinate of x[0]. Defaults to None.
@@ -384,16 +384,16 @@ def fftfits(fitsimage: str, center: str | None = None, lam: float = 1,
 def findindex(u: np.ndarray | None = None, v: np.ndarray | None = None,
               uobs: np.ndarray | None = None, vobs: np.ndarray | None = None
               ) -> np.ndarray:
-    """Find indicies of the observed visibility points.
+    """Find indices of the observed visibility points.
 
     Args:
         u (np.ndarray, optional): 1D array. The first frequency coordinate. Defaults to None.
-        v (np.ndarray, optional): 1D array. The second frequency cooridnate. Defaults to None.
+        v (np.ndarray, optional): 1D array. The second frequency coordinate. Defaults to None.
         uobs (np.ndarray, optional): 1D array. Observed u. Defaults to None.
         vobs (np.ndarray, optional): 1D array. Observed v. Defaults to None.
 
     Returns:
-        np.ndarray: Indicies or an array of indicies.
+        np.ndarray: Indices or an array of indices.
     """
     if u is not None:
         Nu, du = len(u), u[1] - u[0]
@@ -417,13 +417,13 @@ def fftfitssample(fitsimage: str, center: str | None = None,
                   getindex: bool = False,
                   u_sample: np.ndarray | None = None,
                   v_sample: np.ndarray | None = None) -> np.ndarray:
-    """Find indicies or the visibilities on them from an image fits file.
+    """Find indices or the visibilities on them from an image FITS file.
 
     Args:
         fitsimage (str): Input fits name in the unit of Jy/pixel.
         center (str, optional): Text coordinate. Defaults to None.
-        index_u (np.ndarray, optional): Indicies. Output from the getindex mode. Defaults to None.
-        index_v (np.ndarray, optional): Indicies. Output from the getindex mode. Defaults to None.
+        index_u (np.ndarray, optional): Indices. Output from the getindex mode. Defaults to None.
+        index_v (np.ndarray, optional): Indices. Output from the getindex mode. Defaults to None.
         xlim (list, optional): Range of x for zero padding in arcsec.
         ylim (list, optional): Range of y for zero padding in arcsec.
         getindex (bool, optional): True outputs [index_u, index_v]. Defaults to False.
@@ -431,7 +431,7 @@ def fftfitssample(fitsimage: str, center: str | None = None,
         v_sample (np.ndarray, optional): 1D array. Observed u. Defaults to None.
 
     Returns:
-        np.ndarray: Array of indicies or sampled FFT.
+        np.ndarray: Array of indices or sampled FFT.
     """
     F, u, v = fftfits(fitsimage=fitsimage, center=center, xlim=xlim, ylim=ylim)
     if index_u is None or index_v is None:
