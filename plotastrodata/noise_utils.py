@@ -3,19 +3,21 @@ import numbers
 import numpy as np
 import warnings
 from scipy.special import erf
+from typing import Any, Callable
 
 from plotastrodata.fitting_utils import EmceeCorner
 from plotastrodata.other_utils import close_figure
 
 
-def normalize(range: tuple = (-3.5, 3.5), bins: int = 100):
+def normalize(range: tuple[float, float] = (-3.5, 3.5),
+              bins: int = 100) -> Callable:
     """Decorator factory to normalize a function over the given range."""
-    def decorator(f):
+    def decorator(f: Callable) -> Callable:
         h = np.linspace(*range, bins + 1)
         h = (h[1:] + h[:-1]) / 2
         dh = h[1] - h[0]
 
-        def wrapper(x, *args):
+        def wrapper(x: np.ndarray, *args: Any) -> np.ndarray:
             area = np.sum(f(h, *args)) * dh
             if area == 0:
                 p = np.where(np.abs(x - args[1]) < dh / 2, 1 / dh, 0)
@@ -119,13 +121,13 @@ class Noise:
         data (np.ndarray): Original data array.
         sigma (str): Methods above, like 'edge,neg,hist-pbcor'.
     """
-    def __init__(self, data: np.ndarray, sigma: str):
+    def __init__(self, data: np.ndarray, sigma: str) -> None:
         self.data = select_noise(data, sigma)
         self.sigma = sigma
         self.m0 = np.mean(self.data)
         self.s0 = np.std(self.data)
 
-    def gen_histogram(self, **kwargs):
+    def gen_histogram(self, **kwargs: Any) -> None:
         """Generate a pair of histogram and bins using numpy.histogram. The data values are shifted and scaled by the mean and standard deviation, respectively, to generate the histogram. The mean and standard deviation are stored as self.m0 and self.s0, respectively.
         """
         _kw = {'bins': 100, 'range': (-3.5, 3.5), 'density': True}
@@ -138,7 +140,7 @@ class Noise:
         self.hist = hist
         self.hbin = hbin
 
-    def fit_histogram(self, **kwargs):
+    def fit_histogram(self, **kwargs: Any) -> None:
         """kwargs is for plotastrodata.fitting_utils.EmceeCorner.
         """
         _kw = {'nwalkersperdim': 4, 'nsteps': 200, 'nburnin': 0}
@@ -154,7 +156,7 @@ class Noise:
         # curve_fit does not work for this fitting.
         # For binned data, sigma^2 is the expected number of data in each bin.
 
-        def logl(p):
+        def logl(p: np.ndarray) -> float:
             dh = self.hbin[1] - self.hbin[0]
             ndata = len(np.ravel(self.data)) * dh
             numobs = self.hist * ndata
@@ -170,7 +172,7 @@ class Noise:
         self.model = model(self.hbin, *self.popt)
 
     def plot_histogram(self, savefig: dict | str | None = None,
-                       show: bool = False):
+                       show: bool = False) -> None:
         """Make a simple figure of the histogram and model.
 
         Args:
@@ -190,7 +192,7 @@ class Noise:
 
 def estimate_rms(data: np.ndarray,
                  sigma: float | str | None = 'hist'
-                 ) -> float:
+                 ) -> float | None:
     """Estimate a noise level of a data array.
        When a float number or None is given as sigma, this function just outputs it.
 

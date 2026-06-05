@@ -221,7 +221,7 @@ class FftCentering():
                  y: np.ndarray | None = None,
                  xcenter: float = 0,
                  ycenter: float = 0,
-                 rfft: bool = False):
+                 rfft: bool = False) -> None:
         nx = len(x)
         self.x = x
         self.dx = dx = x[1] - x[0]
@@ -252,14 +252,14 @@ class FftCentering():
             np.ndarray: FFT result. When f is None, the return is the FFT function.
         """
         if self.ndim == 1:
-            def func(f: np.ndarray):
+            def func(f: np.ndarray) -> np.ndarray:
                 F, _ = fftcentering(f=f, x=self.x,
                                     xcenter=self.xcenter,
                                     rfft=self.rfft)
                 return F
 
         else:
-            def func(f: np.ndarray):
+            def func(f: np.ndarray) -> np.ndarray:
                 F, _, _ = fftcentering2(f=f, x=self.x, y=self.y,
                                         xcenter=self.xcenter,
                                         ycenter=self.ycenter,
@@ -279,7 +279,7 @@ class FftCentering():
             np.ndarray: iFFT result. When F is None, the return is the iFFT function.
         """
         if self.ndim == 1:
-            def func(F: np.ndarray):
+            def func(F: np.ndarray) -> np.ndarray:
                 f, _ = ifftcentering(F=F, u=self.u,
                                      xcenter=self.xcenter,
                                      x0=self.x[0],
@@ -289,7 +289,7 @@ class FftCentering():
                 return f
 
         else:
-            def func(F: np.ndarray):
+            def func(F: np.ndarray) -> np.ndarray:
                 f, _, _ = ifftcentering2(F=F, u=self.u, v=self.v,
                                          xcenter=self.xcenter,
                                          ycenter=self.ycenter,

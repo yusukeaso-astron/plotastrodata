@@ -1,6 +1,7 @@
 import numpy as np
 from astropy import units, wcs
 from astropy.io import fits
+from typing import Any, Callable
 
 from plotastrodata import const_utils as cu
 from plotastrodata.coord_utils import coord2xy, xy2coord
@@ -9,8 +10,9 @@ from plotastrodata.noise_utils import estimate_rms
 from plotastrodata.other_utils import isdeg, RGIxy, trim
 
 
-def Jy2K(header=None, bmaj: float | None = None, bmin: float | None = None,
-         restfreq: float | None = None) -> float:
+def Jy2K(header: Any = None, bmaj: float | None = None,
+         bmin: float | None = None,
+         restfreq: float | None = None) -> float | None:
     """Calculate a conversion factor in the unit of K/Jy.
 
     Args:
@@ -53,7 +55,7 @@ class FitsData:
     Args:
         fitsimage (str): Input FITS file name.
     """
-    def __init__(self, fitsimage: str):
+    def __init__(self, fitsimage: str) -> None:
         self.fitsimage = fitsimage
 
     def gen_hdu(self) -> None:
@@ -75,7 +77,7 @@ class FitsData:
             self.gen_hdu()
         self.header = self.hdu.header
 
-    def get_header(self, key: str | None = None) -> dict | float:
+    def get_header(self, key: str | None = None) -> Any:
         """Output the entire header or a value when a key is given.
 
         Args:
@@ -146,7 +148,7 @@ class FitsData:
         return a
 
     def gen_data(self, Tb: bool = False, log: bool = False,
-                 drop: bool = True, restfreq: float = None) -> None:
+                 drop: bool = True, restfreq: float | None = None) -> None:
         """Generate data, which may be brightness temperature.
 
         Args:
@@ -167,7 +169,7 @@ class FitsData:
             d = np.log10(d.clip(np.min(d[d > 0]), None))
         self.data = d
 
-    def get_data(self, **kwargs) -> np.ndarray:
+    def get_data(self, **kwargs: Any) -> np.ndarray:
         """Output data. This method can take the arguments of gen_data().
 
         Returns:
@@ -177,7 +179,7 @@ class FitsData:
             self.gen_data(**kwargs)
         return self.data
 
-    def _read_cd(self):
+    def _read_cd(self) -> None:
         h = self.header
         cdij = ['CD1_1', 'CD1_2', 'CD2_1', 'CD2_2']
         if not np.all([k in list(h.keys()) for k in cdij]):
@@ -211,7 +213,7 @@ class FitsData:
             del h[k]
         print(f'WCS rotation was found (CROTA2 = {crota2:f} deg).')
 
-    def _rotate_cd(self):
+    def _rotate_cd(self) -> None:
         h = self.header
         data = self.get_data()
         ic = len(self.x) // 2
@@ -237,7 +239,10 @@ class FitsData:
         self.data = datanew
         print('Data values were interpolated for WCS rotation.')
 
-    def _get_genx_geny(self, center: str, dist: float):
+    def _get_genx_geny(self, center: str,
+                       dist: float
+                       ) -> tuple[Callable[[np.ndarray | None], None],
+                                  Callable[[np.ndarray | None], None]]:
         h = self.header
         cxy = (0, 0)
         if center is not None and not self.wcsrot:
@@ -247,7 +252,7 @@ class FitsData:
             cxy = coord2xy(center, coordorg)
         slabel = ['x', 'y']
 
-        def wrapper(i: int):
+        def wrapper(i: int) -> Callable[[np.ndarray | None], None]:
             def gen_s(s_in: np.ndarray | None) -> None:
                 if h.get(f'NAXIS{i+1}') is None or s_in is None:
                     s, ds = None, None
@@ -262,10 +267,11 @@ class FitsData:
 
         return wrapper(0), wrapper(1)
 
-    def _get_genv(self, restfreq: float | None, vsys: float, pv: bool):
+    def _get_genv(self, restfreq: float | None, vsys: float,
+                  pv: bool) -> Callable[[np.ndarray | None], None]:
         h = self.header
 
-        def gen_v(v_in: np.ndarray) -> None:
+        def gen_v(v_in: np.ndarray | None) -> None:
             vaxis = '2' if pv else '3'
             if h.get(f'NAXIS{vaxis}') is None or v_in is None:
                 self.v, self.dv = None, None
@@ -299,7 +305,7 @@ class FitsData:
 
         return gen_v
 
-    def _get_array(self, i: int) -> np.ndarray:
+    def _get_array(self, i: int) -> np.ndarray | None:
         h = self.header
         n = h.get(f'NAXIS{i:d}')
         if n is None:
@@ -337,7 +343,9 @@ class FitsData:
         if self.wcsrot:
             self._rotate_cd()
 
-    def get_grid(self, **kwargs) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    def get_grid(self, **kwargs: Any
+                 ) -> tuple[np.ndarray | None, np.ndarray | None,
+                            np.ndarray | None]:
         """Output the grids, [x, y, v]. This method can take the arguments of gen_grid().
 
         Returns:
@@ -374,9 +382,10 @@ class FitsData:
 def fits2data(fitsimage: str, Tb: bool = False, log: bool = False,
               dist: float = 1., sigma: str | None = None,
               restfreq: float | None = None, center: str | None = None,
-              vsys: float = 0., pv: bool = False, **kwargs
-              ) -> tuple[np.ndarray, tuple[np.ndarray, np.ndarray, np.ndarray],
-                         np.ndarray, str, float]:
+              vsys: float = 0., pv: bool = False, **kwargs: Any
+              ) -> tuple[np.ndarray, tuple[np.ndarray | None, np.ndarray | None,
+                                           np.ndarray | None],
+                         np.ndarray, str | None, float | None]:
     """Extract data from a fits file. kwargs are arguments of FitsData.trim().
 
     Args:

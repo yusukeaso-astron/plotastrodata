@@ -7,7 +7,7 @@ import warnings
 from dynesty import DynamicNestedSampler as DNS
 from multiprocessing import Pool
 from tqdm import tqdm
-from typing import Callable
+from typing import Any, Callable
 
 from plotastrodata.matrix_utils import Mrot, dot2d
 from plotastrodata.other_utils import close_figure
@@ -83,8 +83,8 @@ class EmceeCorner():
                  model: Callable | None = None,
                  xdata: np.ndarray | None = None,
                  ydata: np.ndarray | None = None,
-                 sigma: np.ndarray = 1, progressbar: bool = False,
-                 percent: list = [16, 84]):
+                 sigma: float | np.ndarray = 1, progressbar: bool = False,
+                 percent: list = [16, 84]) -> None:
         global global_bounds, global_progressbar
         if len(bounds[0]) > 3:
             global_bounds = np.transpose(bounds)
@@ -128,7 +128,7 @@ class EmceeCorner():
                 print('Use logl as log_prob_fn to avoid function-in-function.')
                 log_prob_fn = self.logl
             else:
-                def log_prob_fn(x):
+                def log_prob_fn(x: np.ndarray) -> float:
                     return self.logp(x) + self.logl(x)
 
             sampler_cls = emcee.EnsembleSampler
@@ -142,14 +142,15 @@ class EmceeCorner():
         sampler.run_mcmc(pos0, nsteps)
         return sampler
 
-    def _get_samples(self, sampler, nburnin: int, pt: bool) -> np.ndarray:
+    def _get_samples(self, sampler: Any, nburnin: int,
+                     pt: bool) -> np.ndarray:
         """Extract post-burn-in samples from sampler chain."""
         if pt:
             return sampler.chain[0, :, nburnin:, :]  # temperatures, walkers, steps, dim
         else:
             return sampler.chain[:, nburnin:, :]  # walkers, steps, dim
 
-    def _get_lnp_popt(self, sampler, pt: bool, nburnin: int,
+    def _get_lnp_popt(self, sampler: Any, pt: bool, nburnin: int,
                       ) -> tuple[np.ndarray, np.ndarray]:
         """Get log probabilities and best-fit parameters from sampler."""
         if pt:
@@ -249,8 +250,9 @@ class EmceeCorner():
                       show_titles=True, labels=labels, range=cornerrange)
         close_figure(plt, savefig, show, tight=False)
 
-    def plotchain(self, labels: list = None, ylim: list = None,
-                  savefig: dict | str = None, show: bool = False):
+    def plotchain(self, labels: list | None = None, ylim: list | None = None,
+                  savefig: dict | str | None = None,
+                  show: bool = False) -> None:
         """Plot parameters as a function of steps using self.samples. This method plots nine lines: percent[0], 50%, percent[1] percentiles (over the steps by 1% binning) of percent[0], 50%, percent[1] percentiles (over the walkers).
 
         Args:
@@ -300,7 +302,7 @@ class EmceeCorner():
             i_max = np.unravel_index(np.argmax(p), np.shape(p))[::-1]
             self.popt = np.array([p[i] for p, i in zip(pargrid, i_max)])
 
-            def getpercentile(percent: float):
+            def getpercentile(percent: float) -> np.ndarray:
                 a = [np.percentile(g, percent, method='inverted_cdf', weights=p)
                      for g, p in zip(pargrid, p1d)]
                 return np.array(a)
@@ -310,7 +312,8 @@ class EmceeCorner():
             self.phigh = getpercentile(self.percent[1])
 
     def posteriorongrid(self, ngrid: list[int] | int = 100,
-                        log: list[bool] | bool = False, pcut: float = 0):
+                        log: list[bool] | bool = False,
+                        pcut: float = 0) -> None:
         """Calculate the posterior on a grid of ngrid x ngrid x ... x ngrid.
 
         Args:
@@ -352,7 +355,8 @@ class EmceeCorner():
         self.arrdim_r = arrdim_r
         self._set_results_posteriorongrid()
 
-    def _i_eq_j(self, fig, ax, i: int, k: int) -> None:
+    def _i_eq_j(self, fig: object, ax: np.ndarray,
+                i: int, k: int) -> None:
         x = self.pargrid
         y = self.p1d
         s0 = self.pmid[i]
@@ -378,7 +382,8 @@ class EmceeCorner():
         else:
             plt.setp(ax[k].get_xticklabels(), visible=False)
 
-    def _i_neq_j(self, fig, ax, i: int, j: int, k: int) -> None:
+    def _i_neq_j(self, fig: object, ax: np.ndarray,
+                 i: int, j: int, k: int) -> None:
         x = self.pargrid
         sharex = ax[self.dim * (i - 1) + j]
         sharey = ax[self.dim * i + (j - 1)] if j > 1 else None
@@ -407,8 +412,9 @@ class EmceeCorner():
             plt.setp(ax[k].get_xticklabels(), visible=False)
 
     def plotongrid(self, show: bool = False, savefig: str | None = None,
-                   labels: list[str] = None,
-                   cornerrange: list[float] = None, cmap: str = 'binary',
+                   labels: list[str] | None = None,
+                   cornerrange: list[float] | None = None,
+                   cmap: str = 'binary',
                    levels: list[float] = [0.011109, 0.135335, 0.606531]
                    ) -> None:
         """Make the corner plot from the posterior calculated on a grid.
@@ -447,10 +453,10 @@ class EmceeCorner():
         del self.levels
         close_figure(fig, savefig, show, tight=False)
 
-    def getDNSevidence(self, **kwargs):
+    def getDNSevidence(self, **kwargs: Any) -> dict[str, float]:
         """Calculate the Bayesian evidence for a model using dynamic nested sampling through dynesty.
         """
-        def prior_transform(u):
+        def prior_transform(u: np.ndarray) -> np.ndarray:
             b0 = self.bounds[:, 0]
             b1 = self.bounds[:, 1]
             return b0 + (b1 - b0) * u
@@ -509,7 +515,7 @@ def gaussian2d(xy: np.ndarray,
 
 def gaussfit1d(xdata: np.ndarray, ydata: np.ndarray,
                sigma: float | np.ndarray | None,
-               show: bool = False, **kwargs) -> dict:
+               show: bool = False, **kwargs: Any) -> dict:
     """Gaussian fitting to a pair of 1D arrays.
 
     Args:
@@ -548,7 +554,7 @@ def gaussfit1d(xdata: np.ndarray, ydata: np.ndarray,
 
 def gaussfit2d(xdata: np.ndarray, ydata: np.ndarray, zdata: np.ndarray,
                sigma: float | np.ndarray | None,
-               show: bool = False, **kwargs) -> dict:
+               show: bool = False, **kwargs: Any) -> dict:
     """Gaussian fitting to a pair of 1D arrays.
 
     Args:
@@ -572,7 +578,8 @@ def gaussfit2d(xdata: np.ndarray, ydata: np.ndarray, zdata: np.ndarray,
     xy = np.meshgrid(xdata, ydata)
     sigtmp = sigma or max(np.abs(zmin), np.abs(zmax)) * 0.01
 
-    def model(xy, a, cx, cy, wmaj, wmin, pa):
+    def model(xy: np.ndarray, a: float, cx: float, cy: float,
+              wmaj: float, wmin: float, pa: float) -> np.ndarray | float:
         if wmaj < wmin:
             return np.inf
         else:

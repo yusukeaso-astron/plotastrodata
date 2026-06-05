@@ -3,7 +3,7 @@ import warnings
 from dataclasses import dataclass
 from scipy.interpolate import RegularGridInterpolator as RGI
 from scipy.signal import convolve
-from typing import Callable
+from typing import Any, Callable
 
 from plotastrodata import const_utils as cu
 from plotastrodata.coord_utils import coord2xy, rel2abs, xy2coord
@@ -18,7 +18,7 @@ from plotastrodata.other_utils import (isdeg, nearest_index,
 
 def quadrantmean(data: np.ndarray, x: np.ndarray, y: np.ndarray,
                  quadrants: str = '13'
-                 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+                 ) -> tuple[np.ndarray, np.ndarray, np.ndarray] | None:
     """Take mean between 1st and 3rd (or 2nd and 4th) quadrants.
 
     Args:
@@ -52,7 +52,7 @@ def quadrantmean(data: np.ndarray, x: np.ndarray, y: np.ndarray,
 
 
 def filled2d(data: np.ndarray, x: np.ndarray, y: np.ndarray, n: int = 1,
-             **kwargs) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+             **kwargs: Any) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Fill 2D data, 1D x, and 1D y by a factor of n using RGI.
 
     Args:
@@ -71,8 +71,8 @@ def filled2d(data: np.ndarray, x: np.ndarray, y: np.ndarray, n: int = 1,
     return d, xnew, ynew
 
 
-def _need_multipixels(method):
-    def wrapper(cls, *args, **kwargs):
+def _need_multipixels(method: Callable) -> Callable:
+    def wrapper(cls: Any, *args: Any, **kwargs: Any) -> Any | None:
         singlepixel = cls.dx is None or cls.dy is None
         if singlepixel:
             print('No pixel size.')
@@ -116,7 +116,7 @@ class AstroData():
     pv: bool = False
     bunit: str = ''
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         n = 0
         if self.fitsimage is not None:
             if not isinstance(self.fitsimage, list):
@@ -142,7 +142,7 @@ class AstroData():
         self.beam_org = None
         self.fitsheader = None
 
-    def _binning_one(self, t: str, width: float):
+    def _binning_one(self, t: str, width: float) -> None:
         grid = getattr(self, t)
         if width == 1 or grid is None:
             return
@@ -168,7 +168,7 @@ class AstroData():
         setattr(self, t, gridnew / width)
         setattr(self, dt, sep * width)
 
-    def binning(self, width: list[int] = [1, 1, 1]):
+    def binning(self, width: list[int] = [1, 1, 1]) -> None:
         """Binning up neighboring pixels in the v, y, and x domain.
 
         Args:
@@ -202,7 +202,7 @@ class AstroData():
 
     def centering(self, includexy: bool = True,
                   includev: bool = False,
-                  **kwargs):
+                  **kwargs: Any) -> None:
         """Spatial regridding to set the center at (x,y,v)=(0,0,0).
 
         Args:
@@ -238,7 +238,7 @@ class AstroData():
             print('No change because includexy=False and includev=False.')
 
     @_need_multipixels
-    def circularbeam(self):
+    def circularbeam(self) -> None:
         """Make the beam circular by convolving with 1D Gaussian
         """
         if None in self.beam:
@@ -262,7 +262,8 @@ class AstroData():
         self.beam[1] = self.beam[0]
         self.beam[2] = 0
 
-    def deproject(self, pa: float = 0, incl: float = 0, **kwargs):
+    def deproject(self, pa: float = 0, incl: float = 0,
+                  **kwargs: Any) -> None:
         """Exapnd by a factor of 1/cos(incl) in the direction of pa+90 deg.
 
         Args:
@@ -294,7 +295,7 @@ class AstroData():
     def fit2d(self, model: Callable, bounds: np.ndarray,
               progressbar: bool = False,
               kwargs_fit: dict = {}, kwargs_plotcorner: dict = {},
-              chan: int | None = None):
+              chan: int | None = None) -> dict[str, Any] | None:
         """Fit a given 2D model function to self.data.
 
         Args:
@@ -320,7 +321,7 @@ class AstroData():
             + ' This correction is relatively conservative.'
         warnings.warn(s, UserWarning)
 
-        def logl(p):
+        def logl(p: np.ndarray) -> float:
             rss = np.nansum((model(p, x, y) - d)**2)
             return -0.5 * rss / self.sigma**2 / pixelperbeam
 
@@ -374,7 +375,7 @@ class AstroData():
                 'model': model, 'residual': residual,
                 'center': newcenter}
 
-    def histogram(self, **kwargs) -> tuple:
+    def histogram(self, **kwargs: Any) -> tuple[np.ndarray, np.ndarray]:
         """Output histogram of self.data using numpy.histogram. This method can take the arguments of numpy.histogram.
 
         Returns:
@@ -387,7 +388,7 @@ class AstroData():
 
     def mask(self, dataformask: np.ndarray | None = None,
              includepix: list[float, float] = [],
-             excludepix: list[float, float] = []):
+             excludepix: list[float, float] = []) -> None:
         """Mask self.data using a 2D or 3D array of dataformask.
 
         Args:
@@ -411,7 +412,7 @@ class AstroData():
         if len(excludepix) == 2:
             self.data[(excludepix[0] < mask) * (mask < excludepix[1])] = np.nan
 
-    def _gfit_profile(self, prof: list, gaussfit: bool):
+    def _gfit_profile(self, prof: list, gaussfit: bool) -> dict[str, Any]:
         if not gaussfit:
             return {}
 
@@ -431,7 +432,7 @@ class AstroData():
                 ellipse: list[float, float, float] | None = None,
                 ninterp: int = 1,
                 flux: bool = False, gaussfit: bool = False
-                ) -> tuple[np.ndarray, np.ndarray, dict]:
+                ) -> tuple[np.ndarray, np.ndarray, dict] | None:
         """Get a list of line profiles at given spatial coordinates.
 
         Args:
@@ -477,7 +478,7 @@ class AstroData():
         gfitres = self._gfit_profile(prof, gaussfit)
         return self.v, prof, gfitres
 
-    def rotate(self, pa: float = 0, **kwargs):
+    def rotate(self, pa: float = 0, **kwargs: Any) -> None:
         """Counter clockwise rotation with respect to the center.
 
         Args:
@@ -489,7 +490,7 @@ class AstroData():
             self.beam[2] = self.beam[2] + pa
 
     def slice(self, length: float = 0, pa: float = 0,
-              dx: float | None = None, **kwargs) -> np.ndarray:
+              dx: float | None = None, **kwargs: Any) -> np.ndarray | None:
         """Get 1D slice with given a length and a position-angle.
 
         Args:
@@ -588,18 +589,18 @@ class AstroData():
                   fitsimage=fitsimage)
 
 
-def _as_list(value, n: int, isbeam: bool = False):
+def _as_list(value: Any, n: int, isbeam: bool = False) -> Any:
     if isbeam:
         return [value] * n if np.ndim(value) == 1 else value
     else:
         return value if isinstance(value, list) else [value] * n
 
 
-def _scalar_if_single(value, n: int):
+def _scalar_if_single(value: Any, n: int) -> Any:
     return value[0] if n == 1 else value
 
 
-def _get_gridsep(axis: np.ndarray | None):
+def _get_gridsep(axis: np.ndarray | None) -> float | None:
     return axis[1] - axis[0] if axis is not None and len(axis) > 1 else None
 
 
@@ -651,7 +652,7 @@ class AstroFrame():
     pv: bool = False
     quadrants: str | None = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.xdir = -1 if self.xflip else 1
         self.ydir = -1 if self.yflip else 1
         self.xmin = -self.rmax if self.xmin is None else self.xmin
@@ -699,7 +700,7 @@ class AstroFrame():
                 x[i], y[i] = rel2abs(*p, self.Xlim, self.Ylim)
         return np.array([x, y])
 
-    def _get_restfreq(self, header: dict):
+    def _get_restfreq(self, header: dict) -> float | None:
         """Extract rest frequency from FITS header."""
         if 'RESTFRQ' in header:
             return header['RESTFRQ']
@@ -743,21 +744,22 @@ class AstroFrame():
         d.center[i] = cnew
         return grid
 
-    def _ascending_v(self, d: AstroData, i: int, v: np.ndarray | None):
+    def _ascending_v(self, d: AstroData, i: int,
+                     v: np.ndarray | None) -> None:
         if v is not None and len(v) > 1 and v[1] < v[0]:
             d.data[i], v = d.data[i][::-1], v[::-1]
             print('Velocity has been inverted.')
         d.v = v
 
     def _xyskip(self, d: AstroData, i: int,
-                x: np.ndarray | None, y: np.ndarray | None):
+                x: np.ndarray | None, y: np.ndarray | None) -> None:
         d.x = x[::self.xskip]
         d.y = y[::self.yskip]
         data = np.moveaxis(d.data[i], [-2, -1], [0, 1])
         data = data[::self.yskip, ::self.xskip]
         d.data[i] = np.moveaxis(data, [0, 1], [-2, -1])
 
-    def _trim_skip(self, d: AstroData, i: int, grid: list):
+    def _trim_skip(self, d: AstroData, i: int, grid: list) -> None:
         d.data[i], grid = trim(data=d.data[i],
                                x=grid[0], y=grid[1], v=grid[2],
                                xlim=self.xlim, ylim=self.ylim,
@@ -773,7 +775,7 @@ class AstroFrame():
         for axis in ['x', 'y', 'v']:
             setattr(d, f'd{axis}', _get_gridsep(getattr(d, axis)))
 
-    def _convert_to_Tb(self, d: AstroData, i: int):
+    def _convert_to_Tb(self, d: AstroData, i: int) -> None:
         """Convert Jy/beam data to brightness temperature if requested."""
         if not d.Tb[i]:
             return
@@ -790,7 +792,7 @@ class AstroFrame():
         if d.sigma[i] is not None:
             d.sigma[i] = d.sigma[i] * factor
 
-    def _set_pv_beam(self, d: AstroData, i: int):
+    def _set_pv_beam(self, d: AstroData, i: int) -> None:
         """Set effective PV beam."""
         if not self.pv or d.pv[i] or None in d.beam[i]:
             return
@@ -803,7 +805,7 @@ class AstroFrame():
         beam_incut = 1 / np.hypot(np.cos(angle) / bmaj, np.sin(angle) / bmin)
         d.beam[i] = np.array([np.abs(d.dv), beam_incut, 0])
 
-    def _read_one(self, d: AstroData, i: int):
+    def _read_one(self, d: AstroData, i: int) -> None:
         if d.center[i] == 'common':
             d.center[i] = self.center
         d.sigma_org[i] = d.sigma[i]
@@ -826,7 +828,7 @@ class AstroFrame():
         d.fitsimage_org[i] = d.fitsimage[i]
         d.fitsimage[i] = None
 
-    def read(self, d: AstroData, xskip: int = 1, yskip: int = 1):
+    def read(self, d: AstroData, xskip: int = 1, yskip: int = 1) -> None:
         """Get data, grid, sigma, beam, and bunit from AstroData, which is a part of the input of add_color, add_contour, add_segment, and add_rgb.
 
         Args:

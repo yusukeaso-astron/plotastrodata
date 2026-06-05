@@ -3,10 +3,10 @@ import numbers
 import numpy as np
 import warnings
 from scipy.interpolate import RegularGridInterpolator as RGI
-from typing import Callable
+from typing import Any, Callable
 
 
-def listing(*args) -> list:
+def listing(*args: Any) -> list:
     """Output a list of the input when the input is string or number.
 
     Returns:
@@ -20,7 +20,7 @@ def listing(*args) -> list:
     return b
 
 
-def isdeg(s: str) -> bool:
+def isdeg(s: Any) -> bool:
     """Whether the given string means degree.
 
     Args:
@@ -69,7 +69,9 @@ def trim(data: np.ndarray | None = None, x: np.ndarray | None = None,
     Returns:
         tuple: Trimmed (data, [x,y,v]).
     """
-    def get_bounds(arr, lim):
+    def get_bounds(arr: np.ndarray | None,
+                   lim: list[float] | None
+                   ) -> tuple[np.ndarray | None, int, int | None]:
         if arr is None or lim is None or None in lim:
             return arr, 0, None
         lo = nearest_index(arr, max(np.min(arr), np.min(lim)))
@@ -124,7 +126,7 @@ def to4dim(data: np.ndarray) -> np.ndarray:
 def reform_grid(v: np.ndarray | None = None,
                 k0: int | None = None, k1: int | None = None,
                 vmin: float | None = None, vmax: float | None = None
-                ) -> np.ndarray:
+                ) -> np.ndarray | None:
     """Extend or cut the given 1D array based on the given range.
 
     Args:
@@ -162,7 +164,7 @@ def reform_grid(v: np.ndarray | None = None,
 
 def reform_data(c: np.ndarray, v_in: np.ndarray | None,
                 nv: int, v_org: np.ndarray | None = None,
-                vskip: int = 1) -> np.ndarray:
+                vskip: int = 1) -> np.ndarray | None:
     """Skip and fill channels with nan.
 
     Args:
@@ -218,7 +220,7 @@ def reform_data(c: np.ndarray, v_in: np.ndarray | None,
 
 def RGIxy(y: np.ndarray, x: np.ndarray, data: np.ndarray,
           yxnew: tuple[np.ndarray, np.ndarray] | None = None,
-          **kwargs) -> Callable | np.ndarray:
+          **kwargs: Any) -> Callable | np.ndarray | None:
     """RGI for x and y at each channel.
 
     Args:
@@ -253,7 +255,7 @@ def RGIxy(y: np.ndarray, x: np.ndarray, data: np.ndarray,
 
 def RGIxyv(v: np.ndarray, y: np.ndarray, x: np.ndarray, data: np.ndarray,
            vyxnew: tuple[np.ndarray, np.ndarray, np.ndarray] | None = None,
-           **kwargs) -> Callable | np.ndarray:
+           **kwargs: Any) -> Callable | np.ndarray | None:
     """RGI in the x-y-v space.
 
     Args:

@@ -27,8 +27,8 @@ def Mrot(pa: float = 0) -> np.ndarray:
     return np.array([[np.cos(p), -np.sin(p)], [np.sin(p), np.cos(p)]])
 
 
-def dot2d(M: np.ndarray = [[1, 0], [0, 1]],
-          a: np.ndarray = [0, 0]) -> np.ndarray:
+def dot2d(M: np.ndarray | list[list[float]] = [[1, 0], [0, 1]],
+          a: np.ndarray | list[float] = [0, 0]) -> np.ndarray:
     """Multiply a 2 x 2 matrix by (x,y) with arrays of x and y.
 
     Args:

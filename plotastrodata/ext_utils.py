@@ -1,11 +1,12 @@
 import numpy as np
 import shlex
 import subprocess
+from typing import Any
 
 from plotastrodata import const_utils as cu
 
 
-def terminal(cmd: str, **kwargs) -> None:
+def terminal(cmd: str, **kwargs: Any) -> None:
     """Run a terminal command through subprocess.run.
 
     Args:
@@ -14,7 +15,7 @@ def terminal(cmd: str, **kwargs) -> None:
     subprocess.run(shlex.split(cmd), **kwargs)
 
 
-def runpython(filename: str, **kwargs) -> None:
+def runpython(filename: str, **kwargs: Any) -> None:
     """Run a python file.
 
     Args:

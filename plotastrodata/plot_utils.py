@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from dataclasses import dataclass
 from matplotlib.patches import Ellipse, Rectangle
-from typing import TypeVar, Callable
+from typing import Any, TypeVar, Callable
 
 from plotastrodata.analysis_utils import AstroData, AstroFrame
 from plotastrodata.coord_utils import (coord2xy, xy2coord,
@@ -147,7 +147,7 @@ def _get_gridwidth(mode: str, rmax: float, cos_dec: float
     return base * 10**order, int(order)
 
 
-def _get_v(p, v: np.ndarray | None = None,
+def _get_v(p: Any, v: np.ndarray | None = None,
            restfreq: float | None = None,
            vskip: int = 1) -> np.ndarray:
     if p.fitsimage is not None and v is None:
@@ -177,8 +177,8 @@ def _get_ch2nij(nrows: int = 1, ncols: int = 1) -> Callable:
     return ch2nij
 
 
-def _get_vskipfill(nv: float, v_org: np.ndarray, vskip: int,
-                   channelnumber: int) -> Callable:
+def _get_vskipfill(nv: int, v_org: np.ndarray, vskip: int,
+                   channelnumber: int | None) -> Callable:
     def vskipfill(c: np.ndarray, v_in: np.ndarray) -> np.ndarray:
         c = reform_data(c=c, v_in=v_in, nv=nv, v_org=v_org, vskip=vskip)
         if isinstance(channelnumber, int):
@@ -206,7 +206,7 @@ class Stretcher():
     vmax: float | None = None
     sigma: float = 0
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.n = 1 if isinstance(self.stretch, str) else len(self.stretch)
         stretch = self.stretch
         stsc = self.stretchscale
@@ -316,14 +316,14 @@ class Beam():
                  beam: list[float | None] = [None] * 3,
                  beamcolor: str = 'gray',
                  beampos: list[float] | None = None,
-                 beam_kwargs: dict = {}):
+                 beam_kwargs: dict = {}) -> None:
         self.show_beam = show_beam
         self.beam = beam
         self.beamcolor = beamcolor
         self.beampos = beampos
         self.beam_kwargs = beam_kwargs
 
-    def todict(self):
+    def todict(self) -> dict[str, Any]:
         tmp = {'show_beam': self.show_beam,
                'beam': self.beam,
                'beamcolor': self.beamcolor,
@@ -371,7 +371,7 @@ class PlotAxes2D():
     grid: dict | None = None
     aspect: dict | float | None = None
 
-    def _set_scale(self):
+    def _set_scale(self) -> None:
         ax = self.ax
         if self.loglog is not None:
             self.xscale = self.yscale = 'log'
@@ -385,7 +385,7 @@ class PlotAxes2D():
         ax.set_xscale(self.xscale)
         ax.set_yscale(self.yscale)
 
-    def _init_ticks(self, axis):
+    def _init_ticks(self, axis: str) -> None:
         ax = self.ax
         ticks_attr = f'{axis}ticks'
         ticklabels_attr = f'{axis}ticklabels'
@@ -399,13 +399,13 @@ class PlotAxes2D():
                 setattr(self, ticklabels_attr, ticklabels)
             setattr(self, ticks_attr, ticks)
 
-    def _make_ticks(self, ticks, ticksminor):
+    def _make_ticks(self, ticks: np.ndarray, ticksminor: int) -> np.ndarray:
         dt = ticks[1] - ticks[0]
         t = np.r_[ticks[0] - dt, ticks, ticks[-1] + dt]
         num = ticksminor * (len(t) - 1) + 1
         return np.linspace(t[0], t[-1], num)
 
-    def _set_ticks(self, axis):
+    def _set_ticks(self, axis: str) -> None:
         ax = self.ax
         attr = f'{axis}ticks'
         ticks = getattr(self, attr)
@@ -416,7 +416,7 @@ class PlotAxes2D():
                 ticksminor = self._make_ticks(ticks, ticksminor)
             getattr(ax, f'set_{attr}')(ticksminor, minor=True)
 
-    def _apply_if_not_none(self, axis, attr):
+    def _apply_if_not_none(self, axis: str, attr: str) -> None:
         ax = self.ax
         method = getattr(ax, f'set_{axis}{attr}')
         value = getattr(self, f'{axis}{attr}')
@@ -426,7 +426,7 @@ class PlotAxes2D():
             else:
                 method(value)
 
-    def set_xyaxes(self, ax):
+    def set_xyaxes(self, ax: Any) -> None:
         self.ax = ax
         self._set_scale()
         if self.samexy:
@@ -447,7 +447,7 @@ class PlotAxes2D():
                 ax.set_aspect(self.aspect)
 
 
-def kwargs2instance(cls: type[T], kw: dict) -> T:
+def kwargs2instance(cls: type[T], kw: dict[str, Any]) -> T:
     """Get an instance and remove its arguments from kwargs.
 
     Args:
@@ -514,7 +514,7 @@ class PlotAstroData(AstroFrame):
                  nancolor: str = 'w', dpi: int = 256,
                  figsize: tuple[float, float] | None = None,
                  fig: object | None = None, ax: object | None = None,
-                 **kwargs) -> None:
+                 **kwargs: Any) -> None:
         super().__init__(**kwargs)
         internalfig = fig is None
         internalax = ax is None
@@ -566,7 +566,7 @@ class PlotAstroData(AstroFrame):
         self.v = v
         self.vskipfill = _get_vskipfill(nv, v, vskip, channelnumber)
 
-    def _map_init(self, kw: dict) -> tuple:
+    def _map_init(self, kw: dict[str, Any]) -> tuple:
         """
         Common process for add_color, add_contour, add_segment, and add_rgb.
         xskip and yskip (int) mean spatial pixel skips, which defaults to 1.
@@ -593,7 +593,8 @@ class PlotAstroData(AstroFrame):
         return (d.data, d.x, d.y, d.v, d.sigma, d.bunit,
                 self._kw, singlepix)
 
-    def _validchan(self, include_chan: list) -> list:
+    def _validchan(self, include_chan: list[int] | None
+                   ) -> np.ndarray | list[int]:
         chans = self.allchan if include_chan is None else include_chan
         if self.animation:
             chans = [0] if self.channelnumber in include_chan else [1]
@@ -604,7 +605,7 @@ class PlotAstroData(AstroFrame):
                    majlist: list[float] = [], minlist: list[float] = [],
                    palist: list[float] = [],
                    include_chan: list[int] | None = None,
-                   **kwargs) -> None:
+                   **kwargs: Any) -> None:
         """Use add_patch() and Rectangle or Ellipse of matplotlib.
 
         Args:
@@ -641,7 +642,7 @@ class PlotAstroData(AstroFrame):
                       angle=angle * self.xdir, **_kw)
                 axnow.add_patch(p)
 
-    def add_beam(self, **kwargs) -> None:
+    def add_beam(self, **kwargs: Any) -> None:
         """Use add_region(). kwargs may include the arguments of Beam, except for beam_kwargs, to specify the beam apparance. Those arguments may be a list of each format.
         """
         b = kwargs2instance(Beam, kwargs)
@@ -676,7 +677,8 @@ class PlotAstroData(AstroFrame):
                             **_kw)
 
     def add_marker(self, poslist: list[str | list[float, float]] = [],
-                   include_chan: list[int] | None = None, **kwargs) -> None:
+                   include_chan: list[int] | None = None,
+                   **kwargs: Any) -> None:
         """Use Axes.plot of matplotlib.
 
         Args:
@@ -694,7 +696,8 @@ class PlotAstroData(AstroFrame):
 
     def add_text(self, poslist: list[str | list[float, float]] = [],
                  slist: list[str] = [],
-                 include_chan: list[int] | None = None, **kwargs) -> None:
+                 include_chan: list[int] | None = None,
+                 **kwargs: Any) -> None:
         """Use Axes.text of matplotlib.
 
         Args:
@@ -719,8 +722,9 @@ class PlotAstroData(AstroFrame):
 
     def add_line(self, poslist: list[str | list[float, float]] = [],
                  anglelist: list[float] = [],
-                 rlist: list[float] = [], include_chan: list[int] | None = None,
-                 **kwargs) -> None:
+                 rlist: list[float] = [],
+                 include_chan: list[int] | None = None,
+                 **kwargs: Any) -> None:
         """Use Axes.plot of matplotlib.
 
         Args:
@@ -743,8 +747,9 @@ class PlotAstroData(AstroFrame):
 
     def add_arrow(self, poslist: list[str | list[float, float]] = [],
                   anglelist: list[float] = [],
-                  rlist: list[float] = [], include_chan: list[int] | None = None,
-                  **kwargs) -> None:
+                  rlist: list[float] = [],
+                  include_chan: list[int] | None = None,
+                  **kwargs: Any) -> None:
         """Use Axes.quiver of matplotlib.
 
         Args:
@@ -795,12 +800,12 @@ class PlotAstroData(AstroFrame):
             axnow.plot([x[0] - length/2., x[0] + length/2.], [y[0], y[0]],
                        '-', linewidth=linewidth, color=color)
 
-    def _set_colorbar(self, mappable, ch: int, show_cbar: bool,
+    def _set_colorbar(self, mappable: list[Any], ch: int, show_cbar: bool,
                       cblabel: str, cbformat: str,
                       cbticks: list | None, cbticklabels: list | None,
                       cblocation: str,
                       cblabelfontsize: int, cbtickfontsize: int,
-                      st: Stretcher):
+                      st: Stretcher) -> None:
         if not show_cbar:
             return
 
@@ -834,13 +839,13 @@ class PlotAstroData(AstroFrame):
     def add_color(self,
                   show_cbar: bool = True,
                   cblabel: str | None = None,
-                  cbformat: float = '%.1e',
+                  cbformat: str = '%.1e',
                   cbticks: list[float] | None = None,
                   cbticklabels: list[str] | None = None,
                   cblocation: str = 'right',
                   cblabelfontsize: int = 16,
                   cbtickfontsize: int = 14,
-                  **kwargs) -> None:
+                  **kwargs: Any) -> None:
         """Use Axes.pcolormesh of matplotlib.
 
         Keyword groups accepted in ``**kwargs``:
@@ -888,7 +893,7 @@ class PlotAstroData(AstroFrame):
 
     def add_contour(self,
                     levels: list[float] = [-12, -6, -3, 3, 6, 12, 24, 48, 96, 192, 384],
-                    **kwargs) -> None:
+                    **kwargs: Any) -> None:
         """Use Axes.contour of matplotlib.
 
         Keyword groups accepted in ``**kwargs``:
@@ -911,8 +916,8 @@ class PlotAstroData(AstroFrame):
             axnow.contour(x, y, cnow, np.sort(levels) * sigma, **_kw)
 
     def add_segment(self,
-                    ampfits: str = None, angfits: str = None,
-                    Ufits: str = None, Qfits: str = None,
+                    ampfits: str | None = None, angfits: str | None = None,
+                    Ufits: str | None = None, Qfits: str | None = None,
                     amp: list[np.ndarray] | None = None,
                     ang: list[np.ndarray] | None = None,
                     stU: list[np.ndarray] | None = None,
@@ -920,7 +925,7 @@ class PlotAstroData(AstroFrame):
                     ampfactor: float = 1., angonly: bool = False,
                     rotation: float = 0.,
                     cutoff: float = 3.,
-                    **kwargs) -> None:
+                    **kwargs: Any) -> None:
         """Use Axes.quiver of matplotlib.
 
         ``fitsimage`` is built from ``[ampfits, angfits, Ufits, Qfits]``, and ``data`` is built from ``[amp, ang, stU, stQ]``.
@@ -975,7 +980,7 @@ class PlotAstroData(AstroFrame):
         for axnow, unow, vnow in zip(self.ax, U, V):
             axnow.quiver(x, y, unow, vnow, **_kw)
 
-    def add_rgb(self, **kwargs) -> None:
+    def add_rgb(self, **kwargs: Any) -> None:
         """Use PIL.Image and imshow of matplotlib.
 
         A three-element array ([red, green, blue]) is expected for most data, stretch, and beam arguments, including ``vmin`` and ``vmax``.
@@ -1020,7 +1025,8 @@ class PlotAstroData(AstroFrame):
             axnow.imshow(im, extent=[x[0], x[-1], y[0], y[-1]])
             axnow.set_aspect(np.abs((x[-1]-x[0]) / (y[-1]-y[0])))
 
-    def _set_axis_shared(self, pa2: PlotAxes2D, title: dict | str | None):
+    def _set_axis_shared(self, pa2: PlotAxes2D,
+                         title: dict | str | None) -> None:
         """Internal method used in set_axis() and set_axis_radec().
 
         Args:
@@ -1051,7 +1057,8 @@ class PlotAstroData(AstroFrame):
                 t = {'label': title} if isinstance(title, str) else title
                 axnow.set_title(**t)
 
-    def set_axis(self, title: dict | str | None = None, **kwargs) -> None:
+    def set_axis(self, title: dict | str | None = None,
+                 **kwargs: Any) -> None:
         """Use Axes.set_* of matplotlib. kwargs can include the arguments of PlotAxes2D to adjust x and y axis.
 
         Args:
@@ -1135,7 +1142,7 @@ class PlotAstroData(AstroFrame):
         cos_dec = np.cos(np.radians(dec_center))
         intgrid = np.array([-3, -2, -1, 0, 1, 2, 3])
 
-        def makegrid(mode: str):
+        def makegrid(mode: str) -> tuple[np.ndarray, np.ndarray, list[str]]:
             second = float(get_sec(center, mode))
             no_sec = on_min_scale and (mode == 'dec')
             # gridwidth is a float like 2 x 10^order (arcsec).
@@ -1176,7 +1183,7 @@ class PlotAstroData(AstroFrame):
         self._set_axis_shared(pa2=pa2, title=title)
 
     def savefig(self, filename: str | None = None,
-                show: bool = False, **kwargs) -> None:
+                show: bool = False, **kwargs: Any) -> None:
         """Use savefig of matplotlib.
 
         Args:
@@ -1200,7 +1207,7 @@ class PlotAstroData(AstroFrame):
             plt.show()
         plt.close('all')
 
-    def get_figax(self) -> tuple[object, object]:
+    def get_figax(self) -> tuple[object, object] | None:
         """Output the external fig and ax after plotting.
 
         Returns:
@@ -1248,7 +1255,8 @@ def _prep_plotprofile(width: int, coords: list | str,
     return v, prof, gfitres, pa2, ylabel
 
 
-def _set_figax_plotprofile(fig, ax, nrows: int, ncols: int,
+def _set_figax_plotprofile(fig: object | None, ax: object | None,
+                           nrows: int, ncols: int,
                            nprof: int) -> tuple:
     if ncols == 1:
         nrows = nprof
@@ -1276,7 +1284,7 @@ def plotprofile(coords: list[str] | str = [],
                 fig: object | None = None, ax: object | None = None,
                 getfigax: bool = False,
                 savefig: dict | str | None = None, show: bool = False,
-                **kwargs) -> tuple[object, object]:
+                **kwargs: Any) -> tuple[object, object] | None:
     """Plot line profiles extracted from a spectral cube.
 
     Keyword groups accepted in ``**kwargs``:
@@ -1345,7 +1353,7 @@ def plotslice(length: float, dx: float | None = None, pa: float = 0,
               fig: object | None = None, ax: object | None = None,
               getfigax: bool = False,
               savefig: str | dict | None = None, show: bool = False,
-              **kwargs) -> tuple[object, object]:
+              **kwargs: Any) -> tuple[object, object] | None:
     """Plot a one-dimensional spatial slice through a 2D map.
 
     Keyword groups accepted in ``**kwargs``:
@@ -1412,7 +1420,7 @@ def plotslice(length: float, dx: float | None = None, pa: float = 0,
 
 def _plot_on_wall(d: AstroData, x: np.ndarray, y: np.ndarray, v: np.ndarray,
                   measure: object, datalist: list,
-                  sign: int, axis: int, **kwargs):
+                  sign: int, axis: int, **kwargs: Any) -> None:
     dx, dy, dv = x[1] - x[0], y[1] - y[0], v[1] - v[0]
     s, ds = [x, y, v], [dx, dy, dv]
     if kwargs == {}:
@@ -1483,7 +1491,7 @@ def plot3d(levels: list[float] = [3, 6, 12],
            vplus: dict = {}, vminus: dict = {},
            outname: str = 'plot3d', show: bool = False,
            return_data_layout: bool = False,
-           **kwargs) -> None | dict:
+           **kwargs: Any) -> None | dict:
     """Create an interactive Plotly 3D isosurface visualization of a spectral cube.
 
     Keyword groups accepted in ``**kwargs``:
