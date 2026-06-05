@@ -128,7 +128,12 @@ class Noise:
         self.s0 = np.std(self.data)
 
     def gen_histogram(self, **kwargs: Any) -> None:
-        """Generate a pair of histogram and bins using numpy.histogram. The data values are shifted and scaled by the mean and standard deviation, respectively, to generate the histogram. The mean and standard deviation are stored as self.m0 and self.s0, respectively.
+        """Generate a pair of histogram and bins using numpy.histogram.
+
+        The data values are shifted and scaled by the mean and standard deviation, respectively, to generate the histogram. The mean and standard deviation are stored as self.m0 and self.s0, respectively.
+
+        Default keyword values:
+            numpy.histogram: ``bins=100``, ``range=(-3.5, 3.5)``, and ``density=True``. User-supplied keyword arguments override these values.
         """
         _kw = {'bins': 100, 'range': (-3.5, 3.5), 'density': True}
         _kw.update(kwargs)
@@ -141,7 +146,10 @@ class Noise:
         self.hbin = hbin
 
     def fit_histogram(self, **kwargs: Any) -> None:
-        """kwargs is for plotastrodata.fitting_utils.EmceeCorner.
+        """Fit the noise histogram with plotastrodata.fitting_utils.EmceeCorner.
+
+        Default keyword values:
+            EmceeCorner.fit: ``nwalkersperdim=4``, ``nsteps=200``, and ``nburnin=0``. User-supplied keyword arguments override these values.
         """
         _kw = {'nwalkersperdim': 4, 'nsteps': 200, 'nburnin': 0}
         _kw.update(kwargs)

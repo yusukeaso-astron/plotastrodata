@@ -608,6 +608,9 @@ class PlotAstroData(AstroFrame):
                    **kwargs: Any) -> None:
         """Use add_patch() and Rectangle or Ellipse of matplotlib.
 
+        Default keyword values:
+            Matplotlib patch: ``facecolor='none'``, ``edgecolor='gray'``, ``linewidth=1.5``, and ``zorder=10``. User-supplied keyword arguments override these values.
+
         Args:
             patch (str, optional): 'ellipse' or 'rectangle'. Defaults to 'ellipse'.
             poslist (list, optional): Text or relative center. Defaults to [].
@@ -643,7 +646,12 @@ class PlotAstroData(AstroFrame):
                 axnow.add_patch(p)
 
     def add_beam(self, **kwargs: Any) -> None:
-        """Use add_region(). kwargs may include the arguments of Beam, except for beam_kwargs, to specify the beam apparance. Those arguments may be a list of each format.
+        """Use add_region() to plot the beam.
+
+        kwargs may include the arguments of Beam, except for beam_kwargs, to specify the beam appearance. Those arguments may be a list of each format.
+
+        Default keyword values:
+            Beam patch: ``facecolor=beamcolor`` and ``edgecolor=None``. Other keyword arguments override these values and are passed to ``add_region``.
         """
         b = kwargs2instance(Beam, kwargs)
         show_beam, beamcolor, beampos = b.show_beam, b.beamcolor, b.beampos
@@ -681,6 +689,9 @@ class PlotAstroData(AstroFrame):
                    **kwargs: Any) -> None:
         """Use Axes.plot of matplotlib.
 
+        Default keyword values:
+            Matplotlib: ``marker='+'``, ``ms=10``, ``mfc='gray'``, ``mec='gray'``, ``mew=2``, ``alpha=1``, and ``zorder=10``. User-supplied keyword arguments override these values.
+
         Args:
             poslist (list, optional): Text or relative. Defaults to [].
             include_chan (list, optional): None means all. Defaults to None.
@@ -699,6 +710,10 @@ class PlotAstroData(AstroFrame):
                  include_chan: list[int] | None = None,
                  **kwargs: Any) -> None:
         """Use Axes.text of matplotlib.
+
+        Default keyword values:
+            Matplotlib: ``color='gray'``, ``fontsize=15``, ``ha='center'``, ``va='center'``, and ``zorder=10``. User-supplied keyword arguments override these values.
+            Aliases: ``horizontalalignment`` and ``verticalalignment`` are accepted as aliases for ``ha`` and ``va``.
 
         Args:
             poslist (list, optional): Text or relative. Defaults to [].
@@ -727,6 +742,9 @@ class PlotAstroData(AstroFrame):
                  **kwargs: Any) -> None:
         """Use Axes.plot of matplotlib.
 
+        Default keyword values:
+            Matplotlib: ``color='gray'``, ``linewidth=1.5``, ``linestyle='-'``, and ``zorder=10``. User-supplied keyword arguments override these values.
+
         Args:
             poslist (list, optional): Text or relative. Defaults to [].
             anglelist (list, optional): North to east. Defaults to [].
@@ -751,6 +769,9 @@ class PlotAstroData(AstroFrame):
                   include_chan: list[int] | None = None,
                   **kwargs: Any) -> None:
         """Use Axes.quiver of matplotlib.
+
+        Default keyword values:
+            Matplotlib: ``color='gray'``, ``width=0.012``, ``headwidth=5``, ``headlength=5``, and ``zorder=10``. User-supplied keyword arguments override these values.
 
         Args:
             poslist (list, optional): Text or relative. Defaults to [].
@@ -784,6 +805,7 @@ class PlotAstroData(AstroFrame):
             barpos (tuple, optional): Relative position. Defaults to (0.8, 0.12).
             fontsize (float, optional): None means 15 if one channel else 20. Defaults to None.
             linewidth (float, optional): Width of the bar. Defaults to 3.
+            bbox (dict, optional): Keyword arguments for the text bounding box. Defaults to {'alpha': 0}.
         """
         if length == 0:
             print('No length is given. Skip add_scalebar().')
@@ -855,10 +877,13 @@ class PlotAstroData(AstroFrame):
             Sampling: ``xskip`` and ``yskip``.
             Matplotlib: Additional keyword arguments are passed to ``matplotlib.axes.Axes.pcolormesh``.
 
+        Default keyword values:
+            Matplotlib: ``cmap='cubehelix'``, ``alpha=1``, ``edgecolors='none'``, ``zorder=1``, ``vmin=None``, and ``vmax=None``. User-supplied keyword arguments override these values.
+
         Args:
             show_cbar (bool, optional): Show color bar. Defaults to True.
             cblabel (str, optional): Colorbar label. Defaults to None.
-            cbformat (float, optional): Format for ticklabels of colorbar. Defaults to '%.1e'.
+            cbformat (str, optional): Format for ticklabels of colorbar. Defaults to '%.1e'.
             cbticks (list, optional): Ticks of colorbar. Defaults to None.
             cbticklabels (list, optional): Ticklabels of colorbar. Defaults to None.
             cblocation (str, optional): 'left', 'top', 'left', 'right'. Only for 2D images. Defaults to 'right'.
@@ -902,6 +927,9 @@ class PlotAstroData(AstroFrame):
             Sampling: ``xskip`` and ``yskip``.
             Matplotlib: Additional keyword arguments are passed to ``matplotlib.axes.Axes.contour``.
 
+        Default keyword values:
+            Matplotlib: ``colors='gray'``, ``linewidths=1.0``, and ``zorder=2``. User-supplied keyword arguments override these values.
+
         Args:
             levels (list, optional): Contour levels in the unit of sigma. Defaults to [-12,-6,-3,3,6,12,24,48,96,192,384].
         """
@@ -935,6 +963,9 @@ class PlotAstroData(AstroFrame):
             Beam: Beam display, such as ``show_beam``, ``beamcolor``, ``beampos``, and ``beam_kwargs``.
             Sampling: ``xskip`` and ``yskip``.
             Matplotlib: Additional keyword arguments are passed to ``matplotlib.axes.Axes.quiver``.
+
+        Default keyword values:
+            Matplotlib: ``angles='xy'``, ``scale_units='xy'``, ``color='gray'``, ``pivot='mid'``, ``headwidth=0``, ``headlength=0``, ``headaxislength=0``, ``width=0.007``, and ``zorder=3``. User-supplied keyword arguments override these values.
 
         Args:
             ampfits (str, optional): Input FITS file name. Length of segment. Defaults to None.
@@ -992,6 +1023,9 @@ class PlotAstroData(AstroFrame):
             Beam: Beam display, such as ``show_beam``, ``beamcolor``, ``beampos``, and ``beam_kwargs``.
             Sampling: ``xskip`` and ``yskip``.
             Matplotlib: Additional keyword arguments are passed to ``matplotlib.axes.Axes.imshow``.
+
+        Default keyword values:
+            Stretcher: ``vmin=[None] * 3``, ``vmax=[None] * 3``, ``stretch=['linear'] * 3``, ``stretchscale=[None] * 3``, and ``stretchpower=[0.5] * 3``. User-supplied keyword arguments override these values.
         """
         from PIL import Image
 
@@ -1060,6 +1094,9 @@ class PlotAstroData(AstroFrame):
     def set_axis(self, title: dict | str | None = None,
                  **kwargs: Any) -> None:
         """Use Axes.set_* of matplotlib. kwargs can include the arguments of PlotAxes2D to adjust x and y axis.
+
+        Default keyword values:
+            PlotAxes2D: ``xlabel``, ``ylabel``, ``xlim``, and ``ylim`` are filled from the current frame when they are omitted. In PV mode, ``samexy=False`` is also set internally.
 
         Args:
             title (dict | str | None): str means set_title(str) for 2D or fig.suptitle(str) for 3D. Defaults to None.
@@ -1186,6 +1223,9 @@ class PlotAstroData(AstroFrame):
                 show: bool = False, **kwargs: Any) -> None:
         """Use savefig of matplotlib.
 
+        Default keyword values:
+            Figure.savefig: ``transparent=True`` and ``bbox_inches='tight'``. User-supplied keyword arguments override these values.
+
         Args:
             filename (str, optional): Output image file name. Defaults to None.
             show (bool, optional): True means doing plt.show(). Defaults to False.
@@ -1293,6 +1333,10 @@ def plotprofile(coords: list[str] | str = [],
         PlotAxes2D: Axis formatting, such as ``xlim``, ``ylim``, ``xlabel``, ``ylabel``, ``grid``, ``xscale``, ``yscale``, and tick options.
         Matplotlib: Additional keyword arguments are passed to ``matplotlib.axes.Axes.plot`` for the profile curve.
 
+    Default keyword values:
+        Profile curve: ``drawstyle='steps-mid'``, ``color='k'``, ``xlabel=r'Velocity (km s$^{-1}$)'``, and ``samexy=False``. User-supplied keyword arguments override these values.
+        Gaussian overlay: ``drawstyle='default'`` and ``color='g'``. User-supplied values in ``gauss_kwargs`` override these values.
+
     Args:
         coords (list, optional): Coordinates. Defaults to [].
         xlist (list, optional): Offset from the center. Defaults to [].
@@ -1361,6 +1405,10 @@ def plotslice(length: float, dx: float | None = None, pa: float = 0,
         AstroFrame: Data trimming and coordinate-frame options, such as ``rmax``, ``center``, ``dist``, ``xoff``, ``yoff``, ``xflip``, ``yflip``, and ``swapxy``.
         PlotAxes2D: Axis formatting, such as ``xlim``, ``ylim``, ``xlabel``, ``ylabel``, ``grid``, ``xscale``, ``yscale``, and tick options.
         Matplotlib: Additional keyword arguments are passed to ``matplotlib.axes.Axes.plot`` for the slice curve.
+
+    Default keyword values:
+        Slice curve: ``linestyle='-'`` and ``marker='o'``. User-supplied keyword arguments override these values.
+        Axis setup: ``rmax=length / 2`` and ``samexy=False`` are set internally. ``xlabel``, ``ylabel``, and ``xlim`` are filled from the slice geometry if they are omitted.
 
     Args:
         length (float): Slice length.
@@ -1497,6 +1545,9 @@ def plot3d(levels: list[float] = [3, 6, 12],
     Keyword groups accepted in ``**kwargs``:
         AstroData: Data input and metadata for the cube, such as ``fitsimage``, ``data``, ``x``, ``y``, ``v``, ``beam``, ``Tb``, ``sigma``, ``center``, ``restfreq``, ``cfactor``, and ``bunit``.
         AstroFrame: Data trimming and coordinate-frame options, such as ``rmax``, ``center``, ``dist``, ``xoff``, ``yoff``, ``vsys``, ``vmin``, ``vmax``, ``xflip``, ``yflip``, and ``swapxy``.
+
+    Default keyword values:
+        Wall maps: The dictionaries ``xplus``, ``xminus``, ``yplus``, ``yminus``, ``vplus``, and ``vminus`` use ``levels=[3, 6, 12, 24, 48, 96, 192, 384]``, ``sigma='hist'``, ``cmap='Jet'``, and ``alpha=0.3`` when those keys are omitted.
 
     Args:
         levels (list, optional): Contour levels. Defaults to [3,6,12].

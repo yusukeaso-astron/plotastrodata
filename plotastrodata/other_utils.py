@@ -223,6 +223,9 @@ def RGIxy(y: np.ndarray, x: np.ndarray, data: np.ndarray,
           **kwargs: Any) -> Callable | np.ndarray | None:
     """RGI for x and y at each channel.
 
+    Default keyword values:
+        RegularGridInterpolator: ``bounds_error=False``, ``fill_value=np.nan``, and ``method='linear'``. User-supplied keyword arguments override these values.
+
     Args:
         y (np.ndarray): 1D array. Second coordinate.
         x (np.ndarray): 1D array. First coordinate.
@@ -258,6 +261,9 @@ def RGIxyv(v: np.ndarray, y: np.ndarray, x: np.ndarray, data: np.ndarray,
            **kwargs: Any) -> Callable | np.ndarray | None:
     """RGI in the x-y-v space.
 
+    Default keyword values:
+        RegularGridInterpolator: ``bounds_error=False``, ``fill_value=np.nan``, and ``method='linear'``. User-supplied keyword arguments override these values.
+
     Args:
         v (np.ndarray): 1D array. Third coordinate.
         y (np.ndarray): 1D array. Second coordinate.
@@ -289,6 +295,9 @@ def RGIxyv(v: np.ndarray, y: np.ndarray, x: np.ndarray, data: np.ndarray,
 def close_figure(fig: object, savefig: dict | str | None = None,
                  show: bool = False, tight: bool = True) -> None:
     """Save, show, and close the figure.
+
+    Default keyword values:
+        Figure.savefig: ``bbox_inches='tight'`` and ``transparent=True``. Values in ``savefig`` override these defaults.
 
     Args:
         fig (object): External plt.figure(). Defaults to None.

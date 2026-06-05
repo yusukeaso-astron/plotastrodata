@@ -298,6 +298,9 @@ class AstroData():
               chan: int | None = None) -> dict[str, Any] | None:
         """Fit a given 2D model function to self.data.
 
+        Default keyword values:
+            kwargs_plotcorner: ``show=False`` and ``savefig=None``. User-supplied values in ``kwargs_plotcorner`` override these defaults.
+
         Args:
             model (function): The model function in the form of f(par, x, y).
             bounds (np.ndarray): bounds for fitting_utils.EmceeCorner.
