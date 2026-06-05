@@ -1223,11 +1223,13 @@ class PlotAstroData(AstroFrame):
                 show: bool = False, **kwargs: Any) -> None:
         """Use savefig of matplotlib.
 
+        If ``filename`` is provided, existing files with the same name are overwritten by Matplotlib. This method closes all Matplotlib figures with ``plt.close('all')`` after optional saving/showing.
+
         Default keyword values:
             Figure.savefig: ``transparent=True`` and ``bbox_inches='tight'``. User-supplied keyword arguments override these values.
 
         Args:
-            filename (str, optional): Output image file name. Defaults to None.
+            filename (str, optional): Output image file name. Existing files may be overwritten, and all Matplotlib figures are closed after saving/showing. Defaults to None.
             show (bool, optional): True means doing plt.show(). Defaults to False.
         """
         _kw = {'transparent': True, 'bbox_inches': 'tight'}
@@ -1354,7 +1356,7 @@ def plotprofile(coords: list[str] | str = [],
         fig (object, optional): External plt.figure(). Defaults to None.
         ax (object, optional): External fig.add_subplot(). Defaults to None.
         getfigax (bool, optional): Defaults to False.
-        savefig (dict or str, optional): For plt.figure().savefig(). Defaults to None.
+        savefig (dict or str, optional): Passed to ``close_figure``. Existing files may be overwritten, and the figure is closed after saving/showing. Defaults to None.
         show (bool, optional): True means doing plt.show(). Defaults to False.
 
     Returns:
@@ -1414,11 +1416,11 @@ def plotslice(length: float, dx: float | None = None, pa: float = 0,
         length (float): Slice length.
         dx (float, optional): Grid increment. Defaults to None.
         pa (float, optional): Degree. Position angle. Defaults to 0.
-        txtfile (str, optional): File name for numpy.savetxt(). Defaults to None.
+        txtfile (str, optional): File name for ``numpy.savetxt``. Existing files with the same name are overwritten. Defaults to None.
         fig (object, optional): External plt.figure(). Defaults to None.
         ax (object, optional): External fig.add_subplot(). Defaults to None.
         getfigax (bool, optional): Defaults to False.
-        savefig (dict or str, optional): For plt.figure().savefig(). Defaults to None.
+        savefig (dict or str, optional): Passed to ``close_figure``. Existing files may be overwritten, and the figure is closed after saving/showing. Defaults to None.
         show (bool, optional): True means doing plt.show(). Defaults to False.
 
     Returns:
@@ -1566,7 +1568,7 @@ def plot3d(levels: list[float] = [3, 6, 12],
         yminus (dict, optional): See xplus. Defaults to {}.
         vplus (dict, optional): See xplus. Defaults to {}.
         vminus (dict, optional): See xplus. Defaults to {}.
-        outname (str, optional): Output file name. Defaults to 'plot3d'.
+        outname (str, optional): Output HTML file name, with or without '.html'. Existing files with the same name are overwritten by Plotly. Defaults to 'plot3d'.
         show (bool, optional): auto_play in plotly. Defaults to False.
         return_data_layout (bool, optional): Whether to return data and layout for plotly.graph_objs.Figure. Defaults to False.
 

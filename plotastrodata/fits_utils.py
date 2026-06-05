@@ -414,16 +414,14 @@ def fits2data(fitsimage: str, Tb: bool = False, log: bool = False,
 
 def data2fits(d: np.ndarray, h: dict = {},
               templatefits: str | None = None,
-              fitsimage: str = 'test',
-              overwrite: bool = False) -> None:
+              fitsimage: str = 'test') -> None:
     """Make a fits file from a N-D array.
 
     Args:
         d (np.ndarray): N-D array.
         h (dict, optional): Additional FITS header. Defaults to {}.
         templatefits (str, optional): FITS file whose header is used as a template. Defaults to None.
-        fitsimage (str, optional): Output filename, with or without '.fits'. Defaults to 'test'.
-        overwrite (bool, optional): Whether to overwrite an existing FITS file. Defaults to False.
+        fitsimage (str, optional): Output filename, with or without '.fits'. Existing files with the same name are overwritten. Defaults to 'test'.
     """
     _h = {} if templatefits is None else FitsData(templatefits).get_header()
     _h.update(h)
@@ -457,5 +455,4 @@ def data2fits(d: np.ndarray, h: dict = {},
         if v is not None and 'COMMENT' not in k and 'HISTORY' not in k:
             hdu.header[k] = v
     hdu = fits.HDUList([hdu])
-    hdu.writeto(fitsimage.removesuffix('.fits') + '.fits',
-                overwrite=overwrite)
+    hdu.writeto(fitsimage.removesuffix('.fits') + '.fits', overwrite=True)

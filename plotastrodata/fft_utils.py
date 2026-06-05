@@ -349,7 +349,7 @@ def fftfits(fitsimage: str, center: str | None = None, lam: float = 1,
         lam (float, optional): Return u * lam and v * lam. Defaults to 1.
         xlim (list, optional): Range of x for zero padding in arcsec.
         ylim (list, optional): Range of y for zero padding in arcsec.
-        savefig (dict or str, optional): For plt.figure().savefig(). Defaults to None.
+        savefig (dict or str, optional): Passed to ``close_figure``. Existing files may be overwritten, and the figure is closed after saving/showing. Defaults to None.
         show (bool, optional): True means doing plt.show(). Defaults to False.
 
     Returns:

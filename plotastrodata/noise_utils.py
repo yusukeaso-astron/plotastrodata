@@ -184,7 +184,7 @@ class Noise:
         """Make a simple figure of the histogram and model.
 
         Args:
-            savefig (dict or str, optional): For plt.figure().savefig(). Defaults to None.
+            savefig (dict or str, optional): Passed to ``close_figure``. Existing files may be overwritten, and the figure is closed after saving/showing. Defaults to None.
             show (bool, optional): True means doing plt.show(). Defaults to False.
         """
         if not hasattr(self, 'model'):

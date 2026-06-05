@@ -188,7 +188,7 @@ class EmceeCorner():
             nburnin (int, optional): Number of burn-in steps. Defaults to 500.
             ntry (int, optional): Number of trials for the Gelman-Rubin check. Defaults to 1.
             pos0 (np.nparray, optional): Initial parameter set in the shape of (ntemps, nwalkers, dim). Defaults to None.
-            savechain (str, optional): File name of the chain in format of .npy. Defaults to None.
+            savechain (str, optional): File name of the chain in format of .npy. Existing files with the same name are overwritten by ``numpy.save``. Defaults to None.
             ncores (int, optional): Number of cores for multiprocessing.Pool. ncores=1 does not use multiprocessing. Defaults to 1.
             grcheck (bool, optional): Whether to check Gelman-Rubin statistics. Defaults to False.
             pt (bool, optional): Whether to use ptemcee; otherwise, emcee is used. Defaults to False.
@@ -235,7 +235,7 @@ class EmceeCorner():
         Args:
             labels (list, optional): Labels for the corner plot. Defaults to None.
             cornerrange (list, optional): Range for the corner plot. Defaults to None.
-            savefig (dict or str, optional): For plt.figure().savefig(). Defaults to None.
+            savefig (dict or str, optional): Passed to ``close_figure``. Existing files may be overwritten, and the figure is closed after saving/showing. Defaults to None.
             show (bool, optional): True means doing plt.show(). Defaults to False.
         """
         if labels is None:
@@ -258,7 +258,7 @@ class EmceeCorner():
         Args:
             labels (list, optional): Labels for the chain plot. Defaults to None.
             ylim (list, optional): Y-range for the chain plot. Defaults to None.
-            savefig (dict or str, optional): For plt.figure().savefig(). Defaults to None.
+            savefig (dict or str, optional): Passed to ``close_figure``. Existing files may be overwritten, and the figure is closed after saving/showing. Defaults to None.
             show (bool, optional): True means doing plt.show(). Defaults to False.
         """
         if labels is None:
@@ -421,7 +421,7 @@ class EmceeCorner():
 
         Args:
             show (bool, optional): Whether to show the corner plot. Defaults to False.
-            savefig (str, optional): File name of the corner plot. Defaults to None.
+            savefig (str, optional): Passed to ``close_figure``. Existing files may be overwritten, and the figure is closed after saving/showing. Defaults to None.
             labels (list, optional): Labels for the corner plot. Defaults to None.
             cornerrange (list, optional): Range for the corner plot. Defaults to None.
             cmap: (str, optional): cmap for matplotlib.pyplot.plt.pcolormesh(). Defaults to 'binary'.

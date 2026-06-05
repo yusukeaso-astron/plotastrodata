@@ -557,14 +557,12 @@ class AstroData():
 
     @_need_multipixels
     def writetofits(self, fitsimage: str = 'out.fits',
-                    header: dict = {},
-                    overwrite: bool = False) -> None:
+                    header: dict = {}) -> None:
         """Write out the AstroData to a FITS file.
 
         Args:
-            fitsimage (str, optional): Output FITS file name. Defaults to 'out.fits'.
+            fitsimage (str, optional): Output FITS file name. Existing files with the same name are overwritten. Defaults to 'out.fits'.
             header (dict, optional): Header dictionary. Defaults to {}.
-            overwrite (bool, optional): Whether to overwrite an existing FITS file. Defaults to False.
         """
         h = {}
         ci = nearest_index(self.x)
@@ -591,7 +589,7 @@ class AstroData():
             h['BPA'] = float(beam[2])
         h.update(header)
         data2fits(d=self.data, h=h, templatefits=self.fitsimage_org,
-                  fitsimage=fitsimage, overwrite=overwrite)
+                  fitsimage=fitsimage)
 
 
 def _as_list(value: Any, n: int, isbeam: bool = False) -> Any:
