@@ -1489,7 +1489,7 @@ def _plot_on_wall(d: AstroData, x: np.ndarray, y: np.ndarray, v: np.ndarray,
     _kw = {'levels': [3, 6, 12, 24, 48, 96, 192, 384],
            'sigma': 'hist', 'cmap': 'Jet', 'alpha': 0.3}
     _kw.update(kwargs)
-    volume = _kw['data']
+    volume = np.array(_kw['data'], copy=True)
     levels = _kw['levels']
     cmap = _kw['cmap']
     alpha = _kw['alpha']
@@ -1579,7 +1579,8 @@ def plot3d(levels: list[float] = [3, 6, 12],
     f = kwargs2instance(AstroFrame, kwargs)
     d = kwargs2instance(AstroData, kwargs)
     f.read(d, xskip, yskip)
-    volume, x, y, v, sigma = d.data, d.x, d.y, d.v, d.sigma
+    volume = np.array(d.data, copy=True)
+    x, y, v, sigma = d.x, d.y, d.v, d.sigma
     dx, dy, dv = d.dx, d.dy, d.dv
     volume[np.isnan(volume)] = 0
     if dx < 0:

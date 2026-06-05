@@ -557,12 +557,14 @@ class AstroData():
 
     @_need_multipixels
     def writetofits(self, fitsimage: str = 'out.fits',
-                    header: dict = {}) -> None:
+                    header: dict = {},
+                    overwrite: bool = False) -> None:
         """Write out the AstroData to a FITS file.
 
         Args:
             fitsimage (str, optional): Output FITS file name. Defaults to 'out.fits'.
             header (dict, optional): Header dictionary. Defaults to {}.
+            overwrite (bool, optional): Whether to overwrite an existing FITS file. Defaults to False.
         """
         h = {}
         ci = nearest_index(self.x)
@@ -589,7 +591,7 @@ class AstroData():
             h['BPA'] = float(beam[2])
         h.update(header)
         data2fits(d=self.data, h=h, templatefits=self.fitsimage_org,
-                  fitsimage=fitsimage)
+                  fitsimage=fitsimage, overwrite=overwrite)
 
 
 def _as_list(value: Any, n: int, isbeam: bool = False) -> Any:
@@ -833,6 +835,8 @@ class AstroFrame():
 
     def read(self, d: AstroData, xskip: int = 1, yskip: int = 1) -> None:
         """Get data, grid, sigma, beam, and bunit from AstroData, which is a part of the input of add_color, add_contour, add_segment, and add_rgb.
+
+        This method modifies ``d`` in place. During the read, the input fields are normalized to per-dataset lists, FITS-derived values are filled, trimming and coordinate-frame changes are applied, and bookkeeping fields such as ``fitsimage``, ``fitsimage_org``, ``Tb``, ``cfactor``, and ``sigma`` are updated.
 
         Args:
             d (AstroData): Dataclass for the add_* input.
