@@ -324,6 +324,11 @@ class Beam():
         self.beam_kwargs = beam_kwargs
 
     def todict(self) -> dict[str, Any]:
+        """Return beam display settings as a dictionary.
+
+        Returns:
+            dict: Keyword arguments for PlotAstroData.add_beam().
+        """
         tmp = {'show_beam': self.show_beam,
                'beam': self.beam,
                'beamcolor': self.beamcolor,
@@ -427,6 +432,11 @@ class PlotAxes2D():
                 method(value)
 
     def set_xyaxes(self, ax: Any) -> None:
+        """Apply stored x- and y-axis settings to a Matplotlib axes object.
+
+        Args:
+            ax (object): Matplotlib axes object.
+        """
         self.ax = ax
         self._set_scale()
         if self.samexy:
