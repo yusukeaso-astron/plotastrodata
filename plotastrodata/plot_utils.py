@@ -440,6 +440,7 @@ class PlotAxes2D():
         self.ax = ax
         self._set_scale()
         for axis in ['x', 'y']:
+            # Applying 'lim' is required before and after the ticks.
             self._apply_if_not_none(axis, 'lim')
         if self.samexy:
             ax.set_xticks(ax.get_yticks())
