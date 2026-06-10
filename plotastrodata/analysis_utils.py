@@ -319,7 +319,7 @@ class AstroData():
             pixelperbeam = Omega / np.abs(self.dx * self.dy)
         else:
             pixelperbeam = 1.
-        s = 'sigma is multiplied by sqrt(pixel-per-beam)' \
+        s = 'In the fitting, sigma is multiplied by sqrt(pixel-per-beam)' \
             + ' to consider the noise correlation in a beam.' \
             + ' This correction is relatively conservative.'
         warnings.warn(s, UserWarning)
@@ -360,7 +360,7 @@ class AstroData():
         z = self.data if chan is None else self.data[chan]
         Omega = np.pi * self.beam[0] * self.beam[1] / 4 / np.log(2)
         pixelperbeam = Omega / np.abs(self.dx * self.dy)
-        s = 'sigma is multiplied by sqrt(pixel-per-beam)' \
+        s = 'In the fitting, sigma is multiplied by sqrt(pixel-per-beam)' \
             + ' to consider the noise correlation in a beam.' \
             + ' This correction is relatively conservative.'
         warnings.warn(s, UserWarning)
