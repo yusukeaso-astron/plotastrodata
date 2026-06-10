@@ -439,6 +439,8 @@ class PlotAxes2D():
         """
         self.ax = ax
         self._set_scale()
+        for axis in ['x', 'y']:
+            self._apply_if_not_none(axis, 'lim')
         if self.samexy:
             ax.set_xticks(ax.get_yticks())
             ax.set_yticks(ax.get_xticks())
