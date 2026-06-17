@@ -81,12 +81,19 @@ def _need_multipixels(method: Callable) -> Callable:
     return wrapper
 
 
+def _is_data_list(value: Any) -> bool:
+    c1 = isinstance(value, list)
+    c2 = any(a is not None for a in value)
+    c3 = all(a is None or isinstance(a, np.ndarray) for a in value)
+    return c1 and c2 and c3
+
+
 @dataclass
 class AstroData():
     """Data to be processed and parameters for processing the data.
 
     Args:
-        data (np.ndarray, optional): 2D or 3D array. Defaults to None.
+        data (np.ndarray, array-like, or list of np.ndarray, optional): A single 2D or 3D dataset, or a list of arrays for multiple datasets. Nested numeric lists are treated as one array-like dataset. Defaults to None.
         x (np.ndarray, optional): 1D array. Defaults to None.
         y (np.ndarray, optional): 1D array. Defaults to None.
         v (np.ndarray, optional): 1D array. Defaults to None.
@@ -101,7 +108,7 @@ class AstroData():
         pv (bool, optional): True means the data array is a position-velocity diagram. Defaults to False.
         bunit (str, optional): The unit of the data array. Defaults to ''.
     """
-    data: np.ndarray | None = None
+    data: np.ndarray | list[Any] | None = None
     x: np.ndarray | None = None
     y: np.ndarray | None = None
     v: np.ndarray | None = None
@@ -128,12 +135,14 @@ class AstroData():
             if n > 0:
                 self.data = None
         if self.data is not None:
-            if not isinstance(self.data, list):
-                n = 1
-            elif any(a is not None for a in self.data):
+            if _is_data_list(self.data):
                 n = len(self.data)
-            else:
+            elif (isinstance(self.data, list)
+                  and not any(a is not None for a in self.data)):
                 n = 0
+            else:
+                self.data = np.asarray(self.data)
+                n = 1
         if n == 0:
             print('Either data or fitsimage must be given.')
         self.n = n
