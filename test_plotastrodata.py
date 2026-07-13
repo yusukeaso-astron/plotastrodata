@@ -1,8 +1,8 @@
 import glob
 import numpy as np
 import os
-import shlex
 import subprocess
+import sys
 from pathlib import Path
 from PIL import Image
 
@@ -26,7 +26,7 @@ with open('example_temp.py', 'w') as f:
     for line in lines:
         f.write(line)
 
-subprocess.run(shlex.split('python example_temp.py'))
+subprocess.run([sys.executable, "example_temp.py"], check=True)
 os.remove('example_temp.py')
 
 for file in glob.glob('./example_data/output/*.png'):
