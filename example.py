@@ -26,7 +26,7 @@ p.add_marker('04h04m43.07s 26d18m56.20s')
 p.add_line([[0.5, 0.5], [0.6, 0.6]], anglelist=[60, 60], rlist=[0.5, 0.5])
 p.add_arrow([0.4, 0.4], anglelist=150, rlist=0.5)
 p.add_region('ellipse', [0.2, 0.8], majlist=0.4, minlist=0.2, palist=45)
-p.set_axis_radec(nticksminor=5, title={'label': '2D image', 'loc': 'right'})
+p.set_axis_radec(nticksminor=0, title={'label': '2D image', 'loc': 'right'})
 p.savefig('test2D.png', show=True)
 
 # 3D channel maps
@@ -100,7 +100,7 @@ p.add_marker('04h04m43.07s 26d18m56.20s')
 p.add_line([[0.5, 0.5], [0.6, 0.6]], anglelist=[60, 60], rlist=[0.5, 0.5])
 p.add_arrow([0.4, 0.4], anglelist=150, rlist=0.5)
 p.add_region('ellipse', [0.2, 0.8], majlist=0.4, minlist=0.2, palist=45)
-p.set_axis_radec(nticksminor=5, title={'label': '2D RGB', 'loc': 'right'})
+p.set_axis_radec(nticksminor=0, title={'label': '2D RGB', 'loc': 'right'})
 p.savefig('test2Drgb.png', show=True)
 
 ################################################################################
