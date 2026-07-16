@@ -344,14 +344,14 @@ class PlotAxes2D():
     Args:
         samexy (bool, optional): True supports same ticks between x and y. Defaults to True.
         loglog (float, optional): If a float is given, plot on a log-log plane, and xim=(xmax / loglog, xmax) and so does ylim. Defaults to None.
-        xscale (str, optional): Defaults to None.
-        yscale (str, optional): Defaults to None.
+        xscale (str, optional): ``'log'`` labels decade ticks and ticks near the limits; other intermediate ticks are minor and unlabeled. Defaults to ``'linear'``.
+        yscale (str, optional): ``'log'`` labels decade ticks and ticks near the limits; other intermediate ticks are minor and unlabeled. Defaults to ``'linear'``.
         xlim (list, optional): Defaults to None.
         ylim (list, optional): Defaults to None.
         xlabel (str, optional): Defaults to None.
         ylabel (str, optional): Defaults to None.
-        xticks (list, optional): Defaults to None.
-        yticks (list, optional): Defaults to None.
+        xticks (list, optional): Explicit major ticks, overriding the default locator. Defaults to None.
+        yticks (list, optional): Explicit major ticks, overriding the default locator. Defaults to None.
         xticklabels (list, optional): Defaults to None.
         yticklabels (list, optional): Defaults to None.
         xticksminor (list or int, optional): If int, int times more than xticks. Defaults to None.
@@ -393,16 +393,25 @@ class PlotAxes2D():
     def _init_ticks(self, axis: str) -> None:
         ax = self.ax
         ticks_attr = f'{axis}ticks'
-        ticklabels_attr = f'{axis}ticklabels'
         scale = getattr(self, f'{axis}scale')
-        lim = getattr(self, f'{axis}lim')
         ticks = getattr(self, ticks_attr)
         if ticks is None:
-            ticks = getattr(ax, f'get_{axis}ticks')()
             if scale == 'log':
-                ticks, ticklabels = logticks(ticks, lim)
-                setattr(self, ticklabels_attr, ticklabels)
-            setattr(self, ticks_attr, ticks)
+                axis_obj = getattr(ax, f'{axis}axis')
+                lim = getattr(self, f'{axis}lim')
+                if lim is None:
+                    lim = axis_obj.get_view_interval()
+                lim = np.sort(lim)
+                major_ticks = mpl.ticker.LogLocator(base=10).tick_values(*lim)
+                major_ticks, major_labels = logticks(major_ticks, lim)
+                axis_obj.set_ticks(major_ticks)
+                axis_obj.set_ticklabels(major_labels)
+                ll = mpl.ticker.LogLocator(base=10, subs=np.arange(2.0, 10.0))
+                axis_obj.set_minor_locator(ll)
+                axis_obj.set_minor_formatter(mpl.ticker.NullFormatter())
+            else:
+                ticks = getattr(ax, f'get_{axis}ticks')()
+                setattr(self, ticks_attr, ticks)
 
     def _make_ticks(self, ticks: np.ndarray, ticksminor: int) -> np.ndarray:
         dt = ticks[1] - ticks[0]
@@ -414,11 +423,15 @@ class PlotAxes2D():
         ax = self.ax
         attr = f'{axis}ticks'
         ticks = getattr(self, attr)
-        getattr(ax, f'set_{attr}')(ticks)
+        if ticks is not None:
+            getattr(ax, f'set_{attr}')(ticks)
         ticksminor = getattr(self, f'{attr}minor')
         if ticksminor is not None:
             if isinstance(ticksminor, int):
-                ticksminor = self._make_ticks(ticks, ticksminor)
+                if ticks is None:
+                    ticks = getattr(ax, f'get_{axis}ticks')()
+                major_ticks = (ticks)
+                ticksminor = self._make_ticks(major_ticks, ticksminor)
             getattr(ax, f'set_{attr}')(ticksminor, minor=True)
 
     def _apply_if_not_none(self, axis: str, attr: str) -> None:
