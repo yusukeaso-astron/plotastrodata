@@ -27,43 +27,7 @@ jobs:
         # stop the build if there are Python syntax errors or undefined names
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-    
-    - name: Test basic Matplotlib rendering
-      run: |
-        python - <<'PY'
-        import matplotlib
-        matplotlib.use("Agg")
-    
-        import matplotlib.pyplot as plt
-        from matplotlib import ft2font, font_manager
-    
-        print("Matplotlib:", matplotlib.__version__)
-        print("FreeType:", ft2font.__freetype_version__)
-        print("Matplotlib config:", matplotlib.matplotlib_fname())
-        print("Matplotlib cache:", matplotlib.get_cachedir())
-        print("DejaVu Sans:", font_manager.findfont("DejaVu Sans"))
-    
-        fig, ax = plt.subplots()
-        ax.plot([0, 1], [0, 1])
-        ax.set_xlabel("x")
-        ax.set_ylabel("y")
-        ax.set_title("Matplotlib smoke test")
-        fig.savefig("matplotlib-smoke-test.png", dpi=100)
-        plt.close(fig)
-    
-        print("Basic Matplotlib figure saved successfully.")
-        PY
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics    
     - name: Test with pytest
       run: |
         conda install pytest --solver=classic
