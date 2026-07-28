@@ -856,6 +856,6 @@ class AstroFrame():
         d.beam = _as_list(d.beam, d.n, isbeam=True)
         grid = [d.x, d.y, d.v]
         for i in range(d.n):
-            self._read_one(d, i, grid.copy())
+            self._read_one(d, i, grid.copy())  # .copy() not to updated d.x again ang again.
         for name in ASTRODATA_ARGS + ['beam']:
             setattr(d, name, _scalar_if_single(getattr(d, name), d.n))
