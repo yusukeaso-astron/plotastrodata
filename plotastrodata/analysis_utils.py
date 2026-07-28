@@ -817,11 +817,11 @@ class AstroFrame():
         beam_incut = 1 / np.hypot(np.cos(angle) / bmaj, np.sin(angle) / bmin)
         d.beam[i] = np.array([np.abs(d.dv), beam_incut, 0])
 
-    def _read_one(self, d: AstroData, i: int) -> None:
+    def _read_one(self, d: AstroData, i: int, grid: list) -> None:
         if d.center[i] == 'common':
             d.center[i] = self.center
         d.sigma_org[i] = d.sigma[i]
-        grid = self._read_fitsimage(d, i, grid=[d.x, d.y, d.v])
+        grid = self._read_fitsimage(d, i, grid=grid)
         if d.data[i] is not None:
             d.sigma[i] = estimate_rms(d.data[i], d.sigma[i])
             grid = self._shift_center(d, i, grid)
@@ -854,7 +854,8 @@ class AstroFrame():
         for name in ASTRODATA_ARGS:
             setattr(d, name, _as_list(getattr(d, name), d.n))
         d.beam = _as_list(d.beam, d.n, isbeam=True)
+        grid = [d.x, d.y, d.v]
         for i in range(d.n):
-            self._read_one(d, i)
+            self._read_one(d, i, grid.copy())
         for name in ASTRODATA_ARGS + ['beam']:
             setattr(d, name, _scalar_if_single(getattr(d, name), d.n))

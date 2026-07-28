@@ -300,7 +300,7 @@ class FitsData:
                 case _:
                     print(f'Unknown CUNIT3 {cunitv} found.'
                           + ' v is read as is.')
-            dv = None if len(v) == 0 else v[1] - v[0]
+            dv = None if len(v) <= 1 else v[1] - v[0]
             self.v, self.dv = v, dv
 
         return gen_v
