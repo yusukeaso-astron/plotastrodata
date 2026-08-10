@@ -3,7 +3,6 @@ corner
 dynesty
 emcee
 matplotlib
-multiprocess
 myst-nb
 numpy >= 2.0
 pillow

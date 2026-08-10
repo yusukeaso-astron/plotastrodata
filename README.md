@@ -52,14 +52,14 @@ plotastrodata can do the following things.
  
 ## Requirement
 
-* astropy
+* Python >= 3.12
+* astropy >= 7.2
 * corner (only for fitting)
 * dynesty (only for fitting)
 * emcee (only for fitting)
 * ffmpeg (only for movie)
 * matplotlib
-* multiprocess (only for fitting)
-* numpy
+* numpy >= 2.0
 * pillow (only for RGB figures)
 * plotly (only for html cube)
 * ptemcee (only for fitting)
