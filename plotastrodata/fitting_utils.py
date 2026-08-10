@@ -38,9 +38,9 @@ def logp(x: np.ndarray) -> float:
 def _get_GR(samples: np.ndarray, nwalkers: int, ndata: int, dim: int
             ) -> np.ndarray:
     """Calculate the Gelman-Rubin statistics."""
-    B = np.std(np.mean(samples, axis=1), axis=0)
-    W = np.mean(np.std(samples, axis=1), axis=0)
-    V = (len(samples[0]) - 1) / len(samples[0]) * W \
+    B = np.std(np.mean(samples, axis=0), axis=0)
+    W = np.mean(np.std(samples, axis=0), axis=0)
+    V = (len(samples) - 1) / len(samples) * W \
         + (nwalkers + 1) / (nwalkers - 1) * B
     d = ndata - dim - 1
     GR = np.sqrt((d + 3) / (d + 1) * V / W)
@@ -66,7 +66,7 @@ class EmceeCorner():
 
     This class wraps ``emcee`` and ``ptemcee`` for simple bounded-parameter fitting.  The likelihood can be supplied directly through ``logl``, or it can be constructed from ``model``, ``xdata``, ``ydata``, and ``sigma``. Parameters are sampled with a uniform prior inside ``bounds`` and zero prior probability outside them.
 
-    After calling :meth:`fit`, the main results are stored as attributes:``samples`` for the post-burn-in chain, ``popt`` for the maximum-likelihood parameter set, and ``plow``, ``pmid``, and ``phigh`` for posterior percentiles.  The samples can be visualized with :meth:`plotcorner` and :meth:`plotchain`.
+    After calling :meth:`fit`, the main results are stored as attributes:``samples`` for the post-burn-in chain, ``popt`` for the maximum-likelihood parameter set, and ``plow``, ``pmid``, and ``phigh`` for posterior percentiles. ``samples`` has the shape ``(steps, walkers, dimensions)``. The samples can be visualized with :meth:`plotcorner` and :meth:`plotchain`.
 
     Args:
         bounds (np.ndarray): Parameter bounds with shape ``(dim, 2)``. logl (Callable, optional): Log-likelihood function. Defaults to None.
@@ -146,22 +146,23 @@ class EmceeCorner():
                      pt: bool) -> np.ndarray:
         """Extract post-burn-in samples from sampler chain."""
         if pt:
-            return sampler.chain[0, :, nburnin:, :]  # temperatures, walkers, steps, dim
+            chain = sampler.chain[0]  # walkers, steps, dim
+            return np.swapaxes(chain, 0, 1)[nburnin:, :, :]  # steps, walkers, dim
         else:
-            return sampler.chain[:, nburnin:, :]  # walkers, steps, dim
+            return sampler.get_chain(discard=nburnin)  # steps, walkers, dim
 
     def _get_lnp_popt(self, sampler: Any, pt: bool, nburnin: int,
                       ) -> tuple[np.ndarray, np.ndarray]:
         """Get log probabilities and best-fit parameters from sampler."""
         if pt:
-            lnp = sampler.logprobability[0]  # 0th temperature chain
-            chain = sampler.chain[0]
+            lnp = np.swapaxes(sampler.logprobability[0], 0, 1)
+            chain = np.swapaxes(sampler.chain[0], 0, 1)
         else:
-            lnp = sampler.lnprobability
-            chain = sampler.chain
+            lnp = sampler.get_log_prob()  # steps, walkers
+            chain = sampler.get_chain()  # steps, walkers, dim
         idx_best = np.unravel_index(np.argmax(lnp), lnp.shape)
         popt = chain[idx_best]
-        lnp = lnp[:, nburnin:]
+        lnp = lnp[nburnin:, :]
         return lnp, popt
 
     def _get_percentiles(self, samples: np.ndarray
@@ -266,14 +267,14 @@ class EmceeCorner():
         if ylim is None:
             ylim = self.bounds
         fig = plt.figure(figsize=(4, 2 * self.dim))
-        x = np.arange(np.shape(self.samples)[1])
+        x = np.arange(np.shape(self.samples)[0])
         naverage = max(1, len(x) // 100)
         nend = len(x) - len(x) % 100 if naverage > 1 else len(x)
         x = x[:nend:naverage]
         for i in range(self.dim):
-            y = self.samples[:, :, i]  # walkers, steps, dim
+            y = self.samples[:, :, i]  # steps, walkers, dim
             plist = [self.percent[0], 50, self.percent[1]]
-            y = [np.percentile(y, p, axis=0) for p in plist]  # percent over the walkers, steps
+            y = [np.percentile(y, p, axis=1) for p in plist]  # percent over the walkers, steps
             y = [[np.percentile(np.reshape(yy[:nend], (naverage, -1)), p, axis=0)
                   for p in plist] for yy in y]  # percent over the walkers, percent over the steps
             ax = fig.add_subplot(self.dim, 1, i + 1)
