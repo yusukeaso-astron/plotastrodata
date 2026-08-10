@@ -56,7 +56,7 @@ plotastrodata can do the following things.
 * astropy >= 7.2
 * corner (only for fitting)
 * dynesty (only for fitting)
-* emcee (only for fitting)
+* emcee >= 3.0 (only for fitting)
 * ffmpeg (only for movie)
 * matplotlib
 * numpy >= 2.0

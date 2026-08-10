@@ -1,7 +1,7 @@
 astropy >= 7.2
 corner
 dynesty
-emcee
+emcee >= 3.0
 matplotlib
 myst-nb
 numpy >= 2.0

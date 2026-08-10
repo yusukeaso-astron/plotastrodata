@@ -6,7 +6,7 @@ dependencies:
   - astropy>=7.2
   - corner
   - dynesty
-  - emcee
+  - emcee>=3.0
   - matplotlib
   - numpy>=2.0
   - pillow
