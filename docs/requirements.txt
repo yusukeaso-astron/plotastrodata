@@ -1,11 +1,11 @@
-astropy
+astropy >= 7.2
 corner
 dynesty
 emcee
 matplotlib
 multiprocess
 myst-nb
-numpy
+numpy >= 2.0
 pillow
 plotly
 ptemcee
