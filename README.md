@@ -52,7 +52,7 @@ plotastrodata can do the following things.
  
 ## Requirement
 
-* Python >= 3.12
+* Python >= 3.11
 * astropy >= 7.2
 * corner (only for fitting)
 * dynesty (only for fitting)
