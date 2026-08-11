@@ -564,13 +564,18 @@ class PlotAstroData(AstroFrame):
                               figsize=figsize,
                               ncols=ncols, nrows=nrows, nchan=nchan)
         need_vlabel = nchan > 1 or animation
+        figs = []
         for ch in range(nchan):
             n, i, j = ch2nij(ch)
-            if internalfig and n not in plt.get_fignums():
-                fig = plt.figure(n, figsize=figsize)
+            if n == len(figs):
+                if internalfig:
+                    fig = plt.figure(figsize=figsize)
+                figs.append(fig)
                 if need_vlabel:
                     fig.subplots_adjust(hspace=0, wspace=0,
                                         right=0.87, top=0.87)
+            else:
+                fig = figs[n]
             if internalax:
                 sharex = ax[nij2ch(n, i - 1, j)] if i > 0 else None
                 sharey = ax[nij2ch(n, i, j - 1)] if j > 0 else None
@@ -582,6 +587,7 @@ class PlotAstroData(AstroFrame):
                             rf'${vlabel:.{veldigit}f}$', color='black',
                             backgroundcolor='white', zorder=20)
         self.fig = None if internalfig else fig
+        self.figs = figs
         self.ax = ax
         self.rowcol = nrows * ncols
         self.npages = npages
@@ -657,8 +663,6 @@ class PlotAstroData(AstroFrame):
             for ch, axnow in enumerate(self.ax):
                 if ch not in self._validchan(include_chan):
                     continue
-                if self.fig is None:
-                    plt.figure(ch // self.rowcol)
                 if patch == 'rectangle':
                     a = np.radians(angle)
                     xp = x - (width*np.cos(a) + height*np.sin(a)) / 2.
@@ -857,16 +861,13 @@ class PlotAstroData(AstroFrame):
         if not show_cbar:
             return
 
-        if self.fig is None:
-            fig = plt.figure(ch // self.rowcol)
-        else:
-            fig = self.fig
+        fig = self.figs[ch // self.rowcol]
         if len(self.ax) == 1:
             ax = self.ax[ch]
             cb = fig.colorbar(mappable[ch], ax=ax, label=cblabel,
                               format=cbformat, location=cblocation)
         else:
-            cax = plt.axes([0.88, 0.105, 0.015, 0.77])
+            cax = fig.add_axes([0.88, 0.105, 0.015, 0.77])
             cb = fig.colorbar(mappable[ch], cax=cax, label=cblabel,
                               format=cbformat)
         cb.ax.tick_params(labelsize=cbtickfontsize)
@@ -1104,14 +1105,13 @@ class PlotAstroData(AstroFrame):
                 axnow.set_ylabel('')
             if len(self.ax) == 1:
                 if self.fig is None:
-                    plt.figure(0).tight_layout()
+                    self.figs[0].tight_layout()
         if title is not None:
             if len(self.ax) > 1:
                 t = {'y': 0.9}
                 t_in = {'t': title} if isinstance(title, str) else title
                 t.update(t_in)
-                for i in range(self.npages):
-                    fig = plt.figure(i)
+                for fig in self.figs:
                     fig.suptitle(**t)
             else:
                 t = {'label': title} if isinstance(title, str) else title
@@ -1249,13 +1249,13 @@ class PlotAstroData(AstroFrame):
                 show: bool = False, **kwargs: Any) -> None:
         """Use savefig of matplotlib.
 
-        If ``filename`` is provided, existing files with the same name are overwritten by Matplotlib. This method closes all Matplotlib figures with ``plt.close('all')`` after optional saving/showing.
+        If ``filename`` is provided, existing files with the same name are overwritten by Matplotlib. After optional saving/showing, figures managed by this instance are closed.
 
         Default keyword values:
             Figure.savefig: ``transparent=True`` and ``bbox_inches='tight'``. User-supplied keyword arguments override these values.
 
         Args:
-            filename (str, optional): Output image file name. Existing files may be overwritten, and all Matplotlib figures are closed after saving/showing. Defaults to None.
+            filename (str, optional): Output image file name. Existing files may be overwritten, and figures managed by this instance are closed after saving/showing. Defaults to None.
             show (bool, optional): True means doing plt.show(). Defaults to False.
         """
         _kw = {'transparent': True, 'bbox_inches': 'tight'}
@@ -1265,15 +1265,15 @@ class PlotAstroData(AstroFrame):
             axnow.set_ylim(*self.Ylim)
         if isinstance(filename, str):
             ext = filename.split('.')[-1]
-            for i in range(self.npages):
+            for i, fig in enumerate(self.figs):
                 ver = '' if self.npages == 1 else f'_{i:d}'
-                fig = plt.figure(i)
                 fig.patch.set_alpha(0)
                 fname = filename.replace(f'.{ext}', f'{ver}.{ext}')
                 fig.savefig(fname, **_kw)
         if show:
             plt.show()
-        plt.close('all')
+        for fig in self.figs:
+            plt.close(fig)
 
     def get_figax(self) -> tuple[object, object] | None:
         """Output the external fig and ax after plotting.
@@ -1286,8 +1286,7 @@ class PlotAstroData(AstroFrame):
                   + ' with channel maps')
             return
 
-        fig = plt.figure(0) if self.fig is None else self.fig
-        return fig, self.ax[0]
+        return self.figs[0], self.ax[0]
 
 
 def _get_ylabel_profile(_kw: dict, Tb: bool, flux: bool, bunit: str
