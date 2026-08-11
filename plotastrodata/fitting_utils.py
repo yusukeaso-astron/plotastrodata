@@ -2,9 +2,11 @@ import corner
 import emcee
 import matplotlib.pyplot as plt
 import numpy as np
+import pickle
 import ptemcee
 import warnings
 from dynesty import DynamicNestedSampler as DNS
+from functools import partial
 from multiprocessing import Pool
 from tqdm import tqdm
 from typing import Any, Callable
@@ -16,6 +18,25 @@ from plotastrodata.other_utils import close_figure
 global_bounds = None
 bar = None
 global_progressbar = True
+
+
+def _gaussian_log_likelihood(x: np.ndarray, model: Callable,
+                             xdata: np.ndarray, ydata: np.ndarray,
+                             sigma: float | np.ndarray) -> float:
+    """Return a Gaussian log likelihood using pickleable arguments."""
+    chi2 = np.sum((ydata - model(xdata, *x))**2 / sigma**2)
+    return chi2 / (-2)
+
+
+def _bounded_log_probability(x: np.ndarray, log_likelihood: Callable,
+                             bounds: np.ndarray,
+                             update_progress: bool = False) -> float:
+    """Combine a bounded uniform prior with a log likelihood."""
+    if update_progress:
+        bar.update(1)
+    if np.all((bounds[:, 0] < x) & (x < bounds[:, 1])):
+        return log_likelihood(x)
+    return -np.inf
 
 
 def logp(x: np.ndarray) -> float:
@@ -95,9 +116,8 @@ class EmceeCorner():
         if logl is None and (model is not None
                              and xdata is not None
                              and ydata is not None):
-            def logl(x: np.ndarray) -> float:
-                chi2 = np.sum((ydata - model(xdata, *x))**2 / sigma**2)
-                return chi2 / (-2)
+            logl = partial(_gaussian_log_likelihood, model=model,
+                           xdata=xdata, ydata=ydata, sigma=sigma)
         self.bounds = global_bounds
         self.dim = len(self.bounds)
         self.logl = logl
@@ -125,15 +145,19 @@ class EmceeCorner():
                               'logl': self.logl, 'logp': self.logp}
         else:
             if ncores > 1:
-                print('Use logl as log_prob_fn to avoid function-in-function.')
-                log_prob_fn = self.logl
-            else:
-                def log_prob_fn(x: np.ndarray) -> float:
-                    return self.logp(x) + self.logl(x)
+                try:
+                    pickle.dumps(self.logl)
+                except (pickle.PicklingError, AttributeError, TypeError) as exc:
+                    raise TypeError(
+                        'logl and model must be pickleable when ncores > 1. '
+                        'Define them at module scope instead of inside another '
+                        'function.') from exc
 
             sampler_cls = emcee.EnsembleSampler
             sampler_kwargs = {'nwalkers': nwalkers, 'ndim': self.dim,
-                              'log_prob_fn': log_prob_fn}
+                              'log_prob_fn': _bounded_log_probability,
+                              'args': (self.logl, self.bounds,
+                                       global_progressbar and ncores == 1)}
         if ncores > 1:
             with Pool(ncores) as pool:
                 sampler = sampler_cls(**sampler_kwargs, pool=pool)
@@ -192,7 +216,7 @@ class EmceeCorner():
             ntry (int, optional): Number of trials for the Gelman-Rubin check. Defaults to 1.
             pos0 (np.nparray, optional): Initial parameter set in the shape of (ntemps, nwalkers, dim). Defaults to None.
             savechain (str, optional): File name of the chain in format of .npy. Existing files with the same name are overwritten by ``numpy.save``. Defaults to None.
-            ncores (int, optional): Number of cores for multiprocessing.Pool. ncores=1 does not use multiprocessing. Defaults to 1.
+            ncores (int, optional): Number of cores for multiprocessing.Pool. ncores=1 does not use multiprocessing. For ncores > 1, user-supplied logl and model functions must be pickleable, such as functions defined at module scope. Defaults to 1.
             grcheck (bool, optional): Whether to check Gelman-Rubin statistics. Defaults to False.
             pt (bool, optional): Whether to use ptemcee; otherwise, emcee is used. Defaults to False.
         """
