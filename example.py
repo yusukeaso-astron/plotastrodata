@@ -236,6 +236,7 @@ ax.set_ylabel(r'$y / r_{c}$')
 ax.grid()
 fig.savefig('streamer.png')
 plt.show()
+plt.close(fig)
 
 ################################################################################
 # FFT with a given center
@@ -252,6 +253,7 @@ ax.set_ylabel('f')
 fig.tight_layout()
 fig.savefig('boxcar.png')
 plt.show()
+plt.close(fig)
 
 u = np.fft.fftshift(np.fft.fftfreq(len(x), d=x[1] - x[0]))
 F = np.fft.fftshift(np.fft.fft(f))
@@ -265,6 +267,7 @@ ax.legend()
 fig.tight_layout()
 fig.savefig('numpyfft.png')
 plt.show()
+plt.close(fig)
 
 F, u = fftcentering(f=f, x=x, xcenter=0)
 
@@ -277,6 +280,7 @@ ax.legend()
 fig.tight_layout()
 fig.savefig('fftcentering.png')
 plt.show()
+plt.close(fig)
 
 ################################################################################
 # MCMC (emcee, corner, dynesty)

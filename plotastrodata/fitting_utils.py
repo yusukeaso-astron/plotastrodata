@@ -269,13 +269,14 @@ class EmceeCorner():
             labels = [f'Par {i:d}' for i in range(self.dim)]
         if cornerrange is None:
             cornerrange = self.bounds
-        corner.corner(np.reshape(self.samples, (-1, self.dim)),
-                      truths=self.popt,
-                      quantiles=[self.percent[0] / 100,
-                                 0.5,
-                                 self.percent[1] / 100],
-                      show_titles=True, labels=labels, range=cornerrange)
-        close_figure(plt, savefig, show, tight=False)
+        fig = corner.corner(np.reshape(self.samples, (-1, self.dim)),
+                            truths=self.popt,
+                            quantiles=[self.percent[0] / 100,
+                                       0.5,
+                                       self.percent[1] / 100],
+                            show_titles=True, labels=labels,
+                            range=cornerrange)
+        close_figure(fig, savefig, show, tight=False)
 
     def plotchain(self, labels: list | None = None, ylim: list | None = None,
                   savefig: dict | str | None = None,

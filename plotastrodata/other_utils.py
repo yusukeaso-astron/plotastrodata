@@ -296,7 +296,7 @@ def close_figure(fig: object, savefig: dict | str | None = None,
                  show: bool = False, tight: bool = True) -> None:
     """Save, show, and close the figure.
 
-    If ``savefig`` is provided, the figure is saved with Matplotlib ``Figure.savefig``. Existing files with the same name are overwritten by Matplotlib. After optional saving/showing, the figure is closed with ``plt.close()``.
+    If ``savefig`` is provided, the figure is saved with Matplotlib ``Figure.savefig``. Existing files with the same name are overwritten by Matplotlib. After optional saving/showing, the figure is closed with ``plt.close(fig)``.
 
     Default keyword values:
         Figure.savefig: ``bbox_inches='tight'`` and ``transparent=True``. Values in ``savefig`` override these defaults.
@@ -316,4 +316,4 @@ def close_figure(fig: object, savefig: dict | str | None = None,
         fig.savefig(**savefig0)
     if show:
         plt.show()
-    plt.close()
+    plt.close(fig)
