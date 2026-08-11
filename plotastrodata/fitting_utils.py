@@ -137,9 +137,11 @@ class EmceeCorner():
         if ncores > 1:
             with Pool(ncores) as pool:
                 sampler = sampler_cls(**sampler_kwargs, pool=pool)
+                # This run_mcmc is duplicated so sampling finishes before the pool closes.
+                sampler.run_mcmc(pos0, nsteps)
         else:
             sampler = sampler_cls(**sampler_kwargs, pool=None)
-        sampler.run_mcmc(pos0, nsteps)
+            sampler.run_mcmc(pos0, nsteps)
         return sampler
 
     def _get_samples(self, sampler: Any, nburnin: int,
