@@ -311,10 +311,10 @@ class Beam():
 
         Args:
             show_beam (bool, optional): Defaults to True.
-            beam (list, optional): [bmaj, bmin, bpa]. This may be a list of list. Defaults to [None, None, None].
-            beamcolor (str, optional): matplotlib color. This may be a list of str. Defaults to 'gray'.
-            beampos (list, optional): Relative position. This may be a list of list or a list of None. Defaults to None.
-            beam_kwargs (dict, optional): Additional arguments for matplotlib.patches. Defaults to {}.
+            beam (list or np.ndarray, optional): One ``[bmaj, bmin, bpa]`` triple or a list of triples. ``bmaj`` and ``bmin`` must be positive; ``bpa`` is in degrees. ``[None, None, None]`` means no beam is available. Partial triples are not supported. Defaults to ``[None, None, None]``.
+            beamcolor (str or list of str, optional): Matplotlib color. One color is used for every beam; when a list is given, provide one color per beam. Defaults to ``'gray'``.
+            beampos (list or list of list, optional): One relative ``[x, y]`` position is used for every beam; when a list of positions is given, provide one position per beam. Each coordinate must be from 0 (left or bottom) to 1 (right or top). None selects the automatic position. Defaults to None.
+            beam_kwargs (dict, optional): Additional Matplotlib patch arguments. Defaults to {}.
     """
     def __init__(self,
                  show_beam: bool = True,
@@ -683,7 +683,7 @@ class PlotAstroData(AstroFrame):
     def add_beam(self, **kwargs: Any) -> None:
         """Use add_region() to plot the beam.
 
-        kwargs may include the arguments of Beam, except for beam_kwargs, to specify the beam appearance. Those arguments may be a list of each format.
+        kwargs may include the arguments of Beam, except for beam_kwargs, to specify the beam appearance. A single ``beamcolor`` or ``beampos`` value applies to every beam; per-beam lists must provide one value for each beam. A ``[None, None, None]`` beam is skipped.
 
         Default keyword values:
             Beam patch: ``facecolor=beamcolor`` and ``edgecolor=None``. Other keyword arguments override these values and are passed to ``add_region``.
