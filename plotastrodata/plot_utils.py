@@ -20,6 +20,8 @@ plt.ioff()  # force to turn off interactive mode
 T = TypeVar('T')
 Stretch = Literal['linear', 'log', 'asinh', 'power']
 AxisScale = Literal['linear', 'log', 'symlog', 'asinh', 'logit']
+FloatOrList = float | list[float]
+OptionalFloatOrList = float | list[float | None] | None
 
 
 def set_rcparams(fontsize: int = 18, nancolor: str = 'w',
@@ -196,18 +198,18 @@ class Stretcher():
 
         Args:
             stretch (str, optional): 'log', 'asinh', 'power', or 'linear'. Any other means 'linear'. 'log' means the mapped data are logarithmic. 'asinh' means the mapped data are arc sin hyperbolic. 'power' means the mapped data are power-law (see also stretchpower). Defaults to 'linear'.
-            stretchscale (float, optional): The output is asinh(data / stretchscale). Defaults to None.
-            stretchpower (float, optional): The output is data**stretchpower / stretchpower. 1 means the linear scale, while 0 means the logarithmic scale. Defaults to 0.5.
-            vmin (float, optional): The minimum value for Axes.pcolormesh() of matplotlib. Defaults to None.
-            vmax (float, optional): The maximum value for Axes.pcolormesh() of matplotlib. Defaults to None.
-            sigma (float, optional): Noise level. Defaults to 0.
+            stretchscale (float or list, optional): The output is asinh(data / stretchscale). Defaults to None.
+            stretchpower (float or list, optional): The output is data**stretchpower / stretchpower. 1 means the linear scale, while 0 means the logarithmic scale. Defaults to 0.5.
+            vmin (float or list, optional): The minimum value for Axes.pcolormesh() of matplotlib. Defaults to None.
+            vmax (float or list, optional): The maximum value for Axes.pcolormesh() of matplotlib. Defaults to None.
+            sigma (float, list, or None, optional): Noise level. None means no noise level is used. Defaults to 0.
     """
     stretch: Stretch | list[Stretch] = 'linear'
-    stretchscale: float | None = None
-    stretchpower: float = 0.5
-    vmin: float | None = None
-    vmax: float | None = None
-    sigma: float = 0
+    stretchscale: OptionalFloatOrList = None
+    stretchpower: FloatOrList = 0.5
+    vmin: OptionalFloatOrList = None
+    vmax: OptionalFloatOrList = None
+    sigma: OptionalFloatOrList = 0
 
     def __post_init__(self) -> None:
         self.n = 1 if isinstance(self.stretch, str) else len(self.stretch)
