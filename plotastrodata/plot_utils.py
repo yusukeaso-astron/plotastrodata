@@ -1,9 +1,10 @@
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
-from dataclasses import dataclass
 from matplotlib.patches import Ellipse, Rectangle
-from typing import Any, TypeVar, Callable
+from pydantic import Field
+from pydantic.dataclasses import dataclass as pydantic_dataclass
+from typing import Any, Callable, Literal, TypeVar
 
 from plotastrodata.analysis_utils import AstroData, AstroFrame
 from plotastrodata.coord_utils import (coord2xy, xy2coord,
@@ -17,6 +18,8 @@ from plotastrodata.other_utils import (close_figure, listing,
 plt.ioff()  # force to turn off interactive mode
 
 T = TypeVar('T')
+Stretch = Literal['linear', 'log', 'asinh', 'power']
+AxisScale = Literal['linear', 'log', 'symlog', 'asinh', 'logit']
 
 
 def set_rcparams(fontsize: int = 18, nancolor: str = 'w',
@@ -187,7 +190,7 @@ def _get_vskipfill(nv: int, v_org: np.ndarray, vskip: int,
     return vskipfill
 
 
-@dataclass
+@pydantic_dataclass
 class Stretcher():
     """Arguments and methods related to the stretch in PlotAstroData.add_color() and add_rgb().
 
@@ -199,7 +202,7 @@ class Stretcher():
             vmax (float, optional): The maximum value for Axes.pcolormesh() of matplotlib. Defaults to None.
             sigma (float, optional): Noise level. Defaults to 0.
     """
-    stretch: str = 'linear'
+    stretch: Stretch | list[Stretch] = 'linear'
     stretchscale: float | None = None
     stretchpower: float = 0.5
     vmin: float | None = None
@@ -337,13 +340,13 @@ class Beam():
         return tmp
 
 
-@dataclass
+@pydantic_dataclass
 class PlotAxes2D():
     """Use Axes.set_* to adjust x and y axes.
 
     Args:
         samexy (bool, optional): True supports same ticks between x and y. Defaults to True.
-        loglog (float, optional): If a float is given, plot on a log-log plane, and xim=(xmax / loglog, xmax) and so does ylim. Defaults to None.
+        loglog (float, optional): A positive value plots on a log-log plane, with xim=(xmax / loglog, xmax) and similarly for ylim. Defaults to None.
         xscale (str, optional): ``'log'`` labels decade ticks and ticks near the limits; other intermediate ticks are minor and unlabeled. Defaults to ``'linear'``.
         yscale (str, optional): ``'log'`` labels decade ticks and ticks near the limits; other intermediate ticks are minor and unlabeled. Defaults to ``'linear'``.
         xlim (list, optional): Defaults to None.
@@ -360,9 +363,9 @@ class PlotAxes2D():
         aspect (dict or float, optional): Defaults to None.
     """
     samexy: bool = True
-    loglog: float | None = None
-    xscale: str = 'linear'
-    yscale: str = 'linear'
+    loglog: float | None = Field(default=None, gt=0)
+    xscale: AxisScale = 'linear'
+    yscale: AxisScale = 'linear'
     xlim: list | None = None
     ylim: list | None = None
     xlabel: str | None = None

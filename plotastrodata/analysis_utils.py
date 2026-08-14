@@ -3,7 +3,8 @@ import warnings
 from dataclasses import dataclass
 from scipy.interpolate import RegularGridInterpolator as RGI
 from scipy.signal import convolve
-from typing import Any, Callable
+from pydantic.dataclasses import dataclass as pydantic_dataclass
+from typing import Any, Callable, Literal
 
 from plotastrodata import const_utils as cu
 from plotastrodata.coord_utils import coord2xy, rel2abs, xy2coord
@@ -621,7 +622,7 @@ ASTRODATA_ARGS = ['fitsimage', 'data', 'Tb', 'sigma', 'center', 'restfreq',
                   'beam_org', 'fitsheader', 'pv', 'pvpa']
 
 
-@dataclass
+@pydantic_dataclass
 class AstroFrame():
     """Parameter set to limit and reshape the data in the AstroData format.
 
@@ -662,7 +663,7 @@ class AstroFrame():
     yflip: bool = False
     swapxy: bool = False
     pv: bool = False
-    quadrants: str | None = None
+    quadrants: Literal['13', '24'] | None = None
 
     def __post_init__(self) -> None:
         self.xdir = -1 if self.xflip else 1
