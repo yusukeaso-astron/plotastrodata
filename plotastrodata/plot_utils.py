@@ -2,7 +2,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.patches import Ellipse, Rectangle
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic.dataclasses import dataclass as pydantic_dataclass
 from typing import Any, Callable, Literal, TypeVar
 
@@ -22,6 +22,9 @@ Stretch = Literal['linear', 'log', 'asinh', 'power']
 AxisScale = Literal['linear', 'log', 'symlog', 'asinh', 'logit']
 FloatOrList = float | list[float]
 OptionalFloatOrList = float | list[float | None] | None
+BeamTriple = list[float | None]
+BeamValue = BeamTriple | list[BeamTriple]
+BeamPosition = list[float] | list[list[float] | None] | None
 
 
 def set_rcparams(fontsize: int = 18, nancolor: str = 'w',
@@ -306,6 +309,7 @@ class Stretcher():
         return dataout, vminout, vmaxout
 
 
+@pydantic_dataclass
 class Beam():
     """Arguments for PlotAstroData.add_beam().
 
@@ -316,17 +320,77 @@ class Beam():
             beampos (list or list of list, optional): One relative ``[x, y]`` position is used for every beam; when a list of positions is given, provide one position per beam. Each coordinate must be from 0 (left or bottom) to 1 (right or top). None selects the automatic position. Defaults to None.
             beam_kwargs (dict, optional): Additional Matplotlib patch arguments. Defaults to {}.
     """
-    def __init__(self,
-                 show_beam: bool = True,
-                 beam: list[float | None] = [None] * 3,
-                 beamcolor: str = 'gray',
-                 beampos: list[float] | None = None,
-                 beam_kwargs: dict = {}) -> None:
-        self.show_beam = show_beam
-        self.beam = beam
-        self.beamcolor = beamcolor
-        self.beampos = beampos
-        self.beam_kwargs = beam_kwargs
+    show_beam: bool = True
+    beam: BeamValue = Field(default_factory=lambda: [None] * 3)
+    beamcolor: str | list[str] = 'gray'
+    beampos: BeamPosition = None
+    beam_kwargs: dict[str, Any] = Field(default_factory=dict)
+
+    @field_validator('beam', mode='before')
+    @classmethod
+    def _convert_beam_arrays(cls, value: Any) -> Any:
+        """Convert documented NumPy beam inputs to the canonical list form.
+
+        A single NumPy triple becomes a list, and NumPy triples inside a
+        list of beams are converted individually. This keeps subsequent
+        validation and plotting code independent of the input container.
+        """
+        if isinstance(value, np.ndarray):
+            value = value.tolist()
+        if isinstance(value, list):
+            return [item.tolist() if isinstance(item, np.ndarray) else item
+                    for item in value]
+        return value
+
+    @field_validator('beam')
+    @classmethod
+    def _validate_beam(cls, value: BeamValue) -> BeamValue:
+        beams = value if value and isinstance(value[0], list) else [value]
+        for beam in beams:
+            if len(beam) != 3:
+                raise ValueError('Each beam must contain [bmaj, bmin, bpa].')
+            if all(component is None for component in beam):
+                continue
+            if any(component is None for component in beam):
+                raise ValueError('A beam must be complete or all None.')
+            if not all(np.isfinite(component) for component in beam):
+                raise ValueError('Beam values must be finite.')
+            if beam[0] <= 0 or beam[1] <= 0:
+                raise ValueError('bmaj and bmin must be positive.')
+        return value
+
+    @field_validator('beampos')
+    @classmethod
+    def _validate_beampos(cls, value: BeamPosition) -> BeamPosition:
+        if value is None:
+            return value
+        positions = [value] if cls._is_position(value) else value
+        for position in positions:
+            if position is None:
+                continue
+            if len(position) != 2:
+                raise ValueError('Each beam position must contain [x, y].')
+            if not all(0 <= coordinate <= 1 for coordinate in position):
+                raise ValueError('Beam positions must be between 0 and 1.')
+        return value
+
+    @staticmethod
+    def _is_position(value: Any) -> bool:
+        return (isinstance(value, list) and len(value) == 2
+                and all(isinstance(coordinate, float)
+                        for coordinate in value))
+
+    def validate_display(self) -> None:
+        """Validate color and position lists against the number of beams."""
+        multi = self.beam and isinstance(self.beam[0], list)
+        beams = self.beam if multi else [self.beam]
+        nbeams = len(beams)
+        if isinstance(self.beamcolor, list) and len(self.beamcolor) != nbeams:
+            raise ValueError('Provide one beamcolor for each beam.')
+        if (self.beampos is not None
+                and not self._is_position(self.beampos)
+                and len(self.beampos) != nbeams):
+            raise ValueError('Provide one beampos for each beam.')
 
     def todict(self) -> dict[str, Any]:
         """Return beam display settings as a dictionary.
@@ -623,9 +687,12 @@ class PlotAstroData(AstroFrame):
         self.sigma = d.sigma
         singlepix = d.dx is None or d.dy is None
         if len(d.beam) == 4:
-            b.beam = self.beam = next(b for b in d.beam if None not in b)
+            beam = next((onebeam for onebeam in d.beam
+                         if all(a is not None for a in onebeam)),
+                        [None, None, None],)
         else:
-            b.beam = self.beam = d.beam
+            beam = d.beam
+        b.beam = self.beam = Beam(beam=beam).beam
         self.add_beam(**b.todict())
         return (d.data, d.x, d.y, d.v, d.sigma, d.bunit,
                 self._kw, singlepix)
@@ -692,6 +759,7 @@ class PlotAstroData(AstroFrame):
         show_beam, beamcolor, beampos = b.show_beam, b.beamcolor, b.beampos
         beam = b.beam
         del kwargs['beam']
+        b.validate_display()
         if not show_beam:
             return
 
@@ -700,7 +768,7 @@ class PlotAstroData(AstroFrame):
         blist = [beam] if np.ndim(beam) == 1 else beam
         n = len(blist)
         bclist = beamcolor if isinstance(beamcolor, list) else [beamcolor] * n
-        islist = beampos == [None] * 3 or np.ndim(beampos) == 2
+        islist = beampos is not None and not b._is_position(beampos)
         bplist = beampos if islist else [beampos] * n
         for (bmaj, bmin, bpa), bc, bp in zip(blist, bclist, bplist):
             if None in [bmaj, bmin, bpa]:
