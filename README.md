@@ -63,6 +63,7 @@ plotastrodata can do the following things.
 * pillow (only for RGB figures)
 * plotly (only for html cube)
 * ptemcee (only for fitting)
+* pydantic >= 2
 * scikit-image (only for html cube)
 * scipy
 * tqdm (only for fitting)

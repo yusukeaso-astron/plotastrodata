@@ -8,6 +8,7 @@ numpy >= 2.0
 pillow
 plotly
 ptemcee
+pydantic >= 2
 scikit-image
 scipy
 sphinx-rtd-theme
