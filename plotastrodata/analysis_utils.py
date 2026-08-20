@@ -692,12 +692,12 @@ class AstroFrame():
         if self.fitsimage is not None and self.center is None:
             self.center = FitsData(self.fitsimage).get_center()
 
-    def pos2xy(self, poslist: list[str | list[float, float]] = []
+    def pos2xy(self, poslist: list[str | list[float, float]]
                ) -> np.ndarray:
         """Text or relative to absolute coordinates.
 
          Args:
-            poslist (list, optional): Text coordinates or relative coordinates. Defaults to [].
+            poslist (list): Text coordinates or relative coordinates.
 
          Returns:
             np.ndarray: absolute coordinates.
@@ -705,6 +705,13 @@ class AstroFrame():
         onexy = np.shape(poslist) == (2,) and not isinstance(poslist[0], str)
         if np.shape(poslist) == () or onexy:
             poslist = [poslist]
+        if self.center is None and any(isinstance(p, str) for p in poslist):
+            clsname = type(self).__name__
+            raise ValueError(
+                f"{clsname}.pos2xy() requires 'center' when poslist "
+                "contains sky-coordinate strings. Set 'center' explicitly or "
+                "'fitsimage' from which the center can be determined."
+            )
         x, y = [None] * len(poslist), [None] * len(poslist)
         for i, p in enumerate(poslist):
             if isinstance(p, str):
