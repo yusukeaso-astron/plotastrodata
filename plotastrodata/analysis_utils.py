@@ -708,9 +708,9 @@ class AstroFrame():
         if self.center is None and any(isinstance(p, str) for p in poslist):
             clsname = type(self).__name__
             raise ValueError(
-                f"{clsname}.pos2xy() requires 'center' when poslist "
-                "contains sky-coordinate strings. Set 'center' explicitly or "
-                "'fitsimage' from which the center can be determined."
+                f'{clsname}.pos2xy() requires "center" when poslist '
+                'contains sky-coordinate strings. Set "center" explicitly '
+                'or "fitsimage" from which the center can be determined.'
             )
         x, y = [None] * len(poslist), [None] * len(poslist)
         for i, p in enumerate(poslist):
