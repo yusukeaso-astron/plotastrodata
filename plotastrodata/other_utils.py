@@ -89,8 +89,7 @@ def trim(data: np.ndarray | None = None, x: np.ndarray | None = None,
     d = np.squeeze(data)
 
     if d.ndim == 0:
-        print('data has only one pixel.')
-        return data, [xout, yout, vout]
+        raise ValueError('data must be a 2D or 3D array, not a scalar.')
 
     if d.ndim == 2:
         if pv:
@@ -114,7 +113,10 @@ def to4dim(data: np.ndarray) -> np.ndarray:
     Returns:
         np.ndarray: Output 4D array.
     """
-    if np.ndim(data) == 2:
+    ndim = np.ndim(data)
+    if ndim not in [2, 3, 4]:
+        raise ValueError('data must be a 2D, 3D, or 4D array.')
+    if ndim == 2:
         d = np.array([[data]])
     elif np.ndim(data) == 3:
         d = np.array([data])
@@ -164,7 +166,7 @@ def reform_grid(v: np.ndarray | None = None,
 
 def reform_data(c: np.ndarray, v_in: np.ndarray | None,
                 nv: int, v_org: np.ndarray | None = None,
-                vskip: int = 1) -> np.ndarray | None:
+                vskip: int = 1) -> np.ndarray:
     """Skip and fill channels with nan.
 
     Args:
@@ -182,12 +184,14 @@ def reform_data(c: np.ndarray, v_in: np.ndarray | None,
 
     ndim = np.ndim(c)
     if ndim not in [2, 3]:
-        print('c must be 2D or 3D.')
-        return
+        raise ValueError('c must be a 2D or 3D array.')
 
     if ndim == 2:
         d = np.full((nv, *np.shape(c)), c)
     elif v_in is not None:
+        if len(v_in) < 2 or len(v_org) < 2:
+            raise ValueError(
+                '3D reform_data() requires at least two v_in and v_org values.')
         dv_org = v_org[1] - v_org[0]
         dv_in = (v_in[1] - v_in[0]) * vskip
         k0 = nearest_index(v_org, v_in[0])
@@ -211,6 +215,8 @@ def reform_data(c: np.ndarray, v_in: np.ndarray | None,
             prenan = np.full((k0, *np.shape(d)[1:]), np.nan)
             d = np.concatenate((prenan, d))
         d = d[::vskip]
+    else:
+        raise ValueError('3D reform_data() requires v_in when v_org is given.')
     shape = np.shape(d)
     shape = (len(v_org) - shape[0], shape[1], shape[2])
     postnan = np.full(shape, np.nan)
@@ -220,7 +226,7 @@ def reform_data(c: np.ndarray, v_in: np.ndarray | None,
 
 def RGIxy(y: np.ndarray, x: np.ndarray, data: np.ndarray,
           yxnew: tuple[np.ndarray, np.ndarray] | None = None,
-          **kwargs: Any) -> Callable | np.ndarray | None:
+          **kwargs: Any) -> Callable | np.ndarray:
     """RGI for x and y at each channel.
 
     Default keyword values:
@@ -236,8 +242,7 @@ def RGIxy(y: np.ndarray, x: np.ndarray, data: np.ndarray,
         np.ndarray: The RGI function or the interpolated array.
     """
     if np.ndim(data) not in [2, 3, 4]:
-        print('data must be 2D, 3D, or 4D.')
-        return
+        raise ValueError('data must be a 2D, 3D, or 4D array.')
 
     _kw = {'bounds_error': False, 'fill_value': np.nan,
            'method': 'linear'}
@@ -258,7 +263,7 @@ def RGIxy(y: np.ndarray, x: np.ndarray, data: np.ndarray,
 
 def RGIxyv(v: np.ndarray, y: np.ndarray, x: np.ndarray, data: np.ndarray,
            vyxnew: tuple[np.ndarray, np.ndarray, np.ndarray] | None = None,
-           **kwargs: Any) -> Callable | np.ndarray | None:
+           **kwargs: Any) -> Callable | np.ndarray:
     """RGI in the x-y-v space.
 
     Default keyword values:
@@ -275,8 +280,7 @@ def RGIxyv(v: np.ndarray, y: np.ndarray, x: np.ndarray, data: np.ndarray,
         np.ndarray: The RGI function or the interpolated array.
     """
     if np.ndim(data) not in [3, 4]:
-        print('data must be 3D or 4D.')
-        return
+        raise ValueError('data must be a 3D or 4D array.')
 
     _kw = {'bounds_error': False, 'fill_value': np.nan,
            'method': 'linear'}

@@ -727,8 +727,7 @@ class PlotAstroData(AstroFrame):
                'linewidth': 1.5, 'zorder': 10}
         _kw.update(kwargs)
         if patch not in ['rectangle', 'ellipse']:
-            print('Only patch=\'rectangle\' or \'ellipse\' supported. ')
-            return
+            raise ValueError("patch must be 'rectangle' or 'ellipse'.")
 
         z = listing(*self.pos2xy(poslist), minlist, majlist, palist)
         for x, y, width, height, angle in zip(*z):
@@ -911,8 +910,7 @@ class PlotAstroData(AstroFrame):
             bbox (dict, optional): Keyword arguments for the text bounding box. Defaults to {'alpha': 0}.
         """
         if length == 0:
-            print('No length is given. Skip add_scalebar().')
-            return
+            raise ValueError('length must be nonzero.')
         if fontsize is None:
             fontsize = 20 if len(self.ax) == 1 else 15
         for ch, axnow in enumerate(self.ax):
@@ -995,8 +993,8 @@ class PlotAstroData(AstroFrame):
                     'vmin': None, 'vmax': None}
         c, x, y, v, sigma, bunit, _kw, singlepix = self._map_init(kwargs)
         if singlepix:
-            print('No pixel size. Skip add_color.')
-            return
+            raise ValueError(
+                'add_color() requires at least two x and y pixels.')
 
         cblabel = bunit if cblabel is None else cblabel
 
@@ -1036,8 +1034,8 @@ class PlotAstroData(AstroFrame):
         self._kw = {'colors': 'gray', 'linewidths': 1.0, 'zorder': 2}
         c, x, y, v, sigma, _, _kw, singlepix = self._map_init(kwargs)
         if singlepix:
-            print('No pixel size. Skip add_contour.')
-            return
+            raise ValueError(
+                'add_contour() requires at least two x and y pixels.')
 
         c = self.vskipfill(c, v)
         for axnow, cnow in zip(self.ax, c):
@@ -1088,8 +1086,8 @@ class PlotAstroData(AstroFrame):
                     'data': [amp, ang, stU, stQ]}
         c, x, y, v, sigma, _, _kw, singlepix = self._map_init(kwargs)
         if singlepix:
-            print('No pixel size. Skip add_segment.')
-            return
+            raise ValueError(
+                'add_segment() requires at least two x and y pixels.')
 
         amp, ang, stU, stQ = c
         sigmaU, sigmaQ = sigma[2:]
@@ -1135,12 +1133,12 @@ class PlotAstroData(AstroFrame):
                     'stretchpower': [0.5] * 3}
         c, x, y, v, _, _, _kw, singlepix = self._map_init(kwargs)
         if singlepix:
-            print('No pixel size. Skip add_rgb.')
-            return
+            raise ValueError('add_rgb() requires at least two x and y pixels.')
 
         if not (np.shape(c[0]) == np.shape(c[1]) == np.shape(c[2])):
-            print('RGB shapes mismatch. Skip add_rgb.')
-            return
+            raise ValueError(
+                'add_rgb() requires red, green, and blue data with matching '
+                'shapes.')
 
         st = kwargs2instance(Stretcher, _kw)
         c, cmin, cmax = st.set_minmax(c)
@@ -1348,16 +1346,15 @@ class PlotAstroData(AstroFrame):
         for fig in self.figs:
             plt.close(fig)
 
-    def get_figax(self) -> tuple[object, object] | None:
+    def get_figax(self) -> tuple[object, object]:
         """Output the external fig and ax after plotting.
 
         Returns:
             tuple: (fig, ax)
         """
         if len(self.ax) > 1:
-            print('PlotAstroData.get_figax() is not supported'
-                  + ' with channel maps')
-            return
+            raise ValueError(
+                'PlotAstroData.get_figax() does not support channel maps.')
 
         return self.figs[0], self.ax[0]
 
@@ -1403,8 +1400,7 @@ def _set_figax_plotprofile(fig: object | None, ax: object | None,
     if fig is None:
         fig = plt.figure(figsize=(6 * ncols, 3 * nrows))
     if nprof > 1 and ax is not None:
-        print('External ax is supported only when len(coords)=1.')
-        ax = None
+        raise ValueError('An external ax is supported only for one profile.')
     ax = np.empty(nprof, dtype=object) if ax is None else [ax]
     for i in range(nprof):
         sharex = None if i < nrows - 1 else ax[i - 1]
@@ -1531,8 +1527,7 @@ def plotslice(length: float, dx: float | None = None, pa: float = 0,
     d = kwargs2instance(AstroData, _kw)
     f.read(d)
     if np.ndim(d.data) > 2:
-        print('Only 2D map is supported.')
-        return
+        raise ValueError('plotslice() supports only a 2D map.')
 
     r, z = d.slice(length=length, pa=pa, dx=dx)
     xunit = 'arcsec' if f.dist == 1 else 'au'
@@ -1582,9 +1577,9 @@ def _plot_on_wall(d: AstroData, x: np.ndarray, y: np.ndarray, v: np.ndarray,
         case 0:
             shape = np.shape(d.data[0, :, :])
     if np.shape(kwargs['data']) != shape:
-        print('The shape of the 2D data is inconsistent'
-              + ' with the shape of the 3D data.')
-        return
+        raise ValueError(
+            'The shape of the 2D wall data must match the corresponding '
+            f'3D data plane; got {np.shape(kwargs["data"])} and {shape}.')
 
     _kw = {'levels': [3, 6, 12, 24, 48, 96, 192, 384],
            'sigma': 'hist', 'cmap': 'Jet', 'alpha': 0.3}

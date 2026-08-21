@@ -12,7 +12,7 @@ from plotastrodata.other_utils import isdeg, RGIxy, trim
 
 def Jy2K(header: Any = None, bmaj: float | None = None,
          bmin: float | None = None,
-         restfreq: float | None = None) -> float | None:
+         restfreq: float | None = None) -> float:
     """Calculate a conversion factor in the unit of K/Jy.
 
     Args:
@@ -28,7 +28,7 @@ def Jy2K(header: Any = None, bmaj: float | None = None,
     if header is not None:
         if 'BMAJ' in header and 'BMIN' in header:
             bmaj, bmin = header['BMAJ'] * 3600, header['BMIN'] * 3600
-        else:
+        elif 'CDELT1' in header and 'CUNIT1' in header:
             print('Use CDELT1^2 for Tb conversion.')
             todiameter = np.sqrt(4 * np.log(2) / np.pi) * 3600
             bmaj = bmin = np.abs(header['CDELT1']) * todiameter
@@ -41,8 +41,16 @@ def Jy2K(header: Any = None, bmaj: float | None = None,
     if restfreq is not None:
         freq = restfreq
     if freq is None:
-        print('Please input restfreq.')
-        return
+        raise ValueError(
+            'Brightness-temperature conversion requires restfreq or a '
+            'RESTFREQ/RESTFRQ header value.')
+    if not np.isfinite(freq) or freq <= 0:
+        raise ValueError('restfreq must be finite and positive.')
+    if (bmaj is None or bmin is None or not np.isfinite(bmaj)
+            or not np.isfinite(bmin) or bmaj <= 0 or bmin <= 0):
+        raise ValueError(
+            'Brightness-temperature conversion requires finite, positive '
+            'bmaj and bmin values or equivalent FITS header metadata.')
     omega = bmaj * bmin * units.arcsec**2 * np.pi / 4. / np.log(2.)
     equiv = units.brightness_temperature(freq * units.Hz, beam_area=omega)
     T = (1 * units.Jy / units.beam).to(units.K, equivalencies=equiv)

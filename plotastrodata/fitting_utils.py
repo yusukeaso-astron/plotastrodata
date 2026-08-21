@@ -107,17 +107,30 @@ class EmceeCorner():
                  sigma: float | np.ndarray = 1, progressbar: bool = False,
                  percent: list = [16, 84]) -> None:
         global global_bounds, global_progressbar
-        if len(bounds[0]) > 3:
-            global_bounds = np.transpose(bounds)
+        bounds_array = np.asarray(bounds, dtype=float)
+        if bounds_array.ndim != 2 or 2 not in bounds_array.shape:
+            raise ValueError('bounds must have shape (dim, 2) or (2, dim).')
+        if bounds_array.shape[1] != 2:
+            global_bounds = np.transpose(bounds_array)
             print('bounds has been transposed because its shape is (2, dim).')
         else:
-            global_bounds = np.array(bounds)
+            global_bounds = bounds_array
+        if (not np.all(np.isfinite(global_bounds))
+                or np.any(global_bounds[:, 0] >= global_bounds[:, 1])):
+            raise ValueError(
+                'Each parameter bound must be finite with lower < upper.')
+        if (len(percent) != 2 or not 0 <= percent[0] < percent[1] <= 100):
+            raise ValueError(
+                'percent must contain two increasing values between 0 and 100.')
         global_progressbar = progressbar
         if logl is None and (model is not None
                              and xdata is not None
                              and ydata is not None):
             logl = partial(_gaussian_log_likelihood, model=model,
                            xdata=xdata, ydata=ydata, sigma=sigma)
+        if logl is None:
+            raise ValueError(
+                'Provide logl, or provide model, xdata, and ydata together.')
         self.bounds = global_bounds
         self.dim = len(self.bounds)
         self.logl = logl
@@ -221,6 +234,12 @@ class EmceeCorner():
             pt (bool, optional): Whether to use ptemcee; otherwise, emcee is used. Defaults to False.
         """
         global bar
+        if nsteps < 1:
+            raise ValueError('nsteps must be positive.')
+        if nburnin < 0 or nburnin >= nsteps:
+            raise ValueError('nburnin must satisfy 0 <= nburnin < nsteps.')
+        if ntemps < 1 or ntry < 1 or ncores < 1:
+            raise ValueError('ntemps, ntry, and ncores must be positive.')
         if nwalkersperdim < 2:
             print('nwalkersperdim < 2 is not allowed.'
                   + f' Use 2 instead of {nwalkersperdim:d}.')

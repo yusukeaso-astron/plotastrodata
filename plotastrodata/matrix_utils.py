@@ -56,6 +56,8 @@ def Mrot3d(t: float, axis: int = 3) -> np.ndarray:
     Returns:
         np.ndarray: 3x3 rotation matrix that rotates coordinates around the specified axis by t degrees.
     """
+    if axis not in [1, 2, 3]:
+        raise ValueError('axis must be 1, 2, or 3.')
     cos_t = np.cos(np.radians(t))
     sin_t = np.sin(np.radians(t))
     match axis:

@@ -123,9 +123,15 @@ class Noise:
     """
     def __init__(self, data: np.ndarray, sigma: str) -> None:
         self.data = select_noise(data, sigma)
+        if self.data.size < 2:
+            raise ValueError(
+                'Noise estimation requires at least two selected finite pixels.')
         self.sigma = sigma
         self.m0 = np.mean(self.data)
         self.s0 = np.std(self.data)
+        if not np.isfinite(self.s0):
+            raise ValueError(
+                'Noise estimation requires selected pixels with finite values.')
 
     def gen_histogram(self, **kwargs: Any) -> None:
         """Generate a pair of histogram and bins using numpy.histogram.
@@ -135,6 +141,10 @@ class Noise:
         Default keyword values:
             numpy.histogram: ``bins=100``, ``range=(-3.5, 3.5)``, and ``density=True``. User-supplied keyword arguments override these values.
         """
+        if self.s0 == 0:
+            raise ValueError(
+                'Histogram noise estimation requires selected pixels with '
+                'nonzero variance.')
         _kw = {'bins': 100, 'range': (-3.5, 3.5), 'density': True}
         _kw.update(kwargs)
         self.bins = _kw['bins']
@@ -215,8 +225,7 @@ def estimate_rms(data: np.ndarray,
         return sigma
 
     if np.ndim(np.squeeze(data)) == 0:
-        print('sigma cannot be estimated from only one pixel.')
-        return 0.0
+        raise ValueError('sigma cannot be estimated from only one pixel.')
 
     n = Noise(data, sigma)
     if 'hist' in sigma:

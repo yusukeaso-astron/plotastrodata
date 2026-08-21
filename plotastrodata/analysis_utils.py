@@ -19,7 +19,7 @@ from plotastrodata.other_utils import (isdeg, nearest_index,
 
 def quadrantmean(data: np.ndarray, x: np.ndarray, y: np.ndarray,
                  quadrants: str = '13'
-                 ) -> tuple[np.ndarray, np.ndarray, np.ndarray] | None:
+                 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Take mean between 1st and 3rd (or 2nd and 4th) quadrants.
 
     Args:
@@ -32,12 +32,10 @@ def quadrantmean(data: np.ndarray, x: np.ndarray, y: np.ndarray,
         tuple: Averaged (data, x, y).
     """
     if np.ndim(data) != 2:
-        print('data must be 2D.')
-        return
+        raise ValueError('data must be a 2D array.')
 
     if quadrants not in ['13', '24']:
-        print("quadrants must be '13' or '24'.")
-        return
+        raise ValueError("quadrants must be '13' or '24'.")
 
     dx = x[1] - x[0]
     dy = y[1] - y[0]
@@ -65,6 +63,8 @@ def filled2d(data: np.ndarray, x: np.ndarray, y: np.ndarray, n: int = 1,
     Returns:
         tuple: The interpolated (data, x, y).
     """
+    if not isinstance(n, (int, np.integer)) or n < 1:
+        raise ValueError('n must be a positive integer.')
     xnew = np.linspace(x[0], x[-1], n * (len(x) - 1) + 1)
     ynew = np.linspace(y[0], y[-1], n * (len(y) - 1) + 1)
     d = RGIxy(y, x, data, np.meshgrid(ynew, xnew, indexing='ij'),
@@ -73,11 +73,11 @@ def filled2d(data: np.ndarray, x: np.ndarray, y: np.ndarray, n: int = 1,
 
 
 def _need_multipixels(method: Callable) -> Callable:
-    def wrapper(cls: Any, *args: Any, **kwargs: Any) -> Any | None:
+    def wrapper(cls: Any, *args: Any, **kwargs: Any) -> Any:
         singlepixel = cls.dx is None or cls.dy is None
         if singlepixel:
-            print('No pixel size.')
-            return
+            raise ValueError(
+                f'{method.__name__}() requires at least two x and y pixels.')
         return method(cls, *args, **kwargs)
     return wrapper
 
@@ -125,17 +125,26 @@ class AstroData():
     bunit: str = ''
 
     def __post_init__(self) -> None:
+        fits_values = (self.fitsimage if isinstance(self.fitsimage, list)
+                       else [self.fitsimage])
+        has_fits = any(a is not None for a in fits_values)
+        if isinstance(self.data, list):
+            has_data = any(a is not None for a in self.data)
+        else:
+            has_data = self.data is not None
+        if has_fits and has_data:
+            raise ValueError('Provide either data or fitsimage, not both.')
+        if not has_fits and not has_data:
+            raise ValueError('Either data or fitsimage must be given.')
+
         n = 0
-        if self.fitsimage is not None:
+        if has_fits:
             if not isinstance(self.fitsimage, list):
                 n = 1
-            elif any(a is not None for a in self.fitsimage):
-                n = len(self.fitsimage)
             else:
-                n = 0
-            if n > 0:
-                self.data = None
-        if self.data is not None:
+                n = len(self.fitsimage)
+            self.data = None
+        if has_data:
             if _is_data_list(self.data):
                 n = len(self.data)
             elif (isinstance(self.data, list)
@@ -144,8 +153,6 @@ class AstroData():
             else:
                 self.data = np.asarray(self.data)
                 n = 1
-        if n == 0:
-            print('Either data or fitsimage must be given.')
         self.n = n
         self.fitsimage_org = None
         self.sigma_org = None
@@ -154,8 +161,11 @@ class AstroData():
 
     def _binning_one(self, t: str, width: float) -> None:
         grid = getattr(self, t)
-        if width == 1 or grid is None:
+        if width == 1:
             return
+        if grid is None:
+            raise ValueError(
+                f'Binning in the {t}-axis requires a {t} coordinate array.')
 
         dt = f'd{t}'
         sep = getattr(self, dt)
@@ -184,6 +194,10 @@ class AstroData():
         Args:
             width (list, optional): Number of channels, y-pixels, and x-pixels for binning. Defaults to [1, 1, 1].
         """
+        if len(width) > 3 or any(not isinstance(a, (int, np.integer))
+                                 or a < 1 for a in width):
+            raise ValueError(
+                'width must contain one to three positive integers.')
         w = np.array([1] * (3 - len(width)) + list(width), dtype=int)
         if self.pv:
             w[1] = max(w[0], w[1])
@@ -252,8 +266,7 @@ class AstroData():
         """Make the beam circular by convolving with 1D Gaussian
         """
         if None in self.beam:
-            print('No beam.')
-            return
+            raise ValueError('circularbeam() requires a complete beam.')
 
         bmaj, bmin, bpa = self.beam
         self.rotate(-bpa)
@@ -411,14 +424,25 @@ class AstroData():
         """
         if dataformask is None:
             dataformask = self.data
+        if len(includepix) not in [0, 2] or len(excludepix) not in [0, 2]:
+            raise ValueError(
+                'includepix and excludepix must be empty or [min, max].')
         if np.ndim(self.data) > np.ndim(dataformask):
             print('The mask is broadcasted.')
-            mask = np.full(np.shape(self.data), dataformask)
+            try:
+                mask = np.broadcast_to(dataformask, np.shape(self.data))
+            except ValueError as exc:
+                raise ValueError(
+                    'dataformask must be broadcastable to the data shape; '
+                    f'got {np.shape(dataformask)} and {np.shape(self.data)}.'
+                ) from exc
         else:
             mask = dataformask
         if np.shape(self.data) != np.shape(mask):
-            print('The dataformask has a different shape.')
-            return
+            raise ValueError(
+                'dataformask must have the same shape as data after '
+                f'broadcasting; got {np.shape(dataformask)} and '
+                f'{np.shape(self.data)}.')
 
         if len(includepix) == 2:
             self.data[(mask < includepix[0]) + (includepix[1] < mask)] = np.nan
@@ -445,7 +469,7 @@ class AstroData():
                 ellipse: list[float, float, float] | None = None,
                 ninterp: int = 1,
                 flux: bool = False, gaussfit: bool = False
-                ) -> tuple[np.ndarray, np.ndarray, dict] | None:
+                ) -> tuple[np.ndarray, np.ndarray, dict]:
         """Get a list of line profiles at given spatial coordinates.
 
         Args:
@@ -461,8 +485,11 @@ class AstroData():
             tuple: (v, list of profiles, result of Gaussian fit)
         """
         if np.ndim(self.data) != 3 or self.v is None:
-            print('Data must be 3D with the v, y, and x axes.')
-            return
+            raise ValueError('profile() requires 3D data with v, y, and x axes.')
+        if len(xlist) != len(ylist):
+            raise ValueError('xlist and ylist must have the same length.')
+        if len(coords) == 0 and len(xlist) == 0:
+            raise ValueError('Provide coords or matching xlist and ylist values.')
 
         data, xf, yf = filled2d(self.data, self.x, self.y, ninterp)
         x, y = np.meshgrid(xf, yf)
@@ -484,7 +511,8 @@ class AstroData():
                 prof[i] = [calc(d[r <= 1]) for d in data]
         if flux:
             if None in self.beam or None in [self.dx, self.dy]:
-                print('None in beam, dx, or dy. Flux is not converted.')
+                raise ValueError(
+                    'flux=True requires a complete beam and x/y pixel sizes.')
             else:
                 Omega = np.pi * self.beam[0] * self.beam[1] / 4. / np.log(2.)
                 prof *= np.abs(self.dx * self.dy) / Omega
@@ -503,7 +531,7 @@ class AstroData():
             self.beam[2] = self.beam[2] + pa
 
     def slice(self, length: float = 0, pa: float = 0,
-              dx: float | None = None, **kwargs: Any) -> np.ndarray | None:
+              dx: float | None = None, **kwargs: Any) -> np.ndarray:
         """Get 1D slice with given a length and a position-angle.
 
         Args:
@@ -517,8 +545,11 @@ class AstroData():
         if dx is None and self.dx is not None:
             dx = np.abs(self.dx)
         if dx is None:
-            print('dx was not found. Please input dx.')
-            return
+            raise ValueError('slice() requires dx or an x grid with pixel size.')
+        if not np.isfinite(dx) or dx <= 0:
+            raise ValueError('dx must be finite and positive.')
+        if not np.isfinite(length) or length < 0:
+            raise ValueError('length must be finite and nonnegative.')
 
         n = int(np.ceil(length / 2 / dx))
         r = np.linspace(-n, n, 2 * n + 1) * dx
@@ -772,12 +803,40 @@ class AstroFrame():
         d.v = v
 
     def _xyskip(self, d: AstroData, i: int,
-                x: np.ndarray | None, y: np.ndarray | None) -> None:
+                 x: np.ndarray | None, y: np.ndarray | None) -> None:
         d.x = x[::self.xskip]
         d.y = y[::self.yskip]
         data = np.moveaxis(d.data[i], [-2, -1], [0, 1])
         data = data[::self.yskip, ::self.xskip]
         d.data[i] = np.moveaxis(data, [0, 1], [-2, -1])
+
+    def _validate_data_grid(self, data: np.ndarray, grid: list,
+                            dataset: int) -> None:
+        """Validate array axes before trimming or spatial subsampling."""
+        shape = np.shape(np.squeeze(data))
+        if len(shape) not in [2, 3]:
+            raise ValueError(
+                f'Dataset {dataset} must be 2D or 3D; got shape {shape}.')
+
+        x, y, v = grid
+        required = [('x', x, shape[-1])]
+        if self.pv:
+            required.append(('v', v, shape[-2]))
+        else:
+            required.append(('y', y, shape[-2]))
+            if len(shape) == 3:
+                required.append(('v', v, shape[-3]))
+        for name, axis, expected in required:
+            if axis is None:
+                raise ValueError(
+                    f'Dataset {dataset} requires a {name} coordinate array.')
+            if np.ndim(axis) != 1:
+                raise ValueError(
+                    f'Dataset {dataset} {name} must be a 1D array.')
+            if len(axis) != expected:
+                raise ValueError(
+                    f'Dataset {dataset} {name} has length {len(axis)}, but '
+                    f'the corresponding data axis has length {expected}.')
 
     def _trim_skip(self, d: AstroData, i: int, grid: list) -> None:
         d.data[i], grid = trim(data=d.data[i],
@@ -831,6 +890,7 @@ class AstroFrame():
         d.sigma_org[i] = d.sigma[i]
         grid = self._read_fitsimage(d, i, grid=grid)
         if d.data[i] is not None:
+            self._validate_data_grid(d.data[i], grid, i)
             d.sigma[i] = estimate_rms(d.data[i], d.sigma[i])
             grid = self._shift_center(d, i, grid)
             self._trim_skip(d, i, grid)
@@ -857,11 +917,20 @@ class AstroFrame():
             d (AstroData): Dataclass for the add_* input.
             xskip, yskip (int): Spatial pixel skip. Defaults to 1.
         """
+        if (not isinstance(xskip, (int, np.integer)) or xskip < 1
+                or not isinstance(yskip, (int, np.integer)) or yskip < 1):
+            raise ValueError('xskip and yskip must be positive integers.')
         self.xskip = xskip
         self.yskip = yskip
         for name in ASTRODATA_ARGS:
             setattr(d, name, _as_list(getattr(d, name), d.n))
         d.beam = _as_list(d.beam, d.n, isbeam=True)
+        for name in ASTRODATA_ARGS + ['beam']:
+            value = getattr(d, name)
+            if len(value) != d.n:
+                raise ValueError(
+                    f'{name} must contain one value or {d.n} values; '
+                    f'got {len(value)}.')
         grid = [d.x, d.y, d.v]
         for i in range(d.n):
             self._read_one(d, i, grid.copy())  # .copy() not to updated d.x again ang again.
