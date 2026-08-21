@@ -4,51 +4,54 @@ The API, examples, and gallery are available in [readthedocs](https://plotastrod
 The PDF manual is available [here](https://github.com/yusukeaso-astron/plotastrodata/blob/main/plotastrodata_manual.pdf).
 
 
-## Demo and Usage
-For the installation, conda-forge and PyPI are available.
+## Highlights
+
+* Read, write, and process astronomical FITS images, spectral cubes, position-velocity diagrams, and NumPy arrays, including WCS coordinates, spectral axes, beam information, and brightness-temperature conversion.
+* Create 2D maps, channel maps, position-velocity diagrams, RGB composites, line profiles, spatial slices, and interactive 3D isosurface visualizations.
+* Overlay color, contour, polarization-vector, and RGB data from different spatial grids, with astronomical coordinates, beams, scale bars, regions, markers, and other annotations.
+* Prepare data through trimming, interpolation, binning, masking, centering, rotation, deprojection, beam circularization, and profile extraction.
+* Estimate image noise, including support for primary-beam-corrected data.
+* Fit Gaussian models to line profiles and two-dimensional image components.
+* Use supporting tools for coordinate and line-of-sight transformations, centered Fourier transforms and visibility sampling, and Bayesian or grid-based parameter estimation.
+
+## Installation
+
+Install from conda-forge:
+
 ```bash
 conda install conda-forge::plotastrodata
 ```
-or
+
+or from PyPI:
+
 ```bash
 pip install plotastrodata
 ```
-The following is the way to install plotastrodata manually. The file example.py will help you find out how to use this package.
+
+To install the latest source from GitHub:
+
 ```bash
 git clone https://github.com/yusukeaso-astron/plotastrodata
 cd plotastrodata
-python example.py
+python -m pip install .
 ```
-To keep the package updated, always type the command below in the directory plotastrodata before you use it.
+
+To update a source installation, run the following commands in the cloned repository:
+
 ```bash
 git pull
+python -m pip install --upgrade .
 ```
-Also, setting the path in .bashrc (or .zshrc, etc.) will be useful.
+
+## Demo and Usage
+
+The repository includes [`example.py`](example.py), which demonstrates the main plotting and analysis features. After cloning the repository and installing the package, run:
+
 ```bash
-export PYTHONPATH=${PYTHONPATH}:/YOUR_PATH_TO/plotastrodata
+python example.py
 ```
-Or directly in your script,
-```Python
-import  sys
-sys.path.append( "/YOUR_PATH_TO/plotastrodata" )
-```
- 
-## Features
- 
-plotastrodata can do the following things.
-* Make 3D channel maps, 3D rotatable html cube, or 2D images including position-velocity diagrams.
-* Color scale can be linear, log, and asinh.
-* Make a figure of line profiles with Gaussian fitting.
-* Plot images to externally given fig and ax (2D images only).
-* Combine color, contour, segment, and RGB maps using images with different spatial grids.
-* Input fits files or 2D/3D numpy arrays.
-* Select the R.A.-Dec. style or the offset style as the x/y tick labels.
-* Fill channel maps with a 2D image.
-* Add line, arrow, ellipse, rectangle, text, and marker in specified channels.
-* Use original arguments of matplotlib (pcolormesh, contour, quiver, plot, text, Ellipse, Rectangle).
-* Other functions for plotting line profiles and a spatial 1D slice.
-* example_advanced.py includes how to make a movie of channel maps.
-* There are other utilities for Fourier transform and fitting.
+
+More examples and the complete API reference are available in the [online documentation](https://plotastrodata.readthedocs.io/en/latest/).
  
 ## Requirement
 
@@ -68,25 +71,19 @@ plotastrodata can do the following things.
 * scipy
 * tqdm (only for fitting)
 
- 
-## Installation
- 
-Download from https://github.com/yusukeaso-astron/plotastrodata or git clone.
-```bash 
-git clone https://github.com/yusukeaso-astron/plotastrodata
-```
- 
-## Note
+## Conventions and Limitations
 
-* For 3D data, a 1D velocity array or a FITS file with a velocity axis must be given to set up channels on each page.
-* For 2D/3D data, the spatial center can be read from a FITS file or manually given.
-* len(v)=1 (default) means to make a 2D figure.
-* Spatial lengths are in the unit of arcsec, or au if dist (!= 1) is given.
-* Angles are in the unit of degree.
-* For region, line, arrow, label, and marker, a single input can be treated without a list, e.g., anglelist=60, as well as anglelist=[60].
-* Each element of poslist supposes a text coordinate like '01h23m45.6s 01d23m45.6s' or a list of relative x and y like [0.2, 0.3] (0 is left or bottom, 1 is right or top).
-* Parameters for original methods in matplotlib.axes.Axes can be used as kwargs; see the default kwargs0 for reference.
-* Position-velocity diagrams (pv=True) do not yet support region, line, arrow, and segment because the units of abscissa and ordinate are different.
+* Array axes are ordered as `(y, x)` for a 2D image, `(v, y, x)` for a spectral cube, and `(v, x)` for a position-velocity diagram. With NumPy-array input, supply matching one-dimensional coordinate arrays; a spectral cube requires `v` to construct channel maps. FITS input obtains these coordinates from its header.
+* Spatial coordinates are offsets from `center`. They are expressed in arcseconds when `dist=1`. When `dist` is set to the source distance in parsecs, spatial offsets and beam sizes are expressed in au.
+* By default, the R.A. axis increases toward the left (`xflip=True`), following the usual astronomical image convention. Use `xflip=False` to reverse this behavior.
+* Velocity coordinates and `vsys` are in km/s, while `restfreq` is in Hz. A frequency axis read from FITS is converted to velocity relative to `vsys`.
+* Sky positions may be given as coordinate strings, such as `'ICRS 01h23m45.6s 01d23m45.6s'`. Numeric positions supplied through `poslist`, such as `[0.2, 0.3]`, are relative plotting positions: 0 is the left or bottom edge and 1 is the right or top edge. They are not spatial offsets.
+* Angles are in degrees unless an API explicitly states otherwise. Sky position angles are measured from north toward east. The polar-coordinate arrays `theta` and `phi` used by the line-of-sight utilities are in radians.
+* A beam is represented by `[bmaj, bmin, bpa]`, where the first two values use the current spatial unit and `bpa` is in degrees. `Tb=True` converts data from Jy/beam to brightness temperature and requires a valid rest frequency and spatial-resolution metadata.
+* `sigma` may be a numeric RMS value, a string selecting a noise-estimation method, or `None` to disable noise-dependent behavior. See the API documentation for the available estimation methods.
+* Annotation methods accept a single value or a list of values. `include_chan` selects displayed channels by zero-based index; `None` applies the annotation to all channels.
+* Position-velocity mode (`pv=True`) does not support regions, lines, arrows, or segment maps because its spatial and velocity axes use different units. Markers and text may still be placed using relative plotting positions.
+* Constants in `const_utils` are plain numerical values in SI units, not `astropy.units.Quantity` objects.
  
 ## Author
  
