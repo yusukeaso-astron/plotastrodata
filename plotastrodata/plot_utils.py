@@ -286,6 +286,9 @@ class Stretcher():
                    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Set vmin and vmax for color pcolormesh and RGB maps.
 
+        Explicit bounds are stretched and preserved; missing bounds are
+        inferred from the clipped, stretched data.
+
         Args:
             data (np.ndarray): 2D/3D data to plot.
 
@@ -297,9 +300,15 @@ class Stretcher():
         vmaxout = [self.vmax] if single else self.vmax
         dataout = [data] if single else data
         for i, (c, v0, v1) in enumerate(zip(dataout, vminout, vmaxout)):
-            dataout[i] = cout = self.do(c.clip(v0, v1), i)
-            vminout[i] = np.nanmin(cout)
-            vmaxout[i] = np.nanmax(cout)
+            dataout[i] = self.do(c.clip(v0, v1), i)
+            if v0 is None:
+                vminout[i] = np.nanmin(dataout[i])
+            else:
+                vminout[i] = self.do(v0, i).item()
+            if v1 is None:
+                vmaxout[i] = np.nanmax(dataout[i])
+            else:
+                vmaxout[i] = self.do(v1, i).item()
         if single:
             dataout = dataout[0]
             vminout = vminout[0]
