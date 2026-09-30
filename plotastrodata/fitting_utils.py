@@ -40,13 +40,15 @@ def _bounded_log_probability(x: np.ndarray, log_likelihood: Callable,
 
 
 def logp(x: np.ndarray) -> float:
-    """Log prior function made from the boundary (global_bounds) of fitting parameters.
+    """Log prior function made from the boundary (global_bounds) of
+    fitting parameters.
 
     Args:
         x (np.ndarray): The fitting parameters.
 
     Returns:
-        float: The log prior function. 0 if all the parameters are in the boundary else -np.inf.
+        float: The log prior function. 0 if all the parameters are in
+        the boundary else -np.inf.
     """
     if global_progressbar:
         bar.update(1)
@@ -85,18 +87,36 @@ def _check_GR(samples: np.ndarray, nwalkers: int, ndata: int, dim: int,
 class EmceeCorner():
     """Run MCMC fitting and summarize posterior distributions.
 
-    This class wraps ``emcee`` and ``ptemcee`` for simple bounded-parameter fitting.  The likelihood can be supplied directly through ``logl``, or it can be constructed from ``model``, ``xdata``, ``ydata``, and ``sigma``. Parameters are sampled with a uniform prior inside ``bounds`` and zero prior probability outside them.
+    This class wraps ``emcee`` and ``ptemcee`` for simple
+    bounded-parameter fitting. The likelihood can be supplied directly
+    through ``logl``, or it can be constructed from ``model``,
+    ``xdata``, ``ydata``, and ``sigma``. Parameters are sampled with a
+    uniform prior inside ``bounds`` and zero prior probability outside
+    them.
 
-    After calling :meth:`fit`, the main results are stored as attributes:``samples`` for the post-burn-in chain, ``popt`` for the maximum-likelihood parameter set, and ``plow``, ``pmid``, and ``phigh`` for posterior percentiles. ``samples`` has the shape ``(steps, walkers, dimensions)``. The samples can be visualized with :meth:`plotcorner` and :meth:`plotchain`.
+    After calling :meth:`fit`, the main results are stored as
+    attributes:``samples`` for the post-burn-in chain, ``popt`` for the
+    maximum-likelihood parameter set, and ``plow``, ``pmid``, and
+    ``phigh`` for posterior percentiles. ``samples`` has the shape
+    ``(steps, walkers, dimensions)``. The samples can be visualized with
+    :meth:`plotcorner` and :meth:`plotchain`.
 
     Args:
-        bounds (np.ndarray): Parameter bounds with shape ``(dim, 2)``. logl (Callable, optional): Log-likelihood function. Defaults to None.
-        model (Callable, optional): Model function used to construct a Gaussian log likelihood. Defaults to None.
-        xdata (np.ndarray, optional): Independent data passed to ``model``. Defaults to None.
-        ydata (np.ndarray, optional): Observed values compared with ``model(xdata, *params)``. Defaults to None.
-        sigma (np.ndarray, optional): Uncertainty used in the Gaussian likelihood. Defaults to 1.
-        progressbar (bool, optional): Whether to show a progress bar. Defaults to False.
-        percent (list, optional): Lower and upper posterior percentiles. Defaults to [16, 84].
+        bounds (np.ndarray): Parameter bounds with shape ``(dim, 2)``.
+            logl (Callable, optional): Log-likelihood function. Defaults
+            to None.
+        model (Callable, optional): Model function used to construct a
+            Gaussian log likelihood. Defaults to None.
+        xdata (np.ndarray, optional): Independent data passed to
+            ``model``. Defaults to None.
+        ydata (np.ndarray, optional): Observed values compared with
+            ``model(xdata, *params)``. Defaults to None.
+        sigma (np.ndarray, optional): Uncertainty used in the Gaussian
+            likelihood. Defaults to 1.
+        progressbar (bool, optional): Whether to show a progress bar.
+            Defaults to False.
+        percent (list, optional): Lower and upper posterior percentiles.
+            Defaults to [16, 84].
     """
     warnings.simplefilter('ignore', RuntimeWarning)
 
@@ -192,7 +212,8 @@ class EmceeCorner():
 
     def _get_lnp_popt(self, sampler: Any, pt: bool, nburnin: int,
                       ) -> tuple[np.ndarray, np.ndarray]:
-        """Get log probabilities and best-fit parameters from sampler."""
+        """Get log probabilities and best-fit parameters from sampler.
+        """
         if pt:
             lnp = np.swapaxes(sampler.logprobability[0], 0, 1)
             chain = np.swapaxes(sampler.chain[0], 0, 1)
@@ -206,7 +227,8 @@ class EmceeCorner():
 
     def _get_percentiles(self, samples: np.ndarray
                          ) -> tuple[float, float, float]:
-        """Compute summary statistics (percentiles) from MCMC samples."""
+        """Compute summary statistics (percentiles) from MCMC samples.
+        """
         s = samples.reshape(-1, self.dim)
         plow = np.percentile(s, self.percent[0], axis=0)
         pmid = np.percentile(s, 50, axis=0)
@@ -219,19 +241,36 @@ class EmceeCorner():
             pos0: np.ndarray | None = None,
             savechain: str | None = None, ncores: int = 1,
             grcheck: bool = False, pt: bool = False) -> None:
-        """Perform a Markov Chain Monte Carlo (MCMC) fitting process using the ptemcee library, which is a parallel tempering version of the emcee package, and make a corner plot of the samples using the corner package.
+        """Perform a Markov Chain Monte Carlo (MCMC) fitting process
+        using the ptemcee library, which is a parallel tempering version
+        of the emcee package, and make a corner plot of the samples
+        using the corner package.
 
         Args:
-            nwalkersperdim (int, optional): Number of walkers per dimension. Defaults to 2.
-            ntemps (int, optional): Number of temperatures. Defaults to 1.
-            nsteps (int, optional): Number of steps, including the steps for burn-in. Defaults to 1000.
-            nburnin (int, optional): Number of burn-in steps. Defaults to 500.
-            ntry (int, optional): Number of trials for the Gelman-Rubin check. Defaults to 1.
-            pos0 (np.nparray, optional): Initial parameter set in the shape of (ntemps, nwalkers, dim). Defaults to None.
-            savechain (str, optional): File name of the chain in format of .npy. Existing files with the same name are overwritten by ``numpy.save``. Defaults to None.
-            ncores (int, optional): Number of cores for multiprocessing.Pool. ncores=1 does not use multiprocessing. For ncores > 1, user-supplied logl and model functions must be pickleable, such as functions defined at module scope. Defaults to 1.
-            grcheck (bool, optional): Whether to check Gelman-Rubin statistics. Defaults to False.
-            pt (bool, optional): Whether to use ptemcee; otherwise, emcee is used. Defaults to False.
+            nwalkersperdim (int, optional): Number of walkers per
+                dimension. Defaults to 2.
+            ntemps (int, optional): Number of temperatures. Defaults to
+                1.
+            nsteps (int, optional): Number of steps, including the steps
+                for burn-in. Defaults to 1000.
+            nburnin (int, optional): Number of burn-in steps. Defaults
+                to 500.
+            ntry (int, optional): Number of trials for the Gelman-Rubin
+                check. Defaults to 1.
+            pos0 (np.nparray, optional): Initial parameter set in the
+                shape of (ntemps, nwalkers, dim). Defaults to None.
+            savechain (str, optional): File name of the chain in format
+                of .npy. Existing files with the same name are
+                overwritten by ``numpy.save``. Defaults to None.
+            ncores (int, optional): Number of cores for
+                multiprocessing.Pool. ncores=1 does not use
+                multiprocessing. For ncores > 1, user-supplied logl and
+                model functions must be pickleable, such as functions
+                defined at module scope. Defaults to 1.
+            grcheck (bool, optional): Whether to check Gelman-Rubin
+                statistics. Defaults to False.
+            pt (bool, optional): Whether to use ptemcee; otherwise,
+                emcee is used. Defaults to False.
         """
         global bar
         if nsteps < 1:
@@ -279,10 +318,15 @@ class EmceeCorner():
         """Make the corner plot from self.samples.
 
         Args:
-            labels (list, optional): Labels for the corner plot. Defaults to None.
-            cornerrange (list, optional): Range for the corner plot. Defaults to None.
-            savefig (dict or str, optional): Passed to ``close_figure``. Existing files may be overwritten, and the figure is closed after saving/showing. Defaults to None.
-            show (bool, optional): True means doing plt.show(). Defaults to False.
+            labels (list, optional): Labels for the corner plot.
+                Defaults to None.
+            cornerrange (list, optional): Range for the corner plot.
+                Defaults to None.
+            savefig (dict or str, optional): Passed to ``close_figure``.
+                Existing files may be overwritten, and the figure is
+                closed after saving/showing. Defaults to None.
+            show (bool, optional): True means doing plt.show(). Defaults
+                to False.
         """
         if labels is None:
             labels = [f'Par {i:d}' for i in range(self.dim)]
@@ -300,13 +344,21 @@ class EmceeCorner():
     def plotchain(self, labels: list | None = None, ylim: list | None = None,
                   savefig: dict | str | None = None,
                   show: bool = False) -> None:
-        """Plot parameters as a function of steps using self.samples. This method plots nine lines: percent[0], 50%, percent[1] percentiles (over the steps by 1% binning) of percent[0], 50%, percent[1] percentiles (over the walkers).
+        """Plot parameters as a function of steps using self.samples.
+        This method plots nine lines: percent[0], 50%, percent[1]
+        percentiles (over the steps by 1% binning) of percent[0], 50%,
+        percent[1] percentiles (over the walkers).
 
         Args:
-            labels (list, optional): Labels for the chain plot. Defaults to None.
-            ylim (list, optional): Y-range for the chain plot. Defaults to None.
-            savefig (dict or str, optional): Passed to ``close_figure``. Existing files may be overwritten, and the figure is closed after saving/showing. Defaults to None.
-            show (bool, optional): True means doing plt.show(). Defaults to False.
+            labels (list, optional): Labels for the chain plot. Defaults
+                to None.
+            ylim (list, optional): Y-range for the chain plot. Defaults
+                to None.
+            savefig (dict or str, optional): Passed to ``close_figure``.
+                Existing files may be overwritten, and the figure is
+                closed after saving/showing. Defaults to None.
+            show (bool, optional): True means doing plt.show(). Defaults
+                to False.
         """
         if labels is None:
             labels = [f'Par {i:d}' for i in range(self.dim)]
@@ -361,12 +413,17 @@ class EmceeCorner():
     def posteriorongrid(self, ngrid: list[int] | int = 100,
                         log: list[bool] | bool = False,
                         pcut: float = 0) -> None:
-        """Calculate the posterior on a grid of ngrid x ngrid x ... x ngrid.
+        """Calculate the posterior on a grid of ngrid x ngrid x ... x
+        ngrid.
 
         Args:
-            ngrid (list, optional): Number of grid on each parameter. Defaults to 100.
-            log (list, optional): Whether to search in the logarithmic space. The percentile is counted in the linear space regardless of this option. Defaults to False.
-            pcut (float, optional): Posterior is reset to be zero if it is below this cut off.
+            ngrid (list, optional): Number of grid on each parameter.
+                Defaults to 100.
+            log (list, optional): Whether to search in the logarithmic
+                space. The percentile is counted in the linear space
+                regardless of this option. Defaults to False.
+            pcut (float, optional): Posterior is reset to be zero if it
+                is below this cut off.
         """
         if isinstance(ngrid, int):
             ngrid = [ngrid] * self.dim
@@ -467,12 +524,22 @@ class EmceeCorner():
         """Make the corner plot from the posterior calculated on a grid.
 
         Args:
-            show (bool, optional): Whether to show the corner plot. Defaults to False.
-            savefig (str, optional): Passed to ``close_figure``. Existing files may be overwritten, and the figure is closed after saving/showing. Defaults to None.
-            labels (list, optional): Labels for the corner plot. Defaults to None.
-            cornerrange (list, optional): Range for the corner plot. Defaults to None.
-            cmap: (str, optional): cmap for matplotlib.pyplot.plt.pcolormesh(). Defaults to 'binary'.
-            levels: (list, optional): levels for matplotlib.pyplot.plt.contour() relative to the peak. Defaults to [exp(-0.5*3^2), exp(-0.5*2^2), exp(-0.5*1^2)].
+            show (bool, optional): Whether to show the corner plot.
+                Defaults to False.
+            savefig (str, optional): Passed to ``close_figure``.
+                Existing files may be overwritten, and the figure is
+                closed after saving/showing. Defaults to None.
+            labels (list, optional): Labels for the corner plot.
+                Defaults to None.
+            cornerrange (list, optional): Range for the corner plot.
+                Defaults to None.
+            cmap: (str, optional): cmap for
+                matplotlib.pyplot.plt.pcolormesh(). Defaults to
+                'binary'.
+            levels: (list, optional): levels for
+                matplotlib.pyplot.plt.contour() relative to the peak.
+                Defaults to [exp(-0.5*3^2), exp(-0.5*2^2),
+                exp(-0.5*1^2)].
         """
         if labels is None:
             labels = [f'Par {i:d}' for i in self.arrdim]
@@ -501,7 +568,8 @@ class EmceeCorner():
         close_figure(fig, savefig, show, tight=False)
 
     def getDNSevidence(self, **kwargs: Any) -> dict[str, float]:
-        """Calculate the Bayesian evidence for a model using dynamic nested sampling through dynesty.
+        """Calculate the Bayesian evidence for a model using dynamic
+        nested sampling through dynesty.
         """
         def prior_transform(u: np.ndarray) -> np.ndarray:
             b0 = self.bounds[:, 0]
@@ -548,9 +616,12 @@ def gaussian2d(xy: np.ndarray,
         amplitude (float): Peak value.
         xo (float): Offset in the x direction.
         yo (float): Offset in the y direction.
-        fwhm_major (float): Full width at half maximum in the major axis (but can be shorter than the minor axis).
-        fwhm_minor (float): Full width at half maximum in the minor axis (but can be longer then the major axis).
-        pa (float): Position angle of the major axis from the +y axis to the +x axis in the unit of degree.
+        fwhm_major (float): Full width at half maximum in the major axis
+            (but can be shorter than the minor axis).
+        fwhm_minor (float): Full width at half maximum in the minor axis
+            (but can be longer then the major axis).
+        pa (float): Position angle of the major axis from the +y axis to
+            the +x axis in the unit of degree.
 
     Returns:
         g (np.ndarray): Output array in the same shape as xy.
@@ -568,8 +639,11 @@ def gaussfit1d(xdata: np.ndarray, ydata: np.ndarray,
     Args:
         xdata (np.ndarray): ydata is compared with Gauss(xdata).
         ydata (np.ndarray): ydata is compared with Gauss(xdata).
-        sigma (float | np.ndarray | None): Noise level of ydata. If None is given, sigma is estimated by a temporary fitting. Defaults to None.
-        show (bool, optional): True means to show the best-fit parameters and uncertainties. Defaults to False.
+        sigma (float | np.ndarray | None): Noise level of ydata. If None
+            is given, sigma is estimated by a temporary fitting.
+            Defaults to None.
+        show (bool, optional): True means to show the best-fit
+            parameters and uncertainties. Defaults to False.
 
     Returns:
         dict: The keys are popt, perr, and sigma.
@@ -608,8 +682,11 @@ def gaussfit2d(xdata: np.ndarray, ydata: np.ndarray, zdata: np.ndarray,
         xdata (np.ndarray): zdata is compared with Gauss(xdata, ydata).
         ydata (np.ndarray): zdata is compared with Gauss(xdata, ydata).
         zdata (np.ndarray): zdata is compared with Gauss(xdata, ydata).
-        sigma (float | np.ndarray | None): Noise level of ydata. If None is given, sigma is estimated by a temporary fitting. Defaults to None.
-        show (bool, optional): True means to show the best-fit parameters and uncertainties. Defaults to False.
+        sigma (float | np.ndarray | None): Noise level of ydata. If None
+            is given, sigma is estimated by a temporary fitting.
+            Defaults to None.
+        show (bool, optional): True means to show the best-fit
+            parameters and uncertainties. Defaults to False.
 
     Returns:
         dict: The keys are popt, perr, and sigma.

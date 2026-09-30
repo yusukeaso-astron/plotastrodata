@@ -58,7 +58,8 @@ def filled2d(data: np.ndarray, x: np.ndarray, y: np.ndarray, n: int = 1,
         data (np.ndarray): 2D or 3D array.
         x (np.ndarray): 1D array.
         y (np.ndarray): 1D array.
-        n (int, optional): How many times more the new grid is. Defaults to 1.
+        n (int, optional): How many times more the new grid is. Defaults
+            to 1.
 
     Returns:
         tuple: The interpolated (data, x, y).
@@ -94,20 +95,32 @@ class AstroData():
     """Data to be processed and parameters for processing the data.
 
     Args:
-        data (np.ndarray, array-like, or list of np.ndarray, optional): A single 2D or 3D dataset, or a list of arrays for multiple datasets. Nested numeric lists are treated as one array-like dataset. Defaults to None.
+        data (np.ndarray, array-like, or list of np.ndarray, optional):
+            A single 2D or 3D dataset, or a list of arrays for multiple
+            datasets. Nested numeric lists are treated as one array-like
+            dataset. Defaults to None.
         x (np.ndarray, optional): 1D array. Defaults to None.
         y (np.ndarray, optional): 1D array. Defaults to None.
         v (np.ndarray, optional): 1D array. Defaults to None.
-        beam (np.ndarray, optional): [bmaj, bmin, bpa]. Defaults to [None, None, None].
+        beam (np.ndarray, optional): [bmaj, bmin, bpa]. Defaults to
+            [None, None, None].
         fitsimage (str, optional): Input fits name. Defaults to None.
-        Tb (bool, optional): True means the data array is brightness temperature. Defaults to False.
-        sigma (float or str, optional): Noise level or method for measuring it. Defaults to 'hist'.
-        center (str, optional): Text coordinates. 'common' means initialized value. Defaults to 'common'.
-        restfreq (float, optional): Used for velocity and brightness temperature. Defaults to None.
-        cfactor (float, optional): The data array is multiplied by cfactor. Defaults to 1.
-        pvpa (float, optional): Position angle of the PV cut. Defaults to None.
-        pv (bool, optional): True means the data array is a position-velocity diagram. Defaults to False.
-        bunit (str, optional): The unit of the data array. Defaults to ''.
+        Tb (bool, optional): True means the data array is brightness
+            temperature. Defaults to False.
+        sigma (float or str, optional): Noise level or method for
+            measuring it. Defaults to 'hist'.
+        center (str, optional): Text coordinates. 'common' means
+            initialized value. Defaults to 'common'.
+        restfreq (float, optional): Used for velocity and brightness
+            temperature. Defaults to None.
+        cfactor (float, optional): The data array is multiplied by
+            cfactor. Defaults to 1.
+        pvpa (float, optional): Position angle of the PV cut. Defaults
+            to None.
+        pv (bool, optional): True means the data array is a
+            position-velocity diagram. Defaults to False.
+        bunit (str, optional): The unit of the data array. Defaults to
+            ''.
     """
     data: np.ndarray | list[Any] | None = None
     x: np.ndarray | None = None
@@ -192,7 +205,8 @@ class AstroData():
         """Binning up neighboring pixels in the v, y, and x domain.
 
         Args:
-            width (list, optional): Number of channels, y-pixels, and x-pixels for binning. Defaults to [1, 1, 1].
+            width (list, optional): Number of channels, y-pixels, and
+                x-pixels for binning. Defaults to [1, 1, 1].
         """
         if len(width) > 3 or any(not isinstance(a, (int, np.integer))
                                  or a < 1 for a in width):
@@ -230,8 +244,10 @@ class AstroData():
         """Spatial regridding to set the center at (x,y,v)=(0,0,0).
 
         Args:
-            includexy (bool, optional): Centering in the x and y directions at each channel. Defaults to True.
-            includev (bool, optional): Centering in the v direction at each position. Defaults to False.
+            includexy (bool, optional): Centering in the x and y
+                directions at each channel. Defaults to True.
+            includev (bool, optional): Centering in the v direction at
+                each position. Defaults to False.
         """
         if includexy:
             xnew = self.x - self.x[nearest_index(self.x)]
@@ -287,11 +303,14 @@ class AstroData():
 
     def deproject(self, pa: float = 0, incl: float = 0,
                   **kwargs: Any) -> None:
-        """Exapnd by a factor of 1/cos(incl) in the direction of pa+90 deg.
+        """Exapnd by a factor of 1/cos(incl) in the direction of pa+90
+        deg.
 
         Args:
-            pa (float, optional): Position angle in the unit of degree. Defaults to 0.
-            incl (float, optional): Inclination angle in the unit of degree. Defaults to 0.
+            pa (float, optional): Position angle in the unit of degree.
+                Defaults to 0.
+            incl (float, optional): Inclination angle in the unit of
+                degree. Defaults to 0.
         """
         ci = np.cos(np.radians(incl))
         A = np.linalg.multi_dot([Mrot(pa), Mfac(1, ci), Mrot(-pa)])
@@ -322,18 +341,27 @@ class AstroData():
         """Fit a given 2D model function to self.data.
 
         Default keyword values:
-            kwargs_plotcorner: ``show=False`` and ``savefig=None``. User-supplied values in ``kwargs_plotcorner`` override these defaults.
+            kwargs_plotcorner: ``show=False`` and ``savefig=None``.
+            User-supplied values in ``kwargs_plotcorner`` override these
+            defaults.
 
         Args:
-            model (function): The model function in the form of f(par, x, y).
+            model (function): The model function in the form of f(par,
+                x, y).
             bounds (np.ndarray): bounds for fitting_utils.EmceeCorner.
-            progressbar (bool, optional): progressbar for fitting_utils.EmceeCorner. Defaults to False.
-            kwargs_fit (dict, optional): Arguments for fitting_utils.EmceeCorner.fit.
-            kwargs_plotcorner (dict, optional): Arguments for fitting_utils.EmceeCorner.plotcorner.
-            chan (int, optional): The channel number where the 2D model is fitted. Defaults to None.
+            progressbar (bool, optional): progressbar for
+                fitting_utils.EmceeCorner. Defaults to False.
+            kwargs_fit (dict, optional): Arguments for
+                fitting_utils.EmceeCorner.fit.
+            kwargs_plotcorner (dict, optional): Arguments for
+                fitting_utils.EmceeCorner.plotcorner.
+            chan (int, optional): The channel number where the 2D model
+                is fitted. Defaults to None.
 
         Returns:
-            dict: The parameter sets (popt, plow, pmid, and phigh), the best 2D model array (model), and the residual from the model (residual).
+            dict: The parameter sets (popt, plow, pmid, and phigh), the
+            best 2D model array (model), and the residual from the model
+            (residual).
         """
         d = self.data if chan is None else self.data[chan]
         x, y = np.meshgrid(self.x, self.y)
@@ -372,13 +400,18 @@ class AstroData():
 
     @_need_multipixels
     def gaussfit2d(self, chan: int | None = None) -> dict:
-        """Fit a 2D Gaussian function to self.data using fitting_utils.gaussfit2d().
+        """Fit a 2D Gaussian function to self.data using
+        fitting_utils.gaussfit2d().
 
         Args:
-            chan (int): The channel number where the 2D Gaussian is fitted. Defaults to None.
+            chan (int): The channel number where the 2D Gaussian is
+                fitted. Defaults to None.
 
         Returns:
-            dict: The best parameter set (popt), the error set (perr), the best 2D Gaussian array (model), the residual from the model (residual), and the coordinates of the best-fit center (center).
+            dict: The best parameter set (popt), the error set (perr),
+            the best 2D Gaussian array (model), the residual from the
+            model (residual), and the coordinates of the best-fit center
+            (center).
         """
         z = self.data if chan is None else self.data[chan]
         Omega = np.pi * self.beam[0] * self.beam[1] / 4 / np.log(2)
@@ -402,7 +435,8 @@ class AstroData():
                 'center': newcenter}
 
     def histogram(self, **kwargs: Any) -> tuple[np.ndarray, np.ndarray]:
-        """Output histogram of self.data using numpy.histogram. This method can take the arguments of numpy.histogram.
+        """Output histogram of self.data using numpy.histogram. This
+        method can take the arguments of numpy.histogram.
 
         Returns:
             tuple: (bins, histogram)
@@ -418,9 +452,12 @@ class AstroData():
         """Mask self.data using a 2D or 3D array of dataformask.
 
         Args:
-            dataformask (np.ndarray, optional): 2D or 3D array is used for specifying the mask.
-            includepix (list, optional): Data in this range survives. Defaults to [].
-            excludepix (list, optional): Data in this range is masked. Defaults to [].
+            dataformask (np.ndarray, optional): 2D or 3D array is used
+                for specifying the mask.
+            includepix (list, optional): Data in this range survives.
+                Defaults to [].
+            excludepix (list, optional): Data in this range is masked.
+                Defaults to [].
         """
         if dataformask is None:
             dataformask = self.data
@@ -476,10 +513,13 @@ class AstroData():
             coords (list, optional): Text coordinates. Defaults to [].
             xlist (list, optional): Offset from center. Defaults to [].
             ylist (list, optional): Offset from center. Defaults to [].
-            ellipse (list, optional): [major, minor, pa]. For average. Defaults to None.
-            ninterp (int, optional): Number of points for interpolation. Defaults to 1.
+            ellipse (list, optional): [major, minor, pa]. For average.
+                Defaults to None.
+            ninterp (int, optional): Number of points for interpolation.
+                Defaults to 1.
             flux (bool, optional): Jy/beam to Jy. Defaults to False.
-            gaussfit (bool, optional): Fit the profiles. Defaults to False.
+            gaussfit (bool, optional): Fit the profiles. Defaults to
+                False.
 
         Returns:
             tuple: (v, list of profiles, result of Gaussian fit)
@@ -523,7 +563,8 @@ class AstroData():
         """Counter clockwise rotation with respect to the center.
 
         Args:
-            pa (float, optional): Position angle in the unit of degree. Defaults to 0.
+            pa (float, optional): Position angle in the unit of degree.
+                Defaults to 0.
         """
         yxnew = dot2d(Mrot(-pa), np.meshgrid(self.y, self.x, indexing='ij'))
         self.data = RGIxy(self.y, self.x, self.data, yxnew, **kwargs)
@@ -536,11 +577,13 @@ class AstroData():
 
         Args:
             length (float, optional): Slice line length. Defaults to 0.
-            pa (float, optional): Position angle in the unit of degree. Defaults to 0.
+            pa (float, optional): Position angle in the unit of degree.
+                Defaults to 0.
             dx (float, optional): Grid increment. Defaults to None.
 
         Returns:
-            np.ndarray: [x, data]. If self.data is 3D, the output data are in the shape of (len(v), len(x)).
+            np.ndarray: [x, data]. If self.data is 3D, the output data
+            are in the shape of (len(v), len(x)).
         """
         if dx is None and self.dx is not None:
             dx = np.abs(self.dx)
@@ -559,7 +602,8 @@ class AstroData():
         return np.array([r, z])
 
     def todict(self) -> dict:
-        """Output the attributes as a dictionary that can be input to PlotAstroData.
+        """Output the attributes as a dictionary that can be input to
+        PlotAstroData.
 
         Returns:
             dict: Output that can be input to PlotAstroData.
@@ -602,7 +646,9 @@ class AstroData():
         """Write out the AstroData to a FITS file.
 
         Args:
-            fitsimage (str, optional): Output FITS file name. Existing files with the same name are overwritten. Defaults to 'out.fits'.
+            fitsimage (str, optional): Output FITS file name. Existing
+                files with the same name are overwritten. Defaults to
+                'out.fits'.
             header (dict, optional): Header dictionary. Defaults to {}.
         """
         h = {}
@@ -655,27 +701,44 @@ ASTRODATA_ARGS = ['fitsimage', 'data', 'Tb', 'sigma', 'center', 'restfreq',
 
 @pydantic_dataclass
 class AstroFrame():
-    """Parameter set to limit and reshape the data in the AstroData format.
+    """Parameter set to limit and reshape the data in the AstroData
+    format.
 
     Args:
-        vmin (float, optional): Velocity at the upper left. Defaults to -1e10.
-        vmax (float, optional): Velocity at the lower bottom. Defaults to 1e10.
-        vsys (float, optional): Each channel shows v-vsys. Defaults to 0..
-        center (str, optional): Central coordinate like '12h34m56.7s 12d34m56.7s'. Defaults to None.
+        vmin (float, optional): Velocity at the upper left. Defaults to
+            -1e10.
+        vmax (float, optional): Velocity at the lower bottom. Defaults
+            to 1e10.
+        vsys (float, optional): Each channel shows v-vsys. Defaults to
+            0..
+        center (str, optional): Central coordinate like '12h34m56.7s
+            12d34m56.7s'. Defaults to None.
         fitsimage (str, optional): Fits to get center. Defaults to None.
-        rmax (float, optional): The x range is [-rmax, rmax]. The y range is [-rmax, rmax]. Defaults to 1e10.
-        xmax (float, optional): The x range is [xmin, xmax]. Defaults to None.
-        xmin (float, optional): The x range is [xmin, xmax]. Defaults to None.
-        ymax (float, optional): The y range is [ymin, ymax]. Defaults to None.
-        ymin (float, optional): The y range is [ymin, ymax]. Defaults to None.
-        dist (float, optional): Change x and y in arcsec to au. Defaults to 1..
-        xoff (float, optional): Map center relative to the center. Defaults to 0.
-        yoff (float, optional): Map center relative to the center. Defaults to 0.
-        xflip (bool, optional): True means left is positive x. Defaults to True.
-        yflip (bool, optional): True means bottom is positive y. Defaults to False.
-        swapxy (bool, optional): True means x and y are swapped. Defaults to False.
+        rmax (float, optional): The x range is [-rmax, rmax]. The y
+            range is [-rmax, rmax]. Defaults to 1e10.
+        xmax (float, optional): The x range is [xmin, xmax]. Defaults to
+            None.
+        xmin (float, optional): The x range is [xmin, xmax]. Defaults to
+            None.
+        ymax (float, optional): The y range is [ymin, ymax]. Defaults to
+            None.
+        ymin (float, optional): The y range is [ymin, ymax]. Defaults to
+            None.
+        dist (float, optional): Change x and y in arcsec to au. Defaults
+            to 1..
+        xoff (float, optional): Map center relative to the center.
+            Defaults to 0.
+        yoff (float, optional): Map center relative to the center.
+            Defaults to 0.
+        xflip (bool, optional): True means left is positive x. Defaults
+            to True.
+        yflip (bool, optional): True means bottom is positive y.
+            Defaults to False.
+        swapxy (bool, optional): True means x and y are swapped.
+            Defaults to False.
         pv (bool, optional): Mode for PV diagram. Defaults to False.
-        quadrants (str, optional): '13' or '24'. Quadrants to take mean. None means not taking mean. Defaults to None.
+        quadrants (str, optional): '13' or '24'. Quadrants to take mean.
+            None means not taking mean. Defaults to None.
     """
     rmax: float = 1e10
     xmax: float | None = None
@@ -812,7 +875,8 @@ class AstroFrame():
 
     def _validate_data_grid(self, data: np.ndarray, grid: list,
                             dataset: int) -> None:
-        """Validate array axes before trimming or spatial subsampling."""
+        """Validate array axes before trimming or spatial subsampling.
+        """
         shape = np.shape(np.squeeze(data))
         if len(shape) not in [2, 3]:
             raise ValueError(
@@ -855,7 +919,8 @@ class AstroFrame():
             setattr(d, f'd{axis}', _get_gridsep(getattr(d, axis)))
 
     def _convert_to_Tb(self, d: AstroData, i: int) -> None:
-        """Convert Jy/beam data to brightness temperature if requested."""
+        """Convert Jy/beam data to brightness temperature if requested.
+        """
         if not d.Tb[i]:
             return
 
@@ -909,9 +974,15 @@ class AstroFrame():
         d.fitsimage[i] = None
 
     def read(self, d: AstroData, xskip: int = 1, yskip: int = 1) -> None:
-        """Get data, grid, sigma, beam, and bunit from AstroData, which is a part of the input of add_color, add_contour, add_segment, and add_rgb.
+        """Get data, grid, sigma, beam, and bunit from AstroData, which
+        is a part of the input of add_color, add_contour, add_segment,
+        and add_rgb.
 
-        This method modifies ``d`` in place. During the read, the input fields are normalized to per-dataset lists, FITS-derived values are filled, trimming and coordinate-frame changes are applied, and bookkeeping fields such as ``fitsimage``, ``fitsimage_org``, ``Tb``, ``cfactor``, and ``sigma`` are updated.
+        This method modifies ``d`` in place. During the read, the input
+        fields are normalized to per-dataset lists, FITS-derived values
+        are filled, trimming and coordinate-frame changes are applied,
+        and bookkeeping fields such as ``fitsimage``, ``fitsimage_org``,
+        ``Tb``, ``cfactor``, and ``sigma`` are updated.
 
         Args:
             d (AstroData): Dataclass for the add_* input.

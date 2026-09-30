@@ -18,7 +18,8 @@ def Mrot(pa: float = 0) -> np.ndarray:
     """2 x 2 matrix for rotation.
 
     Args:
-        pa (float, optional): How many degrees are the image rotated by. Defaults to 0.
+        pa (float, optional): How many degrees are the image rotated by.
+            Defaults to 0.
 
     Returns:
         np.ndarray: Matrix for the rotation.
@@ -32,8 +33,10 @@ def dot2d(M: np.ndarray | list[list[float]] = [[1, 0], [0, 1]],
     """Multiply a 2 x 2 matrix by (x,y) with arrays of x and y.
 
     Args:
-        M (np.ndarray, optional): 2 x 2 matrix. Defaults to [[1, 0], [0, 1]].
-        a (np.ndarray, optional): 2D vector (of 1D arrays). Defaults to [0, 0].
+        M (np.ndarray, optional): 2 x 2 matrix. Defaults to [[1, 0], [0,
+            1]].
+        a (np.ndarray, optional): 2D vector (of 1D arrays). Defaults to
+            [0, 0].
 
     Returns:
         np.ndarray: The 2D vector after the matrix multiplied.
@@ -46,15 +49,19 @@ def dot2d(M: np.ndarray | list[list[float]] = [[1, 0], [0, 1]],
 def Mrot3d(t: float, axis: int = 3) -> np.ndarray:
     """3D rotation matrix around a specified axis.
 
-    This function creates a 3x3 rotation matrix for rotating coordinates around
-    the x-axis (axis=1), y-axis (axis=2), or z-axis (axis=3) by t degrees.
+    This function creates a 3x3 rotation matrix for rotating coordinates
+    around
+    the x-axis (axis=1), y-axis (axis=2), or z-axis (axis=3) by t
+    degrees.
 
     Args:
         t (float): Rotation angle in degrees.
-        axis (int, optional): Axis to rotate around - 1 for x-axis, 2 for y-axis, 3 for z-axis. Defaults to 3.
+        axis (int, optional): Axis to rotate around - 1 for x-axis, 2
+            for y-axis, 3 for z-axis. Defaults to 3.
 
     Returns:
-        np.ndarray: 3x3 rotation matrix that rotates coordinates around the specified axis by t degrees.
+        np.ndarray: 3x3 rotation matrix that rotates coordinates around
+        the specified axis by t degrees.
     """
     if axis not in [1, 2, 3]:
         raise ValueError('axis must be 1, 2, or 3.')

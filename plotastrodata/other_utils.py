@@ -10,7 +10,8 @@ def listing(*args: Any) -> list:
     """Output a list of the input when the input is string or number.
 
     Returns:
-        list: With a single non-list input, the output is a list like ['a'], rather than [['a']].
+        list: With a single non-list input, the output is a list like
+        ['a'], rather than [['a']].
     """
     b = [None] * len(args)
     for i, a in enumerate(args):
@@ -36,7 +37,9 @@ def isdeg(s: Any) -> bool:
 
 
 def nearest_index(arr: np.ndarray, x: float = 0) -> int:
-    """Get the index of the input arrary that gives a value nearest to the given value x. np.searchsorted() does not work with a descending array.
+    """Get the index of the input arrary that gives a value nearest to
+    the given value x. np.searchsorted() does not work with a descending
+    array.
 
     Args:
         arr (np.ndarray): Sorted array.
@@ -132,11 +135,18 @@ def reform_grid(v: np.ndarray | None = None,
     """Extend or cut the given 1D array based on the given range.
 
     Args:
-        v (np.ndarray | None, optional): Input 1D array. Defaults to None.
-        k0 (int | None, optional): How many channels are added before v[0]; the minus sign means extension. k0 has the priority over vmin. Defaults to None.
-        k1 (int | None, optional): How many channels are added after v[-1]; the plus sign means extension. k1 has the priority over vmax. Defaults to None.
-        vmin (float | None, optional): New minimum velocity. Defaults to None.
-        vmax (float | None, optional): New maximum velocity. Defaults to None.
+        v (np.ndarray | None, optional): Input 1D array. Defaults to
+            None.
+        k0 (int | None, optional): How many channels are added before
+            v[0]; the minus sign means extension. k0 has the priority
+            over vmin. Defaults to None.
+        k1 (int | None, optional): How many channels are added after
+            v[-1]; the plus sign means extension. k1 has the priority
+            over vmax. Defaults to None.
+        vmin (float | None, optional): New minimum velocity. Defaults to
+            None.
+        vmax (float | None, optional): New maximum velocity. Defaults to
+            None.
 
     Returns:
         np.ndarray: Extended or cut 1D array.
@@ -173,8 +183,10 @@ def reform_data(c: np.ndarray, v_in: np.ndarray | None,
         c (np.ndarray): The input 2D or 3D arrays.
         v_in (np.ndarray): The input velocity 1D array.
         nv (int): The number of channels with a label.
-        v (np.ndarray, optional): The velocity 1D array, including the channels with and without a label. Defaults to None.
-        vskip (int, optional): How many channels are skipped. Defaults to 1.
+        v (np.ndarray, optional): The velocity 1D array, including the
+            channels with and without a label. Defaults to None.
+        vskip (int, optional): How many channels are skipped. Defaults
+            to 1.
 
     Returns:
         np.ndarray: 3D arrays skipped and filled with nan.
@@ -230,13 +242,16 @@ def RGIxy(y: np.ndarray, x: np.ndarray, data: np.ndarray,
     """RGI for x and y at each channel.
 
     Default keyword values:
-        RegularGridInterpolator: ``bounds_error=False``, ``fill_value=np.nan``, and ``method='linear'``. User-supplied keyword arguments override these values.
+        RegularGridInterpolator: ``bounds_error=False``,
+        ``fill_value=np.nan``, and ``method='linear'``. User-supplied
+        keyword arguments override these values.
 
     Args:
         y (np.ndarray): 1D array. Second coordinate.
         x (np.ndarray): 1D array. First coordinate.
         data (np.ndarray): 2D, 3D, or 4D array.
-        yxnew (tuple, optional): (ynew, xnew), where ynew and xnew are 1D or 2D arrays. Defaults to None.
+        yxnew (tuple, optional): (ynew, xnew), where ynew and xnew are
+            1D or 2D arrays. Defaults to None.
 
     Returns:
         np.ndarray: The RGI function or the interpolated array.
@@ -267,14 +282,17 @@ def RGIxyv(v: np.ndarray, y: np.ndarray, x: np.ndarray, data: np.ndarray,
     """RGI in the x-y-v space.
 
     Default keyword values:
-        RegularGridInterpolator: ``bounds_error=False``, ``fill_value=np.nan``, and ``method='linear'``. User-supplied keyword arguments override these values.
+        RegularGridInterpolator: ``bounds_error=False``,
+        ``fill_value=np.nan``, and ``method='linear'``. User-supplied
+        keyword arguments override these values.
 
     Args:
         v (np.ndarray): 1D array. Third coordinate.
         y (np.ndarray): 1D array. Second coordinate.
         x (np.ndarray): 1D array. First coordinate.
         data (np.ndarray): 3D or 4D array.
-        vyxnew (tuple, optional): (vnew, ynew, xnew), where vnew, ynew, and xnew are 1D or 2D arrays. Defaults to None.
+        vyxnew (tuple, optional): (vnew, ynew, xnew), where vnew, ynew,
+            and xnew are 1D or 2D arrays. Defaults to None.
 
     Returns:
         np.ndarray: The RGI function or the interpolated array.
@@ -300,16 +318,25 @@ def close_figure(fig: object, savefig: dict | str | None = None,
                  show: bool = False, tight: bool = True) -> None:
     """Save, show, and close the figure.
 
-    If ``savefig`` is provided, the figure is saved with Matplotlib ``Figure.savefig``. Existing files with the same name are overwritten by Matplotlib. After optional saving/showing, the figure is closed with ``plt.close(fig)``.
+    If ``savefig`` is provided, the figure is saved with Matplotlib
+    ``Figure.savefig``. Existing files with the same name are
+    overwritten by Matplotlib. After optional saving/showing, the figure
+    is closed with ``plt.close(fig)``.
 
     Default keyword values:
-        Figure.savefig: ``bbox_inches='tight'`` and ``transparent=True``. Values in ``savefig`` override these defaults.
+        Figure.savefig: ``bbox_inches='tight'`` and
+        ``transparent=True``. Values in ``savefig`` override these
+        defaults.
 
     Args:
         fig (object): External plt.figure(). Defaults to None.
-        savefig (dict or str, optional): For ``Figure.savefig``. Existing files may be overwritten, and the figure is closed after saving/showing. Defaults to None.
-        show (bool, optional): True means doing plt.show(). Defaults to False.
-        tight (bool, optional): True means doing fig.tight_layout(). Defaults to True.
+        savefig (dict or str, optional): For ``Figure.savefig``.
+            Existing files may be overwritten, and the figure is closed
+            after saving/showing. Defaults to None.
+        show (bool, optional): True means doing plt.show(). Defaults to
+            False.
+        tight (bool, optional): True means doing fig.tight_layout().
+            Defaults to True.
     """
     savefig0 = {'bbox_inches': 'tight', 'transparent': True}
     if tight:

@@ -6,20 +6,38 @@ from plotastrodata.matrix_utils import Mrot3d
 def obs2sys(xobs: np.ndarray, yobs: np.ndarray, zobs: np.ndarray,
             pa: float = 0, incl: float = 0, phi0: float = 0, theta0: float = 90,
             polar: bool = False) -> np.ndarray:
-    """Convert observed coordinates to system coordinates. In the system coordinates, the observer is at the direction of (0, -sin i, cos i). The observer's +z (i.e., line-of-sight) is from the observer to the system center. The system's x coordinate and the observer's x coordinate have opposite signs.
+    """Convert observed coordinates to system coordinates. In the system
+    coordinates, the observer is at the direction of (0, -sin i, cos i).
+    The observer's +z (i.e., line-of-sight) is from the observer to the
+    system center. The system's x coordinate and the observer's x
+    coordinate have opposite signs.
 
     Args:
-        xobs (np.ndarray): Observed x-coordinates. The distance to the east.
-        yobs (np.ndarray): Observed y-coordinates. The distance to the north.
-        zobs (np.ndarray): Observed z-coordinates. The line-of-sight distance.
-        pa (float, optional): Position angle of the "blueshifted outflow" (not the disk major axis) in degrees from yobs (north) to xobs (east). Defaults to 0.
-        incl (float, optional): Inclination of the system in degrees. i=0 means face-on. Defaults to 0.
-        phi0 (float, optional): Azimuthal angle of the system in degrees, relative to the system that is observed. Defaults to 0.
-        theta0 (float, optional): Polar angle of the x-axis of the system in degrees, relative to the x-axis of the system that is observed. Defaults to 90.
-        polar (bool, optional): If True, the coordinates are in polar coordinates, where theta and phi are in radian. Defaults to False.
+        xobs (np.ndarray): Observed x-coordinates. The distance to the
+            east.
+        yobs (np.ndarray): Observed y-coordinates. The distance to the
+            north.
+        zobs (np.ndarray): Observed z-coordinates. The line-of-sight
+            distance.
+        pa (float, optional): Position angle of the "blueshifted
+            outflow" (not the disk major axis) in degrees from yobs
+            (north) to xobs (east). Defaults to 0.
+        incl (float, optional): Inclination of the system in degrees.
+            i=0 means face-on. Defaults to 0.
+        phi0 (float, optional): Azimuthal angle of the system in
+            degrees, relative to the system that is observed. Defaults
+            to 0.
+        theta0 (float, optional): Polar angle of the x-axis of the
+            system in degrees, relative to the x-axis of the system that
+            is observed. Defaults to 90.
+        polar (bool, optional): If True, the coordinates are in polar
+            coordinates, where theta and phi are in radian. Defaults to
+            False.
 
     Returns:
-        np.ndarray: System x, y, z coordinates ([xsys, ysys, zsys]) or r, theta, phi coordinates ([r, theta, phi]). The polar coordinates are in radian.
+        np.ndarray: System x, y, z coordinates ([xsys, ysys, zsys]) or
+        r, theta, phi coordinates ([r, theta, phi]). The polar
+        coordinates are in radian.
     """
     x = np.array([xobs, yobs, zobs])
     x = np.tensordot(Mrot3d(pa, axis=3), x, axes=([1], [0]))
@@ -41,17 +59,30 @@ def obs2sys(xobs: np.ndarray, yobs: np.ndarray, zobs: np.ndarray,
 def sys2obs(xsys: np.ndarray, ysys: np.ndarray, zsys: np.ndarray,
             pa: float = 0, incl: float = 0, phi0: float = 0, theta0: float = 90,
             polar: bool = False) -> np.ndarray:
-    """Convert system coordinates to observed coordinates. In the system coordinates, the observer is at the direction of (0, -sin i, cos i). The observer's +z (i.e., line-of-sight) is from the observer to the system center. The system's x coordinate and the observer's x coordinate have opposite signs.
+    """Convert system coordinates to observed coordinates. In the system
+    coordinates, the observer is at the direction of (0, -sin i, cos i).
+    The observer's +z (i.e., line-of-sight) is from the observer to the
+    system center. The system's x coordinate and the observer's x
+    coordinate have opposite signs.
 
     Args:
         xsys (np.ndarray): System x-coordinates (or r).
         ysys (np.ndarray): System y-coordinates (or theta).
         zsys (np.ndarray): System z-coordinates (or phi).
-        pa (float, optional): Position angle of the "blueshifted outflow" (not the disk major axis) in degrees from yobs (north) to xobs (east). Defaults to 0.
-        incl (float, optional): Inclination of the system in degrees. i=0 means face-on. Defaults to 0.
-        phi0 (float, optional): Azimuthal angle of the system in degrees, relative to the system that is observed. Defaults to 0.
-        theta0 (float, optional): Polar angle of the x-axis of the system in degrees, relative to the x-axis of the system that is observed. Defaults to 90.
-        polar (bool, optional): If True, the coordinates are in polar coordinates, where theta and phi are in radian. Defaults to False.
+        pa (float, optional): Position angle of the "blueshifted
+            outflow" (not the disk major axis) in degrees from yobs
+            (north) to xobs (east). Defaults to 0.
+        incl (float, optional): Inclination of the system in degrees.
+            i=0 means face-on. Defaults to 0.
+        phi0 (float, optional): Azimuthal angle of the system in
+            degrees, relative to the system that is observed. Defaults
+            to 0.
+        theta0 (float, optional): Polar angle of the x-axis of the
+            system in degrees, relative to the x-axis of the system that
+            is observed. Defaults to 90.
+        polar (bool, optional): If True, the coordinates are in polar
+            coordinates, where theta and phi are in radian. Defaults to
+            False.
 
     Returns:
         np.ndarray: Observed x, y, z coordinates ([xobs, yobs, zobs]).
@@ -76,17 +107,30 @@ def polarvel2losvel(v_r: np.ndarray, v_theta: np.ndarray, v_phi: np.ndarray,
                     theta: np.ndarray, phi: np.ndarray,
                     incl: float = 0, phi0: float = 0, theta0: float = 90
                     ) -> np.ndarray:
-    """Convert the polar velocities in the system's coordinates to the line-of-sight velocity in the observer's coordinates. In the system coordinates, the observer is at the direction of (0, -sin i, cos i). The observer's +z (i.e., line-of-sight) is from the observer to the system. The system's x coordinate and the observer's x coordinate have opposite signs.
+    """Convert the polar velocities in the system's coordinates to the
+    line-of-sight velocity in the observer's coordinates. In the system
+    coordinates, the observer is at the direction of (0, -sin i, cos i).
+    The observer's +z (i.e., line-of-sight) is from the observer to the
+    system. The system's x coordinate and the observer's x coordinate
+    have opposite signs.
 
     Args:
-        v_r (np.ndarray): The velocity component in the radial direction.
-        v_theta (np.ndarray): The velocity component in the polar angle direction.
-        v_phi (np.ndarray): The velocity component in the azimuthal angle direction.
+        v_r (np.ndarray): The velocity component in the radial
+            direction.
+        v_theta (np.ndarray): The velocity component in the polar angle
+            direction.
+        v_phi (np.ndarray): The velocity component in the azimuthal
+            angle direction.
         theta (np.ndarray): The polar angle in radian from the z-axis.
         phi (np.ndarray): The azimuthal angle in radian from the x-axis.
-        incl (float, optional): Inclination of the system in degrees. i=0 means face-on. Defaults to 0.
-        phi0 (float, optional): Azimuthal angle of the system in degrees, relative to the system that is observed. Defaults to 0.
-        theta0 (float, optional): Polar angle of the x-axis of the system in degrees, relative to the x-axis of the system that is observed. Defaults to 90.
+        incl (float, optional): Inclination of the system in degrees.
+            i=0 means face-on. Defaults to 0.
+        phi0 (float, optional): Azimuthal angle of the system in
+            degrees, relative to the system that is observed. Defaults
+            to 0.
+        theta0 (float, optional): Polar angle of the x-axis of the
+            system in degrees, relative to the x-axis of the system that
+            is observed. Defaults to 90.
 
     Returns:
         np.ndarray: The line-of-sight velocity.

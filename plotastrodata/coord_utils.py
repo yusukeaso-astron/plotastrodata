@@ -7,10 +7,12 @@ def _updateframe(frame: str | None) -> str:
     """Internal function to str frame to astropy frame.
 
     Args:
-        frame (str): This should be one of 'J2000', 'B1950', 'FK5', 'FK4', and 'ICRS'.
+        frame (str): This should be one of 'J2000', 'B1950', 'FK5',
+            'FK4', and 'ICRS'.
 
     Returns:
-        str: frame as is, FK5(equinox='J2000'), FK4(equinox='B1950'), or 'icrs'.
+        str: frame as is, FK5(equinox='J2000'), FK4(equinox='B1950'), or
+        'icrs'.
     """
     if 'ICRS' in frame:
         a = 'icrs'
@@ -27,13 +29,17 @@ def _updateframe(frame: str | None) -> str:
 
 
 def _getframe(coord: str | list) -> tuple:
-    """Internal function to pick up the frame name from the coordinates. When coord is a list, frame and framename are picked up from the first element.
+    """Internal function to pick up the frame name from the coordinates.
+    When coord is a list, frame and framename are picked up from the
+    first element.
 
     Args:
-        coord (str): something like "J2000 01h23m45.6s 01d23m45.6s" or a list of them.
+        coord (str): something like "J2000 01h23m45.6s 01d23m45.6s" or a
+            list of them.
 
     Returns:
-        tuple: updated coord and frame. frame is FK5(equinox='J2000), FK4(equinox='B1950'), or 'icrs'.
+        tuple: updated coord and frame. frame is FK5(equinox='J2000),
+        FK4(equinox='B1950'), or 'icrs'.
     """
     def getframe_single(s: str) -> tuple:
         c = s.split()
@@ -59,13 +65,19 @@ def coord2xy(coords: str | list, coordorg: str = '00h00m00s 00d00m00s',
     """Transform R.A.-Dec. to relative (deg, deg).
 
     Args:
-        coords (str, list): something like '01h23m45.6s 01d23m45.6s'. The input can be a list of str in an arbitrary shape.
-        coordorg (str, optional): something like '01h23m45.6s 01d23m45.6s'. The origin of the relative (deg, deg). Defaults to '00h00m00s 00d00m00s'.
+        coords (str, list): something like '01h23m45.6s 01d23m45.6s'.
+            The input can be a list of str in an arbitrary shape.
+        coordorg (str, optional): something like '01h23m45.6s
+            01d23m45.6s'. The origin of the relative (deg, deg).
+            Defaults to '00h00m00s 00d00m00s'.
         frame (str, optional): coordinate frame. Defaults to None.
-        frameorg (str, optional): coordinate frame of the origin. Defaults to None.
+        frameorg (str, optional): coordinate frame of the origin.
+            Defaults to None.
 
     Returns:
-        np.ndarray: [(array of) alphas, (array of) deltas] in degree. The shape of alphas and deltas is the input shape. With a single input, the output is [alpha0, delta0].
+        np.ndarray: [(array of) alphas, (array of) deltas] in degree.
+        The shape of alphas and deltas is the input shape. With a single
+        input, the output is [alpha0, delta0].
     """
     coordorg, frameorg_in, _ = _getframe(coordorg)
     frameorg = frameorg_in if frameorg is None else _updateframe(frameorg)
@@ -90,13 +102,18 @@ def xy2coord(xy: list, coordorg: str = '00h00m00s 00d00m00s',
     """Transform relative (deg, deg) to R.A.-Dec.
 
     Args:
-        xy (list): [(array of) alphas, (array of) deltas] in degree. alphas and deltas can have an arbitrary shape.
-        coordorg (str): something like '01h23m45.6s 01d23m45.6s'. The origin of the relative (deg, deg). Defaults to '00h00m00s 00d00m00s'.
+        xy (list): [(array of) alphas, (array of) deltas] in degree.
+            alphas and deltas can have an arbitrary shape.
+        coordorg (str): something like '01h23m45.6s 01d23m45.6s'. The
+            origin of the relative (deg, deg). Defaults to '00h00m00s
+            00d00m00s'.
         frame (str): coordinate frame. Defaults to None.
-        frameorg (str): coordinate frame of the origin. Defaults to None.
+        frameorg (str): coordinate frame of the origin. Defaults to
+            None.
 
     Returns:
-        str: something like '01h23m45.6s 01d23m45.6s'. With multiple inputs, the output has the input shape.
+        str: something like '01h23m45.6s 01d23m45.6s'. With multiple
+        inputs, the output has the input shape.
     """
     coordorg, frameorg_in, framenameorg = _getframe(coordorg)
     frameorg = frameorg_in if frameorg is None else _updateframe(frameorg)
@@ -120,7 +137,8 @@ def rel2abs(xrel: float, yrel: float,
     """Transform relative coordinates to absolute ones.
 
     Args:
-        xrel (float): 0 <= xrel <= 1. 0 and 1 correspond to x[0] and x[-1], respectively. Arbitrary shape.
+        xrel (float): 0 <= xrel <= 1. 0 and 1 correspond to x[0] and
+            x[-1], respectively. Arbitrary shape.
         yrel (float): same as xrel.
         x (np.ndarray): [x0, x0+dx, x0+2dx, ...]
         y (np.ndarray): [y0, y0+dy, y0+2dy, ...]
@@ -144,7 +162,8 @@ def abs2rel(xabs: float, yabs: float,
         y (np.ndarray): [y0, y0+dy, y0+2dy, ...]
 
     Returns:
-        ndarray: [xrel, yrel]. Each has the input's shape. 0 <= xrel, yrel <= 1. 0 and 1 correspond to x[0] and x[-1], respectively.
+        ndarray: [xrel, yrel]. Each has the input's shape. 0 <= xrel,
+        yrel <= 1. 0 and 1 correspond to x[0] and x[-1], respectively.
     """
     xrel = (xabs - x[0]) / (x[-1] - x[0])
     yrel = (yabs - y[0]) / (y[-1] - y[0])
@@ -181,7 +200,8 @@ def get_min(coord: str, mode: str) -> str:
 
 
 def get_hmdm(coord: str, mode: str) -> str:
-    """Pick up the coordinate string before the second part from a hsmdms string.
+    """Pick up the coordinate string before the second part from a
+    hsmdms string.
 
     Args:
         coord (str): hmsdms string.

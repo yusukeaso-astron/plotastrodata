@@ -11,7 +11,8 @@ from plotastrodata.other_utils import close_figure
 
 def normalize(range: tuple[float, float] = (-3.5, 3.5),
               bins: int = 100) -> Callable:
-    """Decorator factory to normalize a function over the given range."""
+    """Decorator factory to normalize a function over the given range.
+    """
     def decorator(f: Callable) -> Callable:
         h = np.linspace(*range, bins + 1)
         h = (h[1:] + h[:-1]) / 2
@@ -33,7 +34,8 @@ def gauss(x: np.ndarray, s: float, m: float) -> np.ndarray:
     """Probability density of Gaussian noise.
 
     Args:
-        x (np.ndarray): Intensity. The variable of the probability density.
+        x (np.ndarray): Intensity. The variable of the probability
+            density.
         s (float): Standard deviation of the Gaussian noise.
         m (float): Mean of the Gaussian noise.
 
@@ -48,13 +50,16 @@ def gauss(x: np.ndarray, s: float, m: float) -> np.ndarray:
 
 def gauss_pbcor(x: np.ndarray, s: float, m: float, R: float
                 ) -> np.ndarray:
-    """Probability density of Gaussian noise after primary-beam correction.
+    """Probability density of Gaussian noise after primary-beam
+    correction.
 
     Args:
-        x (np.ndarray): Intensity. The variable of the probability density.
+        x (np.ndarray): Intensity. The variable of the probability
+            density.
         s (float): Standard deviation of the Gaussian noise.
         m (float): Mean of the Gaussian noise.
-        R (float): The maximum radius scaled by the FWHM of the primary beam.
+        R (float): The maximum radius scaled by the FWHM of the primary
+            beam.
 
     Returns:
         np.ndarray: Probability density.
@@ -71,7 +76,8 @@ def select_noise(data: np.ndarray, sigma: str) -> np.ndarray:
 
     Args:
         data (np.ndarray): Original data array.
-        sigma (str): Selection methods. Multiple options are possible. 'edge', 'out', 'neg', or 'iter'.
+        sigma (str): Selection methods. Multiple options are possible.
+            'edge', 'out', 'neg', or 'iter'.
 
     Returns:
         np.ndarray: 1D array that includes only the selected pixels.
@@ -105,17 +111,21 @@ def select_noise(data: np.ndarray, sigma: str) -> np.ndarray:
 
 
 class Noise:
-    """This class holds the data selected as noise, histogram, and best-fit function.
-       The following methods are acceptable for data selection. Multiple options are possible.
-       'edge': use data[0] and data[-1].
-       'out': exclude inner 60% about axes=-2 and -1.
-       'neg': use only negative values.
-       'iter': exclude outliers.
-       The following methods are acceptable for noise estimation. Only single option is possible.
-       'med': calculate rms from the median of data^2 assuming Gaussian.
-       'hist': fit histogram with Gaussian.
-       'hist-pbcor': fit histogram with PB-corrected Gaussian.
-       '(no string)': calculate the mean and standard deviation.
+    """This class holds the data selected as noise, histogram, and
+    best-fit function.
+
+    The following methods are acceptable for data selection. Multiple
+    options are possible.
+    'edge': use data[0] and data[-1].
+    'out': exclude inner 60% about axes=-2 and -1.
+    'neg': use only negative values.
+    'iter': exclude outliers.
+    The following methods are acceptable for noise estimation. Only
+    single option is possible.
+    'med': calculate rms from the median of data^2 assuming Gaussian.
+    'hist': fit histogram with Gaussian.
+    'hist-pbcor': fit histogram with PB-corrected Gaussian.
+    '(no string)': calculate the mean and standard deviation.
 
     Args:
         data (np.ndarray): Original data array.
@@ -136,10 +146,15 @@ class Noise:
     def gen_histogram(self, **kwargs: Any) -> None:
         """Generate a pair of histogram and bins using numpy.histogram.
 
-        The data values are shifted and scaled by the mean and standard deviation, respectively, to generate the histogram. The mean and standard deviation are stored as self.m0 and self.s0, respectively.
+        The data values are shifted and scaled by the mean and standard
+        deviation, respectively, to generate the histogram. The mean and
+        standard deviation are stored as self.m0 and self.s0,
+        respectively.
 
         Default keyword values:
-            numpy.histogram: ``bins=100``, ``range=(-3.5, 3.5)``, and ``density=True``. User-supplied keyword arguments override these values.
+            numpy.histogram: ``bins=100``, ``range=(-3.5, 3.5)``, and
+            ``density=True``. User-supplied keyword arguments override
+            these values.
         """
         if self.s0 == 0:
             raise ValueError(
@@ -156,10 +171,13 @@ class Noise:
         self.hbin = hbin
 
     def fit_histogram(self, **kwargs: Any) -> None:
-        """Fit the noise histogram with plotastrodata.fitting_utils.EmceeCorner.
+        """Fit the noise histogram with
+        plotastrodata.fitting_utils.EmceeCorner.
 
         Default keyword values:
-            EmceeCorner.fit: ``nwalkersperdim=4``, ``nsteps=200``, and ``nburnin=0``. User-supplied keyword arguments override these values.
+            EmceeCorner.fit: ``nwalkersperdim=4``, ``nsteps=200``, and
+            ``nburnin=0``. User-supplied keyword arguments override
+            these values.
         """
         _kw = {'nwalkersperdim': 4, 'nsteps': 200, 'nburnin': 0}
         _kw.update(kwargs)
@@ -194,8 +212,11 @@ class Noise:
         """Make a simple figure of the histogram and model.
 
         Args:
-            savefig (dict or str, optional): Passed to ``close_figure``. Existing files may be overwritten, and the figure is closed after saving/showing. Defaults to None.
-            show (bool, optional): True means doing plt.show(). Defaults to False.
+            savefig (dict or str, optional): Passed to ``close_figure``.
+                Existing files may be overwritten, and the figure is
+                closed after saving/showing. Defaults to None.
+            show (bool, optional): True means doing plt.show(). Defaults
+                to False.
         """
         if not hasattr(self, 'model'):
             self.fit_histogram()
@@ -212,11 +233,13 @@ def estimate_rms(data: np.ndarray,
                  sigma: float | str | None = 'hist'
                  ) -> float | None:
     """Estimate a noise level of a data array.
-       When a float number or None is given as sigma, this function just outputs it.
+       When a float number or None is given as sigma, this function just
+       outputs it.
 
     Args:
         data (np.ndarray): Data array whose noise is estimated.
-        sigma (float or str): Methods for the Noise class, like 'edge,neg,hist-pbcor'. Defaults to 'hist'.
+        sigma (float or str): Methods for the Noise class, like
+            'edge,neg,hist-pbcor'. Defaults to 'hist'.
 
     Returns:
         float: The estimated standard deviation of noise.
