@@ -1,3 +1,7 @@
+import numpy as np
+
+from plotastrodata._type_utils import _normalize_float
+
 from astropy import constants
 from astropy import units
 
@@ -57,41 +61,41 @@ eV = units.eV.to('J')
 electronvolt = units.electronvolt.to('J')
 
 # astropy.constants in the SI unit system
-G = constants.G.si.value
-N_A = constants.N_A.si.value
-R = constants.R.si.value
-Ryd = constants.Ryd.si.value
-a0 = constants.a0.si.value
-alpha = constants.alpha.si.value
-atm = constants.atm.si.value
-b_wien = constants.b_wien.si.value
-c = constants.c.si.value
-e = constants.e.si.value
-eps0 = constants.eps0.si.value
-g0 = constants.g0.si.value
-h = constants.h.si.value
-hbar = constants.hbar.si.value
-k_B = constants.k_B.si.value
-m_e = constants.m_e.si.value
-m_n = constants.m_n.si.value
-m_p = constants.m_p.si.value
-mu0 = constants.mu0.si.value
-muB = constants.muB.si.value
-sigma_T = constants.sigma_T.si.value
-sigma_sb = constants.sigma_sb.si.value
-u = constants.u.si.value
-GM_earth = constants.GM_earth.si.value
-GM_jup = constants.GM_jup.si.value
-GM_sun = constants.GM_sun.si.value
-L_bol0 = constants.L_bol0.si.value
-L_sun = constants.L_sun.si.value
-M_earth = constants.M_earth.si.value
-M_jup = constants.M_jup.si.value
-M_sun = constants.M_sun.si.value
-R_earth = constants.R_earth.si.value
-R_jup = constants.R_jup.si.value
-R_sun = constants.R_sun.si.value
-kpc = constants.kpc.si.value
+G: float | np.longdouble = _normalize_float(constants.G.si.value)
+N_A: float | np.longdouble = _normalize_float(constants.N_A.si.value)
+R: float | np.longdouble = _normalize_float(constants.R.si.value)
+Ryd: float | np.longdouble = _normalize_float(constants.Ryd.si.value)
+a0: float | np.longdouble = _normalize_float(constants.a0.si.value)
+alpha: float | np.longdouble = _normalize_float(constants.alpha.si.value)
+atm: int = int(constants.atm.si.value)
+b_wien: float | np.longdouble = _normalize_float(constants.b_wien.si.value)
+c: float | np.longdouble = _normalize_float(constants.c.si.value)
+e: float | np.longdouble = _normalize_float(constants.e.si.value)
+eps0: float | np.longdouble = _normalize_float(constants.eps0.si.value)
+g0: float | np.longdouble = _normalize_float(constants.g0.si.value)
+h: float | np.longdouble = _normalize_float(constants.h.si.value)
+hbar: float | np.longdouble = _normalize_float(constants.hbar.si.value)
+k_B: float | np.longdouble = _normalize_float(constants.k_B.si.value)
+m_e: float | np.longdouble = _normalize_float(constants.m_e.si.value)
+m_n: float | np.longdouble = _normalize_float(constants.m_n.si.value)
+m_p: float | np.longdouble = _normalize_float(constants.m_p.si.value)
+mu0: float | np.longdouble = _normalize_float(constants.mu0.si.value)
+muB: float | np.longdouble = _normalize_float(constants.muB.si.value)
+sigma_T: float | np.longdouble = _normalize_float(constants.sigma_T.si.value)
+sigma_sb: float | np.longdouble = _normalize_float(constants.sigma_sb.si.value)
+u: float | np.longdouble = _normalize_float(constants.u.si.value)
+GM_earth: float | np.longdouble = _normalize_float(constants.GM_earth.si.value)
+GM_jup: float | np.longdouble = _normalize_float(constants.GM_jup.si.value)
+GM_sun: float | np.longdouble = _normalize_float(constants.GM_sun.si.value)
+L_bol0: float | np.longdouble = _normalize_float(constants.L_bol0.si.value)
+L_sun: float | np.longdouble = _normalize_float(constants.L_sun.si.value)
+M_earth: float | np.longdouble = _normalize_float(constants.M_earth.si.value)
+M_jup: float | np.longdouble = _normalize_float(constants.M_jup.si.value)
+M_sun: float | np.longdouble = _normalize_float(constants.M_sun.si.value)
+R_earth: float | np.longdouble = _normalize_float(constants.R_earth.si.value)
+R_jup: float | np.longdouble = _normalize_float(constants.R_jup.si.value)
+R_sun: float | np.longdouble = _normalize_float(constants.R_sun.si.value)
+kpc: float | np.longdouble = _normalize_float(constants.kpc.si.value)
 
 # Metric prefix
 quetta = 1e30
@@ -122,4 +126,4 @@ quecto = 1e-30
 # Others
 mumol = 2.37 * m_p  # kg; Kauffmann et al. 2008, for sound speed
 muH2 = 2.8 * m_p  # kg; Kauffmann et al. 2008, for mass-H2 conversion
-c_kms = constants.c.to('km*s**(-1)').value
+c_kms: float | np.longdouble = _normalize_float(constants.c.to('km*s**(-1)').value)

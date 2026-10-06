@@ -4,6 +4,7 @@ import subprocess
 from typing import Any
 
 from plotastrodata import const_utils as cu
+from plotastrodata._type_utils import _normalize_float
 
 
 def terminal(cmd: str, check: bool = True,
@@ -43,32 +44,41 @@ def runpython(filename: str, check: bool = True,
     return subprocess.run(['python', filename], check=check, **kwargs)
 
 
-def BnuT(T: float = 30, nu: float = 230e9) -> float:
+def BnuT(T: float | np.floating | np.ndarray = 30,
+         nu: float | np.floating | np.ndarray = 230e9
+         ) -> float | np.longdouble | np.ndarray:
     """Planck function.
 
     Args:
-        T (float, optional): Temperature in the unit of K. Defaults to
-            30.
-        nu (float, optional): Frequency in the unit of Hz. Defaults to
-            230e9.
+        T (float or np.floating or np.ndarray, optional): Temperature in the
+            unit of K. Defaults to 30.
+        nu (float or np.floating or np.ndarray, optional): Frequency in the
+            unit of Hz. Defaults to 230e9.
 
     Returns:
-        float: Planck function in the SI units.
+        float or np.longdouble or np.ndarray: Planck function in SI units.
+        Ordinary scalar results are Python floats; extended-precision
+        scalars and array dtypes are preserved.
     """
-    return 2 * cu.h * nu**3 / cu.c**2 / (np.exp(cu.h * nu / cu.k_B / T) - 1)
+    result = 2 * cu.h * nu**3 / cu.c**2 / (np.exp(cu.h * nu / cu.k_B / T) - 1)
+    return _normalize_float(result)
 
 
-def JnuT(T: float = 30, nu: float = 230e9) -> float:
+def JnuT(T: float | np.floating | np.ndarray = 30,
+         nu: float | np.floating | np.ndarray = 230e9
+         ) -> float | np.longdouble | np.ndarray:
     """Brightness templerature from the Planck function.
 
     Args:
-        T (float, optional): Temperature in the unit of K. Defaults to
-            30.
-        nu (float, optional): Frequency in the unit of Hz. Defaults to
-            230e9.
+        T (float or np.floating or np.ndarray, optional): Temperature in the
+            unit of K. Defaults to 30.
+        nu (float or np.floating or np.ndarray, optional): Frequency in the
+            unit of Hz. Defaults to 230e9.
 
     Returns:
-        float: Brightness temperature of Planck function in the unit of
-        K.
+        float or np.longdouble or np.ndarray: Brightness temperature in K.
+        Ordinary scalar results are Python floats; extended-precision
+        scalars and array dtypes are preserved.
     """
-    return cu.h * nu / cu.k_B / (np.exp(cu.h * nu / cu.k_B / T) - 1)
+    result = cu.h * nu / cu.k_B / (np.exp(cu.h * nu / cu.k_B / T) - 1)
+    return _normalize_float(result)

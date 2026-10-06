@@ -3,7 +3,7 @@ from astropy import units
 from astropy.coordinates import FK4, FK5, SkyCoord
 
 
-def _updateframe(frame: str | None) -> str:
+def _updateframe(frame: str) -> str | FK4 | FK5:
     """Internal function to str frame to astropy frame.
 
     Args:
@@ -11,7 +11,7 @@ def _updateframe(frame: str | None) -> str:
             'FK4', and 'ICRS'.
 
     Returns:
-        str: frame as is, FK5(equinox='J2000'), FK4(equinox='B1950'), or
+        str or FK4 or FK5: FK5(equinox='J2000'), FK4(equinox='B1950'), or
         'icrs'.
     """
     if 'ICRS' in frame:
@@ -96,13 +96,13 @@ def coord2xy(coords: str | list, coordorg: str = '00h00m00s 00d00m00s',
     return xy
 
 
-def xy2coord(xy: list, coordorg: str = '00h00m00s 00d00m00s',
+def xy2coord(xy: list | np.ndarray, coordorg: str = '00h00m00s 00d00m00s',
              frame: str | None = None, frameorg: str | None = None,
-             ) -> str | np.ndarray:
+             ) -> str | list[str] | np.ndarray:
     """Transform relative (deg, deg) to R.A.-Dec.
 
     Args:
-        xy (list): [(array of) alphas, (array of) deltas] in degree.
+        xy (list or np.ndarray): [(array of) alphas, (array of) deltas] in degree.
             alphas and deltas can have an arbitrary shape.
         coordorg (str): something like '01h23m45.6s 01d23m45.6s'. The
             origin of the relative (deg, deg). Defaults to '00h00m00s
@@ -112,8 +112,8 @@ def xy2coord(xy: list, coordorg: str = '00h00m00s 00d00m00s',
             None.
 
     Returns:
-        str: something like '01h23m45.6s 01d23m45.6s'. With multiple
-        inputs, the output has the input shape.
+        str or list[str] or np.ndarray: A coordinate string for scalar
+        input, or a list/array of strings for multiple coordinates.
     """
     coordorg, frameorg_in, framenameorg = _getframe(coordorg)
     frameorg = frameorg_in if frameorg is None else _updateframe(frameorg)
@@ -132,16 +132,17 @@ def xy2coord(xy: list, coordorg: str = '00h00m00s 00d00m00s',
     return coords
 
 
-def rel2abs(xrel: float, yrel: float,
-            x: np.ndarray, y: np.ndarray) -> np.ndarray:
+def rel2abs(xrel: float | np.ndarray, yrel: float | np.ndarray,
+            x: np.ndarray | list[float], y: np.ndarray | list[float]
+            ) -> np.ndarray:
     """Transform relative coordinates to absolute ones.
 
     Args:
-        xrel (float): 0 <= xrel <= 1. 0 and 1 correspond to x[0] and
+        xrel (float or np.ndarray): 0 <= xrel <= 1. 0 and 1 correspond to x[0] and
             x[-1], respectively. Arbitrary shape.
-        yrel (float): same as xrel.
-        x (np.ndarray): [x0, x0+dx, x0+2dx, ...]
-        y (np.ndarray): [y0, y0+dy, y0+2dy, ...]
+        yrel (float or np.ndarray): same as xrel.
+        x (np.ndarray or list): [x0, x0+dx, x0+2dx, ...]
+        y (np.ndarray or list): [y0, y0+dy, y0+2dy, ...]
 
     Returns:
         np.ndarray: [xabs, yabs]. Each has the input's shape.
@@ -151,15 +152,16 @@ def rel2abs(xrel: float, yrel: float,
     return np.array([xabs, yabs])
 
 
-def abs2rel(xabs: float, yabs: float,
-            x: np.ndarray, y: np.ndarray) -> np.ndarray:
+def abs2rel(xabs: float | np.ndarray, yabs: float | np.ndarray,
+            x: np.ndarray | list[float], y: np.ndarray | list[float]
+            ) -> np.ndarray:
     """Transform absolute coordinates to relative ones.
 
     Args:
-        xabs (float): In the same frame of x.
-        yabs (float): In the same frame of y.
-        x (np.ndarray): [x0, x0+dx, x0+2dx, ...]
-        y (np.ndarray): [y0, y0+dy, y0+2dy, ...]
+        xabs (float or np.ndarray): In the same frame of x.
+        yabs (float or np.ndarray): In the same frame of y.
+        x (np.ndarray or list): [x0, x0+dx, x0+2dx, ...]
+        y (np.ndarray or list): [y0, y0+dy, y0+2dy, ...]
 
     Returns:
         ndarray: [xrel, yrel]. Each has the input's shape. 0 <= xrel,

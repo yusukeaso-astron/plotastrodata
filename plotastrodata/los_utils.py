@@ -1,9 +1,12 @@
 import numpy as np
 
 from plotastrodata.matrix_utils import Mrot3d
+from plotastrodata._type_utils import _normalize_float
 
 
-def obs2sys(xobs: np.ndarray, yobs: np.ndarray, zobs: np.ndarray,
+def obs2sys(xobs: float | np.floating | list[float] | np.ndarray,
+            yobs: float | np.floating | list[float] | np.ndarray,
+            zobs: float | np.floating | list[float] | np.ndarray,
             pa: float = 0, incl: float = 0, phi0: float = 0, theta0: float = 90,
             polar: bool = False) -> np.ndarray:
     """Convert observed coordinates to system coordinates. In the system
@@ -13,12 +16,12 @@ def obs2sys(xobs: np.ndarray, yobs: np.ndarray, zobs: np.ndarray,
     coordinate have opposite signs.
 
     Args:
-        xobs (np.ndarray): Observed x-coordinates. The distance to the
-            east.
-        yobs (np.ndarray): Observed y-coordinates. The distance to the
-            north.
-        zobs (np.ndarray): Observed z-coordinates. The line-of-sight
-            distance.
+        xobs (float or np.floating or list or np.ndarray): Observed
+            x-coordinates. The distance to the east.
+        yobs (float or np.floating or list or np.ndarray): Observed
+            y-coordinates. The distance to the north.
+        zobs (float or np.floating or list or np.ndarray): Observed
+            z-coordinates. The line-of-sight distance.
         pa (float, optional): Position angle of the "blueshifted
             outflow" (not the disk major axis) in degrees from yobs
             (north) to xobs (east). Defaults to 0.
@@ -56,7 +59,9 @@ def obs2sys(xobs: np.ndarray, yobs: np.ndarray, zobs: np.ndarray,
         return x
 
 
-def sys2obs(xsys: np.ndarray, ysys: np.ndarray, zsys: np.ndarray,
+def sys2obs(xsys: float | np.floating | list[float] | np.ndarray,
+            ysys: float | np.floating | list[float] | np.ndarray,
+            zsys: float | np.floating | list[float] | np.ndarray,
             pa: float = 0, incl: float = 0, phi0: float = 0, theta0: float = 90,
             polar: bool = False) -> np.ndarray:
     """Convert system coordinates to observed coordinates. In the system
@@ -66,9 +71,12 @@ def sys2obs(xsys: np.ndarray, ysys: np.ndarray, zsys: np.ndarray,
     coordinate have opposite signs.
 
     Args:
-        xsys (np.ndarray): System x-coordinates (or r).
-        ysys (np.ndarray): System y-coordinates (or theta).
-        zsys (np.ndarray): System z-coordinates (or phi).
+        xsys (float or np.floating or list or np.ndarray): System x-coordinates
+            (or r).
+        ysys (float or np.floating or list or np.ndarray): System y-coordinates
+            (or theta).
+        zsys (float or np.floating or list or np.ndarray): System z-coordinates
+            (or phi).
         pa (float, optional): Position angle of the "blueshifted
             outflow" (not the disk major axis) in degrees from yobs
             (north) to xobs (east). Defaults to 0.
@@ -103,10 +111,13 @@ def sys2obs(xsys: np.ndarray, ysys: np.ndarray, zsys: np.ndarray,
     return x
 
 
-def polarvel2losvel(v_r: np.ndarray, v_theta: np.ndarray, v_phi: np.ndarray,
-                    theta: np.ndarray, phi: np.ndarray,
+def polarvel2losvel(v_r: float | np.floating | np.ndarray,
+                    v_theta: float | np.floating | np.ndarray,
+                    v_phi: float | np.floating | np.ndarray,
+                    theta: float | np.floating | np.ndarray,
+                    phi: float | np.floating | np.ndarray,
                     incl: float = 0, phi0: float = 0, theta0: float = 90
-                    ) -> np.ndarray:
+                    ) -> float | np.longdouble | np.ndarray:
     """Convert the polar velocities in the system's coordinates to the
     line-of-sight velocity in the observer's coordinates. In the system
     coordinates, the observer is at the direction of (0, -sin i, cos i).
@@ -115,14 +126,16 @@ def polarvel2losvel(v_r: np.ndarray, v_theta: np.ndarray, v_phi: np.ndarray,
     have opposite signs.
 
     Args:
-        v_r (np.ndarray): The velocity component in the radial
-            direction.
-        v_theta (np.ndarray): The velocity component in the polar angle
-            direction.
-        v_phi (np.ndarray): The velocity component in the azimuthal
-            angle direction.
-        theta (np.ndarray): The polar angle in radian from the z-axis.
-        phi (np.ndarray): The azimuthal angle in radian from the x-axis.
+        v_r (float or np.floating or np.ndarray): The velocity component in the
+            radial direction.
+        v_theta (float or np.floating or np.ndarray): The velocity component in
+            the polar angle direction.
+        v_phi (float or np.floating or np.ndarray): The velocity component in
+            the azimuthal angle direction.
+        theta (float or np.floating or np.ndarray): The polar angle in radian
+            from the z-axis.
+        phi (float or np.floating or np.ndarray): The azimuthal angle in radian
+            from the x-axis.
         incl (float, optional): Inclination of the system in degrees.
             i=0 means face-on. Defaults to 0.
         phi0 (float, optional): Azimuthal angle of the system in
@@ -133,7 +146,9 @@ def polarvel2losvel(v_r: np.ndarray, v_theta: np.ndarray, v_phi: np.ndarray,
             is observed. Defaults to 90.
 
     Returns:
-        np.ndarray: The line-of-sight velocity.
+        float or np.longdouble or np.ndarray: The line-of-sight velocity.
+        Ordinary scalar results are Python floats; extended-precision
+        scalars and array dtypes are preserved.
     """
     cos_t = np.cos(theta)
     sin_t = np.sin(theta)
@@ -148,4 +163,4 @@ def polarvel2losvel(v_r: np.ndarray, v_theta: np.ndarray, v_phi: np.ndarray,
     A = np.tensordot(np.diag([-1, 1, -1]), A, axes=([1], [0]))
     A = np.tensordot(Mrot3d(incl, axis=1), A, axes=([1], [0]))
     v_los = A[2, 0] * v_r + A[2, 1] * v_theta + A[2, 2] * v_phi
-    return v_los
+    return _normalize_float(v_los)

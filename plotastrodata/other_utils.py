@@ -3,15 +3,17 @@ import numbers
 import numpy as np
 import warnings
 from scipy.interpolate import RegularGridInterpolator as RGI
-from typing import Any, Callable
+from matplotlib.figure import Figure
+from typing import Any
 
 
-def listing(*args: Any) -> list:
+def listing(*args: Any) -> Any:
     """Output a list of the input when the input is string or number.
 
     Returns:
-        list: With a single non-list input, the output is a list like
-        ['a'], rather than [['a']].
+        Any: Strings and numbers are wrapped in lists; other values are
+        unchanged. A single argument returns its processed value directly;
+        zero or multiple arguments return a list of processed values.
     """
     b = [None] * len(args)
     for i, a in enumerate(args):
@@ -48,14 +50,14 @@ def nearest_index(arr: np.ndarray, x: float = 0) -> int:
     Returns:
         int: The index that gives a value nearest to x.
     """
-    return np.argmin(np.abs(arr - x))
+    return int(np.argmin(np.abs(arr - x)))
 
 
 def trim(data: np.ndarray | None = None, x: np.ndarray | None = None,
          y: np.ndarray | None = None, v: np.ndarray | None = None,
-         xlim: list[float] | None = None,
-         ylim: list[float] | None = None,
-         vlim: list[float] | None = None,
+         xlim: list[float | None] | None = None,
+         ylim: list[float | None] | None = None,
+         vlim: list[float | None] | None = None,
          pv: bool = False
          ) -> tuple[np.ndarray | None, list[np.ndarray | None]]:
     """Trim 2D or 3D data by given coordinates and their limits.
@@ -70,10 +72,11 @@ def trim(data: np.ndarray | None = None, x: np.ndarray | None = None,
         vlim (list, optional): [vmin, vmax]. Defaults to None.
 
     Returns:
-        tuple: Trimmed (data, [x,y,v]).
+        tuple: Trimmed (data, [x,y,v]). An axis is left untrimmed when
+        its limit is None or contains None.
     """
     def get_bounds(arr: np.ndarray | None,
-                   lim: list[float] | None
+                   lim: list[float | None] | None
                    ) -> tuple[np.ndarray | None, int, int | None]:
         if arr is None or lim is None or None in lim:
             return arr, 0, None
@@ -237,8 +240,9 @@ def reform_data(c: np.ndarray, v_in: np.ndarray | None,
 
 
 def RGIxy(y: np.ndarray, x: np.ndarray, data: np.ndarray,
-          yxnew: tuple[np.ndarray, np.ndarray] | None = None,
-          **kwargs: Any) -> Callable | np.ndarray:
+          yxnew: tuple[np.ndarray, np.ndarray] | list[np.ndarray]
+          | np.ndarray | None = None,
+          **kwargs: Any) -> RGI | list[RGI] | list[list[RGI]] | np.ndarray:
     """RGI for x and y at each channel.
 
     Default keyword values:
@@ -250,11 +254,13 @@ def RGIxy(y: np.ndarray, x: np.ndarray, data: np.ndarray,
         y (np.ndarray): 1D array. Second coordinate.
         x (np.ndarray): 1D array. First coordinate.
         data (np.ndarray): 2D, 3D, or 4D array.
-        yxnew (tuple, optional): (ynew, xnew), where ynew and xnew are
-            1D or 2D arrays. Defaults to None.
+        yxnew (tuple, list, or np.ndarray, optional): (ynew, xnew), where
+            ynew and xnew are 1D or 2D arrays. Defaults to None.
 
     Returns:
-        np.ndarray: The RGI function or the interpolated array.
+        RGI or list or np.ndarray: Without evaluation coordinates, an
+        interpolator or a (possibly nested) list of interpolators. Otherwise,
+        the interpolated array.
     """
     if np.ndim(data) not in [2, 3, 4]:
         raise ValueError('data must be a 2D, 3D, or 4D array.')
@@ -277,8 +283,9 @@ def RGIxy(y: np.ndarray, x: np.ndarray, data: np.ndarray,
 
 
 def RGIxyv(v: np.ndarray, y: np.ndarray, x: np.ndarray, data: np.ndarray,
-           vyxnew: tuple[np.ndarray, np.ndarray, np.ndarray] | None = None,
-           **kwargs: Any) -> Callable | np.ndarray:
+           vyxnew: tuple[np.ndarray, np.ndarray, np.ndarray]
+           | list[np.ndarray] | np.ndarray | None = None,
+           **kwargs: Any) -> RGI | list[RGI] | np.ndarray:
     """RGI in the x-y-v space.
 
     Default keyword values:
@@ -291,11 +298,13 @@ def RGIxyv(v: np.ndarray, y: np.ndarray, x: np.ndarray, data: np.ndarray,
         y (np.ndarray): 1D array. Second coordinate.
         x (np.ndarray): 1D array. First coordinate.
         data (np.ndarray): 3D or 4D array.
-        vyxnew (tuple, optional): (vnew, ynew, xnew), where vnew, ynew,
-            and xnew are 1D or 2D arrays. Defaults to None.
+        vyxnew (tuple, list, or np.ndarray, optional): (vnew, ynew, xnew),
+            where vnew, ynew, and xnew are 1D or 2D arrays. Defaults to None.
 
     Returns:
-        np.ndarray: The RGI function or the interpolated array.
+        RGI or list or np.ndarray: Without evaluation coordinates, an
+        interpolator or a list of interpolators. Otherwise, the interpolated
+        array.
     """
     if np.ndim(data) not in [3, 4]:
         raise ValueError('data must be a 3D or 4D array.')
@@ -314,7 +323,7 @@ def RGIxyv(v: np.ndarray, y: np.ndarray, x: np.ndarray, data: np.ndarray,
         return np.squeeze([f3d(tuple(vyxnew)) for f3d in f])
 
 
-def close_figure(fig: object, savefig: dict | str | None = None,
+def close_figure(fig: Figure, savefig: dict | str | None = None,
                  show: bool = False, tight: bool = True) -> None:
     """Save, show, and close the figure.
 
@@ -329,7 +338,7 @@ def close_figure(fig: object, savefig: dict | str | None = None,
         defaults.
 
     Args:
-        fig (object): External plt.figure(). Defaults to None.
+        fig (Figure): Matplotlib figure to save, show, and close.
         savefig (dict or str, optional): For ``Figure.savefig``.
             Existing files may be overwritten, and the figure is closed
             after saving/showing. Defaults to None.

@@ -10,7 +10,9 @@ from functools import partial
 from multiprocessing import Pool
 from tqdm import tqdm
 from typing import Any, Callable
+from matplotlib.figure import Figure
 
+from plotastrodata._type_utils import _normalize_float
 from plotastrodata.matrix_utils import Mrot, dot2d
 from plotastrodata.other_utils import close_figure
 
@@ -21,21 +23,25 @@ global_progressbar = True
 
 
 def _gaussian_log_likelihood(x: np.ndarray, model: Callable,
-                             xdata: np.ndarray, ydata: np.ndarray,
-                             sigma: float | np.ndarray) -> float:
-    """Return a Gaussian log likelihood using pickleable arguments."""
+                             xdata: np.ndarray | list[np.ndarray]
+                             | tuple[np.ndarray, ...],
+                             ydata: np.ndarray,
+                             sigma: float | np.floating | np.ndarray
+                             ) -> float | np.longdouble:
+    """Return a Python float likelihood, preserving extended precision."""
     chi2 = np.sum((ydata - model(xdata, *x))**2 / sigma**2)
-    return chi2 / (-2)
+    return _normalize_float(chi2 / (-2))
 
 
 def _bounded_log_probability(x: np.ndarray, log_likelihood: Callable,
                              bounds: np.ndarray,
-                             update_progress: bool = False) -> float:
-    """Combine a bounded uniform prior with a log likelihood."""
+                             update_progress: bool = False
+                             ) -> float | np.longdouble:
+    """Combine prior and likelihood; preserve extended-precision scalars."""
     if update_progress:
         bar.update(1)
     if np.all((bounds[:, 0] < x) & (x < bounds[:, 1])):
-        return log_likelihood(x)
+        return _normalize_float(log_likelihood(x))
     return -np.inf
 
 
@@ -53,7 +59,7 @@ def logp(x: np.ndarray) -> float:
     if global_progressbar:
         bar.update(1)
     if np.all((global_bounds[:, 0] < x) & (x < global_bounds[:, 1])):
-        return 0
+        return 0.0
     else:
         return -np.inf
 
@@ -102,17 +108,17 @@ class EmceeCorner():
     :meth:`plotcorner` and :meth:`plotchain`.
 
     Args:
-        bounds (np.ndarray): Parameter bounds with shape ``(dim, 2)``.
+        bounds (np.ndarray or list): Parameter bounds with shape ``(dim, 2)``.
             logl (Callable, optional): Log-likelihood function. Defaults
             to None.
         model (Callable, optional): Model function used to construct a
             Gaussian log likelihood. Defaults to None.
-        xdata (np.ndarray, optional): Independent data passed to
-            ``model``. Defaults to None.
+        xdata (np.ndarray or list or tuple, optional): Independent data passed
+            to ``model``. Defaults to None.
         ydata (np.ndarray, optional): Observed values compared with
             ``model(xdata, *params)``. Defaults to None.
-        sigma (np.ndarray, optional): Uncertainty used in the Gaussian
-            likelihood. Defaults to 1.
+        sigma (float or np.floating or np.ndarray, optional): Uncertainty used
+            in the Gaussian likelihood. Defaults to 1.
         progressbar (bool, optional): Whether to show a progress bar.
             Defaults to False.
         percent (list, optional): Lower and upper posterior percentiles.
@@ -120,11 +126,14 @@ class EmceeCorner():
     """
     warnings.simplefilter('ignore', RuntimeWarning)
 
-    def __init__(self, bounds: np.ndarray, logl: Callable | None = None,
+    def __init__(self, bounds: np.ndarray | list[list[float]],
+                 logl: Callable | None = None,
                  model: Callable | None = None,
-                 xdata: np.ndarray | None = None,
+                 xdata: np.ndarray | list[np.ndarray] | tuple[np.ndarray, ...]
+                 | None = None,
                  ydata: np.ndarray | None = None,
-                 sigma: float | np.ndarray = 1, progressbar: bool = False,
+                 sigma: float | np.floating | np.ndarray = 1,
+                 progressbar: bool = False,
                  percent: list = [16, 84]) -> None:
         global global_bounds, global_progressbar
         bounds_array = np.asarray(bounds, dtype=float)
@@ -226,7 +235,7 @@ class EmceeCorner():
         return lnp, popt
 
     def _get_percentiles(self, samples: np.ndarray
-                         ) -> tuple[float, float, float]:
+                         ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Compute summary statistics (percentiles) from MCMC samples.
         """
         s = samples.reshape(-1, self.dim)
@@ -312,7 +321,8 @@ class EmceeCorner():
             print()
 
     def plotcorner(self, labels: list[str] | None = None,
-                   cornerrange: list[float] | None = None,
+                   cornerrange: list[float | tuple[float, float] | list[float]]
+                   | np.ndarray | None = None,
                    savefig: dict | str | None = None,
                    show: bool = False) -> None:
         """Make the corner plot from self.samples.
@@ -320,7 +330,7 @@ class EmceeCorner():
         Args:
             labels (list, optional): Labels for the corner plot.
                 Defaults to None.
-            cornerrange (list, optional): Range for the corner plot.
+            cornerrange (list or np.ndarray, optional): Per-parameter ranges.
                 Defaults to None.
             savefig (dict or str, optional): Passed to ``close_figure``.
                 Existing files may be overwritten, and the figure is
@@ -333,15 +343,19 @@ class EmceeCorner():
         if cornerrange is None:
             cornerrange = self.bounds
         fig = corner.corner(np.reshape(self.samples, (-1, self.dim)),
-                            truths=self.popt,
+                            truths=None if self.dim == 1 else self.popt,
                             quantiles=[self.percent[0] / 100,
                                        0.5,
                                        self.percent[1] / 100],
                             show_titles=True, labels=labels,
                             range=cornerrange)
+        if self.dim == 1:
+            # corner's truth overlay indexes a squeezed Axes as a 2D array.
+            fig.axes[0].axvline(self.popt[0], color='#4682b4')
         close_figure(fig, savefig, show, tight=False)
 
-    def plotchain(self, labels: list | None = None, ylim: list | None = None,
+    def plotchain(self, labels: list | None = None,
+                  ylim: list | np.ndarray | None = None,
                   savefig: dict | str | None = None,
                   show: bool = False) -> None:
         """Plot parameters as a function of steps using self.samples.
@@ -352,8 +366,8 @@ class EmceeCorner():
         Args:
             labels (list, optional): Labels for the chain plot. Defaults
                 to None.
-            ylim (list, optional): Y-range for the chain plot. Defaults
-                to None.
+            ylim (list or np.ndarray, optional): Y-range for the chain plot.
+                Defaults to None.
             savefig (dict or str, optional): Passed to ``close_figure``.
                 Existing files may be overwritten, and the figure is
                 closed after saving/showing. Defaults to None.
@@ -414,7 +428,8 @@ class EmceeCorner():
                         log: list[bool] | bool = False,
                         pcut: float = 0) -> None:
         """Calculate the posterior on a grid of ngrid x ngrid x ... x
-        ngrid.
+        ngrid. Stored evidence is a Python float unless the computed
+        scalar has extended precision.
 
         Args:
             ngrid (list, optional): Number of grid on each parameter.
@@ -454,12 +469,12 @@ class EmceeCorner():
         self.p1d = p1d
         self.pargrid = pargrid
         self.vol = vol
-        self.evidence = evidence
+        self.evidence = _normalize_float(evidence)
         self.arrdim = arrdim
         self.arrdim_r = arrdim_r
         self._set_results_posteriorongrid()
 
-    def _i_eq_j(self, fig: object, ax: np.ndarray,
+    def _i_eq_j(self, fig: Figure, ax: np.ndarray,
                 i: int, k: int) -> None:
         x = self.pargrid
         y = self.p1d
@@ -486,7 +501,7 @@ class EmceeCorner():
         else:
             plt.setp(ax[k].get_xticklabels(), visible=False)
 
-    def _i_neq_j(self, fig: object, ax: np.ndarray,
+    def _i_neq_j(self, fig: Figure, ax: np.ndarray,
                  i: int, j: int, k: int) -> None:
         x = self.pargrid
         sharex = ax[self.dim * (i - 1) + j]
@@ -515,9 +530,10 @@ class EmceeCorner():
         else:
             plt.setp(ax[k].get_xticklabels(), visible=False)
 
-    def plotongrid(self, show: bool = False, savefig: str | None = None,
+    def plotongrid(self, show: bool = False, savefig: dict | str | None = None,
                    labels: list[str] | None = None,
-                   cornerrange: list[float] | None = None,
+                   cornerrange: list[tuple[float, float] | list[float]]
+                   | np.ndarray | None = None,
                    cmap: str = 'binary',
                    levels: list[float] = [0.011109, 0.135335, 0.606531]
                    ) -> None:
@@ -526,20 +542,18 @@ class EmceeCorner():
         Args:
             show (bool, optional): Whether to show the corner plot.
                 Defaults to False.
-            savefig (str, optional): Passed to ``close_figure``.
+            savefig (dict or str, optional): Passed to ``close_figure``.
                 Existing files may be overwritten, and the figure is
                 closed after saving/showing. Defaults to None.
             labels (list, optional): Labels for the corner plot.
                 Defaults to None.
-            cornerrange (list, optional): Range for the corner plot.
+            cornerrange (list or np.ndarray, optional): Per-parameter ranges.
                 Defaults to None.
             cmap: (str, optional): cmap for
-                matplotlib.pyplot.plt.pcolormesh(). Defaults to
-                'binary'.
+                matplotlib.pyplot.plt.pcolormesh(). Defaults to 'binary'.
             levels: (list, optional): levels for
                 matplotlib.pyplot.plt.contour() relative to the peak.
-                Defaults to [exp(-0.5*3^2), exp(-0.5*2^2),
-                exp(-0.5*1^2)].
+                Defaults to [exp(-0.5*3^2), exp(-0.5*2^2), exp(-0.5*1^2)].
         """
         if labels is None:
             labels = [f'Par {i:d}' for i in self.arrdim]
@@ -567,9 +581,10 @@ class EmceeCorner():
         del self.levels
         close_figure(fig, savefig, show, tight=False)
 
-    def getDNSevidence(self, **kwargs: Any) -> dict[str, float]:
+    def getDNSevidence(self, **kwargs: Any) -> dict[str, float | np.longdouble]:
         """Calculate the Bayesian evidence for a model using dynamic
-        nested sampling through dynesty.
+        nested sampling through dynesty. Evidence and error are Python
+        floats unless extended-precision scalar results must be preserved.
         """
         def prior_transform(u: np.ndarray) -> np.ndarray:
             b0 = self.bounds[:, 0]
@@ -583,36 +598,40 @@ class EmceeCorner():
         results = dsampler.results
         evidence = np.exp(results.logz[-1])
         error = evidence * results.logzerr[-1]
-        self.evidence = evidence
-        return {'evidence': evidence, 'error': error}
+        self.evidence = _normalize_float(evidence)
+        return {'evidence': self.evidence, 'error': _normalize_float(error)}
 
 
-def gaussian1d(x: np.ndarray | float,
+def gaussian1d(x: np.ndarray | float | np.floating,
                amplitude: float, xo: float, fwhm: float,
-               ) -> np.ndarray:
+               ) -> float | np.longdouble | np.ndarray:
     """One dimensional Gaussian function.
 
     Args:
-        x (np.ndarray): Variable of the Gaussian function.
+        x (float or np.floating or np.ndarray): Variable of the Gaussian
+            function.
         amplitude (float): Peak value.
         xo (float): Offset in the x direction.
         fwhm (float): Full width at half maximum.
 
     Returns:
-        g (np.ndarray): 1D numpy array.
+        float or np.longdouble or np.ndarray: Gaussian values with the
+        shape of x. Ordinary scalars are Python floats; extended-precision
+        scalars and arrays retain their types.
     """
     g = amplitude * np.exp2(-4 * (((x - xo) / fwhm)**2))
-    return g
+    return _normalize_float(g)
 
 
-def gaussian2d(xy: np.ndarray,
+def gaussian2d(xy: np.ndarray | list[float | np.ndarray]
+               | tuple[float | np.ndarray, float | np.ndarray],
                amplitude: float, xo: float, yo: float,
                fwhm_major: float, fwhm_minor: float, pa: float
-               ) -> np.ndarray:
+               ) -> float | np.longdouble | np.ndarray:
     """Two dimensional Gaussian function.
 
     Args:
-        xy (np.ndarray): A pair of (x, y).
+        xy (np.ndarray or list or tuple): A pair of (x, y).
         amplitude (float): Peak value.
         xo (float): Offset in the x direction.
         yo (float): Offset in the y direction.
@@ -624,42 +643,51 @@ def gaussian2d(xy: np.ndarray,
             the +x axis in the unit of degree.
 
     Returns:
-        g (np.ndarray): Output array in the same shape as xy.
+        float or np.longdouble or np.ndarray: Gaussian values with the
+        shape of each coordinate.
+        Ordinary scalars are Python floats; extended-precision scalars
+        and arrays retain their types.
     """
     s, t = dot2d(Mrot(-pa), [xy[1] - yo, xy[0] - xo])
     g = amplitude * np.exp2(-4 * ((s / fwhm_major)**2 + (t / fwhm_minor)**2))
-    return g
+    return _normalize_float(g)
 
 
 def gaussfit1d(xdata: np.ndarray, ydata: np.ndarray,
-               sigma: float | np.ndarray | None,
+               sigma: float | np.floating | np.ndarray | None = None,
                show: bool = False, **kwargs: Any) -> dict:
     """Gaussian fitting to a pair of 1D arrays.
 
     Args:
         xdata (np.ndarray): ydata is compared with Gauss(xdata).
         ydata (np.ndarray): ydata is compared with Gauss(xdata).
-        sigma (float | np.ndarray | None): Noise level of ydata. If None
-            is given, sigma is estimated by a temporary fitting.
-            Defaults to None.
+        sigma (float | np.floating | np.ndarray | None): Noise level of ydata.
+            Defaults to None: print a notice and estimate sigma from the
+            residuals of an initial fit.
         show (bool, optional): True means to show the best-fit
             parameters and uncertainties. Defaults to False.
 
     Returns:
-        dict: The keys are popt, perr, and sigma.
+        dict: popt and perr are arrays. Computed scalar sigma is a Python
+        float, except that extended-precision scalars are preserved.
+        Array-valued sigma retains its dtype.
     """
+    if sigma is None:
+        print('gaussfit1d: sigma is None;'
+              + ' estimating noise from an initial fit.')
     xmin, xmax = np.min(xdata), np.max(xdata)
     ymin, ymax = np.min(ydata), np.max(ydata)
     xw = xmax - xmin
     yw = ymax - ymin
     dx = np.abs(xdata[1] - xdata[0])
     bounds = [[ymin - yw * 10, ymax + yw * 10], [xmin, xmax], [dx, xw]]
-    sigtmp = sigma or max(np.abs(ymin), np.abs(ymax)) * 0.01
+    sigtmp = (max(np.abs(ymin), np.abs(ymax)) * 0.01
+              if sigma is None else sigma)
     for i in range(2 if sigma is None else 1):
         fitter = EmceeCorner(bounds=bounds, model=gaussian1d,
                              sigma=sigtmp, xdata=xdata, ydata=ydata)
         fitter.fit(**kwargs)
-        if i == 0:
+        if i == 0 and sigma is None:
             sigtmp = np.std(ydata - gaussian1d(xdata, *fitter.popt))
     popt = fitter.popt
     plow = fitter.plow
@@ -670,11 +698,11 @@ def gaussfit1d(xdata: np.ndarray, ydata: np.ndarray,
         print('Gauss uncertainties:', perr)
         if sigma is None:
             print('Estimated sigma: ', sigtmp)
-    return {'popt': popt, 'perr': perr, 'sigma': sigtmp}
+    return {'popt': popt, 'perr': perr, 'sigma': _normalize_float(sigtmp)}
 
 
 def gaussfit2d(xdata: np.ndarray, ydata: np.ndarray, zdata: np.ndarray,
-               sigma: float | np.ndarray | None,
+               sigma: float | np.floating | np.ndarray | None = None,
                show: bool = False, **kwargs: Any) -> dict:
     """Gaussian fitting to a pair of 1D arrays.
 
@@ -682,15 +710,20 @@ def gaussfit2d(xdata: np.ndarray, ydata: np.ndarray, zdata: np.ndarray,
         xdata (np.ndarray): zdata is compared with Gauss(xdata, ydata).
         ydata (np.ndarray): zdata is compared with Gauss(xdata, ydata).
         zdata (np.ndarray): zdata is compared with Gauss(xdata, ydata).
-        sigma (float | np.ndarray | None): Noise level of ydata. If None
-            is given, sigma is estimated by a temporary fitting.
-            Defaults to None.
+        sigma (float | np.floating | np.ndarray | None): Noise level of zdata.
+            Defaults to None: print a notice and estimate sigma from the
+            residuals of an initial fit.
         show (bool, optional): True means to show the best-fit
             parameters and uncertainties. Defaults to False.
 
     Returns:
-        dict: The keys are popt, perr, and sigma.
+        dict: popt and perr are arrays. Computed scalar sigma is a Python
+        float, except that extended-precision scalars are preserved.
+        Array-valued sigma retains its dtype.
     """
+    if sigma is None:
+        print('gaussfit2d: sigma is None;'
+              + ' estimating noise from an initial fit.')
     xmin, xmax = np.min(xdata), np.max(xdata)
     ymin, ymax = np.min(ydata), np.max(ydata)
     zmin, zmax = np.min(zdata), np.max(zdata)
@@ -700,10 +733,13 @@ def gaussfit2d(xdata: np.ndarray, ydata: np.ndarray, zdata: np.ndarray,
     dx = min(np.abs(xdata[1] - xdata[0]), np.abs(ydata[1] - ydata[0]))
     xw = max(xw, yw)
     xy = np.meshgrid(xdata, ydata)
-    sigtmp = sigma or max(np.abs(zmin), np.abs(zmax)) * 0.01
+    sigtmp = (max(np.abs(zmin), np.abs(zmax)) * 0.01
+              if sigma is None else sigma)
 
-    def model(xy: np.ndarray, a: float, cx: float, cy: float,
-              wmaj: float, wmin: float, pa: float) -> np.ndarray | float:
+    def model(xy: np.ndarray | list[np.ndarray] | tuple[np.ndarray, ...],
+              a: float, cx: float, cy: float,
+              wmaj: float, wmin: float, pa: float
+              ) -> np.ndarray | float | np.longdouble:
         if wmaj < wmin:
             return np.inf
         else:
@@ -723,7 +759,7 @@ def gaussfit2d(xdata: np.ndarray, ydata: np.ndarray, zdata: np.ndarray,
                   [wmaj / 2, wmaj * 2], [wmin / 2, wmin * 2],
                   [pa - 45, pa + 45]]
         if i == 0 and sigma is None:
-            sigtmp = np.std(ydata - gaussian2d(xy, *fitter.popt))
+            sigtmp = np.std(zdata - gaussian2d(xy, *fitter.popt))
     popt = fitter.popt
     popt[-1] = (popt[-1] + 90) % 180 - 90
     perr = (fitter.phigh - fitter.plow) / 2
@@ -732,4 +768,4 @@ def gaussfit2d(xdata: np.ndarray, ydata: np.ndarray, zdata: np.ndarray,
         print('Gauss uncertainties:', perr)
         if sigma is None:
             print('Estimated sigma: ', sigtmp)
-    return {'popt': popt, 'perr': perr, 'sigma': sigtmp}
+    return {'popt': popt, 'perr': perr, 'sigma': _normalize_float(sigtmp)}

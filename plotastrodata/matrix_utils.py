@@ -29,14 +29,14 @@ def Mrot(pa: float = 0) -> np.ndarray:
 
 
 def dot2d(M: np.ndarray | list[list[float]] = [[1, 0], [0, 1]],
-          a: np.ndarray | list[float] = [0, 0]) -> np.ndarray:
+          a: np.ndarray | list[float | np.ndarray] = [0, 0]) -> np.ndarray:
     """Multiply a 2 x 2 matrix by (x,y) with arrays of x and y.
 
     Args:
         M (np.ndarray, optional): 2 x 2 matrix. Defaults to [[1, 0], [0,
             1]].
-        a (np.ndarray, optional): 2D vector (of 1D arrays). Defaults to
-            [0, 0].
+        a (np.ndarray or list, optional): Pair of scalars or arrays.
+            Defaults to [0, 0].
 
     Returns:
         np.ndarray: The 2D vector after the matrix multiplied.
@@ -80,4 +80,4 @@ def Mrot3d(t: float, axis: int = 3) -> np.ndarray:
             m = [[cos_t, -sin_t, 0],
                  [sin_t, cos_t, 0],
                  [0, 0, 1]]
-    return m
+    return np.array(m)
