@@ -11,7 +11,7 @@ from plotastrodata.other_utils import close_figure
 
 
 def _uniform_bin_width(edges: np.ndarray) -> float | np.longdouble:
-    """Validate equal-width edges with relative tolerance 1e-6."""
+    """Validate equal-width edges with relative tolerance 1e-5."""
     if (edges.ndim != 1 or len(edges) < 2
             or not np.all(np.isfinite(edges))):
         raise ValueError('Histogram edges must be finite'
@@ -36,7 +36,8 @@ def normalize(range: tuple[float, float] = (-3.5, 3.5),
 
     Explicit edges override range and bins. Midpoint densities are
     normalized using a single shared bin width. Edges must be equally
-    spaced within relative tolerance 1e-6 (zero absolute tolerance). 
+    spaced within relative tolerance 1e-5 (zero absolute tolerance) to
+    accommodate rounding of float32 histogram edges.
     If all midpoint values underflow to zero, mass is placed in the bin
     containing args[1] (the model mean); a mean outside the edges produces zeros.
 
@@ -220,7 +221,7 @@ class Noise:
             these values. Weighted histograms are unsupported. Actual
             edges, a shared bin width, and unweighted counts are retained for fitting.
             density=False plots counts instead of densities. Uneven edges
-            raise ValueError; equal widths are checked with rtol=1e-6, atol=0.
+            raise ValueError; equal widths are checked with rtol=1e-5, atol=0.
         """
         if self.s0 == 0:
             raise ValueError('Histogram noise estimation requires'
