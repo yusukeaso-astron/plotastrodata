@@ -21,7 +21,7 @@ def _uniform_bin_width(edges: np.ndarray) -> float | np.longdouble:
         raise ValueError('Histogram edges must be finite'
                          + ' and strictly increasing.')
     width = np.mean(widths)
-    if not np.allclose(widths, width, rtol=1e-5, atol=1e-8):
+    if not np.allclose(widths, width, rtol=1e-5, atol=0):
         raise ValueError('Only equal-width bins are supported;'
                          + ' use an integer bin count, bins="auto",'
                          + ' or equally spaced edges'
