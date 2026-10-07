@@ -1,18 +1,23 @@
 import numpy as np
+import numbers
+from os import PathLike
 from astropy import units, wcs
 from astropy.io import fits
 from typing import Any, Callable
 
 from plotastrodata import const_utils as cu
+from plotastrodata._type_utils import _normalize_float
 from plotastrodata.coord_utils import coord2xy, xy2coord
 from plotastrodata.matrix_utils import dot2d
 from plotastrodata.noise_utils import estimate_rms
 from plotastrodata.other_utils import isdeg, RGIxy, trim
 
 
-def Jy2K(header: Any = None, bmaj: float | None = None,
-         bmin: float | None = None,
-         restfreq: float | None = None) -> float:
+def Jy2K(header: fits.Header | dict[str, Any] | None = None,
+         bmaj: float | np.floating | None = None,
+         bmin: float | np.floating | None = None,
+         restfreq: float | np.floating | None = None
+         ) -> float | np.longdouble:
     """Calculate a conversion factor in the unit of K/Jy.
 
     Args:
@@ -26,7 +31,8 @@ def Jy2K(header: Any = None, bmaj: float | None = None,
             None.
 
     Returns:
-        float: the conversion factor in the unit of K/Jy.
+        float or np.longdouble: Conversion factor in K/Jy. Ordinary
+        scalars are Python floats; extended-precision results are preserved.
     """
     freq = None
     if header is not None:
@@ -58,16 +64,16 @@ def Jy2K(header: Any = None, bmaj: float | None = None,
     omega = bmaj * bmin * units.arcsec**2 * np.pi / 4. / np.log(2.)
     equiv = units.brightness_temperature(freq * units.Hz, beam_area=omega)
     T = (1 * units.Jy / units.beam).to(units.K, equivalencies=equiv)
-    return T.value
+    return _normalize_float(T.value)
 
 
 class FitsData:
     """For practical treatment of data in a FITS file.
 
     Args:
-        fitsimage (str): Input FITS file name.
+        fitsimage (str or os.PathLike): Input FITS file name.
     """
-    def __init__(self, fitsimage: str) -> None:
+    def __init__(self, fitsimage: str | PathLike[str]) -> None:
         self.fitsimage = fitsimage
 
     def gen_hdu(self) -> None:
@@ -98,7 +104,8 @@ class FitsData:
                 to None.
 
         Returns:
-            dict or float: The entire header or a value.
+            fits.Header or Any: The entire Header, the requested header
+            value, or None when the key is missing.
         """
         if not hasattr(self, 'header'):
             self.gen_header()
@@ -129,7 +136,9 @@ class FitsData:
                 bmaj = bmaj * 3600 * dist
             if bmin is not None:
                 bmin = bmin * 3600 * dist
-        self.bmaj, self.bmin, self.bpa = bmaj, bmin, bpa
+        self.bmaj = None if bmaj is None else _normalize_float(bmaj)
+        self.bmin = None if bmin is None else _normalize_float(bmin)
+        self.bpa = None if bpa is None else _normalize_float(bpa)
 
     def get_beam(self, dist: float = 1.) -> np.ndarray:
         """Output the beam array of [bmaj, bmin, bpa].
@@ -145,11 +154,12 @@ class FitsData:
             self.gen_beam(dist)
         return np.array([self.bmaj, self.bmin, self.bpa])
 
-    def get_center(self) -> str:
+    def get_center(self) -> str | None:
         """Output the central coordinates as text.
 
         Returns:
-            str: The central coordinates.
+            str or None: The central coordinates, or None when the
+            spatial units are not degrees.
         """
         cunit1 = self.get_header('CUNIT1')
         cunit2 = self.get_header('CUNIT2')
@@ -165,7 +175,9 @@ class FitsData:
         return a
 
     def gen_data(self, Tb: bool = False, log: bool = False,
-                 drop: bool = True, restfreq: float | None = None) -> None:
+                 drop: bool = True,
+                 restfreq: float | np.floating | None = None
+                 ) -> None:
         """Generate data, which may be brightness temperature.
 
         Args:
@@ -177,11 +189,17 @@ class FitsData:
                 np.squeeze. Defaults to True.
             restfreq (float, optional): Rest frequency for calculating
                 the brightness temperature. Defaults to None.
+
+        Raises:
+            ValueError: If the primary HDU contains no data.
         """
         self.data = None
         if not hasattr(self, 'hdu'):
             self.gen_hdu()
         h, d = self.hdu.header, self.hdu.data
+        if d is None:
+            raise ValueError(f'Primary HDU in {self.fitsimage!s}'
+                             + ' contains no data.')
         if drop:
             d = np.squeeze(d)
         if Tb:
@@ -196,8 +214,11 @@ class FitsData:
 
         Returns:
             np.ndarray: data in the format of np.ndarray.
+
+        Raises:
+            ValueError: If the primary HDU contains no data.
         """
-        if not hasattr(self, 'data'):
+        if getattr(self, 'data', None) is None:
             self.gen_data(**kwargs)
         return self.data
 
@@ -261,7 +282,7 @@ class FitsData:
         self.data = datanew
         print('Data values were interpolated for WCS rotation.')
 
-    def _get_genx_geny(self, center: str,
+    def _get_genx_geny(self, center: str | None,
                        dist: float
                        ) -> tuple[Callable[[np.ndarray | None], None],
                                   Callable[[np.ndarray | None], None]]:
@@ -282,14 +303,14 @@ class FitsData:
                     s = (s_in - cxy[i]) * dist
                     if isdeg(h[f'CUNIT{i+1}']):
                         s *= 3600.
-                    ds = None if len(s) == 0 else s[1] - s[0]
+                    ds = None if len(s) <= 1 else _normalize_float(s[1] - s[0])
                 setattr(self, f'{slabel[i]}', s)
                 setattr(self, f'd{slabel[i]}', ds)
             return gen_s
 
         return wrapper(0), wrapper(1)
 
-    def _get_genv(self, restfreq: float | None, vsys: float,
+    def _get_genv(self, restfreq: float | np.floating | None, vsys: float,
                   pv: bool) -> Callable[[np.ndarray | None], None]:
         h = self.header
 
@@ -322,7 +343,7 @@ class FitsData:
                 case _:
                     print(f'Unknown CUNIT3 {cunitv} found.'
                           + ' v is read as is.')
-            dv = None if len(v) <= 1 else v[1] - v[0]
+            dv = None if len(v) <= 1 else _normalize_float(v[1] - v[0])
             self.v, self.dv = v, dv
 
         return gen_v
@@ -337,7 +358,7 @@ class FitsData:
         return s
 
     def gen_grid(self, center: str | None = None, dist: float = 1.,
-                 restfreq: float | None = None, vsys: float = 0.,
+                 restfreq: float | np.floating | None = None, vsys: float = 0.,
                  pv: bool = False) -> None:
         """Generate grids relative to the center and vsys.
 
@@ -409,25 +430,30 @@ class FitsData:
         self.x, self.y, self.v = grid
 
 
-def fits2data(fitsimage: str, Tb: bool = False, log: bool = False,
-              dist: float = 1., sigma: str | None = None,
-              restfreq: float | None = None, center: str | None = None,
+def fits2data(fitsimage: str | PathLike[str],
+              Tb: bool = False, log: bool = False, dist: float = 1.,
+              sigma: float | numbers.Number | str | None = None,
+              restfreq: float | np.floating | None = None,
+              center: str | None = None,
               vsys: float = 0., pv: bool = False, **kwargs: Any
-              ) -> tuple[np.ndarray, tuple[np.ndarray | None, np.ndarray | None,
+              ) -> tuple[np.ndarray, tuple[np.ndarray | None,
+                                           np.ndarray | None,
                                            np.ndarray | None],
-                         np.ndarray, str | None, float | None]:
+                         np.ndarray, str | None,
+                         float | np.longdouble | numbers.Number | None]:
     """Extract data from a fits file. kwargs are arguments of
     FitsData.trim().
 
     Args:
-        fitsimage (str): Input fits name.
+        fitsimage (str or os.PathLike): Input fits name.
         Tb (bool, optional): True means output data are brightness
             temperature. Defaults to False.
         log (bool, optional): True means output data are logarithmic.
             Defaults to False.
         dist (float, optional): Change x and y in arcsec to au. Defaults
             to 1..
-        sigma (str, optional): Noise level or method for measuring it.
+        sigma (float or numbers.Number or str or None, optional):
+            Noise level passed through unchanged, or estimation method.
             Defaults to None.
         restfreq (float, optional): Used for velocity and brightness
             temperature. Defaults to None.
@@ -448,15 +474,15 @@ def fits2data(fitsimage: str, Tb: bool = False, log: bool = False,
     return fd.data, (fd.x, fd.y, fd.v), beam, bunit, rms
 
 
-def data2fits(d: np.ndarray, h: dict = {},
-              templatefits: str | None = None,
+def data2fits(d: np.ndarray, h: dict[str, Any] | fits.Header = {},
+              templatefits: str | PathLike[str] | None = None,
               fitsimage: str = 'test') -> None:
     """Make a fits file from a N-D array.
 
     Args:
         d (np.ndarray): N-D array.
-        h (dict, optional): Additional FITS header. Defaults to {}.
-        templatefits (str, optional): FITS file whose header is used as
+        h (dict or fits.Header, optional): Additional FITS header. Defaults to {}.
+        templatefits (str or os.PathLike, optional): FITS file whose header is used as
             a template. Defaults to None.
         fitsimage (str, optional): Output filename, with or without
             '.fits'. Existing files with the same name are overwritten.

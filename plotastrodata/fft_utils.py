@@ -1,6 +1,9 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from typing import Callable
+from os import PathLike
+
+from plotastrodata._type_utils import _normalize_float
 
 from plotastrodata.fits_utils import fits2data
 from plotastrodata.other_utils import close_figure
@@ -112,7 +115,7 @@ def fftcentering2(f: np.ndarray,
 
 
 def ifftcentering(F: np.ndarray, u: np.ndarray | None = None,
-                  xcenter: float = 0, x0: float = None,
+                  xcenter: float = 0, x0: float | None = None,
                   dx: float = 1,
                   outreal: bool = False, rfft: bool = False
                   ) -> tuple[np.ndarray, np.ndarray]:
@@ -195,12 +198,16 @@ def ifftcentering2(F: np.ndarray,
         spatial coordinates.
     """
     ny, nx = np.shape(F)
+    if u is not None and np.ndim(u) == 2:
+        u = u[0, :]
+    if v is not None and np.ndim(v) == 2:
+        v = v[:, 0]
     if u is None:
         if rfft:
             nx = 2 * (nx - 1)  # Follow numpy.fft.irfft behavior.
             u = np.fft.rfftfreq(nx, d=dx)
         else:
-            u = np.fft.fftshift(np.fft.fftfreq(nx, d=dy))
+            u = np.fft.fftshift(np.fft.fftfreq(nx, d=dx))
     else:
         if rfft:
             if np.isclose(u[-1], 1 / (2 * dx)):
@@ -242,7 +249,7 @@ class FftCentering():
                  rfft: bool = False) -> None:
         nx = len(x)
         self.x = x
-        self.dx = dx = x[1] - x[0]
+        self.dx = dx = _normalize_float(x[1] - x[0])
         self.xcenter = xcenter
         self.ndim = 2 if isinstance(y, np.ndarray) else 1
         self.rfft = rfft
@@ -254,13 +261,13 @@ class FftCentering():
         if self.ndim == 2:
             ny = len(y)
             self.y = y
-            self.dy = dy = y[1] - y[0]
+            self.dy = dy = _normalize_float(y[1] - y[0])
             self.ycenter = ycenter
             v = np.fft.fftshift(np.fft.fftfreq(ny, d=dy))
             self.v = v
 
     def fft(self, f: np.ndarray | None = None
-            ) -> np.ndarray | Callable:
+            ) -> np.ndarray | Callable[[np.ndarray], np.ndarray]:
         """FFT calculation done by considering 1D/2D and fft/rfft.
 
         Args:
@@ -268,7 +275,7 @@ class FftCentering():
                 None.
 
         Returns:
-            np.ndarray: FFT result. When f is None, the return is the
+            np.ndarray or Callable: FFT result. When f is None, the return is the
             FFT function.
         """
         if self.ndim == 1:
@@ -289,7 +296,7 @@ class FftCentering():
         return func if f is None else func(f)
 
     def ifft(self, F: np.ndarray | None = None, outreal: bool = False
-             ) -> np.ndarray | Callable:
+             ) -> np.ndarray | Callable[[np.ndarray], np.ndarray]:
         """iFFT calculation done by considering 1D/2D and fft/rfft.
 
         Args:
@@ -297,7 +304,7 @@ class FftCentering():
                 None.
 
         Returns:
-            np.ndarray: iFFT result. When F is None, the return is the
+            np.ndarray or Callable: iFFT result. When F is None, the return is the
             iFFT function.
         """
         if self.ndim == 1:
@@ -325,7 +332,8 @@ class FftCentering():
 
 
 def zeropadding(f: np.ndarray, x: np.ndarray, y: np.ndarray,
-                xlim: list, ylim: list
+                xlim: list[float] | tuple[float, float] | np.ndarray,
+                ylim: list[float] | tuple[float, float] | np.ndarray
                 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Pad an outer region with zero.
 
@@ -333,8 +341,8 @@ def zeropadding(f: np.ndarray, x: np.ndarray, y: np.ndarray,
         f (np.ndarray): Input 2D array.
         x (np.ndarray): 1D array.
         y (np.ndarray): 1D array.
-        xlim (list): range of x after the zero padding.
-        ylim (list): range of y after the zero padding.
+        xlim (list or tuple or np.ndarray): range of x after the zero padding.
+        ylim (list or tuple or np.ndarray): range of y after the zero padding.
 
     Returns:
         tuple: (fnew, xnew, ynew). fnew is an 2D array and xnew and ynew
@@ -354,25 +362,26 @@ def zeropadding(f: np.ndarray, x: np.ndarray, y: np.ndarray,
     ny1 = max(int((ylim[1] - y[-1]) / dy), 0)
     nynew = ny0 + ny + ny1
     ynew = np.linspace(y[0] - ny0*dy, y[-1] + ny1*dy, nynew)
-    fnew = np.zeros((nynew, nxnew))
+    fnew = np.zeros((nynew, nxnew), dtype=f.dtype)
     fnew[ny0:ny0 + ny, nx0:nx0 + nx] = f
     return fnew, xnew, ynew
 
 
-def fftfits(fitsimage: str, center: str | None = None, lam: float = 1,
-            xlim: list | None = None, ylim: list | None = None,
-            savefig: dict | str | None = None,
-            show: bool = False,
+def fftfits(fitsimage: str | PathLike[str],
+            center: str | None = None, lam: float = 1,
+            xlim: list[float] | tuple[float, float] | np.ndarray | None = None,
+            ylim: list[float] | tuple[float, float] | np.ndarray | None = None,
+            savefig: dict | str | None = None, show: bool = False,
             ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """FFT a fits image with the phase referring to a specific point.
 
     Args:
-        fitsimage (str): Input fits name in the unit of Jy/pixel.
+        fitsimage (str or os.PathLike): Input fits name in the unit of Jy/pixel.
         center (str, optional): Text coordinate. Defaults to None.
         lam (float, optional): Return u * lam and v * lam. Defaults to
             1.
-        xlim (list, optional): Range of x for zero padding in arcsec.
-        ylim (list, optional): Range of y for zero padding in arcsec.
+        xlim (list or tuple or np.ndarray, optional): Range of x for zero padding in arcsec.
+        ylim (list or tuple or np.ndarray, optional): Range of y for zero padding in arcsec.
         savefig (dict or str, optional): Passed to ``close_figure``.
             Existing files may be overwritten, and the figure is closed
             after saving/showing. Defaults to None.
@@ -410,70 +419,87 @@ def fftfits(fitsimage: str, center: str | None = None, lam: float = 1,
 
 
 def findindex(u: np.ndarray | None = None, v: np.ndarray | None = None,
-              uobs: np.ndarray | None = None, vobs: np.ndarray | None = None
-              ) -> np.ndarray:
-    """Find indices of the observed visibility points.
+              uobs: float | np.floating | np.ndarray | None = None,
+              vobs: float | np.floating | np.ndarray | None = None
+              ) -> int | np.ndarray | None:
+    """Return nearest grid indices for scalar or array observations.
 
-    Args:
-        u (np.ndarray, optional): 1D array. The first frequency
-            coordinate. Defaults to None.
-        v (np.ndarray, optional): 1D array. The second frequency
-            coordinate. Defaults to None.
-        uobs (np.ndarray, optional): 1D array. Observed u. Defaults to
-            None.
-        vobs (np.ndarray, optional): 1D array. Observed v. Defaults to
-            None.
-
-    Returns:
-        np.ndarray: Indices or an array of indices.
+    Each supplied observation requires its corresponding 1D grid with at
+    least two points. One supplied axis returns its indices; two return an
+    array [index_u, index_v]. No observations returns None. Scalar indices
+    are Python integers; array indices retain their array form.
     """
-    if u is not None:
-        Nu, du = len(u), u[1] - u[0]
-    if v is not None:
-        Nv, dv = len(v), v[1] - v[0]
-    idx_u, idx_v = None, None
-    if uobs is not None:
-        idx_u = np.round(uobs / du + Nu // 2).astype(np.int64)
-    if vobs is not None:
-        idx_v = np.round(vobs / dv + Nv // 2).astype(np.int64)
+    def indices(grid: np.ndarray | None,
+                observed: float | np.floating | np.ndarray | None,
+                name: str) -> int | np.ndarray | None:
+        if observed is None:
+            return None
+        if grid is None or np.ndim(grid) != 1 or len(grid) < 2:
+            raise ValueError(f'{name} observations require a 1D {name} grid '
+                             + 'with at least two points.')
+        step = grid[1] - grid[0]
+        if not np.isfinite(step) or step == 0:
+            raise ValueError(f'{name} grid spacing must be finite and nonzero.')
+        idx = np.round(observed / step + len(grid) // 2).astype(np.int64)
+        if isinstance(observed, np.ndarray):
+            return np.asarray(idx)
+        return int(idx)
+
+    idx_u = indices(u, uobs, 'u')
+    idx_v = indices(v, vobs, 'v')
     if idx_u is not None and idx_v is not None:
         return np.array([idx_u, idx_v])
-    if idx_u is not None:
-        return idx_u
+    return idx_u if idx_u is not None else idx_v
 
 
-def fftfitssample(fitsimage: str, center: str | None = None,
-                  index_u: np.ndarray | None = None,
-                  index_v: np.ndarray | None = None,
-                  xlim: list | None = None, ylim: list | None = None,
+def fftfitssample(fitsimage: str | PathLike[str], center: str | None = None,
+                  index_u: int | np.integer | np.ndarray | None = None,
+                  index_v: int | np.integer | np.ndarray | None = None,
+                  xlim: list[float] | tuple[float, float] | np.ndarray | None = None,
+                  ylim: list[float] | tuple[float, float] | np.ndarray | None = None,
                   getindex: bool = False,
-                  u_sample: np.ndarray | None = None,
-                  v_sample: np.ndarray | None = None) -> np.ndarray:
+                  u_sample: float | np.floating | np.ndarray | None = None,
+                  v_sample: float | np.floating | np.ndarray | None = None
+                  ) -> np.ndarray | complex | np.clongdouble:
     """Find indices or the visibilities on them from an image FITS file.
 
     Args:
-        fitsimage (str): Input fits name in the unit of Jy/pixel.
+        fitsimage (str or os.PathLike): Input fits name in the unit of Jy/pixel.
         center (str, optional): Text coordinate. Defaults to None.
-        index_u (np.ndarray, optional): Indices. Output from the
+        index_u (int or np.integer or np.ndarray, optional): Indices. Output from the
             getindex mode. Defaults to None.
-        index_v (np.ndarray, optional): Indices. Output from the
+        index_v (int or np.integer or np.ndarray, optional): Indices. Output from the
             getindex mode. Defaults to None.
-        xlim (list, optional): Range of x for zero padding in arcsec.
-        ylim (list, optional): Range of y for zero padding in arcsec.
+        xlim (list or tuple or np.ndarray, optional): Range of x for zero padding in arcsec.
+        ylim (list or tuple or np.ndarray, optional): Range of y for zero padding in arcsec.
         getindex (bool, optional): True outputs [index_u, index_v].
             Defaults to False.
-        u_sample (np.ndarray, optional): 1D array. Observed u. Defaults
+        u_sample (float or np.floating or np.ndarray, optional): 1D array. Observed u. Defaults
             to None.
-        v_sample (np.ndarray, optional): 1D array. Observed u. Defaults
+        v_sample (float or np.floating or np.ndarray, optional): 1D array. Observed u. Defaults
             to None.
 
     Returns:
-        np.ndarray: Array of indices or sampled FFT.
+        np.ndarray or complex or np.clongdouble: Indices or sampled FFT.
+        Ordinary scalar samples are Python complex values; extended
+        precision and array results are preserved.
+
+    Raises:
+        ValueError: If either axis has neither indices nor sample coordinates.
     """
+    if index_u is None and u_sample is None:
+        raise ValueError('Provide index_u or u_sample for FFT sampling.')
+    if index_v is None and v_sample is None:
+        raise ValueError('Provide index_v or v_sample for FFT sampling.')
     F, u, v = fftfits(fitsimage=fitsimage, center=center, xlim=xlim, ylim=ylim)
-    if index_u is None or index_v is None:
-        index_u, index_v = findindex(u, v, u_sample, v_sample)
+    if index_u is None:
+        index_u = findindex(u=u, uobs=u_sample)
+    if index_v is None:
+        index_v = findindex(v=v, vobs=v_sample)
     if getindex:
         return np.array([index_u, index_v])
     else:
-        return F[index_v, index_u]
+        result = F[index_v, index_u]
+        if isinstance(result, np.complexfloating) and not isinstance(result, np.clongdouble):
+            return complex(result)
+        return result
