@@ -2,13 +2,14 @@ import numpy as np
 import warnings
 from dataclasses import dataclass, field
 from os import PathLike
+from functools import wraps
 import numbers
 from astropy.io.fits import Header
 from scipy.interpolate import RegularGridInterpolator as RGI
 from scipy.signal import convolve
 from pydantic import ConfigDict, WrapValidator
 from pydantic.dataclasses import dataclass as pydantic_dataclass
-from typing import Annotated, Any, Callable, Literal, TypeVar
+from typing import Annotated, Any, Callable, Literal, TypeVar, ParamSpec
 
 from plotastrodata import const_utils as cu
 from plotastrodata._type_utils import _normalize_float
@@ -23,7 +24,7 @@ from plotastrodata.other_utils import (isdeg, nearest_index,
 
 
 def quadrantmean(data: np.ndarray, x: np.ndarray, y: np.ndarray,
-                 quadrants: str = '13'
+                 quadrants: Literal['13', '24'] = '13'
                  ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Take mean between 1st and 3rd (or 2nd and 4th) quadrants.
 
@@ -42,6 +43,12 @@ def quadrantmean(data: np.ndarray, x: np.ndarray, y: np.ndarray,
     if quadrants not in ['13', '24']:
         raise ValueError("quadrants must be '13' or '24'.")
 
+    if len(x) < 2 or len(y) < 2:
+        raise ValueError('quadrantmean requires at least two pixels per axis.')
+    if x[1] < x[0]:
+        x, data = x[::-1], data[:, ::-1]
+    if y[1] < y[0]:
+        y, data = y[::-1], data[::-1, :]
     dx = x[1] - x[0]
     dy = y[1] - y[0]
     nx = int(np.ceil(np.max(np.abs(x)) / dx))
@@ -55,7 +62,8 @@ def quadrantmean(data: np.ndarray, x: np.ndarray, y: np.ndarray,
     return datanew[ny:, nx:], xnew[nx:], ynew[ny:]
 
 
-def filled2d(data: np.ndarray, x: np.ndarray, y: np.ndarray, n: int = 1,
+def filled2d(data: np.ndarray, x: np.ndarray, y: np.ndarray,
+             n: int | np.integer = 1,
              **kwargs: Any) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Fill 2D data, 1D x, and 1D y by a factor of n using RGI.
 
@@ -63,8 +71,8 @@ def filled2d(data: np.ndarray, x: np.ndarray, y: np.ndarray, n: int = 1,
         data (np.ndarray): 2D or 3D array.
         x (np.ndarray): 1D array.
         y (np.ndarray): 1D array.
-        n (int, optional): How many times more the new grid is. Defaults
-            to 1.
+        n (int or np.integer, optional): How many times more the new grid is.
+            Defaults to 1.
 
     Returns:
         tuple: The interpolated (data, x, y).
@@ -78,13 +86,21 @@ def filled2d(data: np.ndarray, x: np.ndarray, y: np.ndarray, n: int = 1,
     return d, xnew, ynew
 
 
-def _need_multipixels(method: Callable) -> Callable:
-    def wrapper(cls: Any, *args: Any, **kwargs: Any) -> Any:
+_MethodArgs = ParamSpec('_MethodArgs')
+_MethodResult = TypeVar('_MethodResult')
+
+
+def _need_multipixels(method: Callable[_MethodArgs, _MethodResult]
+                      ) -> Callable[_MethodArgs, _MethodResult]:
+    @wraps(method)
+    def wrapper(*args: _MethodArgs.args, **kwargs: _MethodArgs.kwargs
+                ) -> _MethodResult:
+        cls = args[0] if args else kwargs['self']
         singlepixel = cls.dx is None or cls.dy is None
         if singlepixel:
-            raise ValueError(
-                f'{method.__name__}() requires at least two x and y pixels.')
-        return method(cls, *args, **kwargs)
+            raise ValueError(f'{method.__name__}() requires at least'
+                             + ' two x and y pixels.')
+        return method(*args, **kwargs)
     return wrapper
 
 
@@ -215,13 +231,14 @@ class AstroData():
         self.beam_org = None
         self.fitsheader = None
 
-    def _binning_one(self, t: str, width: float) -> None:
+    def _binning_one(self, t: str, width: int | np.integer) -> None:
+        width = int(width)
         grid = getattr(self, t)
         if width == 1:
             return
         if grid is None:
-            raise ValueError(
-                f'Binning in the {t}-axis requires a {t} coordinate array.')
+            raise ValueError(f'Binning in the {t}-axis requires'
+                             + f' a {t} coordinate array.')
 
         dt = f'd{t}'
         sep = getattr(self, dt)
@@ -234,42 +251,59 @@ class AstroData():
         sizenew = self.size[i] // width
         self.size[i] = sizenew
         data = np.moveaxis(self.data, i, 0)
-        datanew = np.moveaxis(np.zeros(self.size), i, 0)
-        gridnew = np.zeros(sizenew)
+        dtype = (self.data.dtype
+                 if self.data.dtype.kind in "fc"
+                 else np.dtype(float))
+        datanew = np.moveaxis(np.zeros(self.size, dtype=dtype), i, 0)
+        grid_dtype = grid.dtype if grid.dtype.kind in "fc" else np.dtype(float)
+        gridnew = np.zeros(sizenew, dtype=grid_dtype)
         for start in range(width):
             stop = start + sizenew * width
             datanew += data[start:stop:width]
             gridnew += grid[start:stop:width]
         self.data = np.moveaxis(datanew, 0, i) / width
         setattr(self, t, gridnew / width)
-        setattr(self, dt, sep * width)
+        spacing = sep * int(width)
+        setattr(self, dt, int(spacing) if isinstance(spacing, np.integer)
+                else _normalize_float(spacing))
 
-    def binning(self, width: list[int] = [1, 1, 1]) -> None:
+    def binning(self, width: list[int | np.integer]
+                | tuple[int | np.integer, ...] | np.ndarray = [1, 1, 1]
+                ) -> None:
         """Binning up neighboring pixels in the v, y, and x domain.
 
         Args:
-            width (list, optional): Number of channels, y-pixels, and
-                x-pixels for binning. Defaults to [1, 1, 1].
+            width (list, tuple, or np.ndarray, optional): Number of channels, 
+                y-pixels, and x-pixels for binning. Defaults to [1, 1, 1].
         """
-        if len(width) > 3 or any(not isinstance(a, (int, np.integer))
-                                 or a < 1 for a in width):
-            raise ValueError(
-                'width must contain one to three positive integers.')
+        if not 1 <= len(width) <= 3 or any(not isinstance(a, (int, np.integer))
+                                           or a < 1 for a in width):
+            raise ValueError('width must contain one to three positive integers.')
         w = np.array([1] * (3 - len(width)) + list(width), dtype=int)
         if self.pv:
             w[1] = max(w[0], w[1])
             w[2] = 1
-        self.data = to4dim(self.data)
-        size = np.array(np.shape(self.data))
+        data4d = to4dim(self.data)
+        size = np.array(np.shape(data4d))
         if np.any(w > size[1:]):
             w = np.minimum(w, size[1:])
             ws = ', '.join([f'{s:d}' for s in w])
             print(f'width was changed to [{ws}].')
-        if (not self.pv and w[0] > 1) or (self.pv and w[1] > 1):
+        for axis, factor in zip(('v', 'y', 'x'), w):
+            if factor > 1 and getattr(self, axis) is None:
+                raise ValueError(f'Binning in the {axis}-axis requires'
+                                 + ' a coordinate array.')
+        velocity_binning = (not self.pv and w[0] > 1) or (self.pv and w[1] > 1)
+        if velocity_binning and isinstance(self.sigma, str):
+            raise ValueError('Estimate sigma before velocity binning,'
+                             + ' or set sigma=None.')
+        self.data = data4d
+        if velocity_binning:
             width_v = w[1] if self.pv else w[0]
-            print(f'sigma has been divided by sqrt({width_v:d})'
-                  + ' because of binning in the v-axis.')
-            self.sigma = self.sigma / np.sqrt(width_v)
+            if self.sigma is not None:
+                print(f'sigma has been divided by sqrt({width_v:d})'
+                      + ' because of binning in the v-axis.')
+                self.sigma = _normalize_float(self.sigma / np.sqrt(width_v))
         if (not self.pv and w[1] > 1) or w[2] > 1:
             print('Binning in the x- or y-axis does not update sigma.')
         self.size = size
@@ -309,7 +343,9 @@ class AstroData():
             self.y, self.x = ynew, xnew
         elif includev:
             nx, ny, nv = len(self.x), len(self.y), len(self.v)
-            a = np.empty((ny, nx, nv))
+            dtype = (self.data.dtype if self.data.dtype.kind in "fc"
+                     else np.dtype(float))
+            a = np.empty((ny, nx, nv), dtype=dtype)
             for i in range(ny):
                 for j in range(nx):
                     f = RGI((self.v,), self.data[:, i, j], method='linear',
@@ -328,6 +364,11 @@ class AstroData():
             raise ValueError('circularbeam() requires a complete beam.')
 
         bmaj, bmin, bpa = self.beam
+        if not np.all(np.isfinite([bmaj, bmin, bpa])) or not 0 < bmin <= bmaj:
+            raise ValueError('circularbeam requires finite beam values'
+                             + ' with major >= minor > 0.')
+        if bmaj == bmin:
+            return
         self.rotate(-bpa)
         nx = len(self.x) if len(self.x) % 2 == 1 else len(self.x) - 1
         ny = len(self.y) if len(self.y) % 2 == 1 else len(self.y) - 1
@@ -344,7 +385,8 @@ class AstroData():
         self.beam[1] = self.beam[0]
         self.beam[2] = 0
 
-    def deproject(self, pa: float = 0, incl: float = 0,
+    def deproject(self, pa: float | np.floating = 0,
+                  incl: float | np.floating = 0,
                   **kwargs: Any) -> None:
         """Exapnd by a factor of 1/cos(incl) in the direction of pa+90
         deg.
@@ -482,16 +524,22 @@ class AstroData():
         method can take the arguments of numpy.histogram.
 
         Returns:
-            tuple: (bins, histogram)
+            tuple: (bin centers, histogram)
         """
-        hist, hbin = np.histogram(self.data[~np.isnan(self.data)],
-                                  **kwargs)
+        valid = ~np.isnan(self.data)
+        if kwargs.get('weights') is not None:
+            weights = np.asarray(kwargs['weights'])
+            if weights.shape != self.data.shape:
+                raise ValueError('weights must have the same shape as data.')
+            kwargs['weights'] = weights[valid]
+        hist, hbin = np.histogram(self.data[valid], **kwargs)
         hbin = (hbin[:-1] + hbin[1:]) / 2
         return hbin, hist
 
     def mask(self, dataformask: np.ndarray | None = None,
-             includepix: list[float, float] = [],
-             excludepix: list[float, float] = []) -> None:
+             includepix: list[float] | tuple[float, float] | np.ndarray = [],
+             excludepix: list[float] | tuple[float, float] | np.ndarray = []
+             ) -> None:
         """Mask self.data using a 2D or 3D array of dataformask.
 
         Args:
@@ -524,12 +572,16 @@ class AstroData():
                 f'broadcasting; got {np.shape(dataformask)} and '
                 f'{np.shape(self.data)}.')
 
+        if ((len(includepix) == 2 or len(excludepix) == 2)
+            and self.data.dtype.kind in 'biu'):
+            self.data = self.data.astype(float)
         if len(includepix) == 2:
             self.data[(mask < includepix[0]) + (includepix[1] < mask)] = np.nan
         if len(excludepix) == 2:
             self.data[(excludepix[0] < mask) * (mask < excludepix[1])] = np.nan
 
-    def _gfit_profile(self, prof: list, gaussfit: bool) -> dict[str, Any]:
+    def _gfit_profile(self, prof: np.ndarray, gaussfit: bool
+                      ) -> dict[str, list[np.ndarray]]:
         if not gaussfit:
             return {}
 
@@ -544,28 +596,37 @@ class AstroData():
         gfitres['error'] = [a['perr'][:3] for a in res]
         return gfitres
 
-    def profile(self, coords: list[str] = [],
-                xlist: list[float] = [], ylist: list[float] = [],
-                ellipse: list[float, float, float] | None = None,
-                ninterp: int = 1,
+    def profile(self, coords: list[str] | tuple[str, ...] | np.ndarray = [],
+                xlist: list[_RealScalar] | tuple[_RealScalar, ...] | np.ndarray = [],
+                ylist: list[_RealScalar] | tuple[_RealScalar, ...] | np.ndarray = [],
+                ellipse: list[_RealScalar] | tuple[_RealScalar, _RealScalar, _RealScalar]
+                | list[list[_RealScalar] | tuple[_RealScalar, _RealScalar, _RealScalar]]
+                | np.ndarray | None = None,
+                ninterp: int | np.integer = 1,
                 flux: bool = False, gaussfit: bool = False
-                ) -> tuple[np.ndarray, np.ndarray, dict]:
+                ) -> tuple[np.ndarray, np.ndarray, dict[str, list[np.ndarray]]]:
         """Get a list of line profiles at given spatial coordinates.
 
         Args:
-            coords (list, optional): Text coordinates. Defaults to [].
-            xlist (list, optional): Offset from center. Defaults to [].
-            ylist (list, optional): Offset from center. Defaults to [].
-            ellipse (list, optional): [major, minor, pa]. For average.
-                Defaults to None.
-            ninterp (int, optional): Number of points for interpolation.
+            coords (list, tuple, or np.ndarray, optional): Text coordinates. 
+                Defaults to [].
+            xlist (list, tuple, or np.ndarray, optional): Offset from center. 
+                Defaults to [].
+            ylist (list, tuple, or np.ndarray, optional): Offset from center. 
+                Defaults to [].
+            ellipse (list, tuple, or np.ndarray, optional): One
+                [major, minor, pa] triple shared by all positions, or one
+                triple per position. None selects nearest pixels.
+            ninterp (int or np.integer, optional): Number of points for interpolation.
                 Defaults to 1.
             flux (bool, optional): Jy/beam to Jy. Defaults to False.
             gaussfit (bool, optional): Fit the profiles. Defaults to
                 False.
 
         Returns:
-            tuple: (v, list of profiles, result of Gaussian fit)
+            tuple: (v, profiles, fit results). Profiles have shape
+            (number of positions, number of channels). Fit results are {}
+            when disabled, or best/error lists of parameter arrays.
         """
         if np.ndim(self.data) != 3 or self.v is None:
             raise ValueError('profile() requires 3D data with v, y, and x axes.')
@@ -579,10 +640,24 @@ class AstroData():
         if len(coords) > 0:
             xlist, ylist = coord2xy(coords, self.center) * 3600.
         nprof = len(xlist)
-        prof = np.empty((nprof, len(self.v)))
-        ellipse = ellipse or [[0, 0, 0]] * nprof
+        dtype = data.dtype if data.dtype.kind in 'fc' else np.dtype(float)
+        prof = np.empty((nprof, len(self.v)), dtype=dtype)
+        if ellipse is None:
+            ellipses = np.zeros((nprof, 3))
+        else:
+            ellipses = np.asarray(ellipse)
+            if ellipses.shape == (3,):
+                ellipses = np.broadcast_to(ellipses, (nprof, 3))
+            elif ellipses.shape != (nprof, 3):
+                raise ValueError('ellipse must be one [major, minor, pa] triple '
+                                 'or exactly one triple per position.')
+            if (ellipses.dtype.kind not in 'iuf'
+                    or not np.all(np.isfinite(ellipses))
+                    or np.any(ellipses[:, :2] < 0)):
+                raise ValueError('ellipse values must be finite real numbers '
+                                 + 'with nonnegative major and minor sizes.')
         calc = np.sum if flux else np.mean
-        for i, (xc, yc, e) in enumerate(zip(xlist, ylist, ellipse)):
+        for i, (xc, yc, e) in enumerate(zip(xlist, ylist, ellipses)):
             major, minor, pa = e
             z = dot2d(Mrot(-pa), [y - yc, x - xc])
             if major == 0 or minor == 0:
@@ -602,7 +677,7 @@ class AstroData():
         gfitres = self._gfit_profile(prof, gaussfit)
         return self.v, prof, gfitres
 
-    def rotate(self, pa: float = 0, **kwargs: Any) -> None:
+    def rotate(self, pa: float | np.floating = 0, **kwargs: Any) -> None:
         """Counter clockwise rotation with respect to the center.
 
         Args:
@@ -612,10 +687,14 @@ class AstroData():
         yxnew = dot2d(Mrot(-pa), np.meshgrid(self.y, self.x, indexing='ij'))
         self.data = RGIxy(self.y, self.x, self.data, yxnew, **kwargs)
         if self.beam[2] is not None:
-            self.beam[2] = self.beam[2] + pa
+            if isinstance(self.beam, tuple):
+                self.beam = list(self.beam)
+            self.beam[2] = _normalize_float(self.beam[2] + pa)
 
-    def slice(self, length: float = 0, pa: float = 0,
-              dx: float | None = None, **kwargs: Any) -> np.ndarray:
+    def slice(self, length: float | np.floating = 0,
+              pa: float | np.floating = 0,
+              dx: float | np.floating | None = None, **kwargs: Any
+              ) -> tuple[np.ndarray, np.ndarray]:
         """Get 1D slice with given a length and a position-angle.
 
         Args:
@@ -625,9 +704,12 @@ class AstroData():
             dx (float, optional): Grid increment. Defaults to None.
 
         Returns:
-            np.ndarray: [x, data]. If self.data is 3D, the output data
-            are in the shape of (len(v), len(x)).
+            tuple: (positions, data). Data have shape (npositions,) for
+            images or (nchannels, npositions) for cubes, including when
+            length=0 gives one position.
         """
+        if self.data.ndim not in (2, 3):
+            raise ValueError('slice() requires a 2D image or 3D cube.')
         if dx is None and self.dx is not None:
             dx = np.abs(self.dx)
         if dx is None:
@@ -642,7 +724,8 @@ class AstroData():
         pa_rad = np.radians(pa)
         yg, xg = r * np.cos(pa_rad), r * np.sin(pa_rad)
         z = RGIxy(self.y, self.x, self.data, (yg, xg), **kwargs)
-        return np.array([r, z])
+        z = np.asarray(z).reshape(self.data.shape[:-2] + (len(r),))
+        return r, z
 
     def todict(self) -> dict:
         """Output the attributes as a dictionary that can be input to
