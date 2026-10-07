@@ -1,12 +1,17 @@
 import numpy as np
 import warnings
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from os import PathLike
+import numbers
+from astropy.io.fits import Header
 from scipy.interpolate import RegularGridInterpolator as RGI
 from scipy.signal import convolve
+from pydantic import ConfigDict, WrapValidator
 from pydantic.dataclasses import dataclass as pydantic_dataclass
-from typing import Any, Callable, Literal
+from typing import Annotated, Any, Callable, Literal, TypeVar
 
 from plotastrodata import const_utils as cu
+from plotastrodata._type_utils import _normalize_float
 from plotastrodata.coord_utils import coord2xy, rel2abs, xy2coord
 from plotastrodata.fits_utils import data2fits, FitsData, Jy2K
 from plotastrodata.fitting_utils import (EmceeCorner, gaussfit1d,
@@ -84,10 +89,21 @@ def _need_multipixels(method: Callable) -> Callable:
 
 
 def _is_data_list(value: Any) -> bool:
-    c1 = isinstance(value, list)
-    c2 = any(a is not None for a in value)
-    c3 = all(a is None or isinstance(a, np.ndarray) for a in value)
-    return c1 and c2 and c3
+    if not isinstance(value, list):
+        return False
+    c0 = any(a is not None for a in value)
+    c1 = all(a is None or isinstance(a, np.ndarray) for a in value)
+    return c0 and c1
+
+
+# Field aliases also describe the per-dataset forms used internally by plotting.
+_T = TypeVar('_T')
+_PerDataset = _T | list[_T]
+_RealScalar = float | np.floating | np.integer
+_FitsPath = str | PathLike[str]
+_NoiseSpec = str | float | numbers.Number | None
+_Beam = (np.ndarray | list[_RealScalar | None]
+         | tuple[_RealScalar | None, _RealScalar | None, _RealScalar | None])
 
 
 @dataclass
@@ -95,16 +111,16 @@ class AstroData():
     """Data to be processed and parameters for processing the data.
 
     Args:
-        data (np.ndarray, array-like, or list of np.ndarray, optional):
-            A single 2D or 3D dataset, or a list of arrays for multiple
-            datasets. Nested numeric lists are treated as one array-like
-            dataset. Defaults to None.
+        data (np.ndarray or array-like, optional): A single dataset.
+            Nested numeric lists or tuples are converted to an array.
+            Defaults to None.
         x (np.ndarray, optional): 1D array. Defaults to None.
         y (np.ndarray, optional): 1D array. Defaults to None.
         v (np.ndarray, optional): 1D array. Defaults to None.
-        beam (np.ndarray, optional): [bmaj, bmin, bpa]. Defaults to
-            [None, None, None].
-        fitsimage (str, optional): Input fits name. Defaults to None.
+        beam (np.ndarray, list, or tuple, optional): [bmaj, bmin, bpa].
+            Defaults to [None, None, None].
+        fitsimage (str or os.PathLike, optional): Input fits name.
+            Defaults to None.
         Tb (bool, optional): True means the data array is brightness
             temperature. Defaults to False.
         sigma (float or str, optional): Noise level or method for
@@ -121,21 +137,42 @@ class AstroData():
             position-velocity diagram. Defaults to False.
         bunit (str, optional): The unit of the data array. Defaults to
             ''.
+
+    Note:
+        External use normally supplies one dataset. PlotAstroData also uses
+        lists of arrays (with optional None placeholders) or FITS paths and
+        per-dataset metadata lists internally. Initialization determines n;
+        AstroFrame.read performs metadata expansion and loading later.
     """
-    data: np.ndarray | list[Any] | None = None
+    data: np.ndarray | list[Any] | tuple[Any, ...] | None = None
     x: np.ndarray | None = None
     y: np.ndarray | None = None
     v: np.ndarray | None = None
-    beam: np.ndarray | tuple[None] = (None, None, None)
-    fitsimage: str | None = None
-    Tb: bool = False
-    sigma: str | float | None = 'hist'
-    center: str = 'common'
-    restfreq: float | None = None
-    cfactor: float = 1
-    pvpa: float | None = None
-    pv: bool = False
-    bunit: str = ''
+    beam: _PerDataset[_Beam] = (None, None, None)
+    fitsimage: _PerDataset[_FitsPath | None] = None
+    Tb: _PerDataset[bool] = False
+    sigma: _PerDataset[_NoiseSpec] = 'hist'
+    center: _PerDataset[str | None] = 'common'
+    restfreq: _PerDataset[_RealScalar | None] = None
+    cfactor: _PerDataset[_RealScalar] = 1
+    pvpa: _PerDataset[_RealScalar | None] = None
+    pv: _PerDataset[bool] = False
+    bunit: _PerDataset[str | None] = ''
+    dx: int | float | np.longdouble | None = field(
+        init=False, default=None, repr=False, compare=False)
+    dy: int | float | np.longdouble | None = field(
+        init=False, default=None, repr=False, compare=False)
+    dv: int | float | np.longdouble | None = field(
+        init=False, default=None, repr=False, compare=False)
+    n: int = field(init=False, repr=False, compare=False)
+    fitsimage_org: _PerDataset[_FitsPath | None] = field(
+        init=False, default=None, repr=False, compare=False)
+    sigma_org: _PerDataset[_NoiseSpec] = field(
+        init=False, default=None, repr=False, compare=False)
+    beam_org: _PerDataset[_Beam | None] = field(
+        init=False, default=None, repr=False, compare=False)
+    fitsheader: _PerDataset[Header | dict[str, Any] | None] = field(
+        init=False, default=None, repr=False, compare=False)
 
     def __post_init__(self) -> None:
         fits_values = (self.fitsimage if isinstance(self.fitsimage, list)
@@ -166,6 +203,12 @@ class AstroData():
             else:
                 self.data = np.asarray(self.data)
                 n = 1
+            datasets = self.data if _is_data_list(self.data) else [self.data]
+            for i, data in enumerate(datasets):
+                if data is not None and np.ndim(data) == 0:
+                    raise ValueError(f'Dataset {i} must be an array '
+                                     + 'with spatial axes, not a scalar'
+                                     + ' or zero-dimensional array.')
         self.n = n
         self.fitsimage_org = None
         self.sigma_org = None
@@ -690,8 +733,15 @@ def _scalar_if_single(value: Any, n: int) -> Any:
     return value[0] if n == 1 else value
 
 
-def _get_gridsep(axis: np.ndarray | None) -> float | None:
-    return axis[1] - axis[0] if axis is not None and len(axis) > 1 else None
+def _get_gridsep(axis: np.ndarray | None
+                 ) -> int | float | np.longdouble | None:
+    """Return grid spacing as a Python scalar, preserving extended precision."""
+    if axis is None or len(axis) <= 1:
+        return None
+    spacing = axis[1] - axis[0]
+    return (int(spacing)
+            if isinstance(spacing, np.integer)
+            else _normalize_float(spacing))
 
 
 ASTRODATA_ARGS = ['fitsimage', 'data', 'Tb', 'sigma', 'center', 'restfreq',
@@ -699,21 +749,38 @@ ASTRODATA_ARGS = ['fitsimage', 'data', 'Tb', 'sigma', 'center', 'restfreq',
                   'beam_org', 'fitsheader', 'pv', 'pvpa']
 
 
-@pydantic_dataclass
+def _validate_frame_scalar(value: Any, handler: Callable
+                           ) -> float | np.longdouble:
+    """Preserve long doubles before Pydantic can coerce them to float."""
+    if isinstance(value, np.longdouble):
+        return value
+    return handler(value)
+
+
+_FrameScalar = Annotated[float | np.longdouble,
+                         WrapValidator(_validate_frame_scalar)]
+_PositionPair = tuple[_RealScalar, _RealScalar] | list[_RealScalar] | np.ndarray
+_Position = str | _PositionPair
+_Grid = list[np.ndarray | None]
+
+
+@pydantic_dataclass(config=ConfigDict(arbitrary_types_allowed=True))
 class AstroFrame():
     """Parameter set to limit and reshape the data in the AstroData
-    format.
+    format. Ordinary numeric inputs become Python floats; extended-precision
+    NumPy floating scalars retain their precision.
 
     Args:
         vmin (float, optional): Velocity at the upper left. Defaults to
-            -1e10.
+            -1e20.
         vmax (float, optional): Velocity at the lower bottom. Defaults
-            to 1e10.
+            to 1e20.
         vsys (float, optional): Each channel shows v-vsys. Defaults to
             0..
         center (str, optional): Central coordinate like '12h34m56.7s
             12d34m56.7s'. Defaults to None.
-        fitsimage (str, optional): Fits to get center. Defaults to None.
+        fitsimage (str or os.PathLike, optional): Fits to get center.
+            Defaults to None.
         rmax (float, optional): The x range is [-rmax, rmax]. The y
             range is [-rmax, rmax]. Defaults to 1e10.
         xmax (float, optional): The x range is [xmin, xmax]. Defaults to
@@ -740,24 +807,34 @@ class AstroFrame():
         quadrants (str, optional): '13' or '24'. Quadrants to take mean.
             None means not taking mean. Defaults to None.
     """
-    rmax: float = 1e10
-    xmax: float | None = None
-    xmin: float | None = None
-    ymax: float | None = None
-    ymin: float | None = None
-    dist: float = 1
+    rmax: _FrameScalar = 1e10
+    xmax: _FrameScalar | None = None
+    xmin: _FrameScalar | None = None
+    ymax: _FrameScalar | None = None
+    ymin: _FrameScalar | None = None
+    dist: _FrameScalar = 1.0
     center: str | None = None
-    fitsimage: str | None = None
-    xoff: float = 0
-    yoff: float = 0
-    vsys: float = 0
-    vmin: float = -1e20
-    vmax: float = 1e20
+    fitsimage: str | PathLike[str] | None = None
+    xoff: _FrameScalar = 0.0
+    yoff: _FrameScalar = 0.0
+    vsys: _FrameScalar = 0.0
+    vmin: _FrameScalar = -1e20
+    vmax: _FrameScalar = 1e20
     xflip: bool = True
     yflip: bool = False
     swapxy: bool = False
     pv: bool = False
     quadrants: Literal['13', '24'] | None = None
+
+    xskip: int = field(init=False, default=1, repr=False, compare=False)
+    yskip: int = field(init=False, default=1, repr=False, compare=False)
+    xdir: int = field(init=False, repr=False, compare=False)
+    ydir: int = field(init=False, repr=False, compare=False)
+    xlim: list[_FrameScalar] = field(init=False, repr=False, compare=False)
+    ylim: list[_FrameScalar] = field(init=False, repr=False, compare=False)
+    vlim: list[_FrameScalar] = field(init=False, repr=False, compare=False)
+    Xlim: list[_FrameScalar] = field(init=False, repr=False, compare=False)
+    Ylim: list[_FrameScalar] = field(init=False, repr=False, compare=False)
 
     def __post_init__(self) -> None:
         self.xdir = -1 if self.xflip else 1
@@ -786,26 +863,55 @@ class AstroFrame():
         if self.fitsimage is not None and self.center is None:
             self.center = FitsData(self.fitsimage).get_center()
 
-    def pos2xy(self, poslist: list[str | list[float, float]]
-               ) -> np.ndarray:
-        """Text or relative to absolute coordinates.
+    def pos2xy(self, poslist: _Position | list[_Position]
+               | tuple[_Position, ...]) -> np.ndarray:
+        """Convert sky coordinates or relative numeric pairs to coordinates.
 
-         Args:
-            poslist (list): Text coordinates or relative coordinates.
+        Args:
+            poslist: One sky-coordinate string or numeric pair, or a list,
+                tuple, or array of positions. Mixed strings and pairs are
+                supported. Sky-coordinate strings require a center.
 
-         Returns:
-            np.ndarray: absolute coordinates.
-         """
-        onexy = np.shape(poslist) == (2,) and not isinstance(poslist[0], str)
-        if np.shape(poslist) == () or onexy:
+        Returns:
+            np.ndarray: Coordinates with shape (2, N), including (2, 1)
+            for one position and (2, 0) for an empty collection.
+
+        Raises:
+            ValueError: If a numeric position is not a pair of real scalars,
+                or sky coordinates are supplied without a center.
+        """
+        def is_pair(value: Any) -> bool:
+            return (isinstance(value, (list, tuple, np.ndarray))
+                    and not (isinstance(value, np.ndarray) and value.ndim == 0)
+                    and len(value) == 2
+                    and all(isinstance(v, (numbers.Real,
+                                           np.integer,
+                                           np.floating))
+                            for v in value))
+
+        if isinstance(poslist, str):
             poslist = [poslist]
+        elif isinstance(poslist, np.ndarray) and poslist.ndim == 0:
+            raise ValueError('Each position must be a string or a numeric pair.')
+        elif isinstance(poslist, (list, tuple, np.ndarray)):
+            # Test elements without converting a mixed collection to an array.
+            if (len(poslist) == 2
+                    and all(isinstance(v, (numbers.Real,
+                                           np.integer,
+                                           np.floating)) for v in poslist)):
+                poslist = [poslist]
+        else:
+            raise ValueError('Each position must be a string or a numeric pair.')
+        for position in poslist:
+            if not isinstance(position, str) and not is_pair(position):
+                raise ValueError('Each numeric position must contain'
+                                 + ' two real scalars.')
         if self.center is None and any(isinstance(p, str) for p in poslist):
             clsname = type(self).__name__
-            raise ValueError(
-                f'{clsname}.pos2xy() requires "center" when poslist '
-                'contains sky-coordinate strings. Set "center" explicitly '
-                'or "fitsimage" from which the center can be determined.'
-            )
+            raise ValueError(f'{clsname}.pos2xy() requires "center"'
+                             + ' when poslist contains sky-coordinate strings.'
+                             + ' Set "center" explicitly or "fitsimage"'
+                             + ' from which the center can be determined.')
         x, y = [None] * len(poslist), [None] * len(poslist)
         for i, p in enumerate(poslist):
             if isinstance(p, str):
@@ -814,17 +920,18 @@ class AstroFrame():
                 x[i], y[i] = rel2abs(*p, self.Xlim, self.Ylim)
         return np.array([x, y])
 
-    def _get_restfreq(self, header: dict) -> float | None:
+    def _get_restfreq(self, header: Header | dict[str, Any]
+                      ) -> float | np.longdouble | None:
         """Extract rest frequency from FITS header."""
         if 'RESTFRQ' in header:
-            return header['RESTFRQ']
+            return _normalize_float(header['RESTFRQ'])
         if 'RESTFREQ' in header:
-            return header['RESTFREQ']
+            return _normalize_float(header['RESTFREQ'])
         if 'NAXIS3' in header and header['NAXIS3'] == 1 and not self.pv:
-            return header['CRVAL3']
+            return _normalize_float(header['CRVAL3'])
         return None
 
-    def _read_fitsimage(self, d: AstroData, i: int, grid: list) -> list:
+    def _read_fitsimage(self, d: AstroData, i: int, grid: _Grid) -> _Grid:
         """Read FITS-derived values into d and return the FITS grid."""
         if d.fitsimage[i] is None:
             return grid
@@ -844,9 +951,9 @@ class AstroFrame():
             d.center[i] = fd.get_center()
         d.beam[i] = fd.get_beam(dist=self.dist)
         d.bunit[i] = fd.get_header('BUNIT')
-        return grid
+        return list(grid)
 
-    def _shift_center(self, d: AstroData, i: int, grid: list) -> list:
+    def _shift_center(self, d: AstroData, i: int, grid: _Grid) -> _Grid:
         corg = d.center[i]
         cnew = self.center
         if self.pv or cnew is None or corg is None or corg == cnew:
@@ -866,14 +973,14 @@ class AstroFrame():
         d.v = v
 
     def _xyskip(self, d: AstroData, i: int,
-                 x: np.ndarray | None, y: np.ndarray | None) -> None:
+                x: np.ndarray, y: np.ndarray) -> None:
         d.x = x[::self.xskip]
         d.y = y[::self.yskip]
         data = np.moveaxis(d.data[i], [-2, -1], [0, 1])
         data = data[::self.yskip, ::self.xskip]
         d.data[i] = np.moveaxis(data, [0, 1], [-2, -1])
 
-    def _validate_data_grid(self, data: np.ndarray, grid: list,
+    def _validate_data_grid(self, data: np.ndarray, grid: _Grid,
                             dataset: int) -> None:
         """Validate array axes before trimming or spatial subsampling.
         """
@@ -902,7 +1009,7 @@ class AstroFrame():
                     f'Dataset {dataset} {name} has length {len(axis)}, but '
                     f'the corresponding data axis has length {expected}.')
 
-    def _trim_skip(self, d: AstroData, i: int, grid: list) -> None:
+    def _trim_skip(self, d: AstroData, i: int, grid: _Grid) -> None:
         d.data[i], grid = trim(data=d.data[i],
                                x=grid[0], y=grid[1], v=grid[2],
                                xlim=self.xlim, ylim=self.ylim,
@@ -911,7 +1018,7 @@ class AstroFrame():
         grid = [grid[0], d.v] if self.pv else [grid[0], grid[1]]
         if self.swapxy:
             grid.reverse()
-            d.data[i] = np.moveaxis(d.data[i], 1, 0)
+            d.data[i] = np.swapaxes(d.data[i], -2, -1)
         self._xyskip(d, i, x=grid[0], y=grid[1])
         if self.pv:
             d.v = d.y
@@ -924,17 +1031,21 @@ class AstroFrame():
         if not d.Tb[i]:
             return
 
-        dx = d.dy if self.swapxy else d.dx
-        header = {'CDELT1': dx / 3600,
-                  'CUNIT1': 'deg',
-                  'RESTFREQ': d.restfreq[i]}
-        if None not in d.beam[i]:
+        header = {'RESTFREQ': d.restfreq[i]}
+        if d.beam[i][0] is not None and d.beam[i][1] is not None:
             header['BMAJ'] = d.beam[i][0] / 3600 / self.dist
             header['BMIN'] = d.beam[i][1] / 3600 / self.dist
+        else:
+            dx = d.dy if self.swapxy else d.dx
+            if dx is None:
+                raise ValueError('Brightness-temperature conversion requires'
+                                 + ' beam sizes or at least two spatial pixels'
+                                 + ' to determine pixel size.')
+            header.update(CDELT1=dx / 3600, CUNIT1='deg')
         factor = Jy2K(header=header)
         d.data[i] = d.data[i] * factor
         if d.sigma[i] is not None:
-            d.sigma[i] = d.sigma[i] * factor
+            d.sigma[i] = _normalize_float(d.sigma[i] * factor)
 
     def _set_pv_beam(self, d: AstroData, i: int) -> None:
         """Set effective PV beam."""
@@ -943,13 +1054,13 @@ class AstroFrame():
 
         bmaj, bmin, bpa = d.beam_org[i] = d.beam[i]
         if d.pvpa[i] is None:
-            d.pvpa[i] = bpa
+            d.pvpa[i] = _normalize_float(bpa)
             print('pvpa is not specified. pvpa=bpa is assumed.')
         angle = np.radians(bpa - d.pvpa[i])
         beam_incut = 1 / np.hypot(np.cos(angle) / bmaj, np.sin(angle) / bmin)
         d.beam[i] = np.array([np.abs(d.dv), beam_incut, 0])
 
-    def _read_one(self, d: AstroData, i: int, grid: list) -> None:
+    def _read_one(self, d: AstroData, i: int, grid: _Grid) -> None:
         if d.center[i] == 'common':
             d.center[i] = self.center
         d.sigma_org[i] = d.sigma[i]
@@ -964,7 +1075,7 @@ class AstroFrame():
                     = quadrantmean(d.data[i], d.x, d.y, self.quadrants)
             d.data[i] = d.data[i] * d.cfactor[i]
             if d.sigma[i] is not None:
-                d.sigma[i] = d.sigma[i] * d.cfactor[i]
+                d.sigma[i] = _normalize_float(d.sigma[i] * d.cfactor[i])
             self._convert_to_Tb(d, i)
             self._set_pv_beam(d, i)
             d.pv[i] = self.pv
@@ -973,7 +1084,8 @@ class AstroFrame():
         d.fitsimage_org[i] = d.fitsimage[i]
         d.fitsimage[i] = None
 
-    def read(self, d: AstroData, xskip: int = 1, yskip: int = 1) -> None:
+    def read(self, d: AstroData, xskip: int | np.integer = 1,
+             yskip: int | np.integer = 1) -> None:
         """Get data, grid, sigma, beam, and bunit from AstroData, which
         is a part of the input of add_color, add_contour, add_segment,
         and add_rgb.
@@ -982,17 +1094,19 @@ class AstroFrame():
         fields are normalized to per-dataset lists, FITS-derived values
         are filled, trimming and coordinate-frame changes are applied,
         and bookkeeping fields such as ``fitsimage``, ``fitsimage_org``,
-        ``Tb``, ``cfactor``, and ``sigma`` are updated.
+        ``Tb``, ``cfactor``, and ``sigma`` are updated. Multiple datasets
+        must have matching processed coordinate grids (rtol=1e-7, atol=0).
+        A mismatch raises ValueError; this operation mutates d in place.
 
         Args:
             d (AstroData): Dataclass for the add_* input.
-            xskip, yskip (int): Spatial pixel skip. Defaults to 1.
+            xskip, yskip (int or np.integer): Spatial pixel skip. Defaults to 1.
         """
         if (not isinstance(xskip, (int, np.integer)) or xskip < 1
                 or not isinstance(yskip, (int, np.integer)) or yskip < 1):
             raise ValueError('xskip and yskip must be positive integers.')
-        self.xskip = xskip
-        self.yskip = yskip
+        self.xskip = int(xskip)
+        self.yskip = int(yskip)
         for name in ASTRODATA_ARGS:
             setattr(d, name, _as_list(getattr(d, name), d.n))
         d.beam = _as_list(d.beam, d.n, isbeam=True)
@@ -1003,7 +1117,27 @@ class AstroFrame():
                     f'{name} must contain one value or {d.n} values; '
                     f'got {len(value)}.')
         grid = [d.x, d.y, d.v]
+        shared_grid = None
         for i in range(d.n):
-            self._read_one(d, i, grid.copy())  # .copy() not to updated d.x again ang again.
+            self._read_one(d, i, grid.copy())
+            if d.data[i] is None:
+                continue
+            current = [d.x, d.y, d.v]
+            if shared_grid is None:
+                shared_grid = [None if a is None else a.copy() for a in current]
+            else:
+                for name, expected, actual in zip(('x', 'y', 'v'),
+                                                  shared_grid,
+                                                  current):
+                    same = expected is None and actual is None
+                    if expected is not None and actual is not None:
+                        same = (expected.shape == actual.shape
+                                and np.allclose(expected, actual,
+                                                rtol=1e-7, atol=0))
+                    if not same:
+                        raise ValueError(f'Dataset {i} has a different'
+                                         + f' processed {name} grid; datasets'
+                                         + ' in one AstroData must share'
+                                         + ' coordinate grids.')
         for name in ASTRODATA_ARGS + ['beam']:
             setattr(d, name, _scalar_if_single(getattr(d, name), d.n))
