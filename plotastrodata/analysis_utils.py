@@ -9,7 +9,8 @@ from scipy.interpolate import RegularGridInterpolator as RGI
 from scipy.signal import convolve
 from pydantic import ConfigDict, WrapValidator
 from pydantic.dataclasses import dataclass as pydantic_dataclass
-from typing import Annotated, Any, Callable, Literal, TypeVar, ParamSpec
+from typing import (Annotated, Any, Callable, Literal,
+                    TypeVar, ParamSpec, TypedDict)
 
 from plotastrodata import const_utils as cu
 from plotastrodata._type_utils import _normalize_float
@@ -120,6 +121,23 @@ _FitsPath = str | PathLike[str]
 _NoiseSpec = str | float | numbers.Number | None
 _Beam = (np.ndarray | list[_RealScalar | None]
          | tuple[_RealScalar | None, _RealScalar | None, _RealScalar | None])
+
+
+class _Fit2DResult(TypedDict):
+    popt: np.ndarray
+    plow: np.ndarray
+    pmid: np.ndarray
+    phigh: np.ndarray
+    model: np.ndarray
+    residual: np.ndarray
+
+
+class _GaussFit2DResult(TypedDict):
+    popt: np.ndarray
+    perr: np.ndarray
+    model: np.ndarray
+    residual: np.ndarray
+    center: str | None
 
 
 @dataclass
@@ -418,12 +436,48 @@ class AstroData():
             bmin_new = 1 / np.sqrt(alpha + Det)
             self.beam = np.array([bmaj_new, bmin_new, bpa_new])
 
+    def _fit_image(self, chan: int | np.integer | None) -> np.ndarray:
+        if self.data.ndim == 2:
+            if chan is not None:
+                raise ValueError('chan must be None when fitting a 2D image.')
+            return self.data
+        if self.data.ndim != 3:
+            raise ValueError('2D fitting requires an image or a cube.')
+        if (not isinstance(chan, (int, np.integer))
+            or isinstance(chan, (bool, np.bool_))):
+            raise ValueError('A cube requires an integer chan for 2D fitting.')
+        if not -len(self.data) <= chan < len(self.data):
+            raise ValueError('chan is outside the cube channel range.')
+        return self.data[int(chan)]
+
+    def _fit_pixelperbeam(self) -> float | np.longdouble:
+        if self.beam[0] is None or self.beam[1] is None:
+            return 1.0
+        sizes = np.asarray(self.beam[:2])
+        if not np.all(np.isfinite(sizes)) or np.any(sizes <= 0):
+            raise ValueError('Fitting requires finite, positive beam sizes.')
+        area = np.abs(self.dx * self.dy)
+        if not np.isfinite(area) or area <= 0:
+            raise ValueError('Fitting requires finite, nonzero pixel sizes.')
+        factor = _normalize_float(np.pi * sizes[0] * sizes[1]
+                                  / (4 * np.log(2) * area))
+        s = 'In the fitting, sigma is multiplied by sqrt(pixel-per-beam)' \
+            + ' to account for beam noise correlation.'
+        warnings.warn(s, UserWarning)
+        return factor
+
     @_need_multipixels
-    def fit2d(self, model: Callable, bounds: np.ndarray,
+    def fit2d(self,
+              model: Callable[[np.ndarray, np.ndarray, np.ndarray], np.ndarray],
+              bounds: np.ndarray | list[list[float]],
               progressbar: bool = False,
-              kwargs_fit: dict = {}, kwargs_plotcorner: dict = {},
-              chan: int | None = None) -> dict[str, Any] | None:
+              kwargs_fit: dict[str, Any] | None = None,
+              kwargs_plotcorner: dict[str, Any] | None = None,
+              chan: int | np.integer | None = None) -> _Fit2DResult:
         """Fit a given 2D model function to self.data.
+
+        Requires finite, positive scalar sigma. Missing beam sizes disable
+        beam correction. Likelihood scalars preserve extended precision.
 
         Default keyword values:
             kwargs_plotcorner: ``show=False`` and ``savefig=None``.
@@ -432,8 +486,8 @@ class AstroData():
 
         Args:
             model (function): The model function in the form of f(par,
-                x, y).
-            bounds (np.ndarray): bounds for fitting_utils.EmceeCorner.
+                x, y). It must return an ndarray matching the selected image.
+            bounds (np.ndarray or list): bounds for fitting_utils.EmceeCorner.
             progressbar (bool, optional): progressbar for
                 fitting_utils.EmceeCorner. Defaults to False.
             kwargs_fit (dict, optional): Arguments for
@@ -441,36 +495,41 @@ class AstroData():
             kwargs_plotcorner (dict, optional): Arguments for
                 fitting_utils.EmceeCorner.plotcorner.
             chan (int, optional): The channel number where the 2D model
-                is fitted. Defaults to None.
+                is fitted. Required for cubes; must be None for images.
+                NumPy integer indices are also accepted.
 
         Returns:
             dict: The parameter sets (popt, plow, pmid, and phigh), the
             best 2D model array (model), and the residual from the model
             (residual).
         """
-        d = self.data if chan is None else self.data[chan]
+        d = self._fit_image(chan)
+        if (not isinstance(self.sigma, (numbers.Real, np.floating, np.integer))
+                or not np.isfinite(self.sigma) or self.sigma <= 0):
+            raise ValueError('fit2d requires finite, positive scalar sigma.')
         x, y = np.meshgrid(self.x, self.y)
-        if None not in self.beam:
-            Omega = np.pi * self.beam[0] * self.beam[1] / 4 / np.log(2)
-            pixelperbeam = Omega / np.abs(self.dx * self.dy)
-        else:
-            pixelperbeam = 1.
-        s = 'In the fitting, sigma is multiplied by sqrt(pixel-per-beam)' \
-            + ' to consider the noise correlation in a beam.' \
-            + ' This correction is relatively conservative.'
-        warnings.warn(s, UserWarning)
+        if d.shape != x.shape:
+            raise ValueError('Selected image shape must match the x/y grids.')
+        pixelperbeam = self._fit_pixelperbeam()
 
-        def logl(p: np.ndarray) -> float:
-            rss = np.nansum((model(p, x, y) - d)**2)
-            return -0.5 * rss / self.sigma**2 / pixelperbeam
+        def evaluate(p: np.ndarray) -> np.ndarray:
+            result = model(p, x, y)
+            if not isinstance(result, np.ndarray) or result.shape != d.shape:
+                raise ValueError('model must return an ndarray matching'
+                                 + ' the selected image shape.')
+            return result
+
+        def logl(p: np.ndarray) -> float | np.longdouble:
+            rss = np.nansum((evaluate(p) - d)**2)
+            return _normalize_float(-0.5 * rss / self.sigma**2 / pixelperbeam)
 
         mcmc = EmceeCorner(bounds=bounds, logl=logl,
                            progressbar=progressbar)
         kwargs_fit0 = {}
-        kwargs_fit0.update(kwargs_fit)
+        kwargs_fit0.update(kwargs_fit or {})
         mcmc.fit(**kwargs_fit0)
         kwargs_plotcorner0 = {'show': False, 'savefig': None}
-        kwargs_plotcorner0.update(kwargs_plotcorner)
+        kwargs_plotcorner0.update(kwargs_plotcorner or {})
         kw_pl = kwargs_plotcorner0
         if kw_pl['show'] or kw_pl['savefig'] is not None:
             mcmc.plotcorner(**kw_pl)
@@ -478,19 +537,22 @@ class AstroData():
         plow = mcmc.plow
         pmid = mcmc.pmid
         phigh = mcmc.phigh
-        modelopt = model(popt, x, y)
+        modelopt = evaluate(popt)
         residual = d - modelopt
         return {'popt': popt, 'plow': plow, 'pmid': pmid, 'phigh': phigh,
                 'model': modelopt, 'residual': residual}
 
     @_need_multipixels
-    def gaussfit2d(self, chan: int | None = None) -> dict:
+    def gaussfit2d(self, chan: int | np.integer | None = None
+                   ) -> _GaussFit2DResult:
         """Fit a 2D Gaussian function to self.data using
-        fitting_utils.gaussfit2d().
+        fitting_utils.gaussfit2d(). With sigma=None, noise is estimated
+        from an initial fit. Missing beam sizes disable beam correction.
 
         Args:
             chan (int): The channel number where the 2D Gaussian is
-                fitted. Defaults to None.
+                fitted. Required for cubes; must be None for images.
+                NumPy integer indices are also accepted.
 
         Returns:
             dict: The best parameter set (popt), the error set (perr),
@@ -498,16 +560,23 @@ class AstroData():
             model (residual), and the coordinates of the best-fit center
             (center).
         """
-        z = self.data if chan is None else self.data[chan]
-        Omega = np.pi * self.beam[0] * self.beam[1] / 4 / np.log(2)
-        pixelperbeam = Omega / np.abs(self.dx * self.dy)
-        s = 'In the fitting, sigma is multiplied by sqrt(pixel-per-beam)' \
-            + ' to consider the noise correlation in a beam.' \
-            + ' This correction is relatively conservative.'
-        warnings.warn(s, UserWarning)
+        z = self._fit_image(chan)
+        if z.shape != (len(self.y), len(self.x)):
+            raise ValueError('Selected image shape must match the x/y grids.')
+        if self.sigma is not None and (
+                not isinstance(self.sigma, (numbers.Real,
+                                            np.floating,
+                                            np.integer))
+                or not np.isfinite(self.sigma) or self.sigma <= 0):
+            raise ValueError('gaussfit2d requires finite, positive scalar'
+                             + ' sigma or None.')
+        # Automatic estimation is handled by the underlying fitter; there is
+        # no supplied sigma to scale in that case.
+        sigma = None
+        if self.sigma is not None:
+            sigma = _normalize_float(self.sigma * np.sqrt(self._fit_pixelperbeam()))
         res = gaussfit2d(xdata=self.x, ydata=self.y, zdata=z,
-                         sigma=self.sigma * np.sqrt(pixelperbeam),
-                         show=False, nwalkersperdim=4)
+                         sigma=sigma, show=False, nwalkersperdim=4)
         popt, perr = res['popt'], res['perr']
         model = gaussian2d(np.meshgrid(self.x, self.y), *popt)
         residual = z - model
