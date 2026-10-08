@@ -1,11 +1,14 @@
+from dataclasses import fields, field
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.axes import Axes
 from matplotlib.patches import Ellipse, Rectangle
-from pydantic import Field, field_validator
+from pydantic import ConfigDict, Field, WrapValidator, field_validator
 from pydantic.dataclasses import dataclass as pydantic_dataclass
-from typing import Any, Callable, Literal, TypeVar
+from typing import Annotated, Any, Callable, Literal, TypeVar
 
+from plotastrodata._type_utils import _normalize_float
 from plotastrodata.analysis_utils import AstroData, AstroFrame
 from plotastrodata.coord_utils import (coord2xy, xy2coord,
                                        get_hmdm, get_min, get_sec)
@@ -20,15 +23,22 @@ plt.ioff()  # force to turn off interactive mode
 T = TypeVar('T')
 Stretch = Literal['linear', 'log', 'asinh', 'power']
 AxisScale = Literal['linear', 'log', 'symlog', 'asinh', 'logit']
-FloatOrList = float | list[float]
-OptionalFloatOrList = float | list[float | None] | None
-BeamTriple = list[float | None]
+def _validate_scalar(value: Any, handler: Any) -> float | np.longdouble:
+    return value if isinstance(value, np.longdouble) else handler(value)
+
+
+Scalar = Annotated[float | np.longdouble, WrapValidator(_validate_scalar)]
+FloatOrList = Scalar | list[Scalar]
+OptionalFloatOrList = Scalar | list[Scalar | None] | None
+BeamTriple = list[Scalar | None]
 BeamValue = BeamTriple | list[BeamTriple]
-BeamPosition = list[float] | list[list[float] | None] | None
+BeamPosition = list[Scalar] | list[list[Scalar] | None] | None
+NumericSequence = list[float | np.floating] | tuple[float | np.floating, ...] | np.ndarray
+Index = int | np.integer | np.ndarray
 
 
-def set_rcparams(fontsize: int = 18, nancolor: str = 'w',
-                 dpi: int = 256) -> None:
+def set_rcparams(fontsize: float = 18, nancolor: str | tuple[float, ...] = 'w',
+                 dpi: float = 256) -> None:
     """Nice rcParams for figures.
 
     Args:
@@ -74,8 +84,8 @@ def _log_limits(vmin: float, vmax: float) -> None:
                          + ' 0 < vmin < vmax.')
 
 
-def logticks(ticks: list[float], lim: list[float, float]
-             ) -> tuple[list[float], list[str]]:
+def logticks(ticks: NumericSequence, lim: NumericSequence
+             ) -> tuple[np.ndarray, list[str]]:
     """Make nice ticks for a log axis.
 
     Args:
@@ -83,7 +93,7 @@ def logticks(ticks: list[float], lim: list[float, float]
         lim (list): [min, max].
 
     Returns:
-        tuple: (new ticks, new labels).
+        tuple: Numeric tick ndarray and a list of string labels.
     """
     if np.shape(lim) != (2,):
         raise ValueError('lim must contain exactly two limits.')
@@ -108,7 +118,7 @@ def logcbticks(vmin: float = 1e-3, vmax: float = 1e3
         vmax (float, optional): Maximum value. Defaults to 1e3.
 
     Returns:
-        tuple: (ticks, ticklabels).
+        tuple: Numeric tick ndarray and string-label ndarray.
     """
     _log_limits(vmin, vmax)
     i0 = int(np.floor(np.log10(vmin)))
@@ -132,9 +142,10 @@ def logcbticks(vmin: float = 1e-3, vmax: float = 1e3
 
 
 def get_figsize(xmin: float, xmax: float, ymin: float, ymax: float,
-                figsize: tuple | None = None,
+                figsize: NumericSequence | None = None,
                 ncols: int = 1, nrows: int = 1, nchan: int = 1
-                ) -> tuple[float, float]:
+                ) -> tuple[float | np.longdouble,
+                           float | np.longdouble] | NumericSequence:
     """Get a nice figsize (tuple) with the given x and y ranges.
 
     Args:
@@ -156,7 +167,8 @@ def get_figsize(xmin: float, xmax: float, ymin: float, ymax: float,
             channel map. Defaults to 1.
 
     Returns:
-        tuple[float, float]: figsize for matplotlib.pyplot.Figure.
+        tuple or list or ndarray: Supplied figsize is returned unchanged.
+        Computed sizes contain Python floats or extended-precision NumPy floats.
     """
     for name, value in (('nrows', nrows), ('ncols', ncols), ('nchan', nchan)):
         _positive_int(value, name)
@@ -173,11 +185,11 @@ def get_figsize(xmin: float, xmax: float, ymin: float, ymax: float,
         figsize = (7 / sqrt_a, 5 * sqrt_a)
     else:
         figsize = (ncols * 2 / sqrt_a, max(nrows*2, 3) * sqrt_a)
-    return figsize
+    return tuple(_normalize_float(a) for a in figsize)
 
 
-def _get_gridwidth(mode: str, rmax: float, cos_dec: float
-                   ) -> tuple[float, int]:
+def _get_gridwidth(mode: Literal['ra', 'dec'], rmax: float, cos_dec: float
+                   ) -> tuple[float | np.longdouble, int]:
     if mode not in ('ra', 'dec'):
         raise ValueError("mode must be 'ra' or 'dec'.")
     if not np.isfinite(rmax) or rmax <= 0:
@@ -194,10 +206,10 @@ def _get_gridwidth(mode: str, rmax: float, cos_dec: float
         base, order = 1, p
     else:
         base, order = 2, p
-    return base * 10**order, int(order)
+    return _normalize_float(base * 10**order), int(order)
 
 
-def _get_v(p: Any, v: np.ndarray | None = None,
+def _get_v(p: Any, v: NumericSequence | None = None,
            restfreq: float | None = None,
            vskip: int = 1) -> np.ndarray:
     _positive_int(vskip, 'vskip')
@@ -207,28 +219,42 @@ def _get_v(p: Any, v: np.ndarray | None = None,
         v = d.v
     if v is None:
         v = np.array([0])
+    v = np.asarray(v)
+    if v.ndim != 1 or v.size == 0:
+        raise ValueError('v must be a nonempty 1D sequence.')
     if len(v) > 1:
         v = reform_grid(v=v, vmin=p.vmin, vmax=p.vmax)
         v = v[::vskip]
     return v
 
 
-def _get_nij2ch(nrows: int = 1, ncols: int = 1) -> Callable:
+def _get_nij2ch(nrows: int | np.integer = 1, ncols: int | np.integer = 1
+                ) -> Callable[[Index, Index, Index], int | np.ndarray]:
     _positive_int(nrows, 'nrows')
     _positive_int(ncols, 'ncols')
-    def nij2ch(n: int, i: int, j: int) -> int:
-        return n*nrows*ncols + i*ncols + j
+    def nij2ch(n: Index, i: Index, j: Index) -> int | np.ndarray:
+        result = n*nrows*ncols + i*ncols + j
+        if any(isinstance(a, np.ndarray) for a in (n, i, j)):
+            return np.asarray(result)
+        return int(result)
     return nij2ch
 
 
-def _get_ch2nij(nrows: int = 1, ncols: int = 1) -> Callable:
+def _get_ch2nij(nrows: int | np.integer = 1, ncols: int | np.integer = 1
+                ) -> Callable[[Index], tuple[int | np.ndarray,
+                                             int | np.ndarray,
+                                             int | np.ndarray]]:
     _positive_int(nrows, 'nrows')
     _positive_int(ncols, 'ncols')
-    def ch2nij(ch: int) -> tuple[int, int, int]:
+    def ch2nij(ch: Index) -> tuple[int | np.ndarray,
+                                   int | np.ndarray,
+                                   int | np.ndarray]:
         n = ch // (nrows*ncols)
         i = (ch - n*nrows*ncols) // ncols
         j = ch % ncols
-        return n, i, j
+        if isinstance(ch, np.ndarray):
+            return np.asarray(n), np.asarray(i), np.asarray(j)
+        return int(n), int(i), int(j)
     return ch2nij
 
 
@@ -255,14 +281,18 @@ def _get_vskipfill(nv: int, v_org: np.ndarray, vskip: int,
     return vskipfill
 
 
-@pydantic_dataclass
+@pydantic_dataclass(config=ConfigDict(arbitrary_types_allowed=True))
 class Stretcher():
     """Arguments and methods related to the stretch in
     PlotAstroData.add_color() and add_rgb().
 
+    Scalar settings broadcast across stretches; lists must match their count.
+    Ordinary numeric settings become Python floats; extended precision is
+    preserved. Configured bounds remain in linear units.
+
     Args:
         stretch (str, optional): 'log', 'asinh', 'power', or
-            'linear'. Any other means 'linear'. 'log' means the
+            'linear'. Other names are rejected. 'log' means the
             mapped data are logarithmic. 'asinh' means the mapped
             data are arc sin hyperbolic. 'power' means the mapped
             data are power-law (see also stretchpower). Defaults to
@@ -287,116 +317,119 @@ class Stretcher():
     vmax: OptionalFloatOrList = None
     sigma: OptionalFloatOrList = 0
 
+    n: int = field(init=False, default=1)
+
     def __post_init__(self) -> None:
         self.n = 1 if isinstance(self.stretch, str) else len(self.stretch)
-        stretch = self.stretch
-        stsc = self.stretchscale
-        vmin = self.vmin
-        sigma = self.sigma
+        if self.n == 0:
+            raise ValueError('stretch must not be empty.')
+        for name in ('stretch', 'stretchscale', 'stretchpower',
+                     'vmin', 'vmax', 'sigma'):
+            value = getattr(self, name)
+            if isinstance(value, list):
+                if len(value) != self.n:
+                    raise ValueError(f'{name} must contain {self.n} values.')
+                if self.n == 1:
+                    setattr(self, name, value[0])
+        # Resolve defaults without changing scalar parameters into arrays.
+        scales, minima = [], []
+        for i in range(self.n):
+            st, scale, sigma = (self._parameter(name, i) for name in
+                                ('stretch', 'stretchscale', 'sigma'))
+            scale = sigma if scale is None else scale
+            if st == 'asinh' and (scale is None
+                                  or not np.isfinite(scale) or scale <= 0):
+                raise ValueError('asinh requires a finite positive stretchscale or sigma.')
+            minimum = self._parameter('vmin', i)
+            if minimum is None and st in ('log', 'power'):
+                minimum = sigma
+            scales.append(scale)
+            minima.append(minimum)
+        self.stretchscale = scales[0] if self.n == 1 else scales
+        self.vmin = minima[0] if self.n == 1 else minima
+
+    def _parameter(self, name: str, i: int) -> Any:
+        value = getattr(self, name)
+        return value[i] if isinstance(value, list) else value
+
+    def do(self, x: float | np.floating | NumericSequence, i: int = 0
+           ) -> int | float | np.longdouble | np.ndarray:
+        """Stretch values; arrays (including 0D) remain arrays.
+
+        Scalar inputs return Python scalars, preserving extended precision.
+        Lists and tuples return arrays. i selects a configured stretch.
+        """
+        st = self._parameter('stretch', i)
+        t = np.array(x)
+        if st == 'log':
+            t = np.log10(t)
+        elif st == 'asinh':
+            t = np.arcsinh(t / self._parameter('stretchscale', i))
+        elif st == 'power':
+            power = self._parameter('stretchpower', i)
+            power = 1e-6 if power == 0 else power
+            t = t**power / power
+        return (_normalize_float(np.asarray(t).item())
+                if np.isscalar(x) else np.asarray(t))
+
+    def undo(self, x: float | np.floating | NumericSequence, i: int = 0
+             ) -> int | float | np.longdouble | np.ndarray:
+        """Invert do(), preserving arrays and extended-precision scalars."""
+        st = self._parameter('stretch', i)
+        t = np.array(x)
+        if st == 'log':
+            t = 10.**t
+        elif st == 'asinh':
+            t = np.sinh(t) * self._parameter('stretchscale', i)
+        elif st == 'power':
+            power = self._parameter('stretchpower', i)
+            power = 1e-6 if power == 0 else power
+            t = (t * power)**(1 / power)
+        return (_normalize_float(np.asarray(t).item())
+                if np.isscalar(x) else np.asarray(t))
+
+    def set_minmax(self, data: np.ndarray | list[np.ndarray]
+                   ) -> tuple[np.ndarray | list[np.ndarray],
+                              float | np.longdouble | list[float | np.longdouble],
+                              float | np.longdouble | list[float | np.longdouble]]:
+        """Return stretched data and bounds without changing configured bounds.
+
+        One stretch returns an array and scalar bounds. Multiple stretches
+        return lists of arrays and bounds. Ordinary computed scalar bounds
+        become Python floats; extended precision is preserved. Input arrays
+        and input lists are not modified.
+        """
+        datasets = [data] if self.n == 1 else data
+        if len(datasets) != self.n:
+            raise ValueError('Provide one dataset per stretch.')
+        output, minima, maxima = [], [], []
+        for i, c in enumerate(datasets):
+            lo, hi = self._parameter('vmin', i), self._parameter('vmax', i)
+            if lo is not None and hi is not None and lo > hi:
+                raise ValueError('vmin must not exceed vmax.')
+            c = np.asarray(c)
+            clipped = c if lo is None and hi is None else c.clip(lo, hi)
+            stretched = self.do(clipped, i)
+            output.append(stretched)
+            minimum = (np.asarray(np.nanmin(stretched)).item()
+                       if lo is None else self.do(lo, i))
+            maximum = (np.asarray(np.nanmax(stretched)).item()
+                       if hi is None else self.do(hi, i))
+            minima.append(minimum if isinstance(minimum, np.longdouble)
+                          else float(minimum))
+            maxima.append(maximum if isinstance(maximum, np.longdouble)
+                          else float(maximum))
         if self.n == 1:
-            if stsc is None:
-                self.stretchscale = sigma
-            if (stretch == 'log' or stretch == 'power') and vmin is None:
-                self.vmin = sigma
-        else:
-            getsigma = np.equal(stsc, None)
-            self.stretchscale = np.where(getsigma, sigma, stsc)
-            islog = np.equal(stretch, 'log')
-            ispower = np.equal(stretch, 'power')
-            novmin = np.equal(vmin, None)
-            getsigma = (islog + ispower) * novmin
-            self.vmin = np.where(getsigma, sigma, vmin)
-
-    def do(self, x: list | np.ndarray, i: int = 0) -> np.ndarray:
-        """Get the stretched values.
-
-        Args:
-            x (list | np.ndarray): Input array in the linear scale.
-            i (int): Which element is used in the case where the stretch
-                parameters are lists.
-
-        Returns:
-            np.ndarray: Output stretched array.
-        """
-        st = self.stretch[i] if self.n > 1 else self.stretch
-        stsc = self.stretchscale[i] if self.n > 1 else self.stretchscale
-        stpw = self.stretchpower[i] if self.n > 1 else self.stretchpower
-        t = np.array(x)
-        match st:
-            case 'log':
-                t = np.log10(t)  # To be consistent with logcbticks().
-            case 'asinh':
-                t = np.arcsinh(t / stsc)
-            case 'power':
-                p = 1e-6 if stpw == 0 else stpw
-                t = t**p / p
-        return t
-
-    def undo(self, x: list | np.ndarray, i: int = 0) -> np.ndarray:
-        """Get the linear values from the stretched values.
-
-        Args:
-            x (list | np.ndarray): Input stretched array.
-            i (int): Which element is used in the case where the stretch
-                parameters are lists.
-
-        Returns:
-            np.ndarray: Output array in the linear scale.
-        """
-        st = self.stretch[i] if self.n > 1 else self.stretch
-        stsc = self.stretchscale[i] if self.n > 1 else self.stretchscale
-        stpw = self.stretchpower[i] if self.n > 1 else self.stretchpower
-        t = np.array(x)
-        match st:
-            case 'log':
-                t = 10**t  # To be consistent with logcbticks().
-            case 'asinh':
-                t = np.sinh(t) * stsc
-            case 'power':
-                p = 1e-6 if stpw == 0 else stpw
-                t = (t * p)**(1 / p)
-        return t
-
-    def set_minmax(self, data: np.ndarray
-                   ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-        """Set vmin and vmax for color pcolormesh and RGB maps.
-
-        Explicit bounds are stretched and preserved; missing bounds are
-        inferred from the clipped, stretched data.
-
-        Args:
-            data (np.ndarray): 2D/3D data to plot.
-
-        Returns:
-            tuple[np.ndarray, np.ndarray, np.ndarray]: (Clipped
-            stretched data, new vmin, new vmax).
-        """
-        single = self.n == 1
-        vminout = [self.vmin] if single else self.vmin
-        vmaxout = [self.vmax] if single else self.vmax
-        dataout = [data] if single else data
-        for i, (c, v0, v1) in enumerate(zip(dataout, vminout, vmaxout)):
-            dataout[i] = self.do(c.clip(v0, v1), i)
-            if v0 is None:
-                vminout[i] = np.nanmin(dataout[i])
-            else:
-                vminout[i] = self.do(v0, i).item()
-            if v1 is None:
-                vmaxout[i] = np.nanmax(dataout[i])
-            else:
-                vmaxout[i] = self.do(v1, i).item()
-        if single:
-            dataout = dataout[0]
-            vminout = vminout[0]
-            vmaxout = vmaxout[0]
-        self.vmin = vminout
-        self.vmax = vmaxout
-        return dataout, vminout, vmaxout
+            return output[0], minima[0], maxima[0]
+        return output, minima, maxima
 
 
-@pydantic_dataclass
+@pydantic_dataclass(config=ConfigDict(arbitrary_types_allowed=True))
 class Beam():
     """Arguments for PlotAstroData.add_beam().
+
+    Ordinary numeric settings become Python floats; extended precision 
+        is preserved.
 
         Args:
             show_beam (bool, optional): Defaults to True.
@@ -476,7 +509,7 @@ class Beam():
     @staticmethod
     def _is_position(value: Any) -> bool:
         return (isinstance(value, list) and len(value) == 2
-                and all(isinstance(coordinate, float)
+                and all(isinstance(coordinate, (float, np.floating))
                         for coordinate in value))
 
     def validate_display(self) -> None:
@@ -507,9 +540,12 @@ class Beam():
         return tmp
 
 
-@pydantic_dataclass
+@pydantic_dataclass(config=ConfigDict(arbitrary_types_allowed=True))
 class PlotAxes2D():
     """Use Axes.set_* to adjust x and y axes.
+
+    Ordinary numeric settings become Python floats; extended precision 
+        is preserved.
 
     Args:
         samexy (bool, optional): True supports same ticks between x and
@@ -537,26 +573,45 @@ class PlotAxes2D():
             xticks. Defaults to None.
         yticksminor (list or int, optional): Defaults to None. If int,
             int times more than xticks. Defaults to None.
-        grid (dict, optional): True means merely grid(). Defaults to
-            None.
-        aspect (dict or float, optional): Defaults to None.
+        grid (dict or bool, optional): A bool toggles the grid; 
+            a dict supplies options. Defaults to None.
+        aspect (dict, float, or str, optional): Also accepts 'equal' and 
+            'auto'. Defaults to None.
     """
     samexy: bool = True
-    loglog: float | None = Field(default=None, gt=0)
+    loglog: Scalar | None = Field(default=None, gt=0)
     xscale: AxisScale = 'linear'
     yscale: AxisScale = 'linear'
-    xlim: list | None = None
-    ylim: list | None = None
+    xlim: list[Scalar] | None = None
+    ylim: list[Scalar] | None = None
     xlabel: str | None = None
     ylabel: str | None = None
-    xticks: list | None = None
-    yticks: list | None = None
+    xticks: list[Scalar] | np.ndarray | None = None
+    yticks: list[Scalar] | np.ndarray | None = None
     xticklabels: list | None = None
     yticklabels: list | None = None
     xticksminor: list | int | None = None
     yticksminor: list | int | None = None
-    grid: dict | None = None
-    aspect: dict | float | None = None
+    grid: dict | bool | None = None
+    aspect: dict | Scalar | Literal['equal', 'auto'] | None = None
+    ax: Axes | None = field(init=False, default=None, repr=False, compare=False)
+
+    @field_validator('xlim', 'ylim')
+    @classmethod
+    def _validate_limits(cls, value: list[Scalar] | None
+                         ) -> list[Scalar] | None:
+        if (value is not None
+            and (len(value) != 2 or not all(np.isfinite(v) for v in value))):
+            raise ValueError('Axis limits must contain two finite values.')
+        return value
+
+    @field_validator('xticksminor', 'yticksminor', mode='before')
+    @classmethod
+    def _validate_minor(cls, value: Any) -> Any:
+        if np.isscalar(value):
+            _positive_int(value, 'minor tick subdivisions')
+            return int(value)
+        return value
 
     def _set_scale(self) -> None:
         ax = self.ax
@@ -595,7 +650,12 @@ class PlotAxes2D():
                 ticks = getattr(ax, f'get_{axis}ticks')()
                 setattr(self, ticks_attr, ticks)
 
-    def _make_ticks(self, ticks: np.ndarray, ticksminor: int) -> np.ndarray:
+    def _make_ticks(self, ticks: NumericSequence, ticksminor: int
+                    ) -> np.ndarray:
+        _positive_int(ticksminor, 'minor tick subdivisions')
+        if len(ticks) < 2:
+            raise ValueError('Minor subdivisions require at least'
+                             + ' two major ticks.')
         dt = ticks[1] - ticks[0]
         t = np.r_[ticks[0] - dt, ticks, ticks[-1] + dt]
         num = ticksminor * (len(t) - 1) + 1
@@ -626,7 +686,7 @@ class PlotAxes2D():
             else:
                 method(value)
 
-    def set_xyaxes(self, ax: Any) -> None:
+    def set_xyaxes(self, ax: Axes) -> None:
         """Apply stored x- and y-axis settings to a Matplotlib axes
         object.
 
@@ -648,7 +708,10 @@ class PlotAxes2D():
             for attr in ['ticklabels', 'label', 'lim']:
                 self._apply_if_not_none(axis, attr)
         if self.grid is not None:
-            ax.grid(**({} if self.grid is True else self.grid))
+            if isinstance(self.grid, dict):
+                ax.grid(**self.grid)
+            else:
+                ax.grid(self.grid)
         if self.aspect is not None:
             if isinstance(self.aspect, dict):
                 ax.set_aspect(**self.aspect)
@@ -657,7 +720,10 @@ class PlotAxes2D():
 
 
 def kwargs2instance(cls: type[T], kw: dict[str, Any]) -> T:
-    """Get an instance and remove its arguments from kwargs.
+    """Construct a dataclass using its init fields and remove consumed kwargs.
+
+    Retain fitsimage/center for AstroFrame, vmin/vmax for Stretcher, and beam
+    for Beam. Other unrecognized keywords remain in the original dictionary.
 
     Args:
         cls (class): Class to make the instance.
@@ -666,17 +732,14 @@ def kwargs2instance(cls: type[T], kw: dict[str, Any]) -> T:
     Returns:
         instance: an instance of cls made from the parameters in kwargs.
     """
-    kw0 = {}
-    if cls == AstroData:
-        kw0 = {'data': np.zeros((2, 2))}
-    exkeys = {}
+    exkeys = set()
     if cls == AstroFrame:
         exkeys = {'fitsimage', 'center'}
     elif cls == Stretcher:
         exkeys = {'vmin', 'vmax'}
     elif cls == Beam:
         exkeys = {'beam'}
-    keys = vars(cls(**kw0)).keys()
+    keys = {f.name for f in fields(cls) if f.init}
     tmp = {k: kw[k] for k in keys if k in kw}
     for k in keys - exkeys:
         kw.pop(k, None)
@@ -1111,10 +1174,11 @@ class PlotAstroData(AstroFrame):
         cb.ax.tick_params(labelsize=cbtickfontsize)
         font = mpl.font_manager.FontProperties(size=cblabelfontsize)
         cb.ax.yaxis.label.set_font_properties(font)
+        cmin, cmax = mappable[ch].get_clim()
         if cbticks is None and st.stretch == 'log':
-            cbticks, cbticklabels = logcbticks(10**st.vmin, 10**st.vmax)
+            cbticks, cbticklabels = logcbticks(10**cmin, 10**cmax)
         cbticks = cb.get_ticks() if cbticks is None else st.do(cbticks)
-        cond = (st.vmin <= cbticks) * (cbticks <= st.vmax)
+        cond = (cmin <= cbticks) * (cbticks <= cmax)
         cbticks = cbticks[cond]
         cb.set_ticks(cbticks)
         if cbticklabels is None:
@@ -1455,7 +1519,8 @@ class PlotAstroData(AstroFrame):
                        xlabel: str = 'R.A. (ICRS)',
                        ylabel: str = 'Dec. (ICRS)',
                        nticksminor: int = 2,
-                       grid: dict | None = None, title: dict | None = None
+                       grid: dict | bool | None = None,
+                       title: dict | None = None
                        ) -> None:
         """Use Axes.set_* of matplotlib. kwargs can include the
         arguments of PlotAxes2D to adjust x and y axis.
@@ -1466,8 +1531,8 @@ class PlotAstroData(AstroFrame):
             ylabel (str, optional): Defaults to 'Dec. (ICRS)'.
             nticksminor (int, optional): Interval ratio of major and
                 minor ticks. Defaults to 2.
-            grid (dict, optional): True means merely grid(). Defaults to
-                None.
+            grid (dict or bool, optional): A bool toggles the grid; 
+                a dict supplies options. Defaults to None.
             title (dict | str | None): str means set_title(str) for 2D
                 or fig.suptitle(str) for 3D. Defaults to None.
         """
