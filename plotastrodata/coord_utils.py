@@ -1,6 +1,6 @@
 import numpy as np
 from astropy import units
-from astropy.coordinates import FK4, FK5, SkyCoord
+from astropy.coordinates import BaseCoordinateFrame, FK4, FK5, SkyCoord
 
 
 def _updateframe(frame: str) -> str | FK4 | FK5:
@@ -28,7 +28,9 @@ def _updateframe(frame: str) -> str | FK4 | FK5:
     return a
 
 
-def _getframe(coord: str | list) -> tuple:
+def _getframe(coord: str | list, *, as_frame: bool = False
+              ) -> tuple[str | list, str | BaseCoordinateFrame | None,
+                         str | None]:
     """Internal function to pick up the frame name from the coordinates.
     When coord is a list, frame and framename are picked up from the
     first element.
@@ -50,13 +52,15 @@ def _getframe(coord: str | list) -> tuple:
         return hmsdms, frame, framename
 
     if isinstance(coord, str):
-        return getframe_single(coord)
+        hmsdms, frame, framename = getframe_single(coord)
     else:
         outlist = [getframe_single(c) for c in coord]
         hmsdms = [a[0] for a in outlist]
         frame = outlist[0][1]
         framename = outlist[0][2]
-        return hmsdms, frame, framename
+    if as_frame:
+        frame = SkyCoord(hmsdms, frame=frame).frame
+    return hmsdms, frame, framename
 
 
 def coord2xy(coords: str | list, coordorg: str = '00h00m00s 00d00m00s',

@@ -1,5 +1,6 @@
 import numpy as np
 import warnings
+import re
 from dataclasses import dataclass, field
 from os import PathLike
 from functools import wraps
@@ -14,7 +15,7 @@ from typing import (Annotated, Any, Callable, Literal,
 
 from plotastrodata import const_utils as cu
 from plotastrodata._type_utils import _normalize_float
-from plotastrodata.coord_utils import coord2xy, rel2abs, xy2coord
+from plotastrodata.coord_utils import coord2xy, rel2abs, xy2coord, _getframe
 from plotastrodata.fits_utils import data2fits, FitsData, Jy2K
 from plotastrodata.fitting_utils import (EmceeCorner, gaussfit1d,
                                          gaussfit2d, gaussian2d)
@@ -171,6 +172,10 @@ class AstroData():
             position-velocity diagram. Defaults to False.
         bunit (str, optional): The unit of the data array. Defaults to
             ''.
+        dist (float or np.longdouble, optional): Distance factor used to
+            scale spatial coordinates, recorded by AstroFrame.read. Defaults
+            to 1.0. Changing this value alone does not rescale coordinates
+            or beams. Extended-precision NumPy floats are preserved.
 
     Note:
         External use normally supplies one dataset. PlotAstroData also uses
@@ -192,6 +197,7 @@ class AstroData():
     pvpa: _PerDataset[_RealScalar | None] = None
     pv: _PerDataset[bool] = False
     bunit: _PerDataset[str | None] = ''
+    dist: float | np.longdouble = 1.0
     dx: int | float | np.longdouble | None = field(
         init=False, default=None, repr=False, compare=False)
     dy: int | float | np.longdouble | None = field(
@@ -796,12 +802,13 @@ class AstroData():
         z = np.asarray(z).reshape(self.data.shape[:-2] + (len(r),))
         return r, z
 
-    def todict(self) -> dict:
+    def todict(self) -> dict[str, Any]:
         """Output the attributes as a dictionary that can be input to
         PlotAstroData.
 
         Returns:
-            dict: Output that can be input to PlotAstroData.
+            dict: Output that can be input to PlotAstroData. Arrays and
+            lists are shared references, not copies.
         """
         d = {'data': self.data, 'x': self.x, 'y': self.y, 'v': self.v,
              'fitsimage': self.fitsimage, 'beam': self.beam, 'Tb': self.Tb,
@@ -810,68 +817,126 @@ class AstroData():
              'bunit': self.bunit}
         return d
 
-    def _put_header(self, h: dict, t: str, crpix: int, crval: float,
-                    cdelt: float | None = None) -> None:
-        fhd = self.fitsheader
+    def _put_header(self, h: Header | dict[str, Any], t: Literal['x', 'y', 'v'],
+                    crpix: int | np.integer, crval: _RealScalar,
+                    cdelt: _RealScalar | None = None) -> None:
+        """Write axis values in the units already selected by the caller.
+
+        FITS numeric header cards use Python floats: conversion here is an
+        explicit serialization boundary and may narrow extended precision.
+        """
         axis = {'x': 1, 'y': 2, 'v': 2 if self.pv else 3}[t]
-        u = f'CUNIT{axis}'
-        indeg = fhd is None or u not in fhd or isdeg(fhd[u])
+        if cdelt is None:
+            cdelt = getattr(self, f'd{t}')
+        if cdelt is None:
+            raise ValueError(f'Cannot write the {t} axis without pixel spacing.')
         h[f'NAXIS{axis}'] = len(getattr(self, t))
         h[f'CRPIX{axis}'] = int(crpix)
         h[f'CRVAL{axis}'] = float(crval)
-        if cdelt is None:
-            cdelt = getattr(self, f'd{t}') / (3600 if indeg else 1)
         h[f'CDELT{axis}'] = float(cdelt)
 
-    def _get_cvdv_in_freq(self, ck: int) -> tuple[float, float]:
-        cv = self.v[ck]
-        dv = self.dv
+    def _get_cvdv_in_freq(self, ck: int | np.integer
+                         ) -> tuple[float | np.longdouble,
+                                    float | np.longdouble]:
+        """Convert velocity reference and spacing, preserving scalar precision."""
+        if self.v is None or self.dv is None:
+            raise ValueError('Writing a velocity axis requires coordinates'
+                             + ' and spacing.')
+        cv, dv = self.v[ck], self.dv
         if self.restfreq is None or self.restfreq == 0:
             s = 'No valid restfreq. The velocity axis is saved as is.'
             warnings.warn(s, UserWarning)
-            return cv, dv
-
-        cv = (1 - cv / cu.c_kms) * self.restfreq
-        dv = -dv / cu.c_kms * self.restfreq
-        return cv, dv
+        else:
+            if not np.isfinite(self.restfreq) or self.restfreq < 0:
+                raise ValueError('restfreq must be finite and positive,'
+                                 + ' or None/0.')
+            cv = (1 - cv / cu.c_kms) * self.restfreq
+            dv = -dv / cu.c_kms * self.restfreq
+        return (_normalize_float(cv) if isinstance(cv, np.floating)
+                else float(cv),
+                _normalize_float(dv) if isinstance(dv, np.floating)
+                else float(dv))
 
     @_need_multipixels
-    def writetofits(self, fitsimage: str = 'out.fits',
-                    header: dict = {}) -> None:
-        """Write out the AstroData to a FITS file.
+    def writetofits(self, fitsimage: str | PathLike[str] = 'out.fits',
+                    header: Header | dict[str, Any] | None = None) -> None:
+        """Write a single image or cube, overwriting an existing file.
 
-        Args:
-            fitsimage (str, optional): Output FITS file name. Existing
-                files with the same name are overwritten. Defaults to
-                'out.fits'.
-            header (dict, optional): Header dictionary. Defaults to {}.
+        Spatial axes use degrees, undoing any distance scaling applied by
+        AstroFrame.read. Known sky centers use celestial coordinates;
+        otherwise spatial axes are linear angular offsets. PV spatial axes
+        are also angular offsets. Spectral axes use Hz
+        when restfreq is known, otherwise radio velocity in km/s.
+
+        header optionally overrides generated cards. Numeric FITS cards are
+        serialized as Python floats, which can narrow extended precision.
+        Missing required grid spacing raises ValueError.
         """
-        h = {}
+        if (not isinstance(self.data, np.ndarray)
+                or self.data.ndim not in (2, 3)):
+            raise ValueError('writetofits requires a single 2D image'
+                             + ' or 3D cube.')
+        if not np.isfinite(self.dist) or self.dist <= 0:
+            raise ValueError('dist must be finite and positive.')
+        # Retain non-coordinate metadata; rebuild WCS for processed data.
+        h = dict(self.fitsheader.items()) if self.fitsheader is not None else {}
+        for key in list(h):
+            if (re.match(r'^(NAXIS|CTYPE|CUNIT|CRPIX|CRVAL|CDELT|CROTA)\d*$', key)
+                    or re.match(r'^(PC|CD|PV|PS)\d+_\d+$', key)
+                    or key in ('WCSAXES', 'LONPOLE', 'LATPOLE')):
+                del h[key]
         ci = nearest_index(self.x)
-        cx = 0
-        if not self.pv:
+        celestial = self.center is not None and not self.pv
+        if celestial:
             cj = nearest_index(self.y)
-            if self.center is None:
-                cx, cy = self.x[ci], self.x[cj]
-            else:
-                xy = [self.x[ci] / 3600, self.y[cj] / 3600]
-                cx, cy = coord2xy(xy2coord(xy, self.center))
-
-        self._put_header(h, 'x', crpix=ci + 1, crval=cx)
-        if not self.pv:
-            self._put_header(h, 'y', crpix=cj + 1, crval=cy)
-        if self.dv is not None:
+            coord = xy2coord([self.x[ci] / self.dist / 3600,
+                              self.y[cj] / self.dist / 3600], self.center)
+            _, frame, _ = _getframe(coord, as_frame=True)
+            cx, cy = frame.ra.degree, frame.dec.degree
+            h.update(CTYPE1='RA---SIN', CTYPE2='DEC--SIN',
+                     CUNIT1='deg', CUNIT2='deg')
+            h.pop('EQUINOX', None)
+            h['RADESYS'] = frame.name.upper()
+            if hasattr(frame, 'equinox'):
+                h['EQUINOX'] = float(frame.equinox.jyear)
+            self._put_header(h, 'x', ci + 1, cx, self.dx / self.dist / 3600)
+            self._put_header(h, 'y', cj + 1, cy, self.dy / self.dist / 3600)
+        else:
+            h.update(CTYPE1='LINEAR', CUNIT1='deg')
+            self._put_header(h, 'x', ci + 1, self.x[ci] / self.dist / 3600,
+                             self.dx / self.dist / 3600)
+            if not self.pv:
+                cj = nearest_index(self.y)
+                h.update(CTYPE2='LINEAR', CUNIT2='deg')
+                self._put_header(h, 'y', cj + 1, self.y[cj] / self.dist / 3600,
+                                 self.dy / self.dist / 3600)
+        if self.pv or self.data.ndim == 3:
+            if self.v is None:
+                raise ValueError('A cube or PV image requires'
+                                 + ' velocity coordinates.')
             ck = nearest_index(self.v)
             cv, dv = self._get_cvdv_in_freq(ck)
-            self._put_header(h, 'v', crpix=ck + 1, crval=cv, cdelt=dv)
-        if None not in self.beam:
-            beam = self.beam_org if self.pv else self.beam
-            h['BMAJ'] = float(beam[0] / 3600)
-            h['BMIN'] = float(beam[1] / 3600)
+            axis = 2 if self.pv else 3
+            frequency = self.restfreq is not None and self.restfreq != 0
+            h[f'CTYPE{axis}'] = 'FREQ' if frequency else 'VRAD'
+            h[f'CUNIT{axis}'] = 'Hz' if frequency else 'km/s'
+            self._put_header(h, 'v', ck + 1, cv, dv)
+        beam = self.beam_org if self.pv else self.beam
+        if beam is not None and None not in beam:
+            h['BMAJ'] = float(beam[0] / self.dist / 3600)
+            h['BMIN'] = float(beam[1] / self.dist / 3600)
             h['BPA'] = float(beam[2])
-        h.update(header)
-        data2fits(d=self.data, h=h, templatefits=self.fitsimage_org,
-                  fitsimage=fitsimage)
+        elif self.pv and not all(k in h for k in ('BMAJ', 'BMIN', 'BPA')):
+            s = 'Original sky beam unavailable; omitting FITS beam metadata.'
+            warnings.warn(s, UserWarning)
+            for key in ('BMAJ', 'BMIN', 'BPA'):
+                h.pop(key, None)
+        if self.bunit is not None:
+            h['BUNIT'] = self.bunit
+        if self.restfreq is not None and self.restfreq > 0:
+            h['RESTFRQ'] = float(self.restfreq)
+        h.update(header or {})
+        data2fits(d=self.data, h=h, fitsimage=str(fitsimage))
 
 
 def _as_list(value: Any, n: int, isbeam: bool = False) -> Any:
@@ -1246,7 +1311,7 @@ class AstroFrame():
         fields are normalized to per-dataset lists, FITS-derived values
         are filled, trimming and coordinate-frame changes are applied,
         and bookkeeping fields such as ``fitsimage``, ``fitsimage_org``,
-        ``Tb``, ``cfactor``, and ``sigma`` are updated. Multiple datasets
+        ``Tb``, ``cfactor``, ``sigma``, and ``dist`` are updated. Multiple datasets
         must have matching processed coordinate grids (rtol=1e-7, atol=0).
         A mismatch raises ValueError; this operation mutates d in place.
 
@@ -1257,6 +1322,7 @@ class AstroFrame():
         if (not isinstance(xskip, (int, np.integer)) or xskip < 1
                 or not isinstance(yskip, (int, np.integer)) or yskip < 1):
             raise ValueError('xskip and yskip must be positive integers.')
+        d.dist = self.dist
         self.xskip = int(xskip)
         self.yskip = int(yskip)
         for name in ASTRODATA_ARGS:
