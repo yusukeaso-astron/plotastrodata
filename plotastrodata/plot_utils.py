@@ -3,6 +3,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 from matplotlib.patches import Ellipse, Rectangle
 from pydantic import ConfigDict, Field, WrapValidator, field_validator
 from pydantic.dataclasses import dataclass as pydantic_dataclass
@@ -223,8 +224,13 @@ def _get_v(p: Any, v: NumericSequence | None = None,
     if v.ndim != 1 or v.size == 0:
         raise ValueError('v must be a nonempty 1D sequence.')
     if len(v) > 1:
-        v = reform_grid(v=v, vmin=p.vmin, vmax=p.vmax)
+        lower = p.vmin if getattr(p, '_explicit_vmin', True) else np.min(v)
+        upper = p.vmax if getattr(p, '_explicit_vmax', True) else np.max(v)
+        start, stop = (lower, upper) if v[-1] > v[0] else (upper, lower)
+        v = reform_grid(v=v, vmin=start, vmax=stop)
         v = v[::vskip]
+    if v.size == 0:
+        raise ValueError('The velocity limits select no channels.')
     return v
 
 
@@ -792,37 +798,89 @@ class PlotAstroData(AstroFrame):
         dpi (int, optional): Dot per inch for plotting an image.
             Defaults to 256.
         figsize (tuple, optional): Defaults to None.
-        fig (optional): External plt.figure(). Defaults to None.
-        ax (optional): External fig.add_subplot(). Defaults to None.
+        fig (Figure, optional): External figure. Supply together with ax,
+            for a single panel only. Defaults to None.
+        ax (Axes, optional): Axes belonging to fig. Defaults to None.
+
+    Unspecified velocity limits use the available grid for channel setup;
+    explicit limits may extend it. channelnumber indexes the resulting grid
+    after vskip, accepts NumPy integers and negative indices, and is stored
+    as a nonnegative Python integer. Invalid layout or selection inputs
+    raise ValueError before figures are created.
     """
+    fig: Figure | None
+    figs: list[Figure]
+    ax: np.ndarray
+    rowcol: int
+    npages: int
+    allchan: np.ndarray
+    bottomleft: np.ndarray
+    channelnumber: int | None
+    animation: bool
+    v: np.ndarray
+    vskipfill: Callable[[np.ndarray, np.ndarray | None], np.ndarray]
+    _kw: dict[str, Any]
+    sigma: float | np.longdouble | None | list[float | np.longdouble | None]
+    beam: BeamValue
+
     def __init__(self,
-                 v: np.ndarray | None = None, vskip: int = 1,
-                 veldigit: int = 2, restfreq: float | None = None,
-                 channelnumber: int | None = None,
-                 nrows: int = 4, ncols: int = 6,
-                 fontsize: int | None = None,
-                 nancolor: str = 'w', dpi: int = 256,
-                 figsize: tuple[float, float] | None = None,
-                 fig: object | None = None, ax: object | None = None,
+                 v: NumericSequence | None = None, vskip: int | np.integer = 1,
+                 veldigit: int | np.integer = 2,
+                 restfreq: float | np.floating | None = None,
+                 channelnumber: int | np.integer | None = None,
+                 nrows: int | np.integer = 4, ncols: int | np.integer = 6,
+                 fontsize: float | None = None,
+                 nancolor: str | tuple[float, ...] = 'w', dpi: float = 256,
+                 figsize: NumericSequence | None = None,
+                 fig: Figure | None = None, ax: Axes | None = None,
                  **kwargs: Any) -> None:
+        _positive_int(nrows, 'nrows')
+        _positive_int(ncols, 'ncols')
+        _positive_int(vskip, 'vskip')
+        nrows, ncols, vskip = int(nrows), int(ncols), int(vskip)
+        if (isinstance(veldigit, (bool, np.bool_))
+                or not isinstance(veldigit, (int, np.integer)) or veldigit < 0):
+            raise ValueError('veldigit must be a nonnegative integer.')
+        if channelnumber is not None and (
+                isinstance(channelnumber, (bool, np.bool_))
+                or not isinstance(channelnumber, (int, np.integer))):
+            raise ValueError('channelnumber must be an integer or None.')
+        if (fig is None) != (ax is None):
+            raise ValueError('Provide fig and ax together, or omit both.')
+        if fig is not None and (not isinstance(fig, Figure)
+                                or not isinstance(ax, Axes)
+                                or ax.figure is not fig):
+            raise ValueError('fig and ax must be a Figure and its own Axes.')
         super().__init__(**kwargs)
+        self._explicit_vmin = 'vmin' in kwargs
+        self._explicit_vmax = 'vmax' in kwargs
         internalfig = fig is None
         internalax = ax is None
         animation = isinstance(channelnumber, (int, np.integer))
         v = _get_v(p=self, v=v, restfreq=restfreq, vskip=vskip)
         nv = len(v)  # number of channels with a label
+        if channelnumber is not None:
+            channelnumber = int(channelnumber)
+            if not -nv <= channelnumber < nv:
+                raise ValueError('channelnumber must be'
+                                 + f'between {-nv} and {nv - 1}.')
+            channelnumber %= nv
         if self.pv or len(v) == 1 or animation:
             nrows = ncols = npages = nchan = 1
         else:
             npages = int(np.ceil(nv / nrows / ncols))
             nchan = npages * nrows * ncols
             v = reform_grid(v, k1=nchan - nv)
+        if not internalax and nchan != 1:
+            raise ValueError('External fig and ax support a single panel only;'
+                             ' select channelnumber for a cube.')
         nij2ch = _get_nij2ch(nrows=nrows, ncols=ncols)
         ch2nij = _get_ch2nij(nrows=nrows, ncols=ncols)
         if fontsize is None:
             fontsize = 18 if nchan == 1 else 12
         set_rcparams(fontsize=fontsize, nancolor=nancolor, dpi=dpi)
-        ax = np.empty(nchan, dtype=object) if internalax else [ax]
+        ax = (np.empty(nchan, dtype=object) if internalax
+              else np.array([ax], dtype=object))
         figsize = get_figsize(xmin=self.xmin, xmax=self.xmax,
                               ymin=self.ymin, ymax=self.ymax,
                               figsize=figsize,
@@ -846,7 +904,7 @@ class PlotAstroData(AstroFrame):
                 ax[ch] = fig.add_subplot(nrows, ncols, i*ncols + j + 1,
                                          sharex=sharex, sharey=sharey)
             if need_vlabel and ch < nv:
-                vlabel = v[channelnumber or ch]
+                vlabel = v[ch if channelnumber is None else channelnumber]
                 ax[ch].text(0.9 * self.rmax, 0.7 * self.rmax,
                             rf'${vlabel:.{veldigit}f}$', color='black',
                             backgroundcolor='white', zorder=20)
@@ -862,18 +920,27 @@ class PlotAstroData(AstroFrame):
         self.v = v
         self.vskipfill = _get_vskipfill(nv, v, vskip, channelnumber)
 
-    def _map_init(self, kw: dict[str, Any]) -> tuple:
+    def _map_init(self, kw: dict[str, Any]
+                  ) -> tuple[np.ndarray | list[np.ndarray | None],
+                             np.ndarray | None,
+                             np.ndarray | None,
+                             np.ndarray | None,
+                             float | np.longdouble | None | list[float | np.longdouble | None],
+                             str | None | list[str | None],
+                             dict[str, Any], bool]:
         """
         Common process for add_color, add_contour, add_segment, and
         add_rgb.
         xskip and yskip (int) mean spatial pixel skips, which defaults
-        to 1.
+        to 1. Consumes configuration keywords, updates plotting state, and
+        draws the beam. Internal multiple-dataset use returns lists for
+        data, sigma, and brightness units.
 
         Args:
             kw (dict): kwargs input for each method.
 
         Returns:
-            tuple: Data and parameters used in each method.
+            tuple: (data, x, y, v, sigma, bunit, plotting kwargs, singlepix).
         """
         b = kwargs2instance(Beam, kw)
         self._kw.update(kw)
@@ -894,11 +961,15 @@ class PlotAstroData(AstroFrame):
         return (d.data, d.x, d.y, d.v, d.sigma, d.bunit,
                 self._kw, singlepix)
 
-    def _validchan(self, include_chan: list[int] | None
-                   ) -> np.ndarray | list[int]:
-        chans = self.allchan if include_chan is None else include_chan
+    def _validchan(self, include_chan: list[int | np.integer]
+                   | tuple[int | np.integer, ...] | np.ndarray | None
+                   ) -> np.ndarray:
+        """Return axes indices; None includes every available channel."""
+        chans = (self.allchan if include_chan is None
+                 else np.asarray(include_chan))
         if self.animation:
-            chans = [0] if self.channelnumber in include_chan else [1]
+            return np.array([0] if self.channelnumber in chans
+                            else [], dtype=int)
         return chans
 
     def add_region(self, patch: str = 'ellipse',
