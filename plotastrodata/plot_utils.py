@@ -59,6 +59,21 @@ def set_rcparams(fontsize: int = 18, nancolor: str = 'w',
     plt.rcParams['ytick.minor.width'] = 1.5
 
 
+def _positive_int(value: int | np.integer, name: str) -> None:
+    """Reject noninteger or nonpositive grid and sampling counts."""
+    if (isinstance(value, (bool, np.bool_))
+            or not isinstance(value, (int, np.integer)) or value <= 0):
+        raise ValueError(f'{name} must be a positive integer.')
+
+
+def _log_limits(vmin: float, vmax: float) -> None:
+    """Validate a finite, positive, increasing logarithmic range."""
+    if not (np.isfinite(vmin) and np.isfinite(vmax)
+            and 0 < vmin < vmax):
+        raise ValueError('Logarithmic limits must be finite and satisfy'
+                         + ' 0 < vmin < vmax.')
+
+
 def logticks(ticks: list[float], lim: list[float, float]
              ) -> tuple[list[float], list[str]]:
     """Make nice ticks for a log axis.
@@ -70,6 +85,9 @@ def logticks(ticks: list[float], lim: list[float, float]
     Returns:
         tuple: (new ticks, new labels).
     """
+    if np.shape(lim) != (2,):
+        raise ValueError('lim must contain exactly two limits.')
+    _log_limits(*lim)
     order = int(np.floor((np.log10(lim[0]))))
     a = (lim[0] // 10**order + 1) * 10**order
     a = np.round(a, max(-order, 0))
@@ -92,6 +110,7 @@ def logcbticks(vmin: float = 1e-3, vmax: float = 1e3
     Returns:
         tuple: (ticks, ticklabels).
     """
+    _log_limits(vmin, vmax)
     i0 = int(np.floor(np.log10(vmin)))
     i1 = int(np.ceil(np.log10(vmax)))
     ticks = np.outer(np.logspace(i0, i1, i1 - i0 + 1), np.arange(1, 10))
@@ -139,8 +158,14 @@ def get_figsize(xmin: float, xmax: float, ymin: float, ymax: float,
     Returns:
         tuple[float, float]: figsize for matplotlib.pyplot.Figure.
     """
+    for name, value in (('nrows', nrows), ('ncols', ncols), ('nchan', nchan)):
+        _positive_int(value, name)
     if figsize is not None:
         return figsize
+    if (not all(np.isfinite(a) for a in (xmin, xmax, ymin, ymax))
+            or xmin == xmax or ymin == ymax):
+        raise ValueError('Automatic figure sizing requires finite limits'
+                         + ' and nonzero x and y spans.')
 
     sqrt_a = (ymax - ymin) / (xmax - xmin)
     sqrt_a = np.sqrt(np.abs(sqrt_a))
@@ -153,6 +178,12 @@ def get_figsize(xmin: float, xmax: float, ymin: float, ymax: float,
 
 def _get_gridwidth(mode: str, rmax: float, cos_dec: float
                    ) -> tuple[float, int]:
+    if mode not in ('ra', 'dec'):
+        raise ValueError("mode must be 'ra' or 'dec'.")
+    if not np.isfinite(rmax) or rmax <= 0:
+        raise ValueError('rmax must be finite and positive.')
+    if mode == 'ra' and (not np.isfinite(cos_dec) or cos_dec <= 0):
+        raise ValueError('cos_dec must be finite and positive for R.A.')
     # Length in the units of s for R.A. and " for Dec., respectively.
     length = 2 * rmax / (15 * cos_dec if mode == 'ra' else 1)
     p = np.floor(np.log10(length))
@@ -169,6 +200,7 @@ def _get_gridwidth(mode: str, rmax: float, cos_dec: float
 def _get_v(p: Any, v: np.ndarray | None = None,
            restfreq: float | None = None,
            vskip: int = 1) -> np.ndarray:
+    _positive_int(vskip, 'vskip')
     if p.fitsimage is not None and v is None:
         p.read(d := AstroData(fitsimage=p.fitsimage,
                               restfreq=restfreq, sigma=None))
@@ -182,12 +214,16 @@ def _get_v(p: Any, v: np.ndarray | None = None,
 
 
 def _get_nij2ch(nrows: int = 1, ncols: int = 1) -> Callable:
+    _positive_int(nrows, 'nrows')
+    _positive_int(ncols, 'ncols')
     def nij2ch(n: int, i: int, j: int) -> int:
         return n*nrows*ncols + i*ncols + j
     return nij2ch
 
 
 def _get_ch2nij(nrows: int = 1, ncols: int = 1) -> Callable:
+    _positive_int(nrows, 'nrows')
+    _positive_int(ncols, 'ncols')
     def ch2nij(ch: int) -> tuple[int, int, int]:
         n = ch // (nrows*ncols)
         i = (ch - n*nrows*ncols) // ncols
@@ -197,11 +233,24 @@ def _get_ch2nij(nrows: int = 1, ncols: int = 1) -> Callable:
 
 
 def _get_vskipfill(nv: int, v_org: np.ndarray, vskip: int,
-                   channelnumber: int | None) -> Callable:
-    def vskipfill(c: np.ndarray, v_in: np.ndarray) -> np.ndarray:
+                   channelnumber: int | np.integer | None
+                   ) -> Callable[[np.ndarray, np.ndarray | None], np.ndarray]:
+    """Return a 3D channel sampler, with shape (1, ny, nx) for a selection.
+
+    nv and vskip must be positive integers. Selection accepts Python and
+    NumPy integers, including negative indices, with normal bounds checking.
+    """
+    _positive_int(nv, 'nv')
+    _positive_int(vskip, 'vskip')
+    if channelnumber is not None and (
+            isinstance(channelnumber, (bool, np.bool_))
+            or not isinstance(channelnumber, (int, np.integer))):
+        raise ValueError('channelnumber must be an integer or None.')
+
+    def vskipfill(c: np.ndarray, v_in: np.ndarray | None) -> np.ndarray:
         c = reform_data(c=c, v_in=v_in, nv=nv, v_org=v_org, vskip=vskip)
-        if isinstance(channelnumber, int):
-            c = [c[channelnumber]]
+        if channelnumber is not None:
+            c = c[channelnumber][np.newaxis]
         return c
     return vskipfill
 
@@ -696,7 +745,7 @@ class PlotAstroData(AstroFrame):
         super().__init__(**kwargs)
         internalfig = fig is None
         internalax = ax is None
-        animation = isinstance(channelnumber, int)
+        animation = isinstance(channelnumber, (int, np.integer))
         v = _get_v(p=self, v=v, restfreq=restfreq, vskip=vskip)
         nv = len(v)  # number of channels with a label
         if self.pv or len(v) == 1 or animation:
