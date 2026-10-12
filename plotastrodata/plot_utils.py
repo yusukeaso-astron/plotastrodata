@@ -1837,7 +1837,9 @@ class PlotAstroData(AstroFrame):
 
         Requires dist=1 and pv=False. With swapxy=True, Dec. ticks and
         labels move to x, and R.A. ticks and labels move to y. Axis limits
-        retain the configured display directions.
+        retain the configured display directions. Tick grids are rounded
+        relative to the unchanged center. Large fields use whole-minute Dec.
+        ticks; zero declination remains a valid reference.
 
         Args:
             center (str, optional): Defaults to None, initial one.
@@ -1866,13 +1868,8 @@ class PlotAstroData(AstroFrame):
             center = '00h00m00s 00d00m00s'
         if len(csplit := center.split()) == 3:
             center = f'{csplit[1]} {csplit[2]}'
-        if on_min_scale := (self.rmax >= 60.0):
-            # On a 5-second grid.
-            ra_s = np.floor(float(get_sec(center, 0)) / 5) * 5
-            dec_s = 0.0
-            ra = get_hmdm(center, 'ra') + f'{ra_s:.1f}s'
-            dec = get_hmdm(center, 'dec') + f'{dec_s:.1f}s'
-            center = f'{ra} {dec}'
+        # Round tick locations, never the coordinate reference itself.
+        on_min_scale = self.rmax >= 60.0
 
         def get_tickvalues(ticks: np.ndarray, mode: str, no_sec: bool
                            ) -> np.ndarray:
@@ -1894,7 +1891,8 @@ class PlotAstroData(AstroFrame):
                          'm': r'$^{\prime}$',
                          's': r'.$\hspace{-0.4}^{\prime\prime}$'}}
         dec_center = coord2xy(center)[1]
-        sign_dec = np.sign(dec_center)
+        # Zero declination needs a nonzero direction for its tick grid.
+        sign_dec = -1 if dec_center < 0 else 1
         cos_dec = np.cos(np.radians(dec_center))
         intgrid = np.array([-3, -2, -1, 0, 1, 2, 3])
 
@@ -1903,11 +1901,13 @@ class PlotAstroData(AstroFrame):
             no_sec = on_min_scale and (mode == 'dec')
             # gridwidth is a float like 2 x 10^order (arcsec).
             gridwidth, order = _get_gridwidth(mode, self.rmax, cos_dec)
-            # ndigits = -1 is the largest case for 10", 20", ...
+            if no_sec:
+                # Minute-only labels require whole-minute spacing; a 50-arcsec
+                # step, for example, would truncate distinct ticks to one label.
+                gridwidth = max(60., np.ceil(gridwidth / 60.) * 60.)
             decimals = str(max(-order, 0))
-            rounded = round(second, ndigits=max(-order, -1))
-            # Get a grid point closest to the input second.
-            rounded = round(rounded / gridwidth) * gridwidth
+            # Offset a rounded grid from the unchanged center's seconds.
+            rounded = round(second / gridwidth) * gridwidth
             factor = 15 * cos_dec if mode == 'ra' else sign_dec
             ticks = (intgrid * gridwidth - second + rounded) * factor
             ticksminor = np.linspace(ticks[0], ticks[-1], 6*nticksminor + 1)
