@@ -14,3 +14,17 @@ exception in return annotations and docstrings. This policy also applies
 retroactively to previously reviewed modules.
 
 Apply this policy to subsequent module-by-module annotation reviews as well.
+
+# Plotting angle policy
+
+Angles are measured in degrees from the original data +y axis toward +x.
+Regions, beams, lines, arrows, and polarization segments must remain aligned
+with the data. `swapxy` exchanges direction components, equivalent to
+`90° - angle`. `xflip` and `yflip` affect only the display and require no
+angle correction. Apply any additional rotation in the original coordinates
+before `swapxy`.
+
+Relative numeric overlay positions, including `beampos`, refer to the
+displayed axes and are not exchanged by `swapxy`.
+
+Keep method docstrings consistent with this policy.
