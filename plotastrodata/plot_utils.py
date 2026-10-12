@@ -1,4 +1,5 @@
 from os import PathLike
+from pathlib import Path
 from dataclasses import fields, field
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -14,7 +15,7 @@ from typing import Annotated, Any, Callable, Literal, TypeVar
 from plotastrodata._type_utils import _normalize_float
 from plotastrodata.analysis_utils import AstroData, AstroFrame
 from plotastrodata.coord_utils import (coord2xy, xy2coord,
-                                       get_hmdm, get_min, get_sec)
+                                       get_hmdm, get_min, get_sec, _getframe)
 from plotastrodata.fitting_utils import gaussian1d
 from plotastrodata.noise_utils import estimate_rms
 from plotastrodata.other_utils import (close_figure, listing,
@@ -1762,13 +1763,14 @@ class PlotAstroData(AstroFrame):
         Args:
             pa2 (PlotAxes2D): This is instantiated in set_axis() or
                 set_axis_radec().
-            title (dict | str | None): str means set_title(str) for 2D
-                or fig.suptitle(str) for 3D. Defaults to None.
+            title (dict | str | None): str means set_title(str) for
+                a single panel or fig.suptitle(str) for multiple panels.
+                Defaults to None.
         """
         for ch, axnow in enumerate(self.ax):
             pa2.set_xyaxes(axnow)
-            self.Xlim = pa2.xlim
-            self.Ylim = pa2.ylim
+            self.Xlim = [_normalize_float(v) for v in axnow.get_xlim()]
+            self.Ylim = [_normalize_float(v) for v in axnow.get_ylim()]
             if ch not in self.bottomleft:
                 plt.setp(axnow.get_xticklabels(), visible=False)
                 plt.setp(axnow.get_yticklabels(), visible=False)
@@ -1799,8 +1801,9 @@ class PlotAstroData(AstroFrame):
             PV mode, ``samexy=False`` is also set internally.
 
         Args:
-            title (dict | str | None): str means set_title(str) for 2D
-                or fig.suptitle(str) for 3D. Defaults to None.
+            title (dict | str | None): str means set_title(str) for
+                a single panel or fig.suptitle(str) for multiple panels.
+                Defaults to None.
         """
         _kw = {}
         _kw.update(kwargs)
@@ -1827,11 +1830,11 @@ class PlotAstroData(AstroFrame):
         self._set_axis_shared(pa2=pa2, title=title)
 
     def set_axis_radec(self, center: str | None = None,
-                       xlabel: str = 'R.A. (ICRS)',
-                       ylabel: str = 'Dec. (ICRS)',
-                       nticksminor: int = 2,
+                       xlabel: str | None = None,
+                       ylabel: str | None = None,
+                       nticksminor: int | np.integer = 2,
                        grid: dict | bool | None = None,
-                       title: dict | None = None
+                       title: dict[str, Any] | str | None = None
                        ) -> None:
         """Label angular spatial axes with R.A. and Dec. coordinates.
 
@@ -1842,20 +1845,25 @@ class PlotAstroData(AstroFrame):
         ticks; zero declination remains a valid reference.
 
         Args:
-            center (str, optional): Defaults to None, initial one.
+            center (str, optional): Defaults to the plot center. A known center
+                is required. Its ICRS/FK4/FK5 frame is preserved.
             xlabel (str, optional): R.A. label, placed on y when swapxy=True.
-                Defaults to 'R.A. (ICRS)'.
+                Defaults to R.A. with the center frame name.
             ylabel (str, optional): Dec. label, placed on x when swapxy=True.
-                Defaults to 'Dec. (ICRS)'.
-            nticksminor (int, optional): Interval ratio of major and
-                minor ticks. Defaults to 2.
-            grid (dict or bool, optional): A bool toggles the grid; 
+                Defaults to Dec. with the center frame name.
+            nticksminor (int or np.integer, optional): Positive integer ratio
+                of major to minor tick spacing. Defaults to 2.
+            grid (dict or bool, optional): A bool toggles the grid;
                 a dict supplies options. Defaults to None.
-            title (dict | str | None): str means set_title(str) for 2D
-                or fig.suptitle(str) for 3D. Defaults to None.
+            title (dict | str | None): str means set_title(str) for
+                a single panel or fig.suptitle(str) for multiple panels.
+                Defaults to None.
         Raises:
-            ValueError: If dist != 1 or the plot is a PV diagram.
+            ValueError: If dist != 1, the plot is a PV diagram, the center is
+                missing, or nticksminor is not a positive integer.
         """
+        _positive_int(nticksminor, 'nticksminor')
+        nticksminor = int(nticksminor)
         if self.pv:
             raise ValueError('set_axis_radec() does not support'
                              + ' position-velocity (PV) diagrams.')
@@ -1865,9 +1873,17 @@ class PlotAstroData(AstroFrame):
         if center is None:
             center = self.center
         if center is None:
-            center = '00h00m00s 00d00m00s'
-        if len(csplit := center.split()) == 3:
-            center = f'{csplit[1]} {csplit[2]}'
+            raise ValueError('set_axis_radec() requires a known center;'
+                             + ' provide center or fitsimage.')
+        center, frame, _ = _getframe(center, as_frame=True)
+        frame_name = frame.name.upper()
+        xlabel = f'R.A. ({frame_name})' if xlabel is None else xlabel
+        ylabel = f'Dec. ({frame_name})' if ylabel is None else ylabel
+
+        def sky_at(xy: list | np.ndarray) -> str | list:
+            # Keep coordinate parsing helpers free of the frame prefix while
+            # performing offsets in the supplied frame, not implicit ICRS.
+            return _getframe(xy2coord(xy, center, frameorg=frame_name))[0]
         # Round tick locations, never the coordinate reference itself.
         on_min_scale = self.rmax >= 60.0
 
@@ -1876,7 +1892,7 @@ class PlotAstroData(AstroFrame):
             xy = [np.zeros_like(ticks), ticks / 3600.]
             if mode == 'ra':
                 xy.reverse()
-            tickvalues = xy2coord(xy, center)
+            tickvalues = sky_at(xy)
             getter = get_min if no_sec else get_sec
             tickvalues = [getter(t, mode) for t in tickvalues]  # str
             tickvalues = np.array(tickvalues, dtype=float)
@@ -1890,7 +1906,7 @@ class PlotAstroData(AstroFrame):
                  'dec': {'d': r'$^{\circ}$',
                          'm': r'$^{\prime}$',
                          's': r'.$\hspace{-0.4}^{\prime\prime}$'}}
-        dec_center = coord2xy(center)[1]
+        dec_center = frame.dec.degree
         # Zero declination needs a nonzero direction for its tick grid.
         sign_dec = -1 if dec_center < 0 else 1
         cos_dec = np.cos(np.radians(dec_center))
@@ -1923,8 +1939,8 @@ class PlotAstroData(AstroFrame):
         i_ref = np.where(np.abs(xticks) < self.rmax)[0][-1]
         idx_top = -1 if sign_dec > 0 else 0
         j_ref = np.where(np.abs(yticks) < self.rmax)[0][idx_top]
-        ra_hm = get_hmdm(xy2coord([xticks[i_ref] / 3600., 0], center), 'ra')
-        dec_dm = get_hmdm(xy2coord([0, yticks[j_ref] / 3600.], center), 'dec')
+        ra_hm = get_hmdm(sky_at([xticks[i_ref] / 3600., 0]), 'ra')
+        dec_dm = get_hmdm(sky_at([0, yticks[j_ref] / 3600.]), 'dec')
         if on_min_scale:
             dec_dm = dec_dm.split('d')[0] + 'd'
         ra_hm = ra_hm.translate(str.maketrans(units['ra']))
@@ -1943,13 +1959,16 @@ class PlotAstroData(AstroFrame):
                          xticksminor, yticksminor, grid)
         self._set_axis_shared(pa2=pa2, title=title)
 
-    def savefig(self, filename: str | None = None,
+    def savefig(self, filename: str | PathLike[str] | None = None,
                 show: bool = False, **kwargs: Any) -> None:
         """Use savefig of matplotlib.
 
         If ``filename`` is provided, existing files with the same name
         are overwritten by Matplotlib. After optional saving/showing,
-        figures managed by this instance are closed.
+        figures managed by this instance are closed. Multiple pages receive
+        _0, _1, ... before the final filename suffix (or appended when no
+        suffix is present). Matplotlib chooses the default format for filenames
+        without an extension. transparent=False preserves an opaque background.
 
         Default keyword values:
             Figure.savefig: ``transparent=True`` and
@@ -1957,7 +1976,7 @@ class PlotAstroData(AstroFrame):
             override these values.
 
         Args:
-            filename (str, optional): Output image file name. Existing
+            filename (str or os.PathLike, optional): Output image file name. Existing
                 files may be overwritten, and figures managed by this
                 instance are closed after saving/showing. Defaults to
                 None.
@@ -1969,23 +1988,27 @@ class PlotAstroData(AstroFrame):
         for axnow in self.ax:
             axnow.set_xlim(*self.Xlim)
             axnow.set_ylim(*self.Ylim)
-        if isinstance(filename, str):
-            ext = filename.split('.')[-1]
+        if filename is not None:
+            path = Path(filename)
             for i, fig in enumerate(self.figs):
-                ver = '' if self.npages == 1 else f'_{i:d}'
-                fig.patch.set_alpha(0)
-                fname = filename.replace(f'.{ext}', f'{ver}.{ext}')
+                fname = (path if self.npages == 1 else
+                         path.with_name(f'{path.stem}_{i}{path.suffix}'))
                 fig.savefig(fname, **_kw)
         if show:
             plt.show()
         for fig in self.figs:
             plt.close(fig)
 
-    def get_figax(self) -> tuple[object, object]:
-        """Output the external fig and ax after plotting.
+    def get_figax(self) -> tuple[Figure, Axes]:
+        """Return the figure and axes for a single-panel plot.
+
+        Works for internally created and externally supplied figures.
 
         Returns:
-            tuple: (fig, ax)
+            tuple[Figure, Axes]: (fig, ax).
+
+        Raises:
+            ValueError: If the plot has multiple panels.
         """
         if len(self.ax) > 1:
             raise ValueError(
