@@ -564,7 +564,8 @@ class AstroData():
             dict: The best parameter set (popt), the error set (perr),
             the best 2D Gaussian array (model), the residual from the
             model (residual), and the coordinates of the best-fit center
-            (center).
+            (center). The fitted spatial offsets are divided by dist before
+            conversion to sky coordinates.
         """
         z = self._fit_image(chan)
         if z.shape != (len(self.y), len(self.x)):
@@ -587,7 +588,8 @@ class AstroData():
         model = gaussian2d(np.meshgrid(self.x, self.y), *popt)
         residual = z - model
         if self.center is not None:
-            newcenter = xy2coord(popt[1:3] / 3600, coordorg=self.center)
+            newcenter = xy2coord(popt[1:3] / self.dist / 3600,
+                                 coordorg=self.center)
         else:
             newcenter = None
         return {'popt': popt, 'perr': perr,
@@ -683,12 +685,13 @@ class AstroData():
         """Get a list of line profiles at given spatial coordinates.
 
         Args:
-            coords (list, tuple, or np.ndarray, optional): Text coordinates. 
-                Defaults to [].
-            xlist (list, tuple, or np.ndarray, optional): Offset from center. 
-                Defaults to [].
-            ylist (list, tuple, or np.ndarray, optional): Offset from center. 
-                Defaults to [].
+            coords (list, tuple, or np.ndarray, optional): Sky coordinates.
+                Angular offsets are multiplied by dist to match the spatial
+                grids. Defaults to [].
+            xlist (list, tuple, or np.ndarray, optional): Offset from center
+                in the same units as x. Defaults to [].
+            ylist (list, tuple, or np.ndarray, optional): Offset from center
+                in the same units as y. Defaults to [].
             ellipse (list, tuple, or np.ndarray, optional): One
                 [major, minor, pa] triple shared by all positions, or one
                 triple per position. None selects nearest pixels.
@@ -713,7 +716,7 @@ class AstroData():
         data, xf, yf = filled2d(self.data, self.x, self.y, ninterp)
         x, y = np.meshgrid(xf, yf)
         if len(coords) > 0:
-            xlist, ylist = coord2xy(coords, self.center) * 3600.
+            xlist, ylist = coord2xy(coords, self.center) * 3600. * self.dist
         nprof = len(xlist)
         dtype = data.dtype if data.dtype.kind in 'fc' else np.dtype(float)
         prof = np.empty((nprof, len(self.v)), dtype=dtype)
@@ -1087,7 +1090,9 @@ class AstroFrame():
         Args:
             poslist: One sky-coordinate string or numeric pair, or a list,
                 tuple, or array of positions. Mixed strings and pairs are
-                supported. Sky-coordinate strings require a center.
+                supported. Sky-coordinate strings require a center; their
+                angular offsets are multiplied by dist. Numeric pairs are
+                fractions of the displayed axis limits.
 
         Returns:
             np.ndarray: Coordinates with shape (2, N), including (2, 1)
@@ -1132,7 +1137,7 @@ class AstroFrame():
         x, y = [None] * len(poslist), [None] * len(poslist)
         for i, p in enumerate(poslist):
             if isinstance(p, str):
-                x[i], y[i] = coord2xy(p, self.center) * 3600.
+                x[i], y[i] = coord2xy(p, self.center) * 3600. * self.dist
             else:
                 x[i], y[i] = rel2abs(*p, self.Xlim, self.Ylim)
         return np.array([x, y])
@@ -1176,7 +1181,7 @@ class AstroFrame():
         if self.pv or cnew is None or corg is None or corg == cnew:
             return grid
 
-        cx, cy = coord2xy(corg, cnew) * 3600
+        cx, cy = coord2xy(corg, cnew) * 3600 * self.dist
         grid[0] = grid[0] + cx  # Don't use += cx.
         grid[1] = grid[1] + cy  # Don't use += cy.
         d.center[i] = cnew
@@ -1244,6 +1249,8 @@ class AstroFrame():
 
     def _convert_to_Tb(self, d: AstroData, i: int) -> None:
         """Convert Jy/beam data to brightness temperature if requested.
+
+        Undo distance scaling for both beam sizes and fallback pixel sizes.
         """
         if not d.Tb[i]:
             return
@@ -1258,7 +1265,7 @@ class AstroFrame():
                 raise ValueError('Brightness-temperature conversion requires'
                                  + ' beam sizes or at least two spatial pixels'
                                  + ' to determine pixel size.')
-            header.update(CDELT1=dx / 3600, CUNIT1='deg')
+            header.update(CDELT1=dx / self.dist / 3600, CUNIT1='deg')
         factor = Jy2K(header=header)
         d.data[i] = d.data[i] * factor
         if d.sigma[i] is not None:
