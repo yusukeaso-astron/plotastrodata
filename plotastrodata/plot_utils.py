@@ -10,7 +10,12 @@ from matplotlib.collections import QuadMesh
 from matplotlib.patches import Ellipse, Rectangle
 from pydantic import ConfigDict, Field, WrapValidator, field_validator
 from pydantic.dataclasses import dataclass as pydantic_dataclass
-from typing import Annotated, Any, Callable, Literal, TypeVar
+from typing import (Annotated, Any, Callable, Literal,
+                    TypeVar, TypedDict, TYPE_CHECKING)
+from types import ModuleType
+
+if TYPE_CHECKING:
+    from plotly.graph_objs import Layout
 
 from plotastrodata._type_utils import _normalize_float
 from plotastrodata.analysis_utils import AstroData, AstroFrame
@@ -2055,6 +2060,21 @@ def _prep_plotprofile(width: int | np.integer,
     d = kwargs2instance(AstroData, _kw)
     f.read(d)
     d.binning([width, 1, 1])
+    if len(coords):
+        if d.center is None:
+            raise ValueError('Sky-coordinate profiles require a known center.')
+        xlist, ylist = coord2xy(coords, d.center) * 3600. * f.dist
+        coords = []
+    if f.swapxy:
+        xlist, ylist = ylist, xlist
+        if ellipse is not None:
+            values = np.asarray(ellipse)
+            ellipse = np.array(values,
+                               dtype=np.result_type(values.dtype, np.float64),
+                               copy=True)
+            if ellipse.ndim not in (1, 2) or ellipse.shape[-1] != 3:
+                raise ValueError('ellipse must contain [major, minor, pa] triples.')
+            ellipse[..., 2] = 90 - ellipse[..., 2]
     v, prof, gfitres = d.profile(coords=coords, xlist=xlist, ylist=ylist,
                                  ellipse=ellipse, ninterp=ninterp,
                                  flux=flux, gaussfit=gaussfit)
@@ -2127,6 +2147,12 @@ def plotprofile(coords: str | list[str] | tuple[str, ...]
                 show: bool = False,
                 **kwargs: Any) -> tuple[Figure, np.ndarray] | None:
     """Plot line profiles extracted from a spectral cube.
+
+    Numeric offsets and aperture sizes use original data-axis units (arcsec,
+    or au with distance scaling). Aperture position angles run from original
+    +y toward +x. swapxy exchanges selection coordinates and maps aperture
+    angles to 90 - pa; display flips do not change the selected physical region.
+    Sky-coordinate offsets are converted to the distance-scaled spatial units.
 
     Keyword groups accepted in ``**kwargs``:
         AstroData: Data input and metadata for the cube, such as
@@ -2326,9 +2352,57 @@ def plotslice(length: RealScalar, dx: RealScalar | None = None,
     close_figure(fig, savefig, show)
 
 
+class _Plot3DResult(TypedDict):
+    data: list[dict[str, Any]]
+    layout: 'Layout'
+
+
+def _surface_levels(levels: NumericSequence) -> np.ndarray:
+    values = np.asarray(levels)
+    if (values.ndim != 1 or values.size == 0
+            or values.dtype.kind not in 'iuf'
+            or not np.all(np.isfinite(values))
+            or np.unique(values).size != values.size):
+        raise ValueError('Isosurface levels must be a nonempty finite,'
+                         + ' distinct real sequence.')
+    return values
+
+
+def _surface_opacity(alpha: RealScalar) -> None:
+    if not np.isscalar(alpha) or not np.isfinite(alpha) or not 0 <= alpha <= 1:
+        raise ValueError('Isosurface alpha must be finite and between 0 and 1.')
+
+
+def _surface_grid(grid: np.ndarray | None, size: int, name: str) -> None:
+    if grid is None or np.ndim(grid) != 1 or len(grid) != size or size < 2:
+        raise ValueError('plot3d requires at least two matching'
+                         + f' {name} coordinates.')
+    steps = np.diff(grid)
+    if (not np.all(np.isfinite(grid)) or steps[0] == 0
+            or not np.allclose(steps, steps[0], rtol=1e-5, atol=0)):
+        raise ValueError('plot3d requires a finite, uniformly spaced'
+                         + f' {name} grid.')
+
+
+def _surface_mesh(measure: ModuleType, volume: np.ndarray,
+                  threshold: RealScalar
+                  ) -> tuple[np.ndarray, np.ndarray] | None:
+    # Boundary levels and constant volumes do not define an interior surface.
+    if not np.min(volume) < threshold < np.max(volume):
+        return None
+    try:
+        vertices, simplices, _, _ = measure.marching_cubes(volume, threshold)
+    except RuntimeError as exc:
+        if 'No surface found' not in str(exc):
+            raise
+        return None
+    return vertices, simplices
+
+
 def _plot_on_wall(d: AstroData, x: np.ndarray, y: np.ndarray, v: np.ndarray,
-                  measure: object, datalist: list,
-                  sign: int, axis: int, **kwargs: Any) -> None:
+                  measure: ModuleType, datalist: list[dict[str, Any]],
+                  sign: Literal[-1, 1], axis: Literal[0, 1, 2],
+                  **kwargs: Any) -> None:
     dx, dy, dv = x[1] - x[0], y[1] - y[0], v[1] - v[0]
     s, ds = [x, y, v], [dx, dy, dv]
     if kwargs == {}:
@@ -2341,6 +2415,8 @@ def _plot_on_wall(d: AstroData, x: np.ndarray, y: np.ndarray, v: np.ndarray,
             shape = np.shape(d.data[:, 0, :])
         case 0:
             shape = np.shape(d.data[0, :, :])
+    if 'data' not in kwargs:
+        raise ValueError('Each wall map requires a data array.')
     if np.shape(kwargs['data']) != shape:
         raise ValueError(
             'The shape of the 2D wall data must match the corresponding '
@@ -2350,11 +2426,15 @@ def _plot_on_wall(d: AstroData, x: np.ndarray, y: np.ndarray, v: np.ndarray,
            'sigma': 'hist', 'cmap': 'Jet', 'alpha': 0.3}
     _kw.update(kwargs)
     volume = np.array(_kw['data'], copy=True)
-    levels = _kw['levels']
+    if volume.dtype.kind not in 'iuf':
+        raise ValueError('Wall data must be real numeric arrays.')
+    levels = _surface_levels(_kw['levels'])
     cmap = _kw['cmap']
     alpha = _kw['alpha']
+    _surface_opacity(alpha)
     sigma = estimate_rms(data=volume, sigma=_kw['sigma'])
-    volume[np.isnan(volume)] = 0
+    _positive_noise(sigma, 'Wall sigma')
+    volume[~np.isfinite(volume)] = 0
     a = int(sign == -1)
     b = int(sign == 1)
     volume = np.moveaxis([volume * a, volume * b], 0, axis)
@@ -2365,9 +2445,10 @@ def _plot_on_wall(d: AstroData, x: np.ndarray, y: np.ndarray, v: np.ndarray,
     if d.dv < 0:
         volume = volume[::-1, :, :]
     for lev in levels:
-        if lev * sigma > np.max(volume):
+        surface = _surface_mesh(measure, volume, lev * sigma)
+        if surface is None:
             continue
-        vertices, simplices, _, _ = measure.marching_cubes(volume, lev * sigma)
+        vertices, simplices = surface
         Xg, Yg, Zg = [t[0] + i * dt for t, i, dt
                       in zip(s, vertices.T[::-1], ds)]
         match axis:
@@ -2382,26 +2463,40 @@ def _plot_on_wall(d: AstroData, x: np.ndarray, y: np.ndarray, v: np.ndarray,
                       i=i, j=j, k=k,
                       intensity=Zg * 0 + lev,
                       colorscale=cmap, reversescale=False,
-                      cmin=np.min(levels), cmax=np.max(levels),
+                      cmin=_normalize_float(np.min(levels).item()),
+                      cmax=_normalize_float(np.max(levels).item()),
                       opacity=alpha, name='', showscale=False)
         datalist.append(mesh2d)
 
 
-def plot3d(levels: list[float] = [3, 6, 12],
-           cmap: str = 'jet', alpha: float = 0.08,
+def plot3d(levels: NumericSequence = (3, 6, 12),
+           cmap: str = 'jet', alpha: RealScalar = 0.08,
            xlabel: str = 'R.A. (arcsec)',
            ylabel: str = 'Dec. (arcsec)',
            vlabel: str = 'Velocity (km/s)',
-           xskip: int = 1, yskip: int = 1,
-           eye_p: float = 0, eye_i: float = 180,
-           xplus: dict = {}, xminus: dict = {},
-           yplus: dict = {}, yminus: dict = {},
-           vplus: dict = {}, vminus: dict = {},
-           outname: str = 'plot3d', show: bool = False,
+           xskip: int | np.integer = 1, yskip: int | np.integer = 1,
+           eye_p: RealScalar = 0, eye_i: RealScalar = 180,
+           xplus: dict[str, Any] | None = None,
+           xminus: dict[str, Any] | None = None,
+           yplus: dict[str, Any] | None = None,
+           yminus: dict[str, Any] | None = None,
+           vplus: dict[str, Any] | None = None,
+           vminus: dict[str, Any] | None = None,
+           outname: str | PathLike[str] = 'plot3d', show: bool = False,
            return_data_layout: bool = False,
-           **kwargs: Any) -> None | dict:
+           **kwargs: Any) -> _Plot3DResult | None:
     """Create an interactive Plotly 3D isosurface visualization of a
     spectral cube.
+
+    Requires dist=1, swapxy=False, and one real cube with at least two
+    samples per uniformly spaced axis (rtol=1e-5). All coordinate axes are
+    ascending to retain a right-handed system; xflip/yflip do not reverse
+    the 3D display. A finite positive scalar sigma is required.
+    Nonfinite voxels are replaced by zero in a private plotting copy.
+    Levels at or outside the volume range, or with no surface, are skipped.
+    Plotly and scikit-image are imported only when this function is called.
+    Returned computed scalars are Python scalars, except extended-precision
+    NumPy floats; mesh arrays retain their dtypes.
 
     Keyword groups accepted in ``**kwargs``:
         AstroData: Data input and metadata for the cube, such as
@@ -2418,8 +2513,9 @@ def plot3d(levels: list[float] = [3, 6, 12],
         ``cmap='Jet'``, and ``alpha=0.3`` when those keys are omitted.
 
     Args:
-        levels (list, optional): Contour levels. Defaults to [3,6,12].
-        cmap (str, optional): Color map name. Defaults to 'Jet'.
+        levels (list, tuple, or ndarray, optional): Finite distinct contour
+            levels in units of sigma. Defaults to [3,6,12].
+        cmap (str, optional): Color map name. Defaults to 'jet'.
         alpha (float, optional): opacity in plotly. Defaults to 0.08.
         xlabel (str, optional): Defaults to 'R.A. (arcsec)'.
         ylabel (str, optional): Defaults to 'Dec. (arcsec)'.
@@ -2433,33 +2529,56 @@ def plot3d(levels: list[float] = [3, 6, 12],
         xplus (dict, optional): 2D data to be plotted on the y-v plane
             at the positive edge of x. This dictionary must have a key
             of data and can have keys of levels, sigma, cmap, and alpha.
-            Defaults to {}.
-        xminus (dict, optional): See xplus. Defaults to {}.
-        yplus (dict, optional): See xplus. Defaults to {}.
-        yminus (dict, optional): See xplus. Defaults to {}.
-        vplus (dict, optional): See xplus. Defaults to {}.
-        vminus (dict, optional): See xplus. Defaults to {}.
-        outname (str, optional): Output HTML file name, with or without
-            '.html'. Existing files with the same name are overwritten
-            by Plotly. Defaults to 'plot3d'.
-        show (bool, optional): auto_play in plotly. Defaults to False.
+            Shape must match the processed cube plane: (nv, ny) for x walls,
+            (nv, nx) for y walls, (ny, nx) for v walls, after trimming and
+            sampling, in the corresponding processed coordinate order.
+            Wall sigma must be finite and positive; alpha must be in [0, 1].
+            Nonfinite wall pixels are replaced by zero in a private copy.
+            None or {} omits the wall.
+        xminus (dict, optional): See xplus. Defaults to None.
+        yplus (dict, optional): See xplus. Defaults to None.
+        yminus (dict, optional): See xplus. Defaults to None.
+        vplus (dict, optional): See xplus. Defaults to None.
+        vminus (dict, optional): See xplus. Defaults to None.
+        outname (str or os.PathLike, optional): Output HTML file name,
+            with or without '.html'. Existing files with the same name are
+            overwritten by Plotly. Defaults to 'plot3d'.
+        show (bool, optional): Open the saved HTML in the default browser.
+            Defaults to False. Ignored when return_data_layout=True.
         return_data_layout (bool, optional): Whether to return data and
             layout for plotly.graph_objs.Figure. Defaults to False.
 
     Returns:
-        dict: {'data': data, 'layout': layout}, if
-        return_data_layout=True. Otherwise, no return.
+        _Plot3DResult: {'data': trace dictionaries, 'layout': Plotly Layout}, if
+        return_data_layout=True (no file is written or opened). Otherwise, no return.
     """
-    import plotly.graph_objs as go
-    from skimage import measure
-
+    levels = _surface_levels(levels)
+    _surface_opacity(alpha)
     f = kwargs2instance(AstroFrame, kwargs)
+    if f.dist != 1:
+        raise ValueError('plot3d() requires dist=1;'
+                         + ' distance-scaled plots are not supported.')
+    if f.swapxy:
+        raise ValueError('plot3d() does not support swapxy=True.')
+    if f.pv:
+        raise ValueError('plot3d() requires a spectral cube, not a PV diagram.')
+    try:
+        import plotly.graph_objs as go
+        from skimage import measure
+    except ImportError as exc:
+        raise ImportError('plot3d() requires plotly and scikit-image.') from exc
     d = kwargs2instance(AstroData, kwargs)
     f.read(d, xskip, yskip)
+    if not isinstance(d.data, np.ndarray) or d.data.ndim != 3 or d.data.dtype.kind not in 'iuf':
+        raise ValueError('plot3d() requires one real 3D spectral cube'
+                         + ' with at least two samples per axis.')
+    for grid, size, name in zip((d.v, d.y, d.x), d.data.shape, ('v', 'y', 'x')):
+        _surface_grid(grid, size, name)
+    _positive_noise(d.sigma, 'sigma')
     volume = np.array(d.data, copy=True)
     x, y, v, sigma = d.x, d.y, d.v, d.sigma
     dx, dy, dv = d.dx, d.dy, d.dv
-    volume[np.isnan(volume)] = 0
+    volume[~np.isfinite(volume)] = 0
     if dx < 0:
         x, dx, volume = x[::-1], -dx, volume[:, :, ::-1]
     if dy < 0:
@@ -2472,33 +2591,44 @@ def plot3d(levels: list[float] = [3, 6, 12],
     yeye = -np.sin(eye_i * deg) * np.cos(eye_p * deg)
     zeye = np.cos(eye_i * deg)
     margin = dict(l=0, r=0, b=0, t=0)
-    camera = dict(eye=dict(x=xeye, y=yeye, z=zeye), up=dict(x=0, y=1, z=0))
-    xaxis = dict(range=[x[0], x[-1]], title=xlabel)
-    yaxis = dict(range=[y[0], y[-1]], title=ylabel)
-    zaxis = dict(range=[v[0], v[-1]], title=vlabel)
+    camera = dict(eye=dict(x=_normalize_float(xeye),
+                           y=_normalize_float(yeye),
+                           z=_normalize_float(zeye)),
+                  up=dict(x=0, y=1, z=0))
+    xaxis = dict(range=[_normalize_float(x[0].item()),
+                        _normalize_float(x[-1].item())], title=xlabel)
+    yaxis = dict(range=[_normalize_float(y[0].item()),
+                        _normalize_float(y[-1].item())], title=ylabel)
+    zaxis = dict(range=[_normalize_float(v[0].item()),
+                        _normalize_float(v[-1].item())], title=vlabel)
     scene = dict(aspectmode='cube', camera=camera,
                  xaxis=xaxis, yaxis=yaxis, zaxis=zaxis)
     layout = go.Layout(margin=margin, scene=scene, showlegend=False)
 
     data = []
     for lev in levels:
-        if lev * sigma > np.max(volume):
+        surface = _surface_mesh(measure, volume, lev * sigma)
+        if surface is None:
             continue
-        vertices, simplices, _, _ = measure.marching_cubes(volume, lev * sigma)
+        vertices, simplices = surface
         Xg, Yg, Zg = [t[0] + i * dt for t, i, dt
                       in zip(s, vertices.T[::-1], ds)]
         i, j, k = simplices.T
         mesh = dict(type='mesh3d', x=Xg, y=Yg, z=Zg, i=i, j=j, k=k,
                     intensity=Zg * 0 + lev,
                     colorscale=cmap, reversescale=False,
-                    cmin=np.min(levels), cmax=np.max(levels),
+                    cmin=_normalize_float(np.min(levels).item()),
+                    cmax=_normalize_float(np.max(levels).item()),
                     opacity=alpha, name='', showscale=False)
         data.append(mesh)
         Xe, Ye, Ze = [], [], []
         for t in vertices[simplices]:
-            Xe += [x[0] + dx * t[k % 3][2] for k in range(4)] + [None]
-            Ye += [y[0] + dy * t[k % 3][1] for k in range(4)] + [None]
-            Ze += [v[0] + dv * t[k % 3][0] for k in range(4)] + [None]
+            Xe += [_normalize_float(x[0] + dx * t[k % 3][2])
+                   for k in range(4)] + [None]
+            Ye += [_normalize_float(y[0] + dy * t[k % 3][1])
+                   for k in range(4)] + [None]
+            Ze += [_normalize_float(v[0] + dv * t[k % 3][0])
+                   for k in range(4)] + [None]
         lines = dict(type='scatter3d', x=Xe, y=Ye, z=Ze,
                      mode='lines', opacity=0.04, visible=True,
                      name='', line=dict(color='rgb(0,0,0)', width=1))
@@ -2508,11 +2638,13 @@ def plot3d(levels: list[float] = [3, 6, 12],
     slist = [1, -1, 1, -1, 1, -1]
     alist = [2, 2, 1, 1, 0, 0]
     for kw, sign, axis in zip(klist, slist, alist):
-        _plot_on_wall(d, x, y, v, measure, data, sign, axis, **kw)
+        _plot_on_wall(d, x, y, v, measure, data, sign, axis, **(kw or {}))
 
     if return_data_layout:
         return {'data': data, 'layout': layout}
     else:
         fig = go.Figure(data=data, layout=layout)
-        fig.write_html(file=outname.replace('.html', '') + '.html',
-                       auto_play=show)
+        path = Path(outname)
+        if path.suffix.lower() != '.html':
+            path = path.with_name(path.name + '.html')
+        fig.write_html(file=str(path), auto_open=show, auto_play=False)
