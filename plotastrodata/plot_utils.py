@@ -1833,20 +1833,33 @@ class PlotAstroData(AstroFrame):
                        grid: dict | bool | None = None,
                        title: dict | None = None
                        ) -> None:
-        """Use Axes.set_* of matplotlib. kwargs can include the
-        arguments of PlotAxes2D to adjust x and y axis.
+        """Label angular spatial axes with R.A. and Dec. coordinates.
+
+        Requires dist=1 and pv=False. With swapxy=True, Dec. ticks and
+        labels move to x, and R.A. ticks and labels move to y. Axis limits
+        retain the configured display directions.
 
         Args:
             center (str, optional): Defaults to None, initial one.
-            xlabel (str, optional): Defaults to 'R.A. (ICRS)'.
-            ylabel (str, optional): Defaults to 'Dec. (ICRS)'.
+            xlabel (str, optional): R.A. label, placed on y when swapxy=True.
+                Defaults to 'R.A. (ICRS)'.
+            ylabel (str, optional): Dec. label, placed on x when swapxy=True.
+                Defaults to 'Dec. (ICRS)'.
             nticksminor (int, optional): Interval ratio of major and
                 minor ticks. Defaults to 2.
             grid (dict or bool, optional): A bool toggles the grid; 
                 a dict supplies options. Defaults to None.
             title (dict | str | None): str means set_title(str) for 2D
                 or fig.suptitle(str) for 3D. Defaults to None.
+        Raises:
+            ValueError: If dist != 1 or the plot is a PV diagram.
         """
+        if self.pv:
+            raise ValueError('set_axis_radec() does not support'
+                             + ' position-velocity (PV) diagrams.')
+        if self.dist != 1:
+            raise ValueError('set_axis_radec() requires dist=1;'
+                             + ' distance-scaled axes are not supported.')
         if center is None:
             center = self.center
         if center is None:
@@ -1919,6 +1932,11 @@ class PlotAstroData(AstroFrame):
         textpad = ' ' * 12  # To shift the tick label to left.
         xticklabels[i_ref] = ra_hm + xticklabels[i_ref] + textpad
         yticklabels[j_ref] = dec_dm + '\n' + yticklabels[j_ref]
+        if self.swapxy:
+            xticks, yticks = yticks, xticks
+            xticksminor, yticksminor = yticksminor, xticksminor
+            xticklabels, yticklabels = yticklabels, xticklabels
+            xlabel, ylabel = ylabel, xlabel
         pa2 = PlotAxes2D(True, None, 'linear', 'linear',
                          self.Xlim, self.Ylim, xlabel, ylabel,
                          xticks, yticks, xticklabels, yticklabels,
