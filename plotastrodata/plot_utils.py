@@ -37,6 +37,33 @@ BeamPosition = list[Scalar] | list[list[Scalar] | None] | None
 NumericSequence = list[float | np.floating] | tuple[float | np.floating, ...] | np.ndarray
 Index = int | np.integer | np.ndarray
 
+RealScalar = float | np.floating | np.integer
+PositionPair = tuple[RealScalar, RealScalar] | list[RealScalar] | np.ndarray
+Position = str | PositionPair
+Positions = Position | list[Position] | tuple[Position, ...]
+OverlayValues = RealScalar | NumericSequence
+Channels = list[int | np.integer] | tuple[int | np.integer, ...] | np.ndarray
+
+
+def _overlay_values(value: Any, count: int, name: str
+                    ) -> list | tuple | np.ndarray:
+    """Broadcast scalars; require one sequence entry per position.
+
+    Values are passed through without scalar normalization or dtype changes.
+    Empty positions produce no overlays, including when parameters are omitted.
+    """
+    if count == 0:
+        return []
+    if value is None:
+        raise ValueError(f'{name} is required when positions are supplied.')
+    if np.isscalar(value):
+        return [value] * count
+    if isinstance(value, np.ndarray) and value.ndim == 0:
+        return [value[()]] * count
+    if np.ndim(value) != 1 or len(value) != count:
+        raise ValueError(f'{name} must be a scalar or contain {count} values.')
+    return value
+
 
 def set_rcparams(fontsize: float = 18, nancolor: str | tuple[float, ...] = 'w',
                  dpi: float = 256) -> None:
@@ -763,7 +790,10 @@ class PlotAstroData(AstroFrame):
     len(v)=1 (default) means to make a 2D figure.
     Spatial lengths are in the unit of arcsec, or au if dist (!= 1) is
     given.
-    Angles are in the unit of degree.
+    Angles are in degrees, from original data +y toward +x. Regions,
+    beams, lines, arrows, and polarization segments follow this convention.
+    swapxy maps angles to 90 - angle; xflip and yflip affect only the display.
+    Relative numeric positions remain fractions of the displayed axes.
     For region, line, arrow, label, and marker, a single input can be
     treated without a list, e.g., anglelist=60, as well as
     anglelist=[60].
@@ -972,11 +1002,12 @@ class PlotAstroData(AstroFrame):
                             else [], dtype=int)
         return chans
 
-    def add_region(self, patch: str = 'ellipse',
-                   poslist: list[str | list[float, float]] = [],
-                   majlist: list[float] = [], minlist: list[float] = [],
-                   palist: list[float] = [],
-                   include_chan: list[int] | None = None,
+    def add_region(self, patch: Literal['ellipse', 'rectangle'] = 'ellipse',
+                   poslist: Positions | None = None,
+                   majlist: OverlayValues | None = None,
+                   minlist: OverlayValues | None = None,
+                   palist: OverlayValues | None = None,
+                   include_chan: Channels | None = None,
                    **kwargs: Any) -> None:
         """Use add_patch() and Rectangle or Ellipse of matplotlib.
 
@@ -988,16 +1019,23 @@ class PlotAstroData(AstroFrame):
         Args:
             patch (str, optional): 'ellipse' or 'rectangle'. Defaults to
                 'ellipse'.
-            poslist (list, optional): Text or relative center. Defaults
-                to [].
-            majlist (list, optional): Ellipse major axis. Defaults to
-                [].
-            minlist (list, optional): Ellipse minor axis. Defaults to
-                [].
-            palist (list, optional): Position angle (north to east).
-                Defaults to [].
-            include_chan (list, optional): None means all. Defaults to
-                None.
+            poslist (str, pair, or sequence, optional): Sky coordinate or
+                relative [x, y] pair, or a list/tuple/array of positions.
+                None or an empty sequence draws nothing.
+            majlist (scalar or sequence, optional): Height (major-axis length).
+                Scalars broadcast; sequences must match the position count.
+                Required when positions are supplied.
+            minlist (scalar or sequence, optional): Width (minor-axis length).
+                Scalars broadcast; sequences must match the position count.
+                Required when positions are supplied.
+            palist (scalar or sequence, optional): Position angle in degrees.
+                Zero is original data +y; positive angles turn toward original
+                data +x. swapxy maps it to 90 - palist. Axis flips change only
+                the display, so regions remain aligned with the data.
+                Scalars broadcast; sequences must match the position count.
+                Required when positions are supplied.
+            include_chan (list, tuple, or ndarray, optional): Integer channel
+                indices. None means all.
         """
         _kw = {'facecolor': 'none', 'edgecolor': 'gray',
                'linewidth': 1.5, 'zorder': 10}
@@ -1005,21 +1043,27 @@ class PlotAstroData(AstroFrame):
         if patch not in ['rectangle', 'ellipse']:
             raise ValueError("patch must be 'rectangle' or 'ellipse'.")
 
-        z = listing(*self.pos2xy(poslist), minlist, majlist, palist)
-        for x, y, width, height, angle in zip(*z):
+        x, y = self.pos2xy([] if poslist is None else poslist)
+        widths = _overlay_values(minlist, len(x), 'minlist')
+        heights = _overlay_values(majlist, len(x), 'majlist')
+        angles = _overlay_values(palist, len(x), 'palist')
+        for x, y, width, height, angle in zip(x, y, widths, heights, angles):
             for ch, axnow in enumerate(self.ax):
                 if ch not in self._validchan(include_chan):
                     continue
+                # Matplotlib rotates the width edge from +x; palist describes
+                # the height edge from original data +y toward +x.
+                theta = -(90 - angle if self.swapxy else angle)
                 if patch == 'rectangle':
-                    a = np.radians(angle)
-                    xp = x - (width*np.cos(a) + height*np.sin(a)) / 2.
-                    yp = y - (-width*np.sin(a) + height*np.cos(a)) / 2.
+                    a = np.radians(theta)
+                    xp = x - (width*np.cos(a) - height*np.sin(a)) / 2.
+                    yp = y - (width*np.sin(a) + height*np.cos(a)) / 2.
                     p = Rectangle
                 else:
                     xp, yp = x, y
                     p = Ellipse
                 p = p((xp, yp), width=width, height=height,
-                      angle=angle * self.xdir, **_kw)
+                      angle=theta, **_kw)
                 axnow.add_patch(p)
 
     def add_beam(self, **kwargs: Any) -> None:
@@ -1029,7 +1073,11 @@ class PlotAstroData(AstroFrame):
         beam_kwargs, to specify the beam appearance. A single
         ``beamcolor`` or ``beampos`` value applies to every beam;
         per-beam lists must provide one value for each beam. A
-        ``[None, None, None]`` beam is skipped.
+        ``[None, None, None]`` beam is skipped. bpa is measured from original
+        data +y toward +x (north toward east for sky images). add_region maps
+        it to 90 - bpa under swapxy; axis flips reflect the beam with the data.
+        Relative beampos coordinates refer to the displayed axes and are not
+        exchanged by swapxy.
 
         Default keyword values:
             Beam patch: ``facecolor=beamcolor`` and ``edgecolor=None``.
@@ -1039,7 +1087,7 @@ class PlotAstroData(AstroFrame):
         b = kwargs2instance(Beam, kwargs)
         show_beam, beamcolor, beampos = b.show_beam, b.beamcolor, b.beampos
         beam = b.beam
-        del kwargs['beam']
+        kwargs.pop('beam', None)
         b.validate_display()
         if not show_beam:
             return
@@ -1058,9 +1106,6 @@ class PlotAstroData(AstroFrame):
             a = max(0.35 * bmaj / self.rmax, 0.1)
             if bp is None:
                 bp = [a, 0.1 if self.pv else a]
-            if self.swapxy:
-                bp = np.transpose(bp)
-                bpa = 90 - bpa
             _kw = {'facecolor': bc, 'edgecolor': None}
             _kw.update(kwargs)
             self.add_region(patch=patch, poslist=bp,
@@ -1068,8 +1113,8 @@ class PlotAstroData(AstroFrame):
                             include_chan=include_chan,
                             **_kw)
 
-    def add_marker(self, poslist: list[str | list[float, float]] = [],
-                   include_chan: list[int] | None = None,
+    def add_marker(self, poslist: Positions | None = None,
+                   include_chan: Channels | None = None,
                    **kwargs: Any) -> None:
         """Use Axes.plot of matplotlib.
 
@@ -1079,9 +1124,11 @@ class PlotAstroData(AstroFrame):
             User-supplied keyword arguments override these values.
 
         Args:
-            poslist (list, optional): Text or relative. Defaults to [].
-            include_chan (list, optional): None means all. Defaults to
-                None.
+            poslist (str, pair, or sequence, optional): Sky coordinate or
+                relative [x, y] pair, or a list/tuple/array of positions.
+                None or an empty sequence draws nothing.
+            include_chan (list, tuple, or ndarray, optional): Integer channel
+                indices. None means all.
         """
         _kw = {'marker': '+', 'ms': 10, 'mfc': 'gray',
                'mec': 'gray', 'mew': 2, 'alpha': 1, 'zorder': 10}
@@ -1089,12 +1136,13 @@ class PlotAstroData(AstroFrame):
         for ch, axnow in enumerate(self.ax):
             if ch not in self._validchan(include_chan):
                 continue
-            for x, y in zip(*self.pos2xy(poslist)):
+            for x, y in zip(*self.pos2xy([] if poslist is None else poslist)):
                 axnow.plot(x, y, **_kw)
 
-    def add_text(self, poslist: list[str | list[float, float]] = [],
-                 slist: list[str] = [],
-                 include_chan: list[int] | None = None,
+    def add_text(self, poslist: Positions | None = None,
+                 slist: str | list[str] | tuple[str, ...]
+                 | np.ndarray | None = None,
+                 include_chan: Channels | None = None,
                  **kwargs: Any) -> None:
         """Use Axes.text of matplotlib.
 
@@ -1106,10 +1154,13 @@ class PlotAstroData(AstroFrame):
             are accepted as aliases for ``ha`` and ``va``.
 
         Args:
-            poslist (list, optional): Text or relative. Defaults to [].
-            slist (list, optional): List of text. Defaults to [].
-            include_chan (list, optional): None means all. Defaults to
-                None.
+            poslist (str, pair, or sequence, optional): Sky coordinate or
+                relative [x, y] pair, or a list/tuple/array of positions.
+                None or an empty sequence draws nothing.
+            slist (str or sequence, optional): Text to draw. A string broadcasts;
+                sequences must match the position count. Required with positions.
+            include_chan (list, tuple, or ndarray, optional): Integer channel
+                indices. None means all.
         """
         _kw = {'color': 'gray', 'fontsize': 15, 'ha': 'center',
                'va': 'center', 'zorder': 10}
@@ -1119,17 +1170,18 @@ class PlotAstroData(AstroFrame):
             if long in kwargs:
                 kwargs[short] = kwargs.pop(long)
         _kw.update(kwargs)
+        x, y = self.pos2xy([] if poslist is None else poslist)
+        labels = _overlay_values(slist, len(x), 'slist')
         for ch, axnow in enumerate(self.ax):
             if ch not in self._validchan(include_chan):
                 continue
-            z = listing(*self.pos2xy(poslist), slist)
-            for x, y, s in zip(*z):
-                axnow.text(x=x, y=y, s=s, **_kw)
+            for xp, yp, label in zip(x, y, labels):
+                axnow.text(x=xp, y=yp, s=label, **_kw)
 
-    def add_line(self, poslist: list[str | list[float, float]] = [],
-                 anglelist: list[float] = [],
-                 rlist: list[float] = [],
-                 include_chan: list[int] | None = None,
+    def add_line(self, poslist: Positions | None = None,
+                 anglelist: OverlayValues | None = None,
+                 rlist: OverlayValues | None = None,
+                 include_chan: Channels | None = None,
                  **kwargs: Any) -> None:
         """Use Axes.plot of matplotlib.
 
@@ -1139,79 +1191,115 @@ class PlotAstroData(AstroFrame):
             arguments override these values.
 
         Args:
-            poslist (list, optional): Text or relative. Defaults to [].
-            anglelist (list, optional): North to east. Defaults to [].
-            rlist (list, optional): List of radius. Defaults to [].
-            include_chan (list, optional): None means all. Defaults to
-                None.
+            poslist (str, pair, or sequence, optional): Sky coordinate or
+                relative [x, y] pair, or a list/tuple/array of positions.
+                None or an empty sequence draws nothing.
+            anglelist (scalar or sequence, optional): Angle in degrees
+                from original data +y toward +x. swapxy maps it to 90 - angle;
+                axis flips reflect the direction with the data.
+                Scalars broadcast; sequences must match the position count.
+                Required when positions are supplied.
+            rlist (scalar or sequence, optional): Length in data-coordinate units.
+                Scalars broadcast; sequences must match the position count.
+                Required when positions are supplied.
+            include_chan (list, tuple, or ndarray, optional): Integer channel
+                indices. None means all.
         """
         _kw = {'color': 'gray', 'linewidth': 1.5,
                'linestyle': '-', 'zorder': 10}
         _kw.update(kwargs)
+        x, y = self.pos2xy([] if poslist is None else poslist)
+        angles = _overlay_values(anglelist, len(x), 'anglelist')
+        radii = _overlay_values(rlist, len(x), 'rlist')
         for ch, axnow in enumerate(self.ax):
             if ch not in self._validchan(include_chan):
                 continue
-            alist = np.radians(anglelist)
-            z = listing(*self.pos2xy(poslist), alist, rlist)
-            for x, y, a, r in zip(*z):
-                axnow.plot([x, x + r * np.sin(a)],
-                           [y, y + r * np.cos(a)], **_kw)
+            for xp, yp, angle, r in zip(x, y, angles, radii):
+                a = np.radians(90 - angle if self.swapxy else angle)
+                axnow.plot([xp, xp + r * np.sin(a)],
+                           [yp, yp + r * np.cos(a)], **_kw)
 
-    def add_arrow(self, poslist: list[str | list[float, float]] = [],
-                  anglelist: list[float] = [],
-                  rlist: list[float] = [],
-                  include_chan: list[int] | None = None,
+    def add_arrow(self, poslist: Positions | None = None,
+                  anglelist: OverlayValues | None = None,
+                  rlist: OverlayValues | None = None,
+                  include_chan: Channels | None = None,
                   **kwargs: Any) -> None:
         """Use Axes.quiver of matplotlib.
 
+        Angles follow the original data axes with the default angles='xy'.
+        Overriding the quiver angle mode can change this interpretation.
+
         Default keyword values:
             Matplotlib: ``color='gray'``, ``width=0.012``,
-            ``headwidth=5``, ``headlength=5``, and ``zorder=10``.
+            ``headwidth=5``, ``headlength=5``, ``zorder=10``,
+            ``angles='xy'``, ``scale_units='xy'``, and ``scale=1``.
             User-supplied keyword arguments override these values.
 
         Args:
-            poslist (list, optional): Text or relative. Defaults to [].
-            anglelist (list, optional): North to east. Defaults to [].
-            rlist (list, optional): List of radius. Defaults to [].
-            include_chan (list, optional): None means all. Defaults to
-                None.
+            poslist (str, pair, or sequence, optional): Sky coordinate or
+                relative [x, y] pair, or a list/tuple/array of positions.
+                None or an empty sequence draws nothing.
+            anglelist (scalar or sequence, optional): Angle in degrees
+                from original data +y toward +x. swapxy maps it to 90 - angle;
+                axis flips reflect the direction with the data.
+                Scalars broadcast; sequences must match the position count.
+                Required when positions are supplied.
+            rlist (scalar or sequence, optional): Length in data-coordinate units.
+                Scalars broadcast; sequences must match the position count.
+                Required when positions are supplied.
+            include_chan (list, tuple, or ndarray, optional): Integer channel
+                indices. None means all.
         """
         _kw = {'color': 'gray', 'width': 0.012,
-               'headwidth': 5, 'headlength': 5, 'zorder': 10}
+               'headwidth': 5, 'headlength': 5, 'zorder': 10,
+               'angles': 'xy', 'scale_units': 'xy', 'scale': 1}
         _kw.update(kwargs)
+        x, y = self.pos2xy([] if poslist is None else poslist)
+        angles = _overlay_values(anglelist, len(x), 'anglelist')
+        radii = _overlay_values(rlist, len(x), 'rlist')
         for ch, axnow in enumerate(self.ax):
             if ch not in self._validchan(include_chan):
                 continue
-            alist = np.radians(anglelist)
-            z = listing(*self.pos2xy(poslist), alist, rlist)
-            for x, y, a, r in zip(*z):
-                axnow.quiver(x, y, r * np.sin(a), r * np.cos(a),
-                             angles='xy', scale_units='xy', scale=1,
+            for xp, yp, angle, r in zip(x, y, angles, radii):
+                a = np.radians(90 - angle if self.swapxy else angle)
+                axnow.quiver(xp, yp, r * np.sin(a), r * np.cos(a),
                              **_kw)
 
-    def add_scalebar(self, length: float = 0, label: str = '',
-                     color: str = 'gray', barpos: tuple[float, float] = (0.8, 0.12),
-                     fontsize: float | None = None, linewidth: float = 3,
-                     bbox: dict = {'alpha': 0}) -> None:
-        """Use Axes.text and Axes.plot of matplotlib.
+    def add_scalebar(self, length: RealScalar, label: str = '',
+                     color: str | tuple[float, ...] = 'gray',
+                     barpos: PositionPair = (0.8, 0.12),
+                     fontsize: RealScalar | None = None,
+                     linewidth: RealScalar = 3,
+                     bbox: dict[str, Any] | None = None) -> None:
+        """Draw a spatial scalebar using Matplotlib text and plot.
+
+        Position-velocity (PV) diagrams are not supported.
 
         Args:
-            length (float, optional): In the unit of arcsec. Defaults to
-                0.
+            length (float): Required finite positive length in horizontal
+                data-axis units (arcsec, or au when distance scaling is used).
             label (str, optional): Text like '100 au'. Defaults to ''.
-            color (str, optional): Same for bar and label. Defaults to
-                'gray'.
-            barpos (tuple, optional): Relative position. Defaults to
-                (0.8, 0.12).
-            fontsize (float, optional): None means 15 if one channel
-                else 20. Defaults to None.
-            linewidth (float, optional): Width of the bar. Defaults to
-                3.
+            color (str, optional): Same for bar and label. Defaults to 'gray'.
+            barpos (list, tuple, or ndarray, optional): Relative position.
+                Defaults to (0.8, 0.12).
+            fontsize (float, optional): None means 20 points for one panel
+                and 15 points for multiple panels. Defaults to None.
+            linewidth (float, optional): Width of the bar. Defaults to 3.
             bbox (dict, optional): Keyword arguments for the text
-                bounding box. Defaults to {'alpha': 0}.
+                bounding box. None uses {'alpha': 0}.
+        Raises:
+            ValueError: If pv=True, length is not finite and positive, or
+                barpos does not contain two finite coordinates.
         """
-        if length == 0:
-            raise ValueError('length must be nonzero.')
+        if self.pv:
+            raise ValueError('add_scalebar() does not support position-velocity'
+                             + ' (PV) diagrams; use it for spatial maps only.')
+        if not np.isfinite(length) or length <= 0:
+            raise ValueError('length must be finite and positive.')
+        if np.shape(barpos) != (2,) or not all(np.isfinite(v) for v in barpos):
+            raise ValueError('barpos must contain two finite'
+                             + ' relative coordinates.')
+        bbox = {'alpha': 0} if bbox is None else bbox
         if fontsize is None:
             fontsize = 20 if len(self.ax) == 1 else 15
         for ch, axnow in enumerate(self.ax):
@@ -1384,6 +1472,11 @@ class PlotAstroData(AstroFrame):
         ``[ampfits, angfits, Ufits, Qfits]``, and ``data`` is built from
         ``[amp, ang, stU, stQ]``.
 
+        Angles are data-relative, including angles derived from Stokes U/Q.
+        swapxy exchanges direction components (angle becomes 90 - angle).
+        xflip and yflip change only the display; segments reflect with the
+        data. This convention uses the default angles='xy' quiver setting.
+
         Keyword groups accepted in ``**kwargs``:
             AstroData: Data input and metadata, such as ``x``, ``y``,
             ``v``, ``beam``, ``Tb``, ``sigma``, ``center``,
@@ -1406,22 +1499,24 @@ class PlotAstroData(AstroFrame):
         Args:
             ampfits (str, optional): Input FITS file name. Length of
                 segment. Defaults to None.
-            angfits (str, optional): Input FITS file name. North to
-                east. Defaults to None.
+            angfits (str, optional): Input FITS file name. Angles in degrees
+                from original data +y toward +x (north toward east for sky
+                images). Defaults to None.
             Ufits (str, optional): Input FITS file name. Stokes U.
                 Defaults to None.
             Qfits (str, optional): Input FITS file name. Stokes Q.
                 Defaults to None.
             amp (list, optional): Length of segment. Defaults to None.
-            ang (list, optional): North to east. Defaults to None.
+            ang (list, optional): Angles in degrees from original data +y
+                toward +x. Defaults to None.
             stU (list, optional): Stokes U. Defaults to None.
             stQ (list, optional): Stokes Q. Defaults to None.
             ampfactor (float, optional): Length of segment is amp times
                 ampfactor. Defaults to 1..
             angonly (bool, optional): True means amp=1 for all. Defaults
                 to False.
-            rotation (float, optional): Segment angle is ang + rotation.
-                Defaults to 0..
+            rotation (float, optional): Added to ang in the original data
+                coordinates, before swapxy. Defaults to 0.
             cutoff (float, optional): Used when amp and ang are
                 calculated from Stokes U and Q. In the unit of sigma.
                 Defaults to 3..
@@ -1448,8 +1543,11 @@ class PlotAstroData(AstroFrame):
         if angonly:
             amp = np.sign(amp)**2
         amp = amp / np.nanmax(amp)
-        U = ampfactor * amp * np.sin(np.radians(ang + rotation))
-        V = ampfactor * amp * np.cos(np.radians(ang + rotation))
+        angle = ang + rotation
+        if self.swapxy:
+            angle = 90 - angle
+        U = ampfactor * amp * np.sin(np.radians(angle))
+        V = ampfactor * amp * np.cos(np.radians(angle))
         U = self.vskipfill(U, v)
         V = self.vskipfill(V, v)
         _kw['scale'] = 1. / np.abs(x[1] - x[0])
