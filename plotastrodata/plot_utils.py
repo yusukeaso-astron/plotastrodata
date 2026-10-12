@@ -1,9 +1,11 @@
+from os import PathLike
 from dataclasses import fields, field
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
+from matplotlib.collections import QuadMesh
 from matplotlib.patches import Ellipse, Rectangle
 from pydantic import ConfigDict, Field, WrapValidator, field_validator
 from pydantic.dataclasses import dataclass as pydantic_dataclass
@@ -63,6 +65,24 @@ def _overlay_values(value: Any, count: int, name: str
     if np.ndim(value) != 1 or len(value) != count:
         raise ValueError(f'{name} must be a scalar or contain {count} values.')
     return value
+
+
+def _positive_noise(value: Any, name: str) -> None:
+    if (not isinstance(value, (float, int, np.floating, np.integer))
+            or isinstance(value, (bool, np.bool_))
+            or not np.isfinite(value) or value <= 0):
+        raise ValueError(f'{name} must be a finite positive scalar noise level.')
+
+
+def _image_edges(grid: np.ndarray, name: str
+                 ) -> tuple[float | np.longdouble, float | np.longdouble]:
+    """Get pixel edges as Python floats, preserving extended precision."""
+    steps = np.diff(grid)
+    if (not np.all(np.isfinite(grid)) or steps[0] == 0
+            or not np.allclose(steps, steps[0], rtol=1e-5, atol=0)):
+        raise ValueError(f'RGB {name} coordinates must be finite and uniformly spaced.')
+    return (_normalize_float(grid[0] - steps[0] / 2),
+            _normalize_float(grid[-1] + steps[0] / 2))
 
 
 def set_rcparams(fontsize: float = 18, nancolor: str | tuple[float, ...] = 'w',
@@ -1312,15 +1332,21 @@ class PlotAstroData(AstroFrame):
             axnow.plot([x[0] - length/2., x[0] + length/2.], [y[0], y[0]],
                        '-', linewidth=linewidth, color=color)
 
-    def _set_colorbar(self, mappable: list[Any], ch: int, show_cbar: bool,
-                      cblabel: str, cbformat: str,
-                      cbticks: list | None, cbticklabels: list | None,
-                      cblocation: str,
-                      cblabelfontsize: int, cbtickfontsize: int,
+    def _set_colorbar(self, mappable: list[QuadMesh | None], ch: int,
+                      show_cbar: bool,
+                      cblabel: str | None, cbformat: str,
+                      cbticks: NumericSequence | None,
+                      cbticklabels: list[str] | tuple[str, ...]
+                      | np.ndarray | None,
+                      cblocation: Literal['left', 'right', 'top', 'bottom'],
+                      cblabelfontsize: RealScalar, cbtickfontsize: RealScalar,
                       st: Stretcher) -> None:
         if not show_cbar:
             return
 
+        if mappable[ch] is None:
+            raise ValueError('Cannot create a colorbar'
+                             + ' without a plotted mappable.')
         fig = self.figs[ch // self.rowcol]
         if len(self.ax) == 1:
             ax = self.ax[ch]
@@ -1332,7 +1358,9 @@ class PlotAstroData(AstroFrame):
                               format=cbformat)
         cb.ax.tick_params(labelsize=cbtickfontsize)
         font = mpl.font_manager.FontProperties(size=cblabelfontsize)
-        cb.ax.yaxis.label.set_font_properties(font)
+        horizontal = cb.orientation == 'horizontal'
+        label_axis = cb.ax.xaxis if horizontal else cb.ax.yaxis
+        label_axis.label.set_font_properties(font)
         cmin, cmax = mappable[ch].get_clim()
         if cbticks is None and st.stretch == 'log':
             cbticks, cbticklabels = logcbticks(10**cmin, 10**cmax)
@@ -1341,7 +1369,10 @@ class PlotAstroData(AstroFrame):
         cbticks = cbticks[cond]
         cb.set_ticks(cbticks)
         if cbticklabels is None:
-            cbticklabels = [f'{t:{cbformat[1:]}}' for t in st.undo(cbticks)]
+            formatter = (mpl.ticker.StrMethodFormatter(cbformat)
+                         if '{' in cbformat
+                         else mpl.ticker.FormatStrFormatter(cbformat))
+            cbticklabels = [formatter(t) for t in st.undo(cbticks)]
         else:
             cbticklabels = np.array(cbticklabels)[cond]
         cb.set_ticklabels(cbticklabels)
@@ -1350,11 +1381,12 @@ class PlotAstroData(AstroFrame):
                   show_cbar: bool = True,
                   cblabel: str | None = None,
                   cbformat: str = '%.1e',
-                  cbticks: list[float] | None = None,
-                  cbticklabels: list[str] | None = None,
-                  cblocation: str = 'right',
-                  cblabelfontsize: int = 16,
-                  cbtickfontsize: int = 14,
+                  cbticks: NumericSequence | None = None,
+                  cbticklabels: list[str] | tuple[str, ...]
+                  | np.ndarray | None = None,
+                  cblocation: Literal['left', 'right', 'top', 'bottom'] = 'right',
+                  cblabelfontsize: RealScalar = 16,
+                  cbtickfontsize: RealScalar = 14,
                   **kwargs: Any) -> None:
         """Use Axes.pcolormesh of matplotlib.
 
@@ -1381,19 +1413,41 @@ class PlotAstroData(AstroFrame):
             show_cbar (bool, optional): Show color bar. Defaults to
                 True.
             cblabel (str, optional): Colorbar label. Defaults to None.
-            cbformat (str, optional): Format for ticklabels of colorbar.
-                Defaults to '%.1e'.
-            cbticks (list, optional): Ticks of colorbar. Defaults to
-                None.
-            cbticklabels (list, optional): Ticklabels of colorbar.
-                Defaults to None.
-            cblocation (str, optional): 'left', 'top', 'left', 'right'.
-                Only for 2D images. Defaults to 'right'.
-            cblabelfontsize (int, optional): Fontsize for the colorbar
+            cbformat (str, optional): Numeric printf-style (e.g. '%.1e')
+                or brace-style (e.g. '{x:.1f}') format. Defaults to '%.1e'.
+            cbticks (list, tuple, or ndarray, optional): Finite 1D tick values
+                in original, unstretched units. Defaults to None.
+            cbticklabels (list, tuple, or ndarray, optional): One label per
+                explicit cbtick. Defaults to None (formatted automatically).
+            cblocation (str, optional): 'left', 'right', 'top', or 'bottom'.
+                Applies to single panels; channel maps use a fixed right-side
+                colorbar. Defaults to 'right'.
+            cblabelfontsize (float, optional): Fontsize for the colorbar
                 label. This is independent of set_rcparams().
-            cbtickfontsize (int, optional): Fontsize for the colorbar
+            cbtickfontsize (float, optional): Fontsize for the colorbar
                 ticks. This is independent of set_rcparams().
         """
+        if show_cbar:
+            if cblocation not in ('left', 'right', 'top', 'bottom'):
+                raise ValueError('cblocation must be left, right,'
+                                 + ' top, or bottom.')
+            try:
+                formatter = (mpl.ticker.StrMethodFormatter(cbformat)
+                             if '{' in cbformat
+                             else mpl.ticker.FormatStrFormatter(cbformat))
+                formatter(1.)
+            except (ValueError, TypeError, KeyError, IndexError) as exc:
+                raise ValueError('cbformat must be a numeric printf-style'
+                                 ' or {x:...} format.') from exc
+            if cbticks is not None:
+                cbticks = np.asarray(cbticks)
+                if cbticks.ndim != 1 or not np.all(np.isfinite(cbticks)):
+                    raise ValueError('cbticks must be a finite 1D sequence.')
+            if (cbticklabels is not None
+                and (cbticks is None or np.ndim(cbticklabels) != 1
+                     or len(cbticklabels) != len(cbticks))):
+                raise ValueError('cbticklabels requires one label'
+                                 + ' per explicit cbtick.')
         self._kw = {'cmap': 'cubehelix', 'alpha': 1,
                     'edgecolors': 'none', 'zorder': 1,
                     'vmin': None, 'vmax': None}
@@ -1421,7 +1475,8 @@ class PlotAstroData(AstroFrame):
                                cblabelfontsize, cbtickfontsize, st)
 
     def add_contour(self,
-                    levels: list[float] = [-12, -6, -3, 3, 6, 12, 24, 48, 96, 192, 384],
+                    levels: NumericSequence = (-12, -6, -3, 3, 6, 12,
+                                               24, 48, 96, 192, 384),
                     **kwargs: Any) -> None:
         """Use Axes.contour of matplotlib.
 
@@ -1442,26 +1497,37 @@ class PlotAstroData(AstroFrame):
             values.
 
         Args:
-            levels (list, optional): Contour levels in the unit of
-                sigma. Defaults to [-12,-6,-3,3,6,12,24,48,96,192,384].
+            levels (list, tuple, or ndarray, optional): Finite distinct contour
+                levels in units of sigma. A finite positive scalar sigma is
+                required. Defaults to [-12,-6,-3,3,6,12,24,48,96,192,384].
         """
+        levels = np.asarray(levels)
+        if (levels.ndim != 1
+            or levels.size == 0
+            or not np.all(np.isfinite(levels))
+            or np.unique(levels).size != levels.size):
+            raise ValueError('levels must be a nonempty 1D sequence'
+                             + ' of finite distinct values.')
         self._kw = {'colors': 'gray', 'linewidths': 1.0, 'zorder': 2}
         c, x, y, v, sigma, _, _kw, singlepix = self._map_init(kwargs)
         if singlepix:
             raise ValueError(
                 'add_contour() requires at least two x and y pixels.')
 
+        _positive_noise(sigma, 'sigma')
         c = self.vskipfill(c, v)
         for axnow, cnow in zip(self.ax, c):
             axnow.contour(x, y, cnow, np.sort(levels) * sigma, **_kw)
 
     def add_segment(self,
-                    ampfits: str | None = None, angfits: str | None = None,
-                    Ufits: str | None = None, Qfits: str | None = None,
-                    amp: list[np.ndarray] | None = None,
-                    ang: list[np.ndarray] | None = None,
-                    stU: list[np.ndarray] | None = None,
-                    stQ: list[np.ndarray] | None = None,
+                    ampfits: str | PathLike[str] | None = None,
+                    angfits: str | PathLike[str] | None = None,
+                    Ufits: str | PathLike[str] | None = None,
+                    Qfits: str | PathLike[str] | None = None,
+                    amp: np.ndarray | None = None,
+                    ang: np.ndarray | None = None,
+                    stU: np.ndarray | None = None,
+                    stQ: np.ndarray | None = None,
                     ampfactor: float = 1., angonly: bool = False,
                     rotation: float = 0.,
                     cutoff: float = 3.,
@@ -1476,6 +1542,15 @@ class PlotAstroData(AstroFrame):
         swapxy exchanges direction components (angle becomes 90 - angle).
         xflip and yflip change only the display; segments reflect with the
         data. This convention uses the default angles='xy' quiver setting.
+        Supply angles or a complete Stokes U/Q pair; Stokes inputs require
+        finite positive noise levels. Amplitudes must match angles in shape
+        and be nonnegative. Zero or entirely invalid amplitudes draw nothing.
+        scale is a finite positive, dimensionless inverse-length factor (default 1).
+        It is divided by the displayed x pixel spacing before passing to quiver.
+        With the default scale_units='xy', maximum segment length is
+        ampfactor * abs(dx) / scale; scale=2 makes segments half as long.
+        Here dx is the processed horizontal grid spacing, after sampling and
+        swapxy. Overriding scale_units changes the length interpretation.
 
         Keyword groups accepted in ``**kwargs``:
             AstroData: Data input and metadata, such as ``x``, ``y``,
@@ -1493,26 +1568,28 @@ class PlotAstroData(AstroFrame):
             Matplotlib: ``angles='xy'``, ``scale_units='xy'``,
             ``color='gray'``, ``pivot='mid'``, ``headwidth=0``,
             ``headlength=0``, ``headaxislength=0``, ``width=0.007``, and
-            ``zorder=3``. User-supplied keyword arguments override these
-            values.
+            ``zorder=3``, and dimensionless ``scale=1``. User-supplied keyword
+            arguments override these values.
 
         Args:
-            ampfits (str, optional): Input FITS file name. Length of
-                segment. Defaults to None.
-            angfits (str, optional): Input FITS file name. Angles in degrees
-                from original data +y toward +x (north toward east for sky
-                images). Defaults to None.
-            Ufits (str, optional): Input FITS file name. Stokes U.
-                Defaults to None.
-            Qfits (str, optional): Input FITS file name. Stokes Q.
-                Defaults to None.
-            amp (list, optional): Length of segment. Defaults to None.
-            ang (list, optional): Angles in degrees from original data +y
+            ampfits (str or os.PathLike, optional): Input FITS file name.
+                Length of segment. Defaults to None.
+            angfits (str or os.PathLike, optional): Input FITS file name. 
+                Angles in degrees from original data +y toward +x (north 
+                toward east for sky images). Defaults to None.
+            Ufits (str or os.PathLike, optional): Input FITS file name.
+                Stokes U. Defaults to None.
+            Qfits (str or os.PathLike, optional): Input FITS file name.
+                Stokes Q. Defaults to None.
+            amp (np.ndarray, optional): Length of segment. Defaults to None.
+            ang (np.ndarray, optional): Angles in degrees from original data +y
                 toward +x. Defaults to None.
-            stU (list, optional): Stokes U. Defaults to None.
-            stQ (list, optional): Stokes Q. Defaults to None.
-            ampfactor (float, optional): Length of segment is amp times
-                ampfactor. Defaults to 1..
+            stU (np.ndarray, optional): Stokes U. Defaults to None.
+            stQ (np.ndarray, optional): Stokes Q. Defaults to None.
+            ampfactor (float, optional): Multiplies amplitude after
+                normalization by its finite maximum. With default quiver scale,
+                maximum length is ampfactor times the x pixel spacing.
+                Defaults to 1.
             angonly (bool, optional): True means amp=1 for all. Defaults
                 to False.
             rotation (float, optional): Added to ang in the original data
@@ -1521,6 +1598,13 @@ class PlotAstroData(AstroFrame):
                 calculated from Stokes U and Q. In the unit of sigma.
                 Defaults to 3..
         """
+        has_u = stU is not None or Ufits is not None
+        has_q = stQ is not None or Qfits is not None
+        if has_u != has_q:
+            raise ValueError('Provide both Stokes U and Q, or neither.')
+        if not has_u and ang is None and angfits is None:
+            raise ValueError('Provide an angle dataset or a complete'
+                             + ' Stokes U/Q pair.')
         self._kw = {'angles': 'xy', 'scale_units': 'xy', 'color': 'gray',
                     'pivot': 'mid', 'headwidth': 0, 'headlength': 0,
                     'headaxislength': 0, 'width': 0.007, 'zorder': 3,
@@ -1534,12 +1618,25 @@ class PlotAstroData(AstroFrame):
         amp, ang, stU, stQ = c
         sigmaU, sigmaQ = sigma[2:]
         if stU is not None and stQ is not None:
-            self.sigma = sigma = (sigmaU + sigmaQ) / 2.
+            _positive_noise(sigmaU, 'Stokes U sigma')
+            _positive_noise(sigmaQ, 'Stokes Q sigma')
+            if stU.shape != stQ.shape:
+                raise ValueError('Stokes U and Q must have matching shapes.')
+            self.sigma = sigma = _normalize_float((sigmaU + sigmaQ) / 2.)
             ang = np.degrees(np.arctan2(stU, stQ) / 2.)
             amp = np.hypot(stU, stQ)
             amp[amp < cutoff * sigma] = np.nan
         if amp is None:
             amp = np.ones_like(ang)
+        if amp.shape != ang.shape:
+            raise ValueError('Amplitude and angle datasets must'
+                             + ' have matching shapes.')
+        valid = np.isfinite(amp) & np.isfinite(ang)
+        if np.any(amp[valid] < 0):
+            raise ValueError('Segment amplitudes must be nonnegative.')
+        if not np.any(valid) or not np.any(amp[valid] > 0):
+            return  # No finite nonzero segments to draw.
+        amp = np.where(valid, amp, np.nan)
         if angonly:
             amp = np.sign(amp)**2
         amp = amp / np.nanmax(amp)
@@ -1550,17 +1647,31 @@ class PlotAstroData(AstroFrame):
         V = ampfactor * amp * np.cos(np.radians(angle))
         U = self.vskipfill(U, v)
         V = self.vskipfill(V, v)
-        _kw['scale'] = 1. / np.abs(x[1] - x[0])
+        scale = _kw.get('scale', 1.)
+        if (not isinstance(scale, (int, float, np.integer, np.floating))
+                or isinstance(scale, (bool, np.bool_))
+                or not np.isfinite(scale) or scale <= 0):
+            raise ValueError('Segment scale must be a finite positive scalar.')
+        _kw['scale'] = scale / np.abs(x[1] - x[0])
         for axnow, unow, vnow in zip(self.ax, U, V):
             axnow.quiver(x, y, unow, vnow, **_kw)
 
     def add_rgb(self, **kwargs: Any) -> None:
-        """Use PIL.Image and imshow of matplotlib.
+        """Render exactly three matching RGB datasets with Matplotlib imshow.
 
-        A three-element array ([red, green, blue]) is expected for most
-        data, stretch, and beam arguments, including ``vmin`` and
-        ``vmax``.
-        ``xskip``, ``yskip``, and ``show_beam`` are single values.
+        Supply data or fitsimage as a list/tuple in red, green, blue order.
+        Scalar stretch settings broadcast; sequences must contain three values.
+        Each channel is normalized to [0, 1]; a zero normalization range gives
+        zero intensity. Pixels with any nonfinite input or stretched component
+        are transparent, including padded channel panels. Source arrays are
+        not modified. xskip, yskip, and show_beam are single values.
+
+        Default origin='lower' maps array rows directly to the supplied y grid;
+        pixel-edge extent aligns RGB pixels with color and contour maps.
+        Grids must be uniform (rtol=1e-5). Axis flips act through display limits,
+        without reversing pixel arrays. Explicit imshow options (including
+        alpha, aspect, origin, and extent) override defaults; overriding origin
+        or extent can change alignment with other overlays.
 
         Keyword groups accepted in ``**kwargs``:
             AstroData: Data input and metadata, such as ``fitsimage``,
@@ -1576,42 +1687,73 @@ class PlotAstroData(AstroFrame):
             ``matplotlib.axes.Axes.imshow``.
 
         Default keyword values:
-            Stretcher: ``vmin=[None] * 3``, ``vmax=[None] * 3``,
-            ``stretch=['linear'] * 3``, ``stretchscale=[None] * 3``, and
-            ``stretchpower=[0.5] * 3``. User-supplied keyword arguments
+            Stretcher: ``vmin=None``, ``vmax=None``,
+            ``stretch=['linear'] * 3``, ``stretchscale=None``, and
+            ``stretchpower=0.5``. User-supplied keyword arguments
             override these values.
         """
-        from PIL import Image
-
-        self._kw = {'vmin': [None] * 3, 'vmax': [None] * 3,
-                    'stretch': ['linear'] * 3,
-                    'stretchscale': [None] * 3,
-                    'stretchpower': [0.5] * 3}
-        c, x, y, v, _, _, _kw, singlepix = self._map_init(kwargs)
+        # Three channels are intrinsic to RGB; scalar stretch settings broadcast.
+        source = (kwargs.get('data')
+                  if kwargs.get('data') is not None
+                  else kwargs.get('fitsimage'))
+        if (not isinstance(source, (list, tuple))
+                or len(source) != 3
+                or any(c is None for c in source)):
+            raise ValueError('add_rgb() requires exactly three red, green,'
+                             + ' and blue datasets.')
+        kwargs = kwargs.copy()
+        if isinstance(source, tuple):
+            key = 'data' if kwargs.get('data') is not None else 'fitsimage'
+            kwargs[key] = list(source)
+        self._kw = {'vmin': None, 'vmax': None, 'stretch': ['linear'] * 3,
+                    'stretchscale': None, 'stretchpower': 0.5}
+        c, x, y, v, sigma, _, _kw, singlepix = self._map_init(kwargs)
         if singlepix:
             raise ValueError('add_rgb() requires at least two x and y pixels.')
-
-        if not (np.shape(c[0]) == np.shape(c[1]) == np.shape(c[2])):
-            raise ValueError(
-                'add_rgb() requires red, green, and blue data with matching '
-                'shapes.')
-
+        if len(c) != 3 or not (c[0].shape == c[1].shape == c[2].shape):
+            raise ValueError('add_rgb() requires three datasets with'
+                             + ' matching shapes.')
+        if isinstance(_kw['stretch'], str):
+            _kw['stretch'] = [_kw['stretch']] * 3
+        _kw['sigma'] = sigma
         st = kwargs2instance(Stretcher, _kw)
-        c, cmin, cmax = st.set_minmax(c)
-        for i in range(st.n):
-            if cmax[i] > cmin[i]:
-                c[i] = (c[i] - cmin[i]) / (cmax[i] - cmin[i]) * 255
-            c[i] = self.vskipfill(c[i], v)
-        size = np.shape(c[0][0])[::-1]
-        c = np.moveaxis(c, 1, 0)[:, :, ::-self.ydir, ::-self.xdir]
-        for axnow, rgb in zip(self.ax, c):
-            im = Image.new('RGB', size, (128, 128, 128))
-            for j in range(size[1]):
-                for i in range(size[0]):
-                    value = tuple(int(a[j, i]) for a in rgb)
-                    im.putpixel((i, j), value)
-            axnow.imshow(im, extent=[x[0], x[-1], y[0], y[-1]])
-            axnow.set_aspect(np.abs((x[-1]-x[0]) / (y[-1]-y[0])))
+        _kw.pop('vmin', None)
+        _kw.pop('vmax', None)
+        if st.n != 3:
+            raise ValueError('RGB stretch settings must contain three values.')
+        channels = []
+        for i, data in enumerate(c):
+            lo, hi = st._parameter('vmin', i), st._parameter('vmax', i)
+            if lo is not None and hi is not None and lo > hi:
+                raise ValueError('vmin must not exceed vmax.')
+            clipped = data if lo is None and hi is None else data.clip(lo, hi)
+            with np.errstate(invalid='ignore', divide='ignore', over='ignore'):
+                stretched = st.do(clipped, i)
+            valid = np.isfinite(data) & np.isfinite(stretched)
+            normalized = np.full(stretched.shape, np.nan,
+                                 dtype=np.result_type(stretched.dtype,
+                                                      np.float32))
+            if np.any(valid):
+                low = np.min(stretched[valid]) if lo is None else st.do(lo, i)
+                high = np.max(stretched[valid]) if hi is None else st.do(hi, i)
+                if not np.isfinite(low) or not np.isfinite(high):
+                    raise ValueError('RGB stretch bounds must be finite'
+                                     + ' after transformation.')
+                normalized[valid] = ((stretched[valid] - low) / (high - low)
+                                     if high > low else 0)
+            channels.append(self.vskipfill(normalized, v))
+        rgb = np.stack(channels, axis=-1)  # (channel, y, x, RGB)
+        extent = [*_image_edges(x, 'x'), *_image_edges(y, 'y')]
+        _kw.setdefault('origin', 'lower')
+        _kw.setdefault('extent', extent)
+        _kw.setdefault('aspect', np.abs((x[-1] - x[0]) / (y[-1] - y[0])))
+        for axnow, image in zip(self.ax, rgb):
+            valid = np.all(np.isfinite(image), axis=-1)
+            # Float RGBA is a plotting boundary; never modify source arrays.
+            rgba = np.zeros((*image.shape[:2], 4), dtype=float)
+            rgba[..., :3] = np.clip(np.where(valid[..., None], image, 0), 0, 1)
+            rgba[..., 3] = valid
+            axnow.imshow(rgba, **_kw)
 
     def _set_axis_shared(self, pa2: PlotAxes2D,
                          title: dict | str | None) -> None:
