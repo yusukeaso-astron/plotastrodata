@@ -2017,10 +2017,14 @@ class PlotAstroData(AstroFrame):
         return self.figs[0], self.ax[0]
 
 
-def _get_ylabel_profile(_kw: dict, Tb: bool, flux: bool, bunit: str
-                        ) -> str:
+ProfileLabels = str | list[str | None] | tuple[str | None, ...] | None
+ProfileEllipse = NumericSequence | list[NumericSequence] | None
+
+
+def _get_ylabel_profile(_kw: dict[str, Any], Tb: bool, flux: bool,
+                        bunit: str | None) -> ProfileLabels:
     if 'ylabel' in _kw:
-        return _kw['ylabel']
+        return _kw.pop('ylabel')
     if Tb:
         return r'$T_b$ (K)'
     if flux:
@@ -2028,12 +2032,24 @@ def _get_ylabel_profile(_kw: dict, Tb: bool, flux: bool, bunit: str
     return bunit
 
 
-def _prep_plotprofile(width: int, coords: list | str,
-                      xlist: list, ylist: list, ellipse: list,
-                      ninterp: int, flux: bool, gaussfit: bool,
-                      _kw: dict) -> tuple:
-    if isinstance(coords, str):
+def _prep_plotprofile(width: int | np.integer,
+                      coords: str | list[str] | tuple[str, ...]
+                      | np.ndarray | None,
+                      xlist: NumericSequence | None,
+                      ylist: NumericSequence | None,
+                      ellipse: ProfileEllipse, ninterp: int | np.integer,
+                      flux: bool, gaussfit: bool, _kw: dict[str, Any]
+                      ) -> tuple[np.ndarray, np.ndarray,
+                                 dict[str, list[np.ndarray]],
+                                 PlotAxes2D, list[str | None]]:
+    if coords is None:
+        coords = []
+    elif isinstance(coords, str):
         coords = [coords]
+    xlist = [] if xlist is None else xlist
+    ylist = [] if ylist is None else ylist
+    _positive_int(width, 'width')
+    _positive_int(ninterp, 'ninterp')
     Tb = _kw.get('Tb', False)
     f = kwargs2instance(AstroFrame, _kw)
     d = kwargs2instance(AstroData, _kw)
@@ -2043,42 +2059,73 @@ def _prep_plotprofile(width: int, coords: list | str,
                                  ellipse=ellipse, ninterp=ninterp,
                                  flux=flux, gaussfit=gaussfit)
     ylabel = _get_ylabel_profile(_kw, Tb, flux, d.bunit)
-    if isinstance(ylabel, str):
+    if ylabel is None or isinstance(ylabel, str):
         ylabel = [ylabel] * len(prof)
+    elif (not isinstance(ylabel, (list, tuple))
+          or len(ylabel) != len(prof)
+          or any(label is not None and not isinstance(label, str)
+                 for label in ylabel)):
+        raise ValueError('ylabel must be a string, None,'
+                         + ' or one string/None per profile.')
     _kw.setdefault('xlim', [v.min(), v.max()])
     pa2 = kwargs2instance(PlotAxes2D, _kw)
-    return v, prof, gfitres, pa2, ylabel
+    return v, prof, gfitres, pa2, list(ylabel)
 
 
-def _set_figax_plotprofile(fig: object | None, ax: object | None,
-                           nrows: int, ncols: int,
-                           nprof: int) -> tuple:
-    if ncols == 1:
-        nrows = nprof
-    if fig is None:
-        fig = plt.figure(figsize=(6 * ncols, 3 * nrows))
-    if nprof > 1 and ax is not None:
-        raise ValueError('An external ax is supported only for one profile.')
-    ax = np.empty(nprof, dtype=object) if ax is None else [ax]
+def _validate_figax(fig: Figure | None, ax: Axes | None) -> None:
+    if (fig is None) != (ax is None):
+        raise ValueError('Provide fig and ax together, or omit both.')
+    if fig is not None and (not isinstance(fig, Figure)
+                            or not isinstance(ax, Axes)
+                            or ax.figure is not fig):
+        raise ValueError('fig and ax must be a Figure and its own Axes.')
+
+
+def _set_figax_plotprofile(fig: Figure | None, ax: Axes | None,
+                           nrows: int | np.integer, ncols: int | np.integer,
+                           nprof: int) -> tuple[Figure, np.ndarray]:
+    _validate_figax(fig, ax)
+    _positive_int(ncols, 'ncols')
+    if (isinstance(nrows, (bool, np.bool_))
+            or not isinstance(nrows, (int, np.integer)) or nrows < 0):
+        raise ValueError('nrows must be a nonnegative integer'
+                         + ' (0 means automatic).')
+    nrows = (nprof + int(ncols) - 1) // int(ncols) if nrows == 0 else int(nrows)
+    if nprof < 1 or nrows * ncols < nprof:
+        raise ValueError('The subplot layout must have space'
+                         + ' for every profile.')
+    if ax is not None:
+        if nprof != 1:
+            raise ValueError('An external fig/ax pair supports'
+                             + ' only one profile.')
+        return fig, np.array([ax], dtype=object)
+    fig = plt.figure(figsize=(6 * ncols, 3 * nrows))
+    axes = np.empty(nprof, dtype=object)
     for i in range(nprof):
-        sharex = None if i < nrows - 1 else ax[i - 1]
-        ax[i] = fig.add_subplot(nrows, ncols, i + 1, sharex=sharex)
-    return fig, ax
+        axes[i] = fig.add_subplot(nrows, int(ncols), i + 1,
+                                  sharex=None if i == 0 else axes[0])
+    return fig, axes
 
 
-def plotprofile(coords: list[str] | str = [],
-                xlist: list[float] = [], ylist: list[float] = [],
-                ellipse: list[float, float, float] | None = None,
-                ninterp: int = 1,
-                flux: bool = False, width: int = 1,
-                gaussfit: bool = False, gauss_kwargs: dict = {},
-                title: list[str] | None = None,
-                text: list[str] | None = None,
-                nrows: int = 0, ncols: int = 1,
-                fig: object | None = None, ax: object | None = None,
+def plotprofile(coords: str | list[str] | tuple[str, ...]
+                | np.ndarray | None = None,
+                xlist: NumericSequence | None = None,
+                ylist: NumericSequence | None = None,
+                ellipse: ProfileEllipse = None,
+                ninterp: int | np.integer = 1,
+                flux: bool = False, width: int | np.integer = 1,
+                gaussfit: bool = False,
+                gauss_kwargs: dict[str, Any] | None = None,
+                title: list[str | dict[str, Any]]
+                | tuple[str | dict[str, Any], ...] | None = None,
+                text: list[dict[str, Any]] | tuple[dict[str, Any], ...]
+                | None = None,
+                nrows: int | np.integer = 0, ncols: int | np.integer = 1,
+                fig: Figure | None = None, ax: Axes | None = None,
                 getfigax: bool = False,
-                savefig: dict | str | None = None, show: bool = False,
-                **kwargs: Any) -> tuple[object, object] | None:
+                savefig: dict[str, Any] | str | PathLike[str] | None = None,
+                show: bool = False,
+                **kwargs: Any) -> tuple[Figure, np.ndarray] | None:
     """Plot line profiles extracted from a spectral cube.
 
     Keyword groups accepted in ``**kwargs``:
@@ -2090,7 +2137,8 @@ def plotprofile(coords: list[str] | str = [],
         ``vmin``, and ``vmax``.
         PlotAxes2D: Axis formatting, such as ``xlim``, ``ylim``,
         ``xlabel``, ``ylabel``, ``grid``, ``xscale``, ``yscale``, and
-        tick options.
+        tick options. ylabel accepts one string/None for all profiles or
+        a list/tuple with one string/None per profile.
         Matplotlib: Additional keyword arguments are passed to
         ``matplotlib.axes.Axes.plot`` for the profile curve.
 
@@ -2102,10 +2150,12 @@ def plotprofile(coords: list[str] | str = [],
         User-supplied values in ``gauss_kwargs`` override these values.
 
     Args:
-        coords (list, optional): Coordinates. Defaults to [].
-        xlist (list, optional): Offset from the center. Defaults to [].
-        ylist (list, optional): Offset from the center. Defaults to [].
-        ellipse (list, optional): [major, minor, pa], For average.
+        coords (str, list, tuple, or ndarray, optional): Sky coordinates.
+            None means no sky-coordinate selection.
+        xlist (list, tuple, or ndarray, optional): x offsets; None means empty.
+        ylist (list, tuple, or ndarray, optional): y offsets; None means empty.
+        ellipse (list, tuple, or ndarray, optional): One [major, minor, pa]
+            triple or one triple per position, for averaging.
             Defaults to None.
         ninterp (int, optional): Number of points for interpolation.
             Defaults to 1.
@@ -2113,35 +2163,48 @@ def plotprofile(coords: list[str] | str = [],
             False.
         width (int, optional): Rebinning step along v. Defaults to 1.
         gaussfit (bool, optional): Fit the profiles. Defaults to False.
-        gauss_kwargs (dict, optional): Kwargs for Axes.plot. Defaults to
-            {}.
-        title (list, optional): For each plot. Defaults to None.
-        text (list, optional): For each plot. Defaults to None.
-        nrows (int, optional): Used for channel maps. Defaults to 0.
-        ncols (int, optional): Used for channel maps. Defaults to 1.
-        fig (object, optional): External plt.figure(). Defaults to None.
-        ax (object, optional): External fig.add_subplot(). Defaults to
-            None.
+        gauss_kwargs (dict, optional): Gaussian overlay style for Axes.plot, not fitting options.
+            None uses the default style.
+        title (list or tuple, optional): One string or Axes.set_title keyword
+            dictionary per profile. Inputs are not modified. Defaults to None.
+        text (list or tuple, optional): One Axes.text keyword dictionary
+            per profile (including x, y, s). Defaults to None.
+        nrows (int or np.integer, optional): Subplot rows. 0 computes the
+            required number from ncols and the profile count. Defaults to 0.
+        ncols (int or np.integer, optional): Positive subplot column count. Defaults to 1.
+        fig (Figure, optional): External figure; supply together with ax.
+            Only one profile/slice may use the pair. Defaults to None.
+        ax (Axes, optional): Axes owned by fig, reused without adding a
+            subplot. Supply together with fig. Defaults to None.
         getfigax (bool, optional): Defaults to False.
-        savefig (dict or str, optional): Passed to ``close_figure``.
+        savefig (dict, str, or os.PathLike, optional): Passed to ``close_figure``.
             Existing files may be overwritten, and the figure is closed
             after saving/showing. Defaults to None.
         show (bool, optional): True means doing plt.show(). Defaults to
             False.
 
     Returns:
-        tuple: (fig, ax), where ax is a list, if getfigax=True.
-        Otherwise, no return.
+        tuple[Figure, np.ndarray] or None: With getfigax=True, return the
+        figure and 1D object array of Axes without saving, showing, or closing.
+        Otherwise save/show as requested, close the figure, and return None.
     """
+    _validate_figax(fig, ax)
     _kw = {'drawstyle': 'steps-mid', 'color': 'k',
            'xlabel': r'Velocity (km s$^{-1}$)', 'samexy': False}
     _kw.update(kwargs)
     _kwgauss = {'drawstyle': 'default', 'color': 'g'}
-    _kwgauss.update(gauss_kwargs)
+    _kwgauss.update(gauss_kwargs or {})
     v, prof, gfitres, pa2, ylabel \
         = _prep_plotprofile(width, coords, xlist, ylist, ellipse,
                             ninterp, flux, gaussfit, _kw)
     nprof = len(prof)
+    for name, values, types in (('title', title, (str, dict)),
+                                ('text', text, (dict,))):
+        if values is not None and (not isinstance(values, (list, tuple))
+                                   or len(values) != nprof
+                                   or any(not isinstance(v, types)
+                                          for v in values)):
+            raise ValueError(f'{name} must contain one valid entry per profile.')
     set_rcparams(20, 'w')
     fig, ax = _set_figax_plotprofile(fig, ax, nrows, ncols, nprof)
     for i in range(nprof):
@@ -2154,9 +2217,9 @@ def plotprofile(coords: list[str] | str = [],
         if text is not None:
             ax[i].text(**text[i])
         if title is not None:
-            if isinstance(title[i], str):
-                title[i] = {'label': title[i]}
-            ax[i].set_title(**title[i])
+            title_kwargs = ({'label': title[i]} if isinstance(title[i], str)
+                            else title[i])
+            ax[i].set_title(**title_kwargs)
         if i <= nprof - ncols - 1:
             plt.setp(ax[i].get_xticklabels(), visible=False)
     if getfigax:
@@ -2165,12 +2228,14 @@ def plotprofile(coords: list[str] | str = [],
     close_figure(fig, savefig, show)
 
 
-def plotslice(length: float, dx: float | None = None, pa: float = 0,
-              txtfile: str | None = None,
-              fig: object | None = None, ax: object | None = None,
+def plotslice(length: RealScalar, dx: RealScalar | None = None,
+              pa: RealScalar = 0,
+              txtfile: str | PathLike[str] | None = None,
+              fig: Figure | None = None, ax: Axes | None = None,
               getfigax: bool = False,
-              savefig: str | dict | None = None, show: bool = False,
-              **kwargs: Any) -> tuple[object, object] | None:
+              savefig: str | PathLike[str] | dict[str, Any] | None = None,
+              show: bool = False,
+              **kwargs: Any) -> tuple[Figure, Axes] | None:
     """Plot a one-dimensional spatial slice through a 2D map.
 
     Keyword groups accepted in ``**kwargs``:
@@ -2196,37 +2261,43 @@ def plotslice(length: float, dx: float | None = None, pa: float = 0,
     Args:
         length (float): Slice length.
         dx (float, optional): Grid increment. Defaults to None.
-        pa (float, optional): Degree. Position angle. Defaults to 0.
-        txtfile (str, optional): File name for ``numpy.savetxt``.
+        pa (float, optional): Degrees from original data +y toward +x.
+            swapxy exchanges direction components; display flips do not change
+            the extracted physical direction. Defaults to 0.
+        txtfile (str or os.PathLike, optional): File name for ``numpy.savetxt``.
             Existing files with the same name are overwritten. Defaults
             to None.
-        fig (object, optional): External plt.figure(). Defaults to None.
-        ax (object, optional): External fig.add_subplot(). Defaults to
-            None.
+        fig (Figure, optional): External figure; supply together with ax.
+            Only one profile/slice may use the pair. Defaults to None.
+        ax (Axes, optional): Axes owned by fig, reused without adding a
+            subplot. Supply together with fig. Defaults to None.
         getfigax (bool, optional): Defaults to False.
-        savefig (dict or str, optional): Passed to ``close_figure``.
+        savefig (dict, str, or os.PathLike, optional): Passed to ``close_figure``.
             Existing files may be overwritten, and the figure is closed
             after saving/showing. Defaults to None.
         show (bool, optional): True means doing plt.show(). Defaults to
             False.
 
     Returns:
-        tuple: (fig, ax), where ax is a list, if getfigax=True.
-        Otherwise, no return.
+        tuple[Figure, Axes] or None: With getfigax=True, return without
+        figure saving/showing/closing; requested txtfile export still occurs.
+        Otherwise save/show as requested, close the figure, and return None.
     """
+    _validate_figax(fig, ax)
     _kw = {'linestyle': '-', 'marker': 'o'}
     _kw.update(kwargs)
     _kw['rmax'] = length / 2
+    Tb = _kw.get('Tb', False)
     f = kwargs2instance(AstroFrame, _kw)
     d = kwargs2instance(AstroData, _kw)
     f.read(d)
     if np.ndim(d.data) > 2:
         raise ValueError('plotslice() supports only a 2D map.')
 
-    r, z = d.slice(length=length, pa=pa, dx=dx)
+    r, z = d.slice(length=length, pa=90 - pa if f.swapxy else pa, dx=dx)
     xunit = 'arcsec' if f.dist == 1 else 'au'
-    yunit = 'K' if d.Tb else d.bunit
-    yquantity = r'$T_b$' if d.Tb else 'intensity'
+    yunit = 'K' if Tb else d.bunit
+    yquantity = r'$T_b$' if Tb else 'intensity'
 
     if txtfile is not None:
         np.savetxt(txtfile, np.c_[r, z],
@@ -2235,7 +2306,7 @@ def plotslice(length: float, dx: float | None = None, pa: float = 0,
     if 'xlabel' not in _kw:
         _kw['xlabel'] = f'Offset ({xunit})'
     if 'ylabel' not in _kw:
-        _kw['ylabel'] = f'Intensity ({yunit})'
+        _kw['ylabel'] = f'{yquantity} ({yunit})'
     if 'xlim' not in _kw:
         _kw['xlim'] = [r.min(), r.max()]
     _kw['samexy'] = False

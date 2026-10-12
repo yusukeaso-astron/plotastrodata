@@ -1,3 +1,4 @@
+from os import PathLike
 import matplotlib.pyplot as plt
 import numbers
 import numpy as np
@@ -323,7 +324,8 @@ def RGIxyv(v: np.ndarray, y: np.ndarray, x: np.ndarray, data: np.ndarray,
         return np.squeeze([f3d(tuple(vyxnew)) for f3d in f])
 
 
-def close_figure(fig: Figure, savefig: dict | str | None = None,
+def close_figure(fig: Figure,
+                 savefig: dict | str | PathLike[str] | None = None,
                  show: bool = False, tight: bool = True) -> None:
     """Save, show, and close the figure.
 
@@ -339,7 +341,7 @@ def close_figure(fig: Figure, savefig: dict | str | None = None,
 
     Args:
         fig (Figure): Matplotlib figure to save, show, and close.
-        savefig (dict or str, optional): For ``Figure.savefig``.
+        savefig (dict, str, or os.PathLike, optional): For ``Figure.savefig``.
             Existing files may be overwritten, and the figure is closed
             after saving/showing. Defaults to None.
         show (bool, optional): True means doing plt.show(). Defaults to
@@ -351,7 +353,8 @@ def close_figure(fig: Figure, savefig: dict | str | None = None,
     if tight:
         fig.tight_layout()
     if savefig is not None:
-        s = {'fname': savefig} if type(savefig) is str else savefig
+        s = ({'fname': savefig} if isinstance(savefig, (str, PathLike))
+             else savefig)
         savefig0.update(s)
         fig.savefig(**savefig0)
     if show:
