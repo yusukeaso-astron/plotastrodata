@@ -1283,11 +1283,12 @@ class AstroFrame():
             d.sigma[i] = _normalize_float(d.sigma[i] * factor)
 
     def _set_pv_beam(self, d: AstroData, i: int) -> None:
-        """Set effective PV beam."""
+        """Set effective PV beam, saving an independent sky-beam array."""
         if not self.pv or d.pv[i] or None in d.beam[i]:
             return
 
-        bmaj, bmin, bpa = d.beam_org[i] = d.beam[i]
+        # An array remains one dataset's beam when read() wraps metadata again.
+        bmaj, bmin, bpa = d.beam_org[i] = np.array(d.beam[i], copy=True)
         if d.pvpa[i] is None:
             d.pvpa[i] = _normalize_float(bpa)
             print('pvpa is not specified. pvpa=bpa is assumed.')
