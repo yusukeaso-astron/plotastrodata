@@ -159,8 +159,15 @@ class FitsData:
 
         Returns:
             str or None: The central coordinates, or None when the
-            spatial units are not degrees.
+            first two axes are not R.A./Dec. in degrees. LINEAR axes
+            describe offsets and do not define a sky center.
         """
+        h = self.get_header()
+        ctypes = [str(h.get(f'CTYPE{i}', '')).strip().upper().split('-')[0]
+                  for i in (1, 2)]
+        if ctypes != ['RA', 'DEC']:
+            print('The first two FITS axes are not R.A./Dec.; center is ignored.')
+            return None
         cunit1 = self.get_header('CUNIT1')
         cunit2 = self.get_header('CUNIT2')
         if not (isdeg(cunit1) and isdeg(cunit2)):
@@ -289,10 +296,9 @@ class FitsData:
         h = self.header
         cxy = (0, 0)
         if center is not None and not self.wcsrot:
-            coordorg = xy2coord([h['CRVAL1'], h['CRVAL2']])
-            if (radesys := h.get('RADESYS')) is not None:
-                coordorg = f'{radesys}  {coordorg}'
-            cxy = coord2xy(center, coordorg)
+            coordorg = self.get_center()
+            if coordorg is not None:
+                cxy = coord2xy(center, coordorg)
         slabel = ['x', 'y']
 
         def wrapper(i: int) -> Callable[[np.ndarray | None], None]:
@@ -300,6 +306,9 @@ class FitsData:
                 if h.get(f'NAXIS{i+1}') is None or s_in is None:
                     s, ds = None, None
                 else:
+                    if str(h.get(f'CTYPE{i+1}', '')).strip().upper() == 'LINEAR':
+                        # Linear CRVAL is an offset, not an absolute sky center.
+                        s_in = s_in + h[f'CRVAL{i+1}']
                     s = (s_in - cxy[i]) * dist
                     if isdeg(h[f'CUNIT{i+1}']):
                         s *= 3600.
@@ -320,16 +329,17 @@ class FitsData:
                 self.v, self.dv = None, None
                 return
 
-            if restfreq is None:
-                freq = np.mean(v_in)
-                print('restfreq is assumed to be the center.')
-            else:
-                freq = restfreq
             v = v_in + h[f'CRVAL{vaxis}']
             key = f'CUNIT{vaxis}'
             cunitv = h[key].strip()
             match cunitv:
                 case 'Hz' | 'HZ':
+                    if restfreq is None:
+                        freq = np.mean(v)
+                        print('restfreq is assumed to be'
+                              + ' the mean channel frequency.')
+                    else:
+                        freq = restfreq
                     if freq == 0:
                         print('v is read as is, because restfreq=0.')
                     else:
@@ -362,13 +372,20 @@ class FitsData:
                  pv: bool = False) -> None:
         """Generate grids relative to the center and vsys.
 
+        LINEAR spatial axes retain their CRVAL offsets and are not recentered
+        using sky coordinates. Degree-valued spatial grids are converted to
+        arcseconds before distance scaling.
+
         Args:
             center (str, optional): Center for the spatial grids.
                 Defaults to None.
             dist (float, optional): The spatial grids are multiplied by
                 dist. Defaults to 1..
             restfreq (float, optional): Rest frequency for converting
-                the frequencies to velocities. Defaults to None.
+                frequencies to velocities. None uses RESTFRQ, then RESTFREQ,
+                then the mean channel frequency including CRVAL. An explicit
+                zero leaves frequency coordinates in Hz and does not apply
+                vsys. Defaults to None.
             vsys (float, optional): The velocity is relative to vsys.
                 Defaults to 0..
             pv (bool, optional): Mode for position-velocity diagram.
@@ -378,7 +395,10 @@ class FitsData:
         # WCS rotation (Calabretta & Greisen 2002, Astronomy & Astrophysics, 395, 1077)
         self._read_cd()
         gen_x, gen_y = self._get_genx_geny(center, dist)
-        restfreq = restfreq or h.get('RESTFRQ') or h.get('RESTFREQ')
+        if restfreq is None:
+            restfreq = h.get('RESTFRQ')
+            if restfreq is None:
+                restfreq = h.get('RESTFREQ')
         gen_v = self._get_genv(restfreq, vsys, pv)
         if pv:
             gen_x(self._get_array(1))
