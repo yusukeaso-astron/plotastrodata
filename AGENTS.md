@@ -28,3 +28,22 @@ Relative numeric overlay positions, including `beampos`, refer to the
 displayed axes and are not exchanged by `swapxy`.
 
 Keep method docstrings consistent with this policy.
+
+# Swapped data policy
+
+`AstroFrame(swapxy=True).read(d)` transposes the data
+and exchanges the processed x/y coordinates. Transform the stored beam angle
+to `90 - bpa` as well, keeping both beam lengths unchanged, including for PV
+data. Construct an effective PV beam using the actual velocity spacing before
+transforming its angle. Preserve original sky-beam metadata in `beam_org`.
+
+AstroData does not track or undo swaps. Its analysis and FITS-writing methods
+continue to use their usual axis assumptions on the current data. In PV mode,
+v/dv follow the processed y axis, even when that axis now contains positions.
+Report once per swapped read that subsequent operations use the current axis
+order, and document this behavior.
+
+Plotting must not apply a second swap to an already transformed beam.
+add_beam always takes angles in the processed data frame, including explicitly
+supplied beams. Other user-supplied overlay angles retain the original-data
+convention above.

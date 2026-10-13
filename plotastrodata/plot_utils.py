@@ -1099,9 +1099,11 @@ class PlotAstroData(AstroFrame):
         beam_kwargs, to specify the beam appearance. A single
         ``beamcolor`` or ``beampos`` value applies to every beam;
         per-beam lists must provide one value for each beam. A
-        ``[None, None, None]`` beam is skipped. bpa is measured from original
-        data +y toward +x (north toward east for sky images). add_region maps
-        it to 90 - bpa under swapxy; axis flips reflect the beam with the data.
+        ``[None, None, None]`` beam is skipped. bpa is measured from the
+        processed data +y axis toward +x, as stored by AstroFrame.read.
+        This applies to both automatic and explicitly supplied beams,
+        including PV beams. The angle is not swapped again; axis flips
+        reflect the beam with the data.
         Relative beampos coordinates refer to the displayed axes and are not
         exchanged by swapxy.
 
@@ -1134,6 +1136,10 @@ class PlotAstroData(AstroFrame):
                 bp = [a, 0.1 if self.pv else a]
             _kw = {'facecolor': bc, 'edgecolor': None}
             _kw.update(kwargs)
+            # add_region accepts original-data angles; undo the stored
+            # beam's transformation at this interface so it is drawn once.
+            if self.swapxy:
+                bpa = 90 - bpa
             self.add_region(patch=patch, poslist=bp,
                             majlist=bmaj, minlist=bmin, palist=bpa,
                             include_chan=include_chan,

@@ -182,6 +182,9 @@ class AstroData():
         lists of arrays (with optional None placeholders) or FITS paths and
         per-dataset metadata lists internally. Initialization determines n;
         AstroFrame.read performs metadata expansion and loading later.
+        After a read with swapxy=True, data, x/y, and beam angles describe
+        the exchanged axes. Analysis and FITS writing use the current axis
+        order with their usual conventions; no swap history is retained.
     """
     data: np.ndarray | list[Any] | tuple[Any, ...] | None = None
     x: np.ndarray | None = None
@@ -295,6 +298,9 @@ class AstroData():
                 | tuple[int | np.integer, ...] | np.ndarray = [1, 1, 1]
                 ) -> None:
         """Binning up neighboring pixels in the v, y, and x domain.
+
+        Uses the current axis order, including after AstroFrame swaps x/y.
+        PV mode continues to treat the vertical axis as velocity.
 
         Args:
             width (list, tuple, or np.ndarray, optional): Number of channels, 
@@ -871,6 +877,9 @@ class AstroData():
         are also angular offsets. Spectral axes use Hz
         when restfreq is known, otherwise radio velocity in km/s.
 
+        Axis roles follow the current data order. A prior swapxy is not
+        undone; PV output still treats x as position and y/v as velocity.
+
         header optionally overrides generated cards. Numeric FITS cards are
         serialized as Python floats, which can narrow extended precision.
         Missing required grid spacing raises ValueError.
@@ -1282,7 +1291,10 @@ class AstroFrame():
             print('pvpa is not specified. pvpa=bpa is assumed.')
         angle = np.radians(bpa - d.pvpa[i])
         beam_incut = 1 / np.hypot(np.cos(angle) / bmaj, np.sin(angle) / bmin)
-        d.beam[i] = np.array([np.abs(d.dv), beam_incut, 0])
+        # v/dv follow processed y by convention; the actual velocity axis
+        # is horizontal after swapxy. Use its spacing for the plotted beam.
+        velocity_spacing = d.dx if self.swapxy else d.dv
+        d.beam[i] = np.array([np.abs(velocity_spacing), beam_incut, 0])
 
     def _read_one(self, d: AstroData, i: int, grid: _Grid) -> None:
         if d.center[i] == 'common':
@@ -1302,6 +1314,13 @@ class AstroFrame():
                 d.sigma[i] = _normalize_float(d.sigma[i] * d.cfactor[i])
             self._convert_to_Tb(d, i)
             self._set_pv_beam(d, i)
+            if self.swapxy and d.beam[i][2] is not None:
+                beam = (d.beam[i].copy() if isinstance(d.beam[i], np.ndarray)
+                        else list(d.beam[i]))
+                angle = 90 - beam[2]
+                beam[2] = (angle if isinstance(angle, np.longdouble)
+                           else float(angle))
+                d.beam[i] = beam
             d.pv[i] = self.pv
         d.Tb[i] = False
         d.cfactor[i] = 1
@@ -1321,6 +1340,13 @@ class AstroFrame():
         ``Tb``, ``cfactor``, ``sigma``, and ``dist`` are updated. Multiple datasets
         must have matching processed coordinate grids (rtol=1e-7, atol=0).
         A mismatch raises ValueError; this operation mutates d in place.
+
+        swapxy exchanges the data's last two axes and x/y coordinates, and
+        changes beam angles to 90 - bpa. AstroData does not remember or undo
+        this transformation: subsequent analysis and FITS writing use their
+        usual axis assumptions on the current data. For PV data, v/dv follow
+        processed y, which contains spatial positions after swapping.
+        Original sky-beam metadata in beam_org remains unchanged.
 
         Args:
             d (AstroData): Dataclass for the add_* input.
@@ -1366,3 +1392,6 @@ class AstroFrame():
                                          + ' coordinate grids.')
         for name in ASTRODATA_ARGS + ['beam']:
             setattr(d, name, _scalar_if_single(getattr(d, name), d.n))
+        if self.swapxy:
+            print('x and y axes have been swapped; subsequent AstroData'
+                  + ' operations use the current axis order.')
