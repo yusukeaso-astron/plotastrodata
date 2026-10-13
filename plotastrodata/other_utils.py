@@ -215,10 +215,10 @@ def reform_data(c: np.ndarray, v_in: np.ndarray | None,
         if np.abs(dv_in - dv_org) / dv_org < 0.01:
             d = c
         else:
-            s = 'Velocity resolution mismatch (>1%).' \
-                + ' The cube needs to be regridded' \
-                + ' outside plotastrodata.'
-            warnings.warn(s, UserWarning)
+            warnings.warn('Velocity resolution mismatch (>1%).'
+                          + ' The cube needs to be regridded'
+                          + ' outside plotastrodata.',
+                          UserWarning)
             n_valid = k1 - k0
             d = [None] * n_valid
             for k in range(n_valid):
