@@ -453,7 +453,8 @@ def fits2data(fitsimage: str | PathLike[str],
         dist (float, optional): Change x and y in arcsec to au. Defaults
             to 1..
         sigma (float or numbers.Number or str or None, optional):
-            Noise level passed through unchanged, or estimation method.
+            Noise level or estimation method. Supplied real scalars become
+            Python floats, except that extended precision is preserved.
             Defaults to None.
         restfreq (float, optional): Used for velocity and brightness
             temperature. Defaults to None.

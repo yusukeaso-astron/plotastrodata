@@ -1318,8 +1318,7 @@ class AstroFrame():
                 beam = (d.beam[i].copy() if isinstance(d.beam[i], np.ndarray)
                         else list(d.beam[i]))
                 angle = 90 - beam[2]
-                beam[2] = (angle if isinstance(angle, np.longdouble)
-                           else float(angle))
+                beam[2] = _normalize_float(angle, force_float=True)
                 d.beam[i] = beam
             d.pv[i] = self.pv
         d.Tb[i] = False

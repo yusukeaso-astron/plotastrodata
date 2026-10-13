@@ -5,7 +5,7 @@ import warnings
 from scipy.special import erf
 from typing import Any, Callable
 
-from plotastrodata._type_utils import _normalize_float, _normalize_float_result
+from plotastrodata._type_utils import _normalize_float
 from plotastrodata.fitting_utils import EmceeCorner
 from plotastrodata.other_utils import close_figure
 
@@ -56,6 +56,7 @@ def normalize(range: tuple[float, float] = (-3.5, 3.5),
     def decorator(f: Callable) -> Callable:
         def wrapper(x: float | np.floating | np.ndarray, *args: Any
                     ) -> float | np.longdouble | np.ndarray:
+            array_output = isinstance(x, np.ndarray)
             area = np.sum(f(h, *args)) * width
             if area == 0:
                 # The model's second parameter is its mean. Match histogram
@@ -64,7 +65,8 @@ def normalize(range: tuple[float, float] = (-3.5, 3.5),
                 i = min(int(np.searchsorted(edges, mean, side='right')) - 1,
                         len(edges) - 2)
                 if i < 0 or mean > edges[-1]:
-                    return _normalize_float_result(np.zeros_like(x), x)
+                    return _normalize_float(np.zeros_like(x), force_float=True,
+                                            array_output=array_output)
                 xarr = np.asarray(x)
                 inside = ((xarr >= edges[i])
                           & ((xarr <= edges[i + 1]) if i == len(edges) - 2
@@ -72,7 +74,8 @@ def normalize(range: tuple[float, float] = (-3.5, 3.5),
                 p = np.where(inside, 1 / width, 0)
             else:
                 p = f(x, *args) / area
-            return _normalize_float_result(p, x)
+            return _normalize_float(p, force_float=True,
+                                    array_output=array_output)
 
         return wrapper
     return decorator
@@ -98,7 +101,8 @@ def gauss(x: float | np.floating | np.ndarray,
     x1 = (x - m) / np.sqrt(2) / s
     p = np.exp(-x1**2)
     p = p / (np.sqrt(2 * np.pi) * s)
-    return _normalize_float_result(p, x)
+    return _normalize_float(p, force_float=True,
+                            array_output=isinstance(x, np.ndarray))
 
 
 def gauss_pbcor(x: float | np.floating | np.ndarray,
@@ -133,7 +137,8 @@ def gauss_pbcor(x: float | np.floating | np.ndarray,
         p = limit if x == 0 else p
     else:
         p = np.where(np.asarray(x) == 0, limit, p)
-    return _normalize_float_result(p, x)
+    return _normalize_float(p, force_float=True,
+                            array_output=isinstance(x, np.ndarray))
 
 
 def select_noise(data: np.ndarray, sigma: str) -> np.ndarray:
@@ -216,6 +221,8 @@ class Noise:
         standard deviation are stored as self.m0 and self.s0,
         respectively. Ordinary scalar statistics use Python floats;
         extended-precision scalar statistics are preserved.
+        The stored range endpoints are also Python floats, except for
+        extended-precision endpoints. The edges array keeps its dtype.
 
         Default keyword values:
             numpy.histogram: ``bins=100``, ``range=(-3.5, 3.5)``, and
@@ -240,7 +247,8 @@ class Noise:
         if np.sum(counts) == 0:
             raise ValueError('Histogram range contains no selected data.')
         self.bins = len(edges) - 1
-        self.range = (edges[0], edges[-1])
+        self.range = (_normalize_float(edges[0], force_float=True),
+                      _normalize_float(edges[-1], force_float=True))
         self.edges = edges
         self.bin_width = width
         self.counts = counts
@@ -320,19 +328,24 @@ def estimate_rms(data: np.ndarray,
                  sigma: float | numbers.Number | str | None = 'hist'
                  ) -> float | np.longdouble | numbers.Number | None:
     """Estimate a noise level of a data array.
-    Numeric sigma values and None are returned unchanged.
+    Real numeric sigma values are returned as Python floats, preserving
+    extended-precision NumPy floating scalars. Other numeric types and None
+    pass through unchanged.
 
     Args:
         data (np.ndarray): Data array whose noise is estimated.
         sigma (float or numbers.Number or str or None): A numeric value
-            to return unchanged, None, or Noise selection/estimation methods
+            to use directly, None, or Noise selection/estimation methods
             such as 'edge,neg,hist-pbcor'. Defaults to 'hist'.
 
     Returns:
         float or np.longdouble or numbers.Number or None: Computed noise
         is a Python float, with extended-precision scalars preserved.
-        Numeric inputs and None pass through unchanged.
+        Supplied real noise levels, including integers, follow the same
+        scalar policy. Other numeric types and None pass through unchanged.
     """
+    if isinstance(sigma, (numbers.Real, np.floating, np.integer)):
+        return _normalize_float(sigma, force_float=True)
     if sigma is None or isinstance(sigma, numbers.Number):
         return sigma
 

@@ -12,7 +12,7 @@ from tqdm import tqdm
 from typing import Any, Callable
 from matplotlib.figure import Figure
 
-from plotastrodata._type_utils import _normalize_float, _normalize_float_result
+from plotastrodata._type_utils import _normalize_float
 from plotastrodata.matrix_utils import Mrot, dot2d
 from plotastrodata.other_utils import close_figure
 
@@ -621,7 +621,8 @@ def gaussian1d(x: np.ndarray | float | np.floating,
         arrays, produce arrays with the computed dtype.
     """
     g = amplitude * np.exp2(-4 * (((x - xo) / fwhm)**2))
-    return _normalize_float_result(g, x)
+    array_output = isinstance(x, np.ndarray)
+    return _normalize_float(g, force_float=True, array_output=array_output)
 
 
 def gaussian2d(xy: np.ndarray | list[float | np.ndarray]
@@ -649,9 +650,11 @@ def gaussian2d(xy: np.ndarray | list[float | np.ndarray]
         Ordinary scalars are Python floats; extended-precision scalars
         and arrays retain their types.
     """
-    s, t = dot2d(Mrot(-pa), [xy[1] - yo, xy[0] - xo])
+    x, y = xy
+    array_output = isinstance(x, np.ndarray) or isinstance(y, np.ndarray)
+    s, t = dot2d(Mrot(-pa), [y - yo, x - xo])
     g = amplitude * np.exp2(-4 * ((s / fwhm_major)**2 + (t / fwhm_minor)**2))
-    return _normalize_float_result(g, xy[0], xy[1])
+    return _normalize_float(g, force_float=True, array_output=array_output)
 
 
 def gaussfit1d(xdata: np.ndarray, ydata: np.ndarray,
@@ -669,8 +672,8 @@ def gaussfit1d(xdata: np.ndarray, ydata: np.ndarray,
             parameters and uncertainties. Defaults to False.
 
     Returns:
-        dict: popt and perr are arrays. Computed scalar sigma is a Python
-        float, except that extended-precision scalars are preserved.
+        dict: popt and perr are arrays. Scalar sigma, including a supplied
+        integer, is a Python float, except that extended precision is preserved.
         Array-valued sigma retains its dtype.
     """
     if sigma is None:
@@ -699,7 +702,8 @@ def gaussfit1d(xdata: np.ndarray, ydata: np.ndarray,
         print('Gauss uncertainties:', perr)
         if sigma is None:
             print('Estimated sigma: ', sigtmp)
-    return {'popt': popt, 'perr': perr, 'sigma': _normalize_float(sigtmp)}
+    return {'popt': popt, 'perr': perr,
+            'sigma': _normalize_float(sigtmp, force_float=True)}
 
 
 def gaussfit2d(xdata: np.ndarray, ydata: np.ndarray, zdata: np.ndarray,
@@ -718,8 +722,8 @@ def gaussfit2d(xdata: np.ndarray, ydata: np.ndarray, zdata: np.ndarray,
             parameters and uncertainties. Defaults to False.
 
     Returns:
-        dict: popt and perr are arrays. Computed scalar sigma is a Python
-        float, except that extended-precision scalars are preserved.
+        dict: popt and perr are arrays. Scalar sigma, including a supplied
+        integer, is a Python float, except that extended precision is preserved.
         Array-valued sigma retains its dtype.
     """
     if sigma is None:
@@ -769,4 +773,5 @@ def gaussfit2d(xdata: np.ndarray, ydata: np.ndarray, zdata: np.ndarray,
         print('Gauss uncertainties:', perr)
         if sigma is None:
             print('Estimated sigma: ', sigtmp)
-    return {'popt': popt, 'perr': perr, 'sigma': _normalize_float(sigtmp)}
+    return {'popt': popt, 'perr': perr,
+            'sigma': _normalize_float(sigtmp, force_float=True)}

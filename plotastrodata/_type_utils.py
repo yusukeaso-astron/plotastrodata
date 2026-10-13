@@ -1,41 +1,58 @@
 """Internal helpers for preserving numeric output precision."""
 
 import numpy as np
-from typing import overload
+from typing import Literal, overload
+
+
+_RealValue = int | float | np.integer | np.floating | np.ndarray
+_ScalarOrArray = int | float | np.integer | np.longdouble | np.ndarray
 
 
 @overload
-def _normalize_float(value: float | np.floating) -> float | np.longdouble: ...
+def _normalize_float(value: _RealValue, *, force_float: bool = False,
+                     array_output: Literal[True]) -> np.ndarray: ...
 
 
 @overload
-def _normalize_float(value: np.ndarray) -> np.ndarray: ...
+def _normalize_float(value: np.ndarray, *, force_float: bool = False,
+                     array_output: None = None) -> np.ndarray: ...
 
 
-def _normalize_float(value: float | np.floating | np.ndarray
-                     ) -> float | np.longdouble | np.ndarray:
-    """Normalize ordinary floating scalars; preserve long doubles and arrays."""
-    if isinstance(value, np.longdouble):
-        return value
-    if isinstance(value, np.floating):
-        return float(value)
-    return value
+@overload
+def _normalize_float(value: float | np.floating, *, force_float: bool = False,
+                     array_output: Literal[False] | None = None
+                     ) -> float | np.longdouble: ...
 
 
-def _normalize_float_result(value: float | np.floating | np.ndarray,
-                            *inputs: object
-                            ) -> float | np.longdouble | np.ndarray:
-    """Normalize a real-valued numerical result at its public boundary.
+@overload
+def _normalize_float(value: _RealValue, *, force_float: bool = False,
+                     array_output: bool | None = None) -> _ScalarOrArray: ...
 
-    Array inputs retain array results, including zero-dimensional results
-    collapsed by NumPy arithmetic. Existing array dtypes are not changed.
-    For scalar inputs, unwrap zero-dimensional temporary arrays and preserve
-    extended-precision floating scalars.
+
+def _normalize_float(value: _RealValue, *, force_float: bool = False,
+                     array_output: bool | None = None) -> _ScalarOrArray:
+    """Normalize a real numerical result at its public output boundary.
+
+    By default, convert ordinary NumPy floating scalars to Python floats,
+    leaving integers and arrays unchanged. Extended-precision floating
+    scalars retain their precision.
+
+    force_float converts scalar integers to Python floats as well.
+    array_output=True preserves or restores array form via np.asarray;
+    False unwraps a zero-dimensional temporary before scalar normalization;
+    None preserves the result's existing scalar/array form. Arrays with
+    dimensions greater than zero always remain arrays. Array dtypes are
+    never changed by force_float, including for zero-dimensional arrays
+    retained with array_output=True or None.
     """
-    if any(isinstance(a, np.ndarray) for a in inputs):
+    if array_output is True:
         return np.asarray(value)
     if isinstance(value, np.ndarray):
-        if value.ndim != 0:
+        if array_output is not False or value.ndim != 0:
             return value
         value = value[()]
-    return value if isinstance(value, np.longdouble) else float(value)
+    if isinstance(value, np.longdouble):
+        return value
+    if force_float or isinstance(value, np.floating):
+        return float(value)
+    return value

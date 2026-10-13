@@ -4,7 +4,7 @@ import subprocess
 from typing import Any
 
 from plotastrodata import const_utils as cu
-from plotastrodata._type_utils import _normalize_float_result
+from plotastrodata._type_utils import _normalize_float
 
 
 def terminal(cmd: str, check: bool = True,
@@ -62,7 +62,8 @@ def BnuT(T: float | np.floating | np.ndarray = 30,
         zero-dimensional arrays, produce arrays.
     """
     result = 2 * cu.h * nu**3 / cu.c**2 / (np.exp(cu.h * nu / cu.k_B / T) - 1)
-    return _normalize_float_result(result, T, nu)
+    array_output = isinstance(T, np.ndarray) or isinstance(nu, np.ndarray)
+    return _normalize_float(result, force_float=True, array_output=array_output)
 
 
 def JnuT(T: float | np.floating | np.ndarray = 30,
@@ -83,4 +84,5 @@ def JnuT(T: float | np.floating | np.ndarray = 30,
         zero-dimensional arrays, produce arrays.
     """
     result = cu.h * nu / cu.k_B / (np.exp(cu.h * nu / cu.k_B / T) - 1)
-    return _normalize_float_result(result, T, nu)
+    array_output = isinstance(T, np.ndarray) or isinstance(nu, np.ndarray)
+    return _normalize_float(result, force_float=True, array_output=array_output)

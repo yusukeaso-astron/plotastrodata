@@ -1,7 +1,7 @@
 import numpy as np
 
 from plotastrodata.matrix_utils import Mrot3d
-from plotastrodata._type_utils import _normalize_float_result
+from plotastrodata._type_utils import _normalize_float
 
 
 def obs2sys(xobs: float | np.floating | list[float] | np.ndarray,
@@ -164,4 +164,6 @@ def polarvel2losvel(v_r: float | np.floating | np.ndarray,
     A = np.tensordot(np.diag([-1, 1, -1]), A, axes=([1], [0]))
     A = np.tensordot(Mrot3d(incl, axis=1), A, axes=([1], [0]))
     v_los = A[2, 0] * v_r + A[2, 1] * v_theta + A[2, 2] * v_phi
-    return _normalize_float_result(v_los, v_r, v_theta, v_phi, theta, phi)
+    array_output = any(isinstance(a, np.ndarray)
+                       for a in (v_r, v_theta, v_phi, theta, phi))
+    return _normalize_float(v_los, force_float=True, array_output=array_output)
