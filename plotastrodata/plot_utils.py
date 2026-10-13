@@ -637,7 +637,7 @@ class PlotAxes2D():
             int times more than xticks. Defaults to None.
         grid (dict or bool, optional): A bool toggles the grid;
             a dict supplies options. Defaults to None.
-        aspect (dict, float, or str, optional): Also accepts 'equal' and 
+        aspect (dict, float, or str, optional): Also accepts 'equal' and
             'auto'. Defaults to None.
     """
     samexy: bool = True

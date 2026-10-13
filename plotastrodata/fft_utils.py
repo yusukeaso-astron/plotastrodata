@@ -115,7 +115,7 @@ def fftcentering2(f: np.ndarray,
 
 
 def _ifft_xsize(nfreq: int, u: np.ndarray | None, dx: float,
-                 rfft: bool, nx: int | np.integer | None) -> int:
+                rfft: bool, nx: int | np.integer | None) -> int:
     """Resolve inverse-transform length without resizing the spectrum."""
     if nfreq < 2:
         raise ValueError('Inverse centering requires at least'
