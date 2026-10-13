@@ -21,8 +21,8 @@ from plotastrodata.fitting_utils import (EmceeCorner, gaussfit1d,
                                          gaussfit2d, gaussian2d)
 from plotastrodata.matrix_utils import dot2d, Mfac, Mrot
 from plotastrodata.noise_utils import estimate_rms
-from plotastrodata.other_utils import (isdeg, nearest_index,
-                                       RGIxy, RGIxyv, to4dim, trim)
+from plotastrodata.other_utils import (nearest_index, RGIxy, RGIxyv,
+                                       to4dim, trim)
 
 
 def quadrantmean(data: np.ndarray, x: np.ndarray, y: np.ndarray,
@@ -303,7 +303,7 @@ class AstroData():
         PV mode continues to treat the vertical axis as velocity.
 
         Args:
-            width (list, tuple, or np.ndarray, optional): Number of channels, 
+            width (list, tuple, or np.ndarray, optional): Number of channels,
                 y-pixels, and x-pixels for binning. Defaults to [1, 1, 1].
         """
         if not 1 <= len(width) <= 3 or any(not isinstance(a, (int, np.integer))
@@ -456,7 +456,7 @@ class AstroData():
         if self.data.ndim != 3:
             raise ValueError('2D fitting requires an image or a cube.')
         if (not isinstance(chan, (int, np.integer))
-            or isinstance(chan, (bool, np.bool_))):
+                or isinstance(chan, (bool, np.bool_))):
             raise ValueError('A cube requires an integer chan for 2D fitting.')
         if not -len(self.data) <= chan < len(self.data):
             raise ValueError('chan is outside the cube channel range.')
@@ -657,7 +657,7 @@ class AstroData():
                 f'{np.shape(self.data)}.')
 
         if ((len(includepix) == 2 or len(excludepix) == 2)
-            and self.data.dtype.kind in 'biu'):
+                and self.data.dtype.kind in 'biu'):
             self.data = self.data.astype(float)
         if len(includepix) == 2:
             self.data[(mask < includepix[0]) + (includepix[1] < mask)] = np.nan
@@ -846,8 +846,8 @@ class AstroData():
         h[f'CDELT{axis}'] = float(cdelt)
 
     def _get_cvdv_in_freq(self, ck: int | np.integer
-                         ) -> tuple[float | np.longdouble,
-                                    float | np.longdouble]:
+                          ) -> tuple[float | np.longdouble,
+                                     float | np.longdouble]:
         """Convert velocity reference and spacing, preserving scalar precision."""
         if self.v is None or self.dv is None:
             raise ValueError('Writing a velocity axis requires coordinates'
