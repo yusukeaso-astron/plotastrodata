@@ -270,8 +270,8 @@ class AstroData():
         dt = f'd{t}'
         sep = getattr(self, dt)
         if sep is None:
-            s = f'Skip binning in the {t}-axis because {dt} is None.'
-            warnings.warn(s, UserWarning)
+            warnings.warn(f'Skip binning in the {t}-axis because {dt} is None.',
+                          UserWarning)
             return
 
         i = {'v': 1, 'y': 2, 'x': 3}[t]
@@ -473,9 +473,10 @@ class AstroData():
             raise ValueError('Fitting requires finite, nonzero pixel sizes.')
         factor = _normalize_float(np.pi * sizes[0] * sizes[1]
                                   / (4 * np.log(2) * area))
-        s = 'In the fitting, sigma is multiplied by sqrt(pixel-per-beam)' \
-            + ' to account for beam noise correlation.'
-        warnings.warn(s, UserWarning)
+        warnings.warn('In the fitting, sigma is multiplied by'
+                      + ' sqrt(pixel-per-beam) to account for'
+                      + ' beam noise correlation.',
+                      UserWarning)
         return factor
 
     @_need_multipixels
@@ -853,8 +854,8 @@ class AstroData():
                              + ' and spacing.')
         cv, dv = self.v[ck], self.dv
         if self.restfreq is None or self.restfreq == 0:
-            s = 'No valid restfreq. The velocity axis is saved as is.'
-            warnings.warn(s, UserWarning)
+            warnings.warn('No valid restfreq. The velocity axis is saved as is.',
+                          UserWarning)
         else:
             if not np.isfinite(self.restfreq) or self.restfreq < 0:
                 raise ValueError('restfreq must be finite and positive,'
@@ -939,8 +940,9 @@ class AstroData():
             h['BMIN'] = float(beam[1] / self.dist / 3600)
             h['BPA'] = float(beam[2])
         elif self.pv and not all(k in h for k in ('BMAJ', 'BMIN', 'BPA')):
-            s = 'Original sky beam unavailable; omitting FITS beam metadata.'
-            warnings.warn(s, UserWarning)
+            warnings.warn('Original sky beam unavailable;'
+                          + ' omitting FITS beam metadata.',
+                          UserWarning)
             for key in ('BMAJ', 'BMIN', 'BPA'):
                 h.pop(key, None)
         if self.bunit is not None:
