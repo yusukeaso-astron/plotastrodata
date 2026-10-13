@@ -23,8 +23,7 @@ from plotastrodata.coord_utils import (coord2xy, xy2coord,
                                        get_hmdm, get_min, get_sec, _getframe)
 from plotastrodata.fitting_utils import gaussian1d
 from plotastrodata.noise_utils import estimate_rms
-from plotastrodata.other_utils import (close_figure, listing,
-                                       reform_grid, reform_data)
+from plotastrodata.other_utils import close_figure, reform_grid, reform_data
 
 
 plt.ioff()  # force to turn off interactive mode
@@ -32,6 +31,8 @@ plt.ioff()  # force to turn off interactive mode
 T = TypeVar('T')
 Stretch = Literal['linear', 'log', 'asinh', 'power']
 AxisScale = Literal['linear', 'log', 'symlog', 'asinh', 'logit']
+
+
 def _validate_scalar(value: Any, handler: Any) -> float | np.longdouble:
     return value if isinstance(value, np.longdouble) else handler(value)
 
@@ -291,6 +292,7 @@ def _get_nij2ch(nrows: int | np.integer = 1, ncols: int | np.integer = 1
                 ) -> Callable[[Index, Index, Index], int | np.ndarray]:
     _positive_int(nrows, 'nrows')
     _positive_int(ncols, 'ncols')
+
     def nij2ch(n: Index, i: Index, j: Index) -> int | np.ndarray:
         result = n*nrows*ncols + i*ncols + j
         if any(isinstance(a, np.ndarray) for a in (n, i, j)):
@@ -305,6 +307,7 @@ def _get_ch2nij(nrows: int | np.integer = 1, ncols: int | np.integer = 1
                                              int | np.ndarray]]:
     _positive_int(nrows, 'nrows')
     _positive_int(ncols, 'ncols')
+
     def ch2nij(ch: Index) -> tuple[int | np.ndarray,
                                    int | np.ndarray,
                                    int | np.ndarray]:
@@ -487,7 +490,7 @@ class Stretcher():
 class Beam():
     """Arguments for PlotAstroData.add_beam().
 
-    Ordinary numeric settings become Python floats; extended precision 
+    Ordinary numeric settings become Python floats; extended precision
         is preserved.
 
         Args:
@@ -603,7 +606,7 @@ class Beam():
 class PlotAxes2D():
     """Use Axes.set_* to adjust x and y axes.
 
-    Ordinary numeric settings become Python floats; extended precision 
+    Ordinary numeric settings become Python floats; extended precision
         is preserved.
 
     Args:
@@ -632,7 +635,7 @@ class PlotAxes2D():
             xticks. Defaults to None.
         yticksminor (list or int, optional): Defaults to None. If int,
             int times more than xticks. Defaults to None.
-        grid (dict or bool, optional): A bool toggles the grid; 
+        grid (dict or bool, optional): A bool toggles the grid;
             a dict supplies options. Defaults to None.
         aspect (dict, float, or str, optional): Also accepts 'equal' and 
             'auto'. Defaults to None.
@@ -660,7 +663,8 @@ class PlotAxes2D():
     def _validate_limits(cls, value: list[Scalar] | None
                          ) -> list[Scalar] | None:
         if (value is not None
-            and (len(value) != 2 or not all(np.isfinite(v) for v in value))):
+                and (len(value) != 2
+                     or not all(np.isfinite(v) for v in value))):
             raise ValueError('Axis limits must contain two finite values.')
         return value
 
@@ -1515,16 +1519,16 @@ class PlotAstroData(AstroFrame):
         """
         levels = np.asarray(levels)
         if (levels.ndim != 1
-            or levels.size == 0
-            or not np.all(np.isfinite(levels))
-            or np.unique(levels).size != levels.size):
+                or levels.size == 0
+                or not np.all(np.isfinite(levels))
+                or np.unique(levels).size != levels.size):
             raise ValueError('levels must be a nonempty 1D sequence'
                              + ' of finite distinct values.')
         self._kw = {'colors': 'gray', 'linewidths': 1.0, 'zorder': 2}
         c, x, y, v, sigma, _, _kw, singlepix = self._map_init(kwargs)
         if singlepix:
-            raise ValueError(
-                'add_contour() requires at least two x and y pixels.')
+            raise ValueError('add_contour() requires at least'
+                             + ' two x and y pixels.')
 
         _positive_noise(sigma, 'sigma')
         c = self.vskipfill(c, v)
@@ -1586,8 +1590,8 @@ class PlotAstroData(AstroFrame):
         Args:
             ampfits (str or os.PathLike, optional): Input FITS file name.
                 Length of segment. Defaults to None.
-            angfits (str or os.PathLike, optional): Input FITS file name. 
-                Angles in degrees from original data +y toward +x (north 
+            angfits (str or os.PathLike, optional): Input FITS file name.
+                Angles in degrees from original data +y toward +x (north
                 toward east for sky images). Defaults to None.
             Ufits (str or os.PathLike, optional): Input FITS file name.
                 Stokes U. Defaults to None.
@@ -1891,10 +1895,11 @@ class PlotAstroData(AstroFrame):
         xlabel = f'R.A. ({frame_name})' if xlabel is None else xlabel
         ylabel = f'Dec. ({frame_name})' if ylabel is None else ylabel
 
-        def sky_at(xy: list | np.ndarray) -> str | list:
+        def sky_at(xy: list | np.ndarray) -> str | list | np.ndarray:
             # Keep coordinate parsing helpers free of the frame prefix while
             # performing offsets in the supplied frame, not implicit ICRS.
             return _getframe(xy2coord(xy, center, frameorg=frame_name))[0]
+
         # Round tick locations, never the coordinate reference itself.
         on_min_scale = self.rmax >= 60.0
 

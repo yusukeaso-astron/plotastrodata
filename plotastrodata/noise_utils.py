@@ -87,7 +87,7 @@ def gauss(x: float | np.floating | np.ndarray,
     """Probability density of Gaussian noise.
 
     Args:
-        x (float or np.floating or np.ndarray): Intensity. 
+        x (float or np.floating or np.ndarray): Intensity.
             The variable of the probability density.
         s (float): Standard deviation of the Gaussian noise.
         m (float): Mean of the Gaussian noise.
@@ -113,7 +113,7 @@ def gauss_pbcor(x: float | np.floating | np.ndarray,
     correction.
 
     Args:
-        x (float or np.floating or np.ndarray): Intensity. 
+        x (float or np.floating or np.ndarray): Intensity.
             The variable of the probability density.
         s (float): Standard deviation of the Gaussian noise.
         m (float): Mean of the Gaussian noise.
