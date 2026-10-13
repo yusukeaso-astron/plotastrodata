@@ -365,6 +365,5 @@ def estimate_rms(data: np.ndarray,
         ave = n.m0
         noise = n.s0
     if np.abs(ave) > 0.2 * noise:
-        s = '|mean| > 0.2sigma.'
-        warnings.warn(s, UserWarning)
+        warnings.warn('|mean| > 0.2sigma.', UserWarning)
     return _normalize_float(noise)
