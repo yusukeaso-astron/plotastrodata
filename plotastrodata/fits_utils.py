@@ -187,6 +187,10 @@ class FitsData:
                  ) -> None:
         """Generate data, which may be brightness temperature.
 
+        Each call starts from the primary HDU data. Temperature and log
+        conversions leave that source array unchanged. Temperature conversion
+        promotes integer data to floating point using NumPy's dtype rules.
+
         Args:
             Tb (bool, optional): True means the data are brightness
                 temperatures. Defaults to False.
@@ -210,7 +214,7 @@ class FitsData:
         if drop:
             d = np.squeeze(d)
         if Tb:
-            d *= Jy2K(header=h, restfreq=restfreq)
+            d = d * Jy2K(header=h, restfreq=restfreq)  # *= changes self.hdu.data.
         if log:
             d = np.log10(d.clip(np.min(d[d > 0]), None))
         self.data = d
@@ -218,6 +222,9 @@ class FitsData:
     def get_data(self, **kwargs: Any) -> np.ndarray:
         """Output data. This method can take the arguments of
         gen_data().
+
+        Arguments are used only when data have not yet been generated.
+        Call gen_data() explicitly to regenerate data with different options.
 
         Returns:
             np.ndarray: data in the format of np.ndarray.
