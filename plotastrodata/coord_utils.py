@@ -109,7 +109,10 @@ def coord2xy(coords: str | list | tuple | np.ndarray,
         frameorg = frame
     c0 = SkyCoord(coordorg, frame=frameorg)  # frame=None means ICRS.
     if frame is not None:
-        c0 = c0.transform_to(frame=frame)
+        # Keep only destination-frame attributes. Retained source metadata
+        # (e.g. an FK5 equinox after conversion to ICRS) can otherwise make
+        # spherical_offsets_to reject coordinates in the same actual frame.
+        c0 = SkyCoord(c0.transform_to(frame=frame).frame)
     values = np.asarray(coords)
     if values.size == 0:
         return np.empty((2,) + values.shape)
