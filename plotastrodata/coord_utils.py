@@ -28,49 +28,65 @@ def _updateframe(frame: str) -> str | FK4 | FK5:
     return a
 
 
-def _getframe(coord: str | list, *, as_frame: bool = False
-              ) -> tuple[str | list, str | BaseCoordinateFrame | None,
+def _getframe(coord: str | list | tuple | np.ndarray, *, as_frame: bool = False
+              ) -> tuple[str | list | np.ndarray,
+                         str | BaseCoordinateFrame | None,
                          str | None]:
-    """Internal function to pick up the frame name from the coordinates.
-    When coord is a list, frame and framename are picked up from the
-    first element.
+    """Separate coordinate strings from their optional frame prefixes.
 
     Args:
-        coord (str): something like "J2000 01h23m45.6s 01d23m45.6s" or a
-            list of them.
+        coord: A string such as "J2000 01h23m45.6s 01d23m45.6s", or a
+            rectangular list, tuple, or array of strings of arbitrary shape.
+            Collections use the first element's frame; all entries should
+            describe coordinates in that same frame.
+        as_frame: If True, return a populated SkyCoord.frame as the second
+            result, preserving the coordinate shape. Defaults to False.
 
     Returns:
-        tuple: updated coord and frame. frame is FK5(equinox='J2000),
-        FK4(equinox='B1950'), or 'icrs'.
+        tuple: (hmsdms, frame, framename). hmsdms is a string for scalar
+        input, an array for array input, or a nested list for list/tuple
+        input, preserving the input shape. By default, frame is
+        FK5(equinox='J2000'), FK4(equinox='B1950'), 'icrs', or None when no
+        prefix is given. With as_frame=True, it is a populated coordinate
+        frame (ICRS by default). framename is the first original prefix or
+        None. Empty collections have no prefix.
     """
-    def getframe_single(s: str) -> tuple:
-        c = s.split()
-        hasframe = len(c) == 3
-        hmsdms = f'{c[1]} {c[2]}' if hasframe else s
-        frame = _updateframe(c[0]) if hasframe else None
-        framename = c[0] if hasframe else None
-        return hmsdms, frame, framename
-
-    if isinstance(coord, str):
-        hmsdms, frame, framename = getframe_single(coord)
-    else:
-        outlist = [getframe_single(c) for c in coord]
-        hmsdms = [a[0] for a in outlist]
-        frame = outlist[0][1]
-        framename = outlist[0][2]
+    values = np.asarray(coord, dtype=object)
+    parsed = []
+    frame, framename = None, None
+    for i, value in enumerate(values.flat):
+        if not isinstance(value, str):
+            raise ValueError('Coordinates must be strings'
+                             + ' in a rectangular collection.')
+        parts = value.split()
+        hasframe = len(parts) == 3
+        parsed.append(f'{parts[1]} {parts[2]}' if hasframe else value)
+        if i == 0 and hasframe:
+            frame = _updateframe(parts[0])
+            framename = parts[0]
+    hmsdms = np.asarray(parsed, dtype=str).reshape(values.shape)
+    if values.ndim == 0 or not isinstance(coord, np.ndarray):
+        hmsdms = hmsdms.tolist()
     if as_frame:
-        frame = SkyCoord(hmsdms, frame=frame).frame
+        if values.ndim == 0:
+            frame = SkyCoord(hmsdms, frame=frame).frame
+        else:
+            coords = (SkyCoord(parsed, frame=frame) if parsed else
+                      SkyCoord([], [], unit='deg', frame=frame))
+            frame = coords.reshape(values.shape).frame
     return hmsdms, frame, framename
 
 
-def coord2xy(coords: str | list, coordorg: str = '00h00m00s 00d00m00s',
+def coord2xy(coords: str | list | tuple | np.ndarray,
+             coordorg: str = '00h00m00s 00d00m00s',
              frame: str | None = None, frameorg: str | None = None,
              ) -> np.ndarray:
     """Transform R.A.-Dec. to relative (deg, deg).
 
     Args:
-        coords (str, list): something like '01h23m45.6s 01d23m45.6s'.
-            The input can be a list of str in an arbitrary shape.
+        coords (str, list, tuple, or np.ndarray): Strings such as
+            '01h23m45.6s 01d23m45.6s', in any rectangular shape. Collections
+            use the first coordinate's frame prefix.
         coordorg (str, optional): something like '01h23m45.6s
             01d23m45.6s'. The origin of the relative (deg, deg).
             Defaults to '00h00m00s 00d00m00s'.
@@ -94,20 +110,24 @@ def coord2xy(coords: str | list, coordorg: str = '00h00m00s 00d00m00s',
     c0 = SkyCoord(coordorg, frame=frameorg)  # frame=None means ICRS.
     if frame is not None:
         c0 = c0.transform_to(frame=frame)
-    clist = SkyCoord(coords, frame=frame)  # frame=None means ICRS.
+    values = np.asarray(coords)
+    if values.size == 0:
+        return np.empty((2,) + values.shape)
+    clist = SkyCoord(values.ravel().tolist(), frame=frame)
     xy = c0.spherical_offsets_to(clist)
     xy = np.array([xy[0].degree, xy[1].degree])
-    return xy
+    return xy.reshape((2,) + values.shape)
 
 
-def xy2coord(xy: list | np.ndarray, coordorg: str = '00h00m00s 00d00m00s',
+def xy2coord(xy: list | tuple | np.ndarray,
+             coordorg: str = '00h00m00s 00d00m00s',
              frame: str | None = None, frameorg: str | None = None,
-             ) -> str | list[str] | np.ndarray:
+             ) -> str | np.ndarray:
     """Transform relative (deg, deg) to R.A.-Dec.
 
     Args:
-        xy (list or np.ndarray): [(array of) alphas, (array of) deltas] in degree.
-            alphas and deltas can have an arbitrary shape.
+        xy (list, tuple, or np.ndarray): [alphas, deltas] in degrees,
+            with shape (2, ...). Both coordinates must have the same shape.
         coordorg (str): something like '01h23m45.6s 01d23m45.6s'. The
             origin of the relative (deg, deg). Defaults to '00h00m00s
             00d00m00s'.
@@ -116,24 +136,30 @@ def xy2coord(xy: list | np.ndarray, coordorg: str = '00h00m00s 00d00m00s',
             None.
 
     Returns:
-        str or list[str] or np.ndarray: A coordinate string for scalar
-        input, or a list/array of strings for multiple coordinates.
+        str or np.ndarray: A coordinate string for a scalar pair, or an
+        array of strings with shape xy.shape[1:]. Frame prefixes are applied
+        to each coordinate individually, including for multidimensional arrays.
     """
     coordorg, frameorg_in, framenameorg = _getframe(coordorg)
     frameorg = frameorg_in if frameorg is None else _updateframe(frameorg)
     framename = framenameorg if frame is None else frame
     frame = frameorg if frame is None else _updateframe(frame)
     c0 = SkyCoord(coordorg, frame=frameorg)  # frame=None means ICRS.
-    coords = c0.spherical_offsets_by(*xy * units.degree)
+    offsets = np.asarray(xy)
+    if offsets.ndim == 0 or offsets.shape[0] != 2:
+        raise ValueError('xy must have shape (2, ...)'
+                         + ' with matching coordinate shapes.')
+    shape = offsets.shape[1:]
+    if offsets.size == 0:
+        return np.empty(shape, dtype=str)
+    coords = c0.spherical_offsets_by(*(offsets.reshape(2, -1) * units.degree))
     if frame is not None:
         coords = coords.transform_to(frame=frame)
-    coords = coords.to_string('hmsdms')
+    strings = coords.to_string('hmsdms')
     if framename is not None:
-        if isinstance(coords, str):
-            coords = f'{framename} {coords}'
-        else:
-            coords = np.array([f'{framename} {s}' for s in coords])
-    return coords
+        strings = [f'{framename} {value}' for value in strings]
+    result = np.asarray(strings).reshape(shape)
+    return result.item() if result.ndim == 0 else result
 
 
 def rel2abs(xrel: float | np.ndarray, yrel: float | np.ndarray,
