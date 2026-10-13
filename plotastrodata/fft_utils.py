@@ -114,10 +114,38 @@ def fftcentering2(f: np.ndarray,
     return F, u, v
 
 
+def _ifft_xsize(nfreq: int, u: np.ndarray | None, dx: float,
+                 rfft: bool, nx: int | np.integer | None) -> int:
+    """Resolve inverse-transform length without resizing the spectrum."""
+    if nfreq < 2:
+        raise ValueError('Inverse centering requires at least'
+                         + ' two x-frequency samples.')
+    if u is not None and (np.ndim(u) != 1 or len(u) != nfreq):
+        raise ValueError(f'u must be a 1D grid with {nfreq} points, matching '
+                         + 'the number of x-frequency samples in F.')
+    if nx is not None:
+        if not rfft:
+            raise ValueError('nx is only supported when rfft=True.')
+        if (isinstance(nx, (bool, np.bool_))
+                or not isinstance(nx, (int, np.integer)) or nx < 2):
+            raise ValueError('nx must be an integer of at least two.')
+        if int(nx) // 2 + 1 != nfreq:
+            raise ValueError(f'nx={nx} must satisfy nx // 2 + 1 == {nfreq}, '
+                             + 'the number of x-frequency samples in F.')
+        return int(nx)
+    if not rfft:
+        return nfreq
+    if u is None:
+        return 2 * (nfreq - 1)
+    return (2 * (nfreq - 1) if np.isclose(u[-1], 1 / (2 * dx))
+            else 2 * (nfreq - 1) + 1)
+
+
 def ifftcentering(F: np.ndarray, u: np.ndarray | None = None,
                   xcenter: float = 0, x0: float | None = None,
                   dx: float = 1,
-                  outreal: bool = False, rfft: bool = False
+                  outreal: bool = False, rfft: bool = False, *,
+                  nx: int | np.integer | None = None
                   ) -> tuple[np.ndarray, np.ndarray]:
     """inverse FFT with the phase referring to a specific point.
 
@@ -129,28 +157,32 @@ def ifftcentering(F: np.ndarray, u: np.ndarray | None = None,
             fftcentering). Defaults to 0.
         x0 (float, optional): spatial coordinate of x[0]. Defaults to
             None.
-        dx (float, optional): spatial interval. Defaults to 1.
+        dx (float, optional): Spatial interval. Used to generate u when
+            omitted, and to infer even/odd length for rfft=True when nx is
+            omitted. In that inference case, supply the original dx even
+            when u is given. Defaults to 1.
         outreal (bool, optional): whether output only the real part.
             Defaults to False.
         rfft (bool, optional): True means using rFFT. Defaults to False.
+        nx (int or np.integer, optional): Original x-axis length for rfft=True.
+            Must satisfy nx // 2 + 1 == the number of x-frequency samples in F.
+            With u supplied,
+            nx removes the even/odd ambiguity without requiring dx. Without
+            u, dx still sets the spatial scale. If neither nx nor u is
+            supplied, assume even length, following NumPy. Defaults to None.
+
+    Raises:
+        ValueError: If nx is invalid, incompatible with the spectrum, or
+            supplied with rfft=False; or u does not match the spectrum.
 
     Returns:
         tuple: (f, x). f is iFFT of F. x is a 1D array of the spatial
         coordinate.
     """
-    nx = np.shape(F)[0]
+    nx = _ifft_xsize(np.shape(F)[0], u, dx, rfft, nx)
     if u is None:
-        if rfft:
-            nx = 2 * (nx - 1)  # Follow numpy.fft.irfft behavior.
-            u = np.fft.rfftfreq(nx, d=dx)
-        else:
-            u = np.fft.fftshift(np.fft.fftfreq(nx, d=dx))
-    else:
-        if rfft:
-            if np.isclose(u[-1], 1 / (2 * dx)):
-                nx = 2 * (nx - 1)
-            else:
-                nx = 2 * (nx - 1) + 1
+        u = (np.fft.rfftfreq(nx, d=dx) if rfft else
+             np.fft.fftshift(np.fft.fftfreq(nx, d=dx)))
     x = (np.arange(nx) - (nx-1)/2.) / (u[1]-u[0]) / nx + xcenter
     if x0 is not None:
         x = x - x[0] + x0
@@ -169,7 +201,8 @@ def ifftcentering2(F: np.ndarray,
                    xcenter: float = 0, ycenter: float = 0,
                    x0: float | None = None, y0: float | None = None,
                    dx: float = 1, dy: float = 1,
-                   outreal: bool = False, rfft: bool = False
+                   outreal: bool = False, rfft: bool = False, *,
+                   nx: int | np.integer | None = None
                    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """inverse FFT with the phase referring to a specific point.
 
@@ -187,33 +220,38 @@ def ifftcentering2(F: np.ndarray,
             None.
         y0 (float, optional): spatial coordinate of y[0]. Defaults to
             None.
-        dx (float, optional): spatial interval. Defaults to 1.
+        dx (float, optional): Spatial interval. Used to generate u when
+            omitted, and to infer even/odd length for rfft=True when nx is
+            omitted. In that inference case, supply the original dx even
+            when u is given. Defaults to 1.
         dy (float, optional): spatial interval. Defaults to 1.
         outreal (bool, optional): whether output only the real part.
             Defaults to False.
         rfft (bool, optional): True means using rFFT. Defaults to False.
+        nx (int or np.integer, optional): Original x-axis length for rfft=True.
+            Must satisfy nx // 2 + 1 == the number of x-frequency samples in F.
+            With u supplied,
+            nx removes the even/odd ambiguity without requiring dx. Without
+            u, dx still sets the spatial scale. If neither nx nor u is
+            supplied, assume even length, following NumPy. Defaults to None.
+
+    Raises:
+        ValueError: If nx is invalid, incompatible with the spectrum, or
+            supplied with rfft=False; or u does not match the spectrum.
 
     Returns:
         tuple: (f, x, y). f is iFFT of F. x and y are 1D arrays of the
         spatial coordinates.
     """
-    ny, nx = np.shape(F)
+    ny, nfreq = np.shape(F)
     if u is not None and np.ndim(u) == 2:
         u = u[0, :]
     if v is not None and np.ndim(v) == 2:
         v = v[:, 0]
+    nx = _ifft_xsize(nfreq, u, dx, rfft, nx)
     if u is None:
-        if rfft:
-            nx = 2 * (nx - 1)  # Follow numpy.fft.irfft behavior.
-            u = np.fft.rfftfreq(nx, d=dx)
-        else:
-            u = np.fft.fftshift(np.fft.fftfreq(nx, d=dx))
-    else:
-        if rfft:
-            if np.isclose(u[-1], 1 / (2 * dx)):
-                nx = 2 * (nx - 1)
-            else:
-                nx = 2 * (nx - 1) + 1
+        u = (np.fft.rfftfreq(nx, d=dx) if rfft else
+             np.fft.fftshift(np.fft.fftfreq(nx, d=dx)))
     if v is None:
         v = np.fft.fftshift(np.fft.fftfreq(ny, d=dy))
     x = (np.arange(nx) - (nx-1)/2.) / (u[1]-u[0]) / nx + xcenter
@@ -299,6 +337,9 @@ class FftCentering():
              ) -> np.ndarray | Callable[[np.ndarray], np.ndarray]:
         """iFFT calculation done by considering 1D/2D and fft/rfft.
 
+        Real transforms use the stored x-grid length explicitly, so both
+        odd and even lengths are reconstructed without parity inference.
+
         Args:
             F (np.ndarray | None, optional): An FFT result. Defaults to
                 None.
@@ -314,7 +355,8 @@ class FftCentering():
                                      x0=self.x[0],
                                      dx=self.dx,
                                      outreal=outreal,
-                                     rfft=self.rfft)
+                                     rfft=self.rfft,
+                                     nx=len(self.x) if self.rfft else None)
                 return f
 
         else:
@@ -325,7 +367,8 @@ class FftCentering():
                                          x0=self.x[0], y0=self.y[0],
                                          dx=self.dx, dy=self.dy,
                                          outreal=outreal,
-                                         rfft=self.rfft)
+                                         rfft=self.rfft,
+                                         nx=len(self.x) if self.rfft else None)
                 return f
 
         return func if F is None else func(F)
