@@ -146,9 +146,12 @@ nchans = 16
 
 def update_plot(i):
     print(f'Channel number: {i:d}\033[1A')
+    # Remove the previous frame, including its colorbar axes.
+    fig.clear()
+    ax = fig.add_subplot(111)
     p = pad(rmax=0.8, fitsimage=f'{data_dir}/test3D.fits',
             vmin=-5, vmax=5, vskip=4,
-            channelnumber=i, fig=fig)
+            channelnumber=i, fig=fig, ax=ax)
     p.add_color(fitsimage=f'{data_dir}/test3D.fits',
                 stretch='log', sigma='hist,edge')
     p.add_scalebar(length=50 / 140, label='50 au')
