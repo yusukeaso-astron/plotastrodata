@@ -5,7 +5,7 @@ import warnings
 from scipy.special import erf
 from typing import Any, Callable
 
-from plotastrodata._type_utils import _normalize_float
+from plotastrodata._type_utils import _normalize_float, _normalize_float_result
 from plotastrodata.fitting_utils import EmceeCorner
 from plotastrodata.other_utils import close_figure
 
@@ -64,7 +64,7 @@ def normalize(range: tuple[float, float] = (-3.5, 3.5),
                 i = min(int(np.searchsorted(edges, mean, side='right')) - 1,
                         len(edges) - 2)
                 if i < 0 or mean > edges[-1]:
-                    return np.zeros_like(x)
+                    return _normalize_float_result(np.zeros_like(x), x)
                 xarr = np.asarray(x)
                 inside = ((xarr >= edges[i])
                           & ((xarr <= edges[i + 1]) if i == len(edges) - 2
@@ -72,7 +72,7 @@ def normalize(range: tuple[float, float] = (-3.5, 3.5),
                 p = np.where(inside, 1 / width, 0)
             else:
                 p = f(x, *args) / area
-            return _normalize_float(p)
+            return _normalize_float_result(p, x)
 
         return wrapper
     return decorator
@@ -92,12 +92,13 @@ def gauss(x: float | np.floating | np.ndarray,
     Returns:
         float or np.longdouble or np.ndarray: Probability density.
         Ordinary scalar results are Python floats; extended-precision
-        scalars and arrays retain their types.
+        scalars retain their types. Array inputs, including zero-dimensional
+        arrays, produce arrays with the computed dtype.
     """
     x1 = (x - m) / np.sqrt(2) / s
     p = np.exp(-x1**2)
     p = p / (np.sqrt(2 * np.pi) * s)
-    return _normalize_float(p)
+    return _normalize_float_result(p, x)
 
 
 def gauss_pbcor(x: float | np.floating | np.ndarray,
@@ -117,7 +118,8 @@ def gauss_pbcor(x: float | np.floating | np.ndarray,
     Returns:
         float or np.longdouble or np.ndarray: Probability density.
         Ordinary scalar results are Python floats; extended-precision
-        scalars and arrays retain their types.
+        scalars retain their types. Array inputs, including zero-dimensional
+        arrays, produce arrays with the computed dtype.
     """
     x1 = (x - m) / np.sqrt(2) / s
     x0 = (x * 2**(-R**2) - m) / np.sqrt(2) / s
@@ -131,7 +133,7 @@ def gauss_pbcor(x: float | np.floating | np.ndarray,
         p = limit if x == 0 else p
     else:
         p = np.where(np.asarray(x) == 0, limit, p)
-    return _normalize_float(p)
+    return _normalize_float_result(p, x)
 
 
 def select_noise(data: np.ndarray, sigma: str) -> np.ndarray:

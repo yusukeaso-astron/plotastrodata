@@ -1,7 +1,7 @@
 import numpy as np
 
 from plotastrodata.matrix_utils import Mrot3d
-from plotastrodata._type_utils import _normalize_float
+from plotastrodata._type_utils import _normalize_float_result
 
 
 def obs2sys(xobs: float | np.floating | list[float] | np.ndarray,
@@ -148,7 +148,8 @@ def polarvel2losvel(v_r: float | np.floating | np.ndarray,
     Returns:
         float or np.longdouble or np.ndarray: The line-of-sight velocity.
         Ordinary scalar results are Python floats; extended-precision
-        scalars and array dtypes are preserved.
+        scalars and computed array dtypes are preserved. Array inputs, including
+        zero-dimensional arrays, produce arrays.
     """
     cos_t = np.cos(theta)
     sin_t = np.sin(theta)
@@ -163,4 +164,4 @@ def polarvel2losvel(v_r: float | np.floating | np.ndarray,
     A = np.tensordot(np.diag([-1, 1, -1]), A, axes=([1], [0]))
     A = np.tensordot(Mrot3d(incl, axis=1), A, axes=([1], [0]))
     v_los = A[2, 0] * v_r + A[2, 1] * v_theta + A[2, 2] * v_phi
-    return _normalize_float(v_los)
+    return _normalize_float_result(v_los, v_r, v_theta, v_phi, theta, phi)

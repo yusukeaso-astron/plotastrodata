@@ -4,7 +4,7 @@ import subprocess
 from typing import Any
 
 from plotastrodata import const_utils as cu
-from plotastrodata._type_utils import _normalize_float
+from plotastrodata._type_utils import _normalize_float_result
 
 
 def terminal(cmd: str, check: bool = True,
@@ -58,10 +58,11 @@ def BnuT(T: float | np.floating | np.ndarray = 30,
     Returns:
         float or np.longdouble or np.ndarray: Planck function in SI units.
         Ordinary scalar results are Python floats; extended-precision
-        scalars and array dtypes are preserved.
+        scalars and computed array dtypes are preserved. Array inputs, including
+        zero-dimensional arrays, produce arrays.
     """
     result = 2 * cu.h * nu**3 / cu.c**2 / (np.exp(cu.h * nu / cu.k_B / T) - 1)
-    return _normalize_float(result)
+    return _normalize_float_result(result, T, nu)
 
 
 def JnuT(T: float | np.floating | np.ndarray = 30,
@@ -78,7 +79,8 @@ def JnuT(T: float | np.floating | np.ndarray = 30,
     Returns:
         float or np.longdouble or np.ndarray: Brightness temperature in K.
         Ordinary scalar results are Python floats; extended-precision
-        scalars and array dtypes are preserved.
+        scalars and computed array dtypes are preserved. Array inputs, including
+        zero-dimensional arrays, produce arrays.
     """
     result = cu.h * nu / cu.k_B / (np.exp(cu.h * nu / cu.k_B / T) - 1)
-    return _normalize_float(result)
+    return _normalize_float_result(result, T, nu)

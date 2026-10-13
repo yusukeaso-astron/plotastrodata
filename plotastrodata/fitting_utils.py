@@ -12,7 +12,7 @@ from tqdm import tqdm
 from typing import Any, Callable
 from matplotlib.figure import Figure
 
-from plotastrodata._type_utils import _normalize_float
+from plotastrodata._type_utils import _normalize_float, _normalize_float_result
 from plotastrodata.matrix_utils import Mrot, dot2d
 from plotastrodata.other_utils import close_figure
 
@@ -617,10 +617,11 @@ def gaussian1d(x: np.ndarray | float | np.floating,
     Returns:
         float or np.longdouble or np.ndarray: Gaussian values with the
         shape of x. Ordinary scalars are Python floats; extended-precision
-        scalars and arrays retain their types.
+        scalars retain their types. Array coordinates, including zero-dimensional
+        arrays, produce arrays with the computed dtype.
     """
     g = amplitude * np.exp2(-4 * (((x - xo) / fwhm)**2))
-    return _normalize_float(g)
+    return _normalize_float_result(g, x)
 
 
 def gaussian2d(xy: np.ndarray | list[float | np.ndarray]
@@ -650,7 +651,7 @@ def gaussian2d(xy: np.ndarray | list[float | np.ndarray]
     """
     s, t = dot2d(Mrot(-pa), [xy[1] - yo, xy[0] - xo])
     g = amplitude * np.exp2(-4 * ((s / fwhm_major)**2 + (t / fwhm_minor)**2))
-    return _normalize_float(g)
+    return _normalize_float_result(g, xy[0], xy[1])
 
 
 def gaussfit1d(xdata: np.ndarray, ydata: np.ndarray,
