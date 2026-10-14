@@ -297,14 +297,14 @@ def _get_nij2ch(nrows: int | np.integer = 1, ncols: int | np.integer = 1
 
 def _get_ch2nij(nrows: int | np.integer = 1, ncols: int | np.integer = 1
                 ) -> Callable[[IndexOrArray], tuple[int | np.ndarray,
-                                             int | np.ndarray,
-                                             int | np.ndarray]]:
+                                                    int | np.ndarray,
+                                                    int | np.ndarray]]:
     _positive_int(nrows, 'nrows')
     _positive_int(ncols, 'ncols')
 
     def ch2nij(ch: IndexOrArray) -> tuple[int | np.ndarray,
-                                   int | np.ndarray,
-                                   int | np.ndarray]:
+                                          int | np.ndarray,
+                                          int | np.ndarray]:
         n = ch // (nrows*ncols)
         i = (ch - n*nrows*ncols) // ncols
         j = ch % ncols
@@ -1490,7 +1490,7 @@ class PlotAstroData(AstroFrame):
 
     def add_contour(self,
                     levels: RealSequence = (-12, -6, -3, 3, 6, 12,
-                                               24, 48, 96, 192, 384),
+                                            24, 48, 96, 192, 384),
                     **kwargs: Any) -> None:
         """Use Axes.contour of matplotlib.
 
