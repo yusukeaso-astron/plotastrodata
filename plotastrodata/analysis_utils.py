@@ -1102,8 +1102,10 @@ class AstroFrame():
             poslist: One sky-coordinate string or numeric pair, or a list,
                 tuple, or array of positions. Mixed strings and pairs are
                 supported. Sky-coordinate strings require a center; their
-                angular offsets are multiplied by dist. Numeric pairs are
-                fractions of the displayed axis limits.
+                angular offsets are multiplied by dist and exchanged when
+                swapxy=True. xflip and yflip affect only the display, without
+                changing these sky offsets. Numeric pairs are fractions of
+                the displayed axis limits and are not exchanged by swapxy.
 
         Returns:
             np.ndarray: Coordinates with shape (2, N), including (2, 1)
@@ -1149,6 +1151,8 @@ class AstroFrame():
         for i, p in enumerate(poslist):
             if isinstance(p, str):
                 x[i], y[i] = coord2xy(p, self.center) * 3600. * self.dist
+                if self.swapxy:
+                    x[i], y[i] = y[i], x[i]
             else:
                 x[i], y[i] = rel2abs(*p, self.Xlim, self.Ylim)
         return np.array([x, y])
