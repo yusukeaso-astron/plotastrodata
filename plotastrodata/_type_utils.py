@@ -30,8 +30,6 @@ BeamInput = np.ndarray | list[RealScalar | None] | tuple[RealScalar | None,
 ValidatedBeamTriple = list[ValidatedFloat | None]
 ValidatedBeams = ValidatedBeamTriple | list[ValidatedBeamTriple]
 
-
-
 _FloatNormalizationInput = int | float | np.integer | np.floating | np.ndarray
 _FloatNormalizationResult = int | float | np.integer | np.longdouble | np.ndarray
 
