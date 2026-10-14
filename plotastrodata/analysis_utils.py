@@ -588,7 +588,8 @@ class AstroData():
         # no supplied sigma to scale in that case.
         sigma = None
         if self.sigma is not None:
-            sigma = _normalize_float(self.sigma * np.sqrt(self._fit_pixelperbeam()))
+            sigma = self.sigma * np.sqrt(self._fit_pixelperbeam())
+            sigma = _normalize_float(sigma)
         res = gaussfit2d(xdata=self.x, ydata=self.y, zdata=z,
                          sigma=sigma, show=False, nwalkersperdim=4)
         popt, perr = res['popt'], res['perr']
@@ -862,10 +863,8 @@ class AstroData():
                                  + ' or None/0.')
             cv = (1 - cv / cu.c_kms) * self.restfreq
             dv = -dv / cu.c_kms * self.restfreq
-        return (_normalize_float(cv) if isinstance(cv, np.floating)
-                else float(cv),
-                _normalize_float(dv) if isinstance(dv, np.floating)
-                else float(dv))
+        return (_normalize_float(cv, force_float=True),
+                _normalize_float(dv, force_float=True))
 
     @_need_multipixels
     def writetofits(self, fitsimage: str | PathLike[str] = 'out.fits',

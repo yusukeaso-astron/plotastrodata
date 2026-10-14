@@ -431,8 +431,10 @@ class Stretcher():
             power = self._parameter('stretchpower', i)
             power = 1e-6 if power == 0 else power
             t = t**power / power
-        return (_normalize_float(np.asarray(t).item())
-                if np.isscalar(x) else np.asarray(t))
+        result = _normalize_float(t, array_output=not np.isscalar(x))
+        if isinstance(result, (np.integer, np.bool_)):
+            return result.item()
+        return result
 
     def undo(self, x: float | np.floating | NumericSequence, i: int = 0
              ) -> int | float | np.longdouble | np.ndarray:
@@ -447,8 +449,10 @@ class Stretcher():
             power = self._parameter('stretchpower', i)
             power = 1e-6 if power == 0 else power
             t = (t * power)**(1 / power)
-        return (_normalize_float(np.asarray(t).item())
-                if np.isscalar(x) else np.asarray(t))
+        result = _normalize_float(t, array_output=not np.isscalar(x))
+        if isinstance(result, (np.integer, np.bool_)):
+            return result.item()
+        return result
 
     def set_minmax(self, data: np.ndarray | list[np.ndarray]
                    ) -> tuple[np.ndarray | list[np.ndarray],
@@ -2474,8 +2478,8 @@ def _plot_on_wall(d: AstroData, x: np.ndarray, y: np.ndarray, v: np.ndarray,
                       i=i, j=j, k=k,
                       intensity=Zg * 0 + lev,
                       colorscale=cmap, reversescale=False,
-                      cmin=_normalize_float(np.min(levels).item()),
-                      cmax=_normalize_float(np.max(levels).item()),
+                      cmin=_normalize_float(np.min(levels), force_float=True),
+                      cmax=_normalize_float(np.max(levels), force_float=True),
                       opacity=alpha, name='', showscale=False)
         datalist.append(mesh2d)
 
@@ -2606,12 +2610,15 @@ def plot3d(levels: NumericSequence = (3, 6, 12),
                            y=_normalize_float(yeye),
                            z=_normalize_float(zeye)),
                   up=dict(x=0, y=1, z=0))
-    xaxis = dict(range=[_normalize_float(x[0].item()),
-                        _normalize_float(x[-1].item())], title=xlabel)
-    yaxis = dict(range=[_normalize_float(y[0].item()),
-                        _normalize_float(y[-1].item())], title=ylabel)
-    zaxis = dict(range=[_normalize_float(v[0].item()),
-                        _normalize_float(v[-1].item())], title=vlabel)
+    xaxis = dict(range=[_normalize_float(x[0], force_float=True),
+                        _normalize_float(x[-1], force_float=True)],
+                 title=xlabel)
+    yaxis = dict(range=[_normalize_float(y[0], force_float=True),
+                        _normalize_float(y[-1], force_float=True)],
+                 title=ylabel)
+    zaxis = dict(range=[_normalize_float(v[0], force_float=True),
+                        _normalize_float(v[-1], force_float=True)],
+                 title=vlabel)
     scene = dict(aspectmode='cube', camera=camera,
                  xaxis=xaxis, yaxis=yaxis, zaxis=zaxis)
     layout = go.Layout(margin=margin, scene=scene, showlegend=False)
@@ -2628,8 +2635,8 @@ def plot3d(levels: NumericSequence = (3, 6, 12),
         mesh = dict(type='mesh3d', x=Xg, y=Yg, z=Zg, i=i, j=j, k=k,
                     intensity=Zg * 0 + lev,
                     colorscale=cmap, reversescale=False,
-                    cmin=_normalize_float(np.min(levels).item()),
-                    cmax=_normalize_float(np.max(levels).item()),
+                    cmin=_normalize_float(np.min(levels), force_float=True),
+                    cmax=_normalize_float(np.max(levels), force_float=True),
                     opacity=alpha, name='', showscale=False)
         data.append(mesh)
         Xe, Ye, Ze = [], [], []
