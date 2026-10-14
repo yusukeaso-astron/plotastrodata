@@ -8,16 +8,19 @@ from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.collections import QuadMesh
 from matplotlib.patches import Ellipse, Rectangle
-from pydantic import ConfigDict, Field, WrapValidator, field_validator
+from pydantic import ConfigDict, Field, field_validator
 from pydantic.dataclasses import dataclass as pydantic_dataclass
-from typing import (Annotated, Any, Callable, Literal,
+from typing import (Any, Callable, Literal,
                     TypeVar, TypedDict, TYPE_CHECKING)
 from types import ModuleType
 
 if TYPE_CHECKING:
     from plotly.graph_objs import Layout
 
-from plotastrodata._type_utils import _normalize_float
+from plotastrodata._type_utils import (_normalize_float,
+                                       RealScalar, RealSequence,
+                                       PositionPair, Positions,
+                                       ValidatedFloat)
 from plotastrodata.analysis_utils import AstroData, AstroFrame
 from plotastrodata.coord_utils import (coord2xy, xy2coord,
                                        get_hmdm, get_min, get_sec, _getframe)
@@ -33,25 +36,16 @@ Stretch = Literal['linear', 'log', 'asinh', 'power']
 AxisScale = Literal['linear', 'log', 'symlog', 'asinh', 'logit']
 
 
-def _validate_scalar(value: Any, handler: Any) -> float | np.longdouble:
-    return value if isinstance(value, np.longdouble) else handler(value)
-
-
-Scalar = Annotated[float | np.longdouble, WrapValidator(_validate_scalar)]
-FloatOrList = Scalar | list[Scalar]
-OptionalFloatOrList = Scalar | list[Scalar | None] | None
-BeamTriple = list[Scalar | None]
+FloatOrList = ValidatedFloat | list[ValidatedFloat]
+# Optional both as a whole setting and for individual per-stretch entries.
+OptionalFloatOrList = ValidatedFloat | list[ValidatedFloat | None] | None
+BeamTriple = list[ValidatedFloat | None]
 BeamValue = BeamTriple | list[BeamTriple]
-BeamPosition = list[Scalar] | list[list[Scalar] | None] | None
-NumericSequence = list[float | np.floating] | tuple[float | np.floating, ...] | np.ndarray
-Index = int | np.integer | np.ndarray
+BeamPositions = list[ValidatedFloat] | list[list[ValidatedFloat] | None] | None
+IndexOrArray = int | np.integer | np.ndarray
 
-RealScalar = float | np.floating | np.integer
-PositionPair = tuple[RealScalar, RealScalar] | list[RealScalar] | np.ndarray
-Position = str | PositionPair
-Positions = Position | list[Position] | tuple[Position, ...]
-OverlayValues = RealScalar | NumericSequence
-Channels = list[int | np.integer] | tuple[int | np.integer, ...] | np.ndarray
+OverlayValues = RealScalar | RealSequence
+ChannelIndices = list[int | np.integer] | tuple[int | np.integer, ...] | np.ndarray
 
 
 def _overlay_values(value: Any, count: int, name: str
@@ -139,7 +133,7 @@ def _log_limits(vmin: float, vmax: float) -> None:
                          + ' 0 < vmin < vmax.')
 
 
-def logticks(ticks: NumericSequence, lim: NumericSequence
+def logticks(ticks: RealSequence, lim: RealSequence
              ) -> tuple[np.ndarray, list[str]]:
     """Make nice ticks for a log axis.
 
@@ -197,10 +191,10 @@ def logcbticks(vmin: float = 1e-3, vmax: float = 1e3
 
 
 def get_figsize(xmin: float, xmax: float, ymin: float, ymax: float,
-                figsize: NumericSequence | None = None,
+                figsize: RealSequence | None = None,
                 ncols: int = 1, nrows: int = 1, nchan: int = 1
                 ) -> tuple[float | np.longdouble,
-                           float | np.longdouble] | NumericSequence:
+                           float | np.longdouble] | RealSequence:
     """Get a nice figsize (tuple) with the given x and y ranges.
 
     Args:
@@ -264,7 +258,7 @@ def _get_gridwidth(mode: Literal['ra', 'dec'], rmax: float, cos_dec: float
     return base * 10**order, int(order)
 
 
-def _get_v(p: Any, v: NumericSequence | None = None,
+def _get_v(p: Any, v: RealSequence | None = None,
            restfreq: float | None = None,
            vskip: int = 1) -> np.ndarray:
     _positive_int(vskip, 'vskip')
@@ -289,11 +283,11 @@ def _get_v(p: Any, v: NumericSequence | None = None,
 
 
 def _get_nij2ch(nrows: int | np.integer = 1, ncols: int | np.integer = 1
-                ) -> Callable[[Index, Index, Index], int | np.ndarray]:
+                ) -> Callable[[IndexOrArray, IndexOrArray, IndexOrArray], int | np.ndarray]:
     _positive_int(nrows, 'nrows')
     _positive_int(ncols, 'ncols')
 
-    def nij2ch(n: Index, i: Index, j: Index) -> int | np.ndarray:
+    def nij2ch(n: IndexOrArray, i: IndexOrArray, j: IndexOrArray) -> int | np.ndarray:
         result = n*nrows*ncols + i*ncols + j
         if any(isinstance(a, np.ndarray) for a in (n, i, j)):
             return np.asarray(result)
@@ -302,13 +296,13 @@ def _get_nij2ch(nrows: int | np.integer = 1, ncols: int | np.integer = 1
 
 
 def _get_ch2nij(nrows: int | np.integer = 1, ncols: int | np.integer = 1
-                ) -> Callable[[Index], tuple[int | np.ndarray,
+                ) -> Callable[[IndexOrArray], tuple[int | np.ndarray,
                                              int | np.ndarray,
                                              int | np.ndarray]]:
     _positive_int(nrows, 'nrows')
     _positive_int(ncols, 'ncols')
 
-    def ch2nij(ch: Index) -> tuple[int | np.ndarray,
+    def ch2nij(ch: IndexOrArray) -> tuple[int | np.ndarray,
                                    int | np.ndarray,
                                    int | np.ndarray]:
         n = ch // (nrows*ncols)
@@ -414,7 +408,7 @@ class Stretcher():
         value = getattr(self, name)
         return value[i] if isinstance(value, list) else value
 
-    def do(self, x: float | np.floating | NumericSequence, i: int = 0
+    def do(self, x: float | np.floating | RealSequence, i: int = 0
            ) -> int | float | np.longdouble | np.ndarray:
         """Stretch values; arrays (including 0D) remain arrays.
 
@@ -436,7 +430,7 @@ class Stretcher():
             return result.item()
         return result
 
-    def undo(self, x: float | np.floating | NumericSequence, i: int = 0
+    def undo(self, x: float | np.floating | RealSequence, i: int = 0
              ) -> int | float | np.longdouble | np.ndarray:
         """Invert do(), preserving arrays and extended-precision scalars."""
         st = self._parameter('stretch', i)
@@ -520,7 +514,7 @@ class Beam():
     show_beam: bool = True
     beam: BeamValue = Field(default_factory=lambda: [None] * 3)
     beamcolor: str | list[str] = 'gray'
-    beampos: BeamPosition = None
+    beampos: BeamPositions = None
     beam_kwargs: dict[str, Any] = Field(default_factory=dict)
 
     @field_validator('beam', mode='before')
@@ -559,7 +553,7 @@ class Beam():
 
     @field_validator('beampos')
     @classmethod
-    def _validate_beampos(cls, value: BeamPosition) -> BeamPosition:
+    def _validate_beampos(cls, value: BeamPositions) -> BeamPositions:
         if value is None:
             return value
         positions = [value] if cls._is_position(value) else value
@@ -645,27 +639,27 @@ class PlotAxes2D():
             'auto'. Defaults to None.
     """
     samexy: bool = True
-    loglog: Scalar | None = Field(default=None, gt=0)
+    loglog: ValidatedFloat | None = Field(default=None, gt=0)
     xscale: AxisScale = 'linear'
     yscale: AxisScale = 'linear'
-    xlim: list[Scalar] | None = None
-    ylim: list[Scalar] | None = None
+    xlim: list[ValidatedFloat] | None = None
+    ylim: list[ValidatedFloat] | None = None
     xlabel: str | None = None
     ylabel: str | None = None
-    xticks: list[Scalar] | np.ndarray | None = None
-    yticks: list[Scalar] | np.ndarray | None = None
+    xticks: list[ValidatedFloat] | np.ndarray | None = None
+    yticks: list[ValidatedFloat] | np.ndarray | None = None
     xticklabels: list | None = None
     yticklabels: list | None = None
     xticksminor: list | int | None = None
     yticksminor: list | int | None = None
     grid: dict | bool | None = None
-    aspect: dict | Scalar | Literal['equal', 'auto'] | None = None
+    aspect: dict | ValidatedFloat | Literal['equal', 'auto'] | None = None
     ax: Axes | None = field(init=False, default=None, repr=False, compare=False)
 
     @field_validator('xlim', 'ylim')
     @classmethod
-    def _validate_limits(cls, value: list[Scalar] | None
-                         ) -> list[Scalar] | None:
+    def _validate_limits(cls, value: list[ValidatedFloat] | None
+                         ) -> list[ValidatedFloat] | None:
         if (value is not None
                 and (len(value) != 2
                      or not all(np.isfinite(v) for v in value))):
@@ -717,7 +711,7 @@ class PlotAxes2D():
                 ticks = getattr(ax, f'get_{axis}ticks')()
                 setattr(self, ticks_attr, ticks)
 
-    def _make_ticks(self, ticks: NumericSequence, ticksminor: int
+    def _make_ticks(self, ticks: RealSequence, ticksminor: int
                     ) -> np.ndarray:
         _positive_int(ticksminor, 'minor tick subdivisions')
         if len(ticks) < 2:
@@ -888,14 +882,14 @@ class PlotAstroData(AstroFrame):
     beam: BeamValue
 
     def __init__(self,
-                 v: NumericSequence | None = None, vskip: int | np.integer = 1,
+                 v: RealSequence | None = None, vskip: int | np.integer = 1,
                  veldigit: int | np.integer = 2,
                  restfreq: float | np.floating | None = None,
                  channelnumber: int | np.integer | None = None,
                  nrows: int | np.integer = 4, ncols: int | np.integer = 6,
                  fontsize: float | None = None,
                  nancolor: str | tuple[float, ...] = 'w', dpi: float = 256,
-                 figsize: NumericSequence | None = None,
+                 figsize: RealSequence | None = None,
                  fig: Figure | None = None, ax: Axes | None = None,
                  **kwargs: Any) -> None:
         _positive_int(nrows, 'nrows')
@@ -1041,7 +1035,7 @@ class PlotAstroData(AstroFrame):
                    majlist: OverlayValues | None = None,
                    minlist: OverlayValues | None = None,
                    palist: OverlayValues | None = None,
-                   include_chan: Channels | None = None,
+                   include_chan: ChannelIndices | None = None,
                    **kwargs: Any) -> None:
         """Use add_patch() and Rectangle or Ellipse of matplotlib.
 
@@ -1154,7 +1148,7 @@ class PlotAstroData(AstroFrame):
                             **_kw)
 
     def add_marker(self, poslist: Positions | None = None,
-                   include_chan: Channels | None = None,
+                   include_chan: ChannelIndices | None = None,
                    **kwargs: Any) -> None:
         """Use Axes.plot of matplotlib.
 
@@ -1182,7 +1176,7 @@ class PlotAstroData(AstroFrame):
     def add_text(self, poslist: Positions | None = None,
                  slist: str | list[str] | tuple[str, ...]
                  | np.ndarray | None = None,
-                 include_chan: Channels | None = None,
+                 include_chan: ChannelIndices | None = None,
                  **kwargs: Any) -> None:
         """Use Axes.text of matplotlib.
 
@@ -1221,7 +1215,7 @@ class PlotAstroData(AstroFrame):
     def add_line(self, poslist: Positions | None = None,
                  anglelist: OverlayValues | None = None,
                  rlist: OverlayValues | None = None,
-                 include_chan: Channels | None = None,
+                 include_chan: ChannelIndices | None = None,
                  **kwargs: Any) -> None:
         """Use Axes.plot of matplotlib.
 
@@ -1262,7 +1256,7 @@ class PlotAstroData(AstroFrame):
     def add_arrow(self, poslist: Positions | None = None,
                   anglelist: OverlayValues | None = None,
                   rlist: OverlayValues | None = None,
-                  include_chan: Channels | None = None,
+                  include_chan: ChannelIndices | None = None,
                   **kwargs: Any) -> None:
         """Use Axes.quiver of matplotlib.
 
@@ -1355,7 +1349,7 @@ class PlotAstroData(AstroFrame):
     def _set_colorbar(self, mappable: list[QuadMesh | None], ch: int,
                       show_cbar: bool,
                       cblabel: str | None, cbformat: str,
-                      cbticks: NumericSequence | None,
+                      cbticks: RealSequence | None,
                       cbticklabels: list[str] | tuple[str, ...]
                       | np.ndarray | None,
                       cblocation: Literal['left', 'right', 'top', 'bottom'],
@@ -1401,7 +1395,7 @@ class PlotAstroData(AstroFrame):
                   show_cbar: bool = True,
                   cblabel: str | None = None,
                   cbformat: str = '%.1e',
-                  cbticks: NumericSequence | None = None,
+                  cbticks: RealSequence | None = None,
                   cbticklabels: list[str] | tuple[str, ...]
                   | np.ndarray | None = None,
                   cblocation: Literal['left', 'right', 'top', 'bottom'] = 'right',
@@ -1495,7 +1489,7 @@ class PlotAstroData(AstroFrame):
                                cblabelfontsize, cbtickfontsize, st)
 
     def add_contour(self,
-                    levels: NumericSequence = (-12, -6, -3, 3, 6, 12,
+                    levels: RealSequence = (-12, -6, -3, 3, 6, 12,
                                                24, 48, 96, 192, 384),
                     **kwargs: Any) -> None:
         """Use Axes.contour of matplotlib.
@@ -2038,7 +2032,7 @@ class PlotAstroData(AstroFrame):
 
 
 ProfileLabels = str | list[str | None] | tuple[str | None, ...] | None
-ProfileEllipse = NumericSequence | list[NumericSequence] | None
+ProfileEllipses = RealSequence | list[RealSequence] | None
 
 
 def _get_ylabel_profile(_kw: dict[str, Any], Tb: bool, flux: bool,
@@ -2055,9 +2049,9 @@ def _get_ylabel_profile(_kw: dict[str, Any], Tb: bool, flux: bool,
 def _prep_plotprofile(width: int | np.integer,
                       coords: str | list[str] | tuple[str, ...]
                       | np.ndarray | None,
-                      xlist: NumericSequence | None,
-                      ylist: NumericSequence | None,
-                      ellipse: ProfileEllipse, ninterp: int | np.integer,
+                      xlist: RealSequence | None,
+                      ylist: RealSequence | None,
+                      ellipse: ProfileEllipses, ninterp: int | np.integer,
                       flux: bool, gaussfit: bool, _kw: dict[str, Any]
                       ) -> tuple[np.ndarray, np.ndarray,
                                  dict[str, list[np.ndarray]],
@@ -2144,9 +2138,9 @@ def _set_figax_plotprofile(fig: Figure | None, ax: Axes | None,
 
 def plotprofile(coords: str | list[str] | tuple[str, ...]
                 | np.ndarray | None = None,
-                xlist: NumericSequence | None = None,
-                ylist: NumericSequence | None = None,
-                ellipse: ProfileEllipse = None,
+                xlist: RealSequence | None = None,
+                ylist: RealSequence | None = None,
+                ellipse: ProfileEllipses = None,
                 ninterp: int | np.integer = 1,
                 flux: bool = False, width: int | np.integer = 1,
                 gaussfit: bool = False,
@@ -2372,7 +2366,7 @@ class _Plot3DResult(TypedDict):
     layout: 'Layout'
 
 
-def _surface_levels(levels: NumericSequence) -> np.ndarray:
+def _surface_levels(levels: RealSequence) -> np.ndarray:
     values = np.asarray(levels)
     if (values.ndim != 1 or values.size == 0
             or values.dtype.kind not in 'iuf'
@@ -2507,7 +2501,7 @@ def _plot_on_wall(d: AstroData, x: np.ndarray, y: np.ndarray, v: np.ndarray,
         datalist.append(mesh2d)
 
 
-def plot3d(levels: NumericSequence = (3, 6, 12),
+def plot3d(levels: RealSequence = (3, 6, 12),
            cmap: str = 'jet', alpha: RealScalar = 0.08,
            xlabel: str = 'R.A. (arcsec)',
            ylabel: str = 'Dec. (arcsec)',

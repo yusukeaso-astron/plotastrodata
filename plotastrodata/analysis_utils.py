@@ -8,13 +8,14 @@ import numbers
 from astropy.io.fits import Header
 from scipy.interpolate import RegularGridInterpolator as RGI
 from scipy.signal import convolve
-from pydantic import ConfigDict, WrapValidator
+from pydantic import ConfigDict
 from pydantic.dataclasses import dataclass as pydantic_dataclass
-from typing import (Annotated, Any, Callable, Literal,
+from typing import (Any, Callable, Literal,
                     TypeVar, ParamSpec, TypedDict)
 
 from plotastrodata import const_utils as cu
-from plotastrodata._type_utils import _normalize_float
+from plotastrodata._type_utils import (_normalize_float,
+                                       RealScalar, Position, ValidatedFloat)
 from plotastrodata.coord_utils import coord2xy, rel2abs, xy2coord, _getframe
 from plotastrodata.fits_utils import data2fits, FitsData, Jy2K
 from plotastrodata.fitting_utils import (EmceeCorner, gaussfit1d,
@@ -117,11 +118,10 @@ def _is_data_list(value: Any) -> bool:
 # Field aliases also describe the per-dataset forms used internally by plotting.
 _T = TypeVar('_T')
 _PerDataset = _T | list[_T]
-_RealScalar = float | np.floating | np.integer
 _FitsPath = str | PathLike[str]
 _NoiseSpec = str | float | numbers.Number | None
-_Beam = (np.ndarray | list[_RealScalar | None]
-         | tuple[_RealScalar | None, _RealScalar | None, _RealScalar | None])
+_Beam = (np.ndarray | list[RealScalar | None]
+         | tuple[RealScalar | None, RealScalar | None, RealScalar | None])
 
 
 class _Fit2DResult(TypedDict):
@@ -195,9 +195,9 @@ class AstroData():
     Tb: _PerDataset[bool] = False
     sigma: _PerDataset[_NoiseSpec] = 'hist'
     center: _PerDataset[str | None] = 'common'
-    restfreq: _PerDataset[_RealScalar | None] = None
-    cfactor: _PerDataset[_RealScalar] = 1
-    pvpa: _PerDataset[_RealScalar | None] = None
+    restfreq: _PerDataset[RealScalar | None] = None
+    cfactor: _PerDataset[RealScalar] = 1
+    pvpa: _PerDataset[RealScalar | None] = None
     pv: _PerDataset[bool] = False
     bunit: _PerDataset[str | None] = ''
     dist: float | np.longdouble = 1.0
@@ -681,10 +681,10 @@ class AstroData():
         return gfitres
 
     def profile(self, coords: list[str] | tuple[str, ...] | np.ndarray = [],
-                xlist: list[_RealScalar] | tuple[_RealScalar, ...] | np.ndarray = [],
-                ylist: list[_RealScalar] | tuple[_RealScalar, ...] | np.ndarray = [],
-                ellipse: list[_RealScalar] | tuple[_RealScalar, _RealScalar, _RealScalar]
-                | list[list[_RealScalar] | tuple[_RealScalar, _RealScalar, _RealScalar]]
+                xlist: list[RealScalar] | tuple[RealScalar, ...] | np.ndarray = [],
+                ylist: list[RealScalar] | tuple[RealScalar, ...] | np.ndarray = [],
+                ellipse: list[RealScalar] | tuple[RealScalar, RealScalar, RealScalar]
+                | list[list[RealScalar] | tuple[RealScalar, RealScalar, RealScalar]]
                 | np.ndarray | None = None,
                 ninterp: int | np.integer = 1,
                 flux: bool = False, gaussfit: bool = False
@@ -828,8 +828,8 @@ class AstroData():
         return d
 
     def _put_header(self, h: Header | dict[str, Any], t: Literal['x', 'y', 'v'],
-                    crpix: int | np.integer, crval: _RealScalar,
-                    cdelt: _RealScalar | None = None) -> None:
+                    crpix: int | np.integer, crval: RealScalar,
+                    cdelt: RealScalar | None = None) -> None:
         """Write axis values in the units already selected by the caller.
 
         FITS numeric header cards use Python floats: conversion here is an
@@ -978,18 +978,6 @@ ASTRODATA_ARGS = ['fitsimage', 'data', 'Tb', 'sigma', 'center', 'restfreq',
                   'beam_org', 'fitsheader', 'pv', 'pvpa']
 
 
-def _validate_frame_scalar(value: Any, handler: Callable
-                           ) -> float | np.longdouble:
-    """Preserve long doubles before Pydantic can coerce them to float."""
-    if isinstance(value, np.longdouble):
-        return value
-    return handler(value)
-
-
-_FrameScalar = Annotated[float | np.longdouble,
-                         WrapValidator(_validate_frame_scalar)]
-_PositionPair = tuple[_RealScalar, _RealScalar] | list[_RealScalar] | np.ndarray
-_Position = str | _PositionPair
 _Grid = list[np.ndarray | None]
 
 
@@ -1036,19 +1024,19 @@ class AstroFrame():
         quadrants (str, optional): '13' or '24'. Quadrants to take mean.
             None means not taking mean. Defaults to None.
     """
-    rmax: _FrameScalar = 1e10
-    xmax: _FrameScalar | None = None
-    xmin: _FrameScalar | None = None
-    ymax: _FrameScalar | None = None
-    ymin: _FrameScalar | None = None
-    dist: _FrameScalar = 1.0
+    rmax: ValidatedFloat = 1e10
+    xmax: ValidatedFloat | None = None
+    xmin: ValidatedFloat | None = None
+    ymax: ValidatedFloat | None = None
+    ymin: ValidatedFloat | None = None
+    dist: ValidatedFloat = 1.0
     center: str | None = None
     fitsimage: str | PathLike[str] | None = None
-    xoff: _FrameScalar = 0.0
-    yoff: _FrameScalar = 0.0
-    vsys: _FrameScalar = 0.0
-    vmin: _FrameScalar = -1e20
-    vmax: _FrameScalar = 1e20
+    xoff: ValidatedFloat = 0.0
+    yoff: ValidatedFloat = 0.0
+    vsys: ValidatedFloat = 0.0
+    vmin: ValidatedFloat = -1e20
+    vmax: ValidatedFloat = 1e20
     xflip: bool = True
     yflip: bool = False
     swapxy: bool = False
@@ -1059,11 +1047,11 @@ class AstroFrame():
     yskip: int = field(init=False, default=1, repr=False, compare=False)
     xdir: int = field(init=False, repr=False, compare=False)
     ydir: int = field(init=False, repr=False, compare=False)
-    xlim: list[_FrameScalar] = field(init=False, repr=False, compare=False)
-    ylim: list[_FrameScalar] = field(init=False, repr=False, compare=False)
-    vlim: list[_FrameScalar] = field(init=False, repr=False, compare=False)
-    Xlim: list[_FrameScalar] = field(init=False, repr=False, compare=False)
-    Ylim: list[_FrameScalar] = field(init=False, repr=False, compare=False)
+    xlim: list[ValidatedFloat] = field(init=False, repr=False, compare=False)
+    ylim: list[ValidatedFloat] = field(init=False, repr=False, compare=False)
+    vlim: list[ValidatedFloat] = field(init=False, repr=False, compare=False)
+    Xlim: list[ValidatedFloat] = field(init=False, repr=False, compare=False)
+    Ylim: list[ValidatedFloat] = field(init=False, repr=False, compare=False)
 
     def __post_init__(self) -> None:
         self.xdir = -1 if self.xflip else 1
@@ -1092,8 +1080,8 @@ class AstroFrame():
         if self.fitsimage is not None and self.center is None:
             self.center = FitsData(self.fitsimage).get_center()
 
-    def pos2xy(self, poslist: _Position | list[_Position]
-               | tuple[_Position, ...]) -> np.ndarray:
+    def pos2xy(self, poslist: Position | list[Position]
+               | tuple[Position, ...]) -> np.ndarray:
         """Convert sky coordinates or relative numeric pairs to coordinates.
 
         Args:

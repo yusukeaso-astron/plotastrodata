@@ -1,36 +1,62 @@
 """Internal helpers for preserving numeric output precision."""
 
 import numpy as np
-from typing import Literal, overload
+from typing import Annotated, Any, Callable, Literal, overload
+from pydantic import WrapValidator
 
 
-_RealValue = int | float | np.integer | np.floating | np.ndarray
-_ScalarOrArray = int | float | np.integer | np.longdouble | np.ndarray
+# Shared input types; validated settings are separate from uncoerced inputs.
+RealScalar = float | np.floating | np.integer
+RealSequence = list[RealScalar] | tuple[RealScalar, ...] | np.ndarray
+PositionPair = tuple[RealScalar, RealScalar] | list[RealScalar] | np.ndarray
+Position = str | PositionPair
+Positions = Position | list[Position] | tuple[Position, ...]
+
+
+def _validate_float(value: Any, handler: Callable) -> float | np.longdouble:
+    """Preserve extended precision before Pydantic coerces other values."""
+    return value if isinstance(value, np.longdouble) else handler(value)
+
+
+ValidatedFloat = Annotated[float | np.longdouble, WrapValidator(_validate_float)]
+
+
+_FloatNormalizationInput = int | float | np.integer | np.floating | np.ndarray
+_FloatNormalizationResult = int | float | np.integer | np.longdouble | np.ndarray
 
 
 @overload
-def _normalize_float(value: _RealValue, *, force_float: bool = False,
-                     array_output: Literal[True]) -> np.ndarray: ...
+def _normalize_float(value: _FloatNormalizationInput, *,
+                     force_float: bool = False,
+                     array_output: Literal[True]
+                     ) -> np.ndarray: ...
 
 
 @overload
-def _normalize_float(value: np.ndarray, *, force_float: bool = False,
-                     array_output: None = None) -> np.ndarray: ...
+def _normalize_float(value: np.ndarray, *,
+                     force_float: bool = False,
+                     array_output: None = None
+                     ) -> np.ndarray: ...
 
 
 @overload
-def _normalize_float(value: float | np.floating, *, force_float: bool = False,
+def _normalize_float(value: float | np.floating, *,
+                     force_float: bool = False,
                      array_output: Literal[False] | None = None
                      ) -> float | np.longdouble: ...
 
 
 @overload
-def _normalize_float(value: _RealValue, *, force_float: bool = False,
-                     array_output: bool | None = None) -> _ScalarOrArray: ...
+def _normalize_float(value: _FloatNormalizationInput, *,
+                     force_float: bool = False,
+                     array_output: bool | None = None
+                     ) -> _FloatNormalizationResult: ...
 
 
-def _normalize_float(value: _RealValue, *, force_float: bool = False,
-                     array_output: bool | None = None) -> _ScalarOrArray:
+def _normalize_float(value: _FloatNormalizationInput, *,
+                     force_float: bool = False,
+                     array_output: bool | None = None
+                     ) -> _FloatNormalizationResult:
     """Normalize a real numerical result at its public output boundary.
 
     By default, convert ordinary NumPy floating scalars to Python floats,
