@@ -1,7 +1,11 @@
 User Manual (PDF)
 =================
 
-The full plotastrodata manual is available as a PDF:
+For current runtime types, coordinate conventions, and usage restrictions,
+see :doc:`conventions` and the :doc:`plotastrodata` API reference.
+The downloadable PDF is a separate manual and may not reflect these updates.
+
+The PDF manual is available here:
 
 `Download the plotastrodata manual (PDF) <https://raw.githubusercontent.com/yusukeaso-astron/plotastrodata/main/plotastrodata_manual.pdf>`_
 

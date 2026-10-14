@@ -36,6 +36,7 @@ Contents
 .. toctree::
    :maxdepth: 2
 
+   conventions
    plotastrodata
    example
    manual

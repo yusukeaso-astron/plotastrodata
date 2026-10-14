@@ -742,7 +742,7 @@ def gaussfit1d(xdata: np.ndarray, ydata: np.ndarray,
 def gaussfit2d(xdata: np.ndarray, ydata: np.ndarray, zdata: np.ndarray,
                sigma: float | np.floating | np.ndarray | None = None,
                show: bool = False, **kwargs: Any) -> dict:
-    """Gaussian fitting to a pair of 1D arrays.
+    """Fit a two-dimensional Gaussian to zdata on the xdata/ydata grid.
 
     Args:
         xdata (np.ndarray): zdata is compared with Gauss(xdata, ydata).

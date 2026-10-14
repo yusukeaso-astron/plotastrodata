@@ -73,18 +73,8 @@ More examples and the complete API reference are available in the [online docume
 
 ## Conventions and Limitations
 
-* Array axes are ordered as `(y, x)` for a 2D image, `(v, y, x)` for a spectral cube, and `(v, x)` for a position-velocity diagram. With NumPy-array input, supply matching one-dimensional coordinate arrays; a spectral cube requires `v` to construct channel maps. FITS input obtains these coordinates from its header.
-* Spatial coordinates are offsets from `center`. They are expressed in arcseconds when `dist=1`. When `dist` is set to the source distance in parsecs, spatial offsets and beam sizes are expressed in au.
-* By default, the R.A. axis increases toward the left (`xflip=True`), following the usual astronomical image convention. Use `xflip=False` to reverse this behavior.
-* Velocity coordinates and `vsys` are in km/s, while `restfreq` is in Hz. A frequency axis read from FITS is converted to velocity relative to `vsys`.
-* Sky positions may be given as coordinate strings, such as `'ICRS 01h23m45.6s 01d23m45.6s'`. Numeric positions supplied through `poslist`, such as `[0.2, 0.3]`, are relative plotting positions: 0 is the left or bottom edge and 1 is the right or top edge. They are not spatial offsets.
-* Angles are in degrees unless an API explicitly states otherwise. Sky position angles are measured from north toward east. The polar-coordinate arrays `theta` and `phi` used by the line-of-sight utilities are in radians.
-* A beam is represented by `[bmaj, bmin, bpa]`, where the first two values use the current spatial unit and `bpa` is in degrees. `Tb=True` converts data from Jy/beam to brightness temperature and requires a valid rest frequency and spatial-resolution metadata.
-* `sigma` may be a numeric RMS value, a string selecting a noise-estimation method, or `None` to disable noise-dependent behavior. See the API documentation for the available estimation methods.
-* Annotation methods accept a single value or a list of values. `include_chan` selects displayed channels by zero-based index; `None` applies the annotation to all channels.
-* Position-velocity mode (`pv=True`) does not support regions, lines, arrows, or segment maps because its spatial and velocity axes use different units. Markers and text may still be placed using relative plotting positions.
-* Constants in `const_utils` are plain numerical values in SI units, not `astropy.units.Quantity` objects.
- 
+See [Conventions and usage notes](docs/conventions.rst) for data formats, coordinate and angle conventions, runtime types, and supported usage.
+
 ## Author
  
 * Name: Yusuke Aso

@@ -491,27 +491,27 @@ class Beam():
     """Arguments for PlotAstroData.add_beam().
 
     Ordinary numeric settings become Python floats; extended precision
-        is preserved.
+    is preserved.
 
-        Args:
-            show_beam (bool, optional): Defaults to True.
-            beam (list or np.ndarray, optional): One
-                ``[bmaj, bmin, bpa]`` triple or a list of triples.
-                ``bmaj`` and ``bmin`` must be positive; ``bpa`` is in
-                degrees. ``[None, None, None]`` means no beam is
-                available. Partial triples are not supported. Defaults
-                to ``[None, None, None]``.
-            beamcolor (str or list of str, optional): Matplotlib color.
-                One color is used for every beam; when a list is given,
-                provide one color per beam. Defaults to ``'gray'``.
-            beampos (list or list of list, optional): One relative
-                ``[x, y]`` position is used for every beam; when a list
-                of positions is given, provide one position per beam.
-                Each coordinate must be from 0 (left or bottom) to 1
-                (right or top). None selects the automatic position.
-                Defaults to None.
-            beam_kwargs (dict, optional): Additional Matplotlib patch
-                arguments. Defaults to {}.
+    Args:
+        show_beam (bool, optional): Defaults to True.
+        beam (list or np.ndarray, optional): One
+            ``[bmaj, bmin, bpa]`` triple or a list of triples.
+            ``bmaj`` and ``bmin`` must be positive; ``bpa`` is in
+            degrees. ``[None, None, None]`` means no beam is
+            available. Partial triples are not supported. Defaults
+            to ``[None, None, None]``.
+        beamcolor (str or list of str, optional): Matplotlib color.
+            One color is used for every beam; when a list is given,
+            provide one color per beam. Defaults to ``'gray'``.
+        beampos (list or list of list, optional): One relative
+            ``[x, y]`` position is used for every beam; when a list
+            of positions is given, provide one position per beam.
+            Each coordinate must be from 0 (left or bottom) to 1
+            (right or top). None selects the automatic position.
+            Defaults to None.
+        beam_kwargs (dict, optional): Additional Matplotlib patch
+            arguments. Defaults to {}.
     """
     show_beam: bool = True
     beam: BeamValue = Field(default_factory=lambda: [None] * 3)
