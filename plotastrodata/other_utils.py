@@ -1,27 +1,10 @@
 from os import PathLike
 import matplotlib.pyplot as plt
-import numbers
 import numpy as np
 import warnings
 from scipy.interpolate import RegularGridInterpolator as RGI
 from matplotlib.figure import Figure
 from typing import Any
-
-
-def listing(*args: Any) -> Any:
-    """Output a list of the input when the input is string or number.
-
-    Returns:
-        Any: Strings and numbers are wrapped in lists; other values are
-        unchanged. A single argument returns its processed value directly;
-        zero or multiple arguments return a list of processed values.
-    """
-    b = [None] * len(args)
-    for i, a in enumerate(args):
-        b[i] = [a] if isinstance(a, (str, numbers.Number)) else a
-    if len(args) == 1:
-        b = b[0]
-    return b
 
 
 def isdeg(s: Any) -> bool:
