@@ -15,7 +15,8 @@ from typing import (Any, Callable, Literal,
 
 from plotastrodata import const_utils as cu
 from plotastrodata._type_utils import (_normalize_float,
-                                       RealScalar, Position, ValidatedFloat)
+                                       RealScalar, Position,
+                                       ValidatedFloat, BeamInput)
 from plotastrodata.coord_utils import coord2xy, rel2abs, xy2coord, _getframe
 from plotastrodata.fits_utils import data2fits, FitsData, Jy2K
 from plotastrodata.fitting_utils import (EmceeCorner, gaussfit1d,
@@ -120,8 +121,6 @@ _T = TypeVar('_T')
 _PerDataset = _T | list[_T]
 _FitsPath = str | PathLike[str]
 _NoiseSpec = str | float | numbers.Number | None
-_Beam = (np.ndarray | list[RealScalar | None]
-         | tuple[RealScalar | None, RealScalar | None, RealScalar | None])
 
 
 class _Fit2DResult(TypedDict):
@@ -190,7 +189,7 @@ class AstroData():
     x: np.ndarray | None = None
     y: np.ndarray | None = None
     v: np.ndarray | None = None
-    beam: _PerDataset[_Beam] = (None, None, None)
+    beam: _PerDataset[BeamInput] = (None, None, None)
     fitsimage: _PerDataset[_FitsPath | None] = None
     Tb: _PerDataset[bool] = False
     sigma: _PerDataset[_NoiseSpec] = 'hist'
@@ -212,7 +211,7 @@ class AstroData():
         init=False, default=None, repr=False, compare=False)
     sigma_org: _PerDataset[_NoiseSpec] = field(
         init=False, default=None, repr=False, compare=False)
-    beam_org: _PerDataset[_Beam | None] = field(
+    beam_org: _PerDataset[BeamInput | None] = field(
         init=False, default=None, repr=False, compare=False)
     fitsheader: _PerDataset[Header | dict[str, Any] | None] = field(
         init=False, default=None, repr=False, compare=False)

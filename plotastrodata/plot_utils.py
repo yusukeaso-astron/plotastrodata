@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 from plotastrodata._type_utils import (_normalize_float,
                                        RealScalar, RealSequence,
                                        PositionPair, Positions,
-                                       ValidatedFloat)
+                                       ValidatedFloat, ValidatedBeams)
 from plotastrodata.analysis_utils import AstroData, AstroFrame
 from plotastrodata.coord_utils import (coord2xy, xy2coord,
                                        get_hmdm, get_min, get_sec, _getframe)
@@ -39,8 +39,6 @@ AxisScale = Literal['linear', 'log', 'symlog', 'asinh', 'logit']
 FloatOrList = ValidatedFloat | list[ValidatedFloat]
 # Optional both as a whole setting and for individual per-stretch entries.
 OptionalFloatOrList = ValidatedFloat | list[ValidatedFloat | None] | None
-BeamTriple = list[ValidatedFloat | None]
-BeamValue = BeamTriple | list[BeamTriple]
 BeamPositions = list[ValidatedFloat] | list[list[ValidatedFloat] | None] | None
 IndexOrArray = int | np.integer | np.ndarray
 
@@ -512,7 +510,7 @@ class Beam():
             arguments. Defaults to {}.
     """
     show_beam: bool = True
-    beam: BeamValue = Field(default_factory=lambda: [None] * 3)
+    beam: ValidatedBeams = Field(default_factory=lambda: [None] * 3)
     beamcolor: str | list[str] = 'gray'
     beampos: BeamPositions = None
     beam_kwargs: dict[str, Any] = Field(default_factory=dict)
@@ -536,7 +534,7 @@ class Beam():
 
     @field_validator('beam')
     @classmethod
-    def _validate_beam(cls, value: BeamValue) -> BeamValue:
+    def _validate_beam(cls, value: ValidatedBeams) -> ValidatedBeams:
         beams = value if value and isinstance(value[0], list) else [value]
         for beam in beams:
             if len(beam) != 3:
@@ -879,7 +877,7 @@ class PlotAstroData(AstroFrame):
     vskipfill: Callable[[np.ndarray, np.ndarray | None], np.ndarray]
     _kw: dict[str, Any]
     sigma: float | np.longdouble | None | list[float | np.longdouble | None]
-    beam: BeamValue
+    beam: ValidatedBeams
 
     def __init__(self,
                  v: RealSequence | None = None, vskip: int | np.integer = 1,

@@ -18,7 +18,17 @@ def _validate_float(value: Any, handler: Callable) -> float | np.longdouble:
     return value if isinstance(value, np.longdouble) else handler(value)
 
 
-ValidatedFloat = Annotated[float | np.longdouble, WrapValidator(_validate_float)]
+ValidatedFloat = Annotated[float | np.longdouble,
+                           WrapValidator(_validate_float)]
+
+# Raw analysis inputs retain their containers and scalar types.
+BeamInput = np.ndarray | list[RealScalar | None] | tuple[RealScalar | None,
+                                                         RealScalar | None,
+                                                         RealScalar | None]
+# Plotting converts inputs to lists and validates shape/completeness separately.
+ValidatedBeamTriple = list[ValidatedFloat | None]
+ValidatedBeams = ValidatedBeamTriple | list[ValidatedBeamTriple]
+
 
 
 _FloatNormalizationInput = int | float | np.integer | np.floating | np.ndarray
