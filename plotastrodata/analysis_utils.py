@@ -462,7 +462,7 @@ class AstroData():
             raise ValueError('chan is outside the cube channel range.')
         return self.data[int(chan)]
 
-    def _fit_pixelperbeam(self) -> float | np.longdouble:
+    def _fit_pixelperbeam(self) -> float | np.floating:
         if self.beam[0] is None or self.beam[1] is None:
             return 1.0
         sizes = np.asarray(self.beam[:2])
@@ -471,8 +471,7 @@ class AstroData():
         area = np.abs(self.dx * self.dy)
         if not np.isfinite(area) or area <= 0:
             raise ValueError('Fitting requires finite, nonzero pixel sizes.')
-        factor = _normalize_float(np.pi * sizes[0] * sizes[1]
-                                  / (4 * np.log(2) * area))
+        factor = np.pi * sizes[0] * sizes[1] / (4 * np.log(2) * area)
         warnings.warn('In the fitting, sigma is multiplied by'
                       + ' sqrt(pixel-per-beam) to account for'
                       + ' beam noise correlation.',
@@ -532,9 +531,9 @@ class AstroData():
                                  + ' the selected image shape.')
             return result
 
-        def logl(p: np.ndarray) -> float | np.longdouble:
+        def logl(p: np.ndarray) -> float | np.floating:
             rss = np.nansum((evaluate(p) - d)**2)
-            return _normalize_float(-0.5 * rss / self.sigma**2 / pixelperbeam)
+            return -0.5 * rss / self.sigma**2 / pixelperbeam
 
         mcmc = EmceeCorner(bounds=bounds, logl=logl,
                            progressbar=progressbar)

@@ -60,21 +60,21 @@ def _gaussian_log_likelihood(x: np.ndarray, model: Callable,
                              | tuple[np.ndarray, ...],
                              ydata: np.ndarray,
                              sigma: float | np.floating | np.ndarray
-                             ) -> float | np.longdouble:
-    """Return a Python float likelihood, preserving extended precision."""
+                             ) -> float | np.floating:
+    """Evaluate the likelihood without normalizing intermediate scalars."""
     chi2 = np.sum((ydata - model(xdata, *x))**2 / sigma**2)
-    return _normalize_float(chi2 / (-2))
+    return -0.5 * chi2
 
 
 def _bounded_log_probability(x: np.ndarray, log_likelihood: Callable,
                              bounds: np.ndarray,
                              update_progress: bool = False
-                             ) -> float | np.longdouble:
-    """Combine prior and likelihood; preserve extended-precision scalars."""
+                             ) -> float | np.floating:
+    """Combine prior and likelihood without converting callback results."""
     if update_progress:
         bar.update(1)
     if np.all((bounds[:, 0] < x) & (x < bounds[:, 1])):
-        return _normalize_float(log_likelihood(x))
+        return log_likelihood(x)
     return -np.inf
 
 

@@ -82,14 +82,14 @@ def _positive_noise(value: Any, name: str) -> None:
 
 
 def _image_edges(grid: np.ndarray, name: str
-                 ) -> tuple[float | np.longdouble, float | np.longdouble]:
-    """Get pixel edges as Python floats, preserving extended precision."""
+                 ) -> tuple[float | np.floating, float | np.floating]:
+    """Get pixel edges without converting intermediate scalars."""
     steps = np.diff(grid)
     if (not np.all(np.isfinite(grid)) or steps[0] == 0
             or not np.allclose(steps, steps[0], rtol=1e-5, atol=0)):
-        raise ValueError(f'RGB {name} coordinates must be finite and uniformly spaced.')
-    return (_normalize_float(grid[0] - steps[0] / 2),
-            _normalize_float(grid[-1] + steps[0] / 2))
+        raise ValueError(f'RGB {name} coordinates must be finite'
+                         + ' and uniformly spaced.')
+    return grid[0] - steps[0] / 2, grid[-1] + steps[0] / 2
 
 
 def set_rcparams(fontsize: float = 18, nancolor: str | tuple[float, ...] = 'w',
@@ -244,7 +244,7 @@ def get_figsize(xmin: float, xmax: float, ymin: float, ymax: float,
 
 
 def _get_gridwidth(mode: Literal['ra', 'dec'], rmax: float, cos_dec: float
-                   ) -> tuple[float | np.longdouble, int]:
+                   ) -> tuple[float | np.floating, int]:
     if mode not in ('ra', 'dec'):
         raise ValueError("mode must be 'ra' or 'dec'.")
     if not np.isfinite(rmax) or rmax <= 0:
@@ -261,7 +261,7 @@ def _get_gridwidth(mode: Literal['ra', 'dec'], rmax: float, cos_dec: float
         base, order = 1, p
     else:
         base, order = 2, p
-    return _normalize_float(base * 10**order), int(order)
+    return base * 10**order, int(order)
 
 
 def _get_v(p: Any, v: NumericSequence | None = None,
@@ -2414,6 +2414,29 @@ def _surface_mesh(measure: ModuleType, volume: np.ndarray,
     return vertices, simplices
 
 
+def _plotly_values(value: Any, *, exporting: bool = False) -> Any:
+    """Convert generated Plotly payloads only at return/export boundaries.
+
+    Public results preserve arrays and extended precision. HTML export uses
+    a separate payload with longdouble values narrowed to float64, which
+    Plotly's JSON encoder supports. Never apply this to generic user data.
+    """
+    if isinstance(value, dict):
+        return {k: _plotly_values(v, exporting=exporting)
+                for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_plotly_values(v, exporting=exporting) for v in value]
+    if isinstance(value, np.ndarray):
+        if exporting and value.dtype == np.dtype(np.longdouble):
+            return value.astype(float)
+        return value
+    if isinstance(value, (np.integer, np.bool_)):
+        return value.item()
+    if isinstance(value, np.floating):
+        return float(value) if exporting else _normalize_float(value)
+    return value
+
+
 def _plot_on_wall(d: AstroData, x: np.ndarray, y: np.ndarray, v: np.ndarray,
                   measure: ModuleType, datalist: list[dict[str, Any]],
                   sign: Literal[-1, 1], axis: Literal[0, 1, 2],
@@ -2478,8 +2501,8 @@ def _plot_on_wall(d: AstroData, x: np.ndarray, y: np.ndarray, v: np.ndarray,
                       i=i, j=j, k=k,
                       intensity=Zg * 0 + lev,
                       colorscale=cmap, reversescale=False,
-                      cmin=_normalize_float(np.min(levels), force_float=True),
-                      cmax=_normalize_float(np.max(levels), force_float=True),
+                      cmin=np.min(levels),
+                      cmax=np.max(levels),
                       opacity=alpha, name='', showscale=False)
         datalist.append(mesh2d)
 
@@ -2511,7 +2534,8 @@ def plot3d(levels: NumericSequence = (3, 6, 12),
     Levels at or outside the volume range, or with no surface, are skipped.
     Plotly and scikit-image are imported only when this function is called.
     Returned computed scalars are Python scalars, except extended-precision
-    NumPy floats; mesh arrays retain their dtypes.
+    NumPy floats; mesh arrays retain their dtypes. HTML export converts
+    extended-precision values to float64 in a separate serialization payload.
 
     Keyword groups accepted in ``**kwargs``:
         AstroData: Data input and metadata for the cube, such as
@@ -2606,22 +2630,13 @@ def plot3d(levels: NumericSequence = (3, 6, 12),
     yeye = -np.sin(eye_i * deg) * np.cos(eye_p * deg)
     zeye = np.cos(eye_i * deg)
     margin = dict(l=0, r=0, b=0, t=0)
-    camera = dict(eye=dict(x=_normalize_float(xeye),
-                           y=_normalize_float(yeye),
-                           z=_normalize_float(zeye)),
-                  up=dict(x=0, y=1, z=0))
-    xaxis = dict(range=[_normalize_float(x[0], force_float=True),
-                        _normalize_float(x[-1], force_float=True)],
-                 title=xlabel)
-    yaxis = dict(range=[_normalize_float(y[0], force_float=True),
-                        _normalize_float(y[-1], force_float=True)],
-                 title=ylabel)
-    zaxis = dict(range=[_normalize_float(v[0], force_float=True),
-                        _normalize_float(v[-1], force_float=True)],
-                 title=vlabel)
+    camera = dict(eye=dict(x=xeye, y=yeye, z=zeye), up=dict(x=0, y=1, z=0))
+    xaxis = dict(range=[x[0], x[-1]], title=xlabel)
+    yaxis = dict(range=[y[0], y[-1]], title=ylabel)
+    zaxis = dict(range=[v[0], v[-1]], title=vlabel)
     scene = dict(aspectmode='cube', camera=camera,
                  xaxis=xaxis, yaxis=yaxis, zaxis=zaxis)
-    layout = go.Layout(margin=margin, scene=scene, showlegend=False)
+    layout = dict(margin=margin, scene=scene, showlegend=False)
 
     data = []
     for lev in levels:
@@ -2635,18 +2650,14 @@ def plot3d(levels: NumericSequence = (3, 6, 12),
         mesh = dict(type='mesh3d', x=Xg, y=Yg, z=Zg, i=i, j=j, k=k,
                     intensity=Zg * 0 + lev,
                     colorscale=cmap, reversescale=False,
-                    cmin=_normalize_float(np.min(levels), force_float=True),
-                    cmax=_normalize_float(np.max(levels), force_float=True),
+                    cmin=np.min(levels), cmax=np.max(levels),
                     opacity=alpha, name='', showscale=False)
         data.append(mesh)
         Xe, Ye, Ze = [], [], []
         for t in vertices[simplices]:
-            Xe += [_normalize_float(x[0] + dx * t[k % 3][2])
-                   for k in range(4)] + [None]
-            Ye += [_normalize_float(y[0] + dy * t[k % 3][1])
-                   for k in range(4)] + [None]
-            Ze += [_normalize_float(v[0] + dv * t[k % 3][0])
-                   for k in range(4)] + [None]
+            Xe += [x[0] + dx * t[k % 3][2] for k in range(4)] + [None]
+            Ye += [y[0] + dy * t[k % 3][1] for k in range(4)] + [None]
+            Ze += [v[0] + dv * t[k % 3][0] for k in range(4)] + [None]
         lines = dict(type='scatter3d', x=Xe, y=Ye, z=Ze,
                      mode='lines', opacity=0.04, visible=True,
                      name='', line=dict(color='rgb(0,0,0)', width=1))
@@ -2659,9 +2670,11 @@ def plot3d(levels: NumericSequence = (3, 6, 12),
         _plot_on_wall(d, x, y, v, measure, data, sign, axis, **(kw or {}))
 
     if return_data_layout:
-        return {'data': data, 'layout': layout}
+        return {'data': _plotly_values(data),
+                'layout': go.Layout(**_plotly_values(layout))}
     else:
-        fig = go.Figure(data=data, layout=layout)
+        fig = go.Figure(data=_plotly_values(data, exporting=True),
+                        layout=_plotly_values(layout, exporting=True))
         path = Path(outname)
         if path.suffix.lower() != '.html':
             path = path.with_name(path.name + '.html')

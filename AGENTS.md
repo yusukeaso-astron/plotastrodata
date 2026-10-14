@@ -15,6 +15,12 @@ retroactively to previously reviewed modules.
 
 Apply this policy to subsequent module-by-module annotation reviews as well.
 
+Internal calculations and private callbacks need no scalar normalization.
+Normalize computed values when returning public results or storing public
+attributes. Treat serialization separately: narrow unsupported extended-precision
+values only in an export payload, preserving the in-memory results and arrays.
+
+
 # Plotting angle policy
 
 Angles are measured in degrees from the original data +y axis toward +x.

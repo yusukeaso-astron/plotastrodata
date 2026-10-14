@@ -287,11 +287,11 @@ class Noise:
         # curve_fit does not work for this fitting.
         # For binned data, sigma^2 is the expected number of data in each bin.
 
-        def logl(p: np.ndarray) -> float | np.longdouble:
+        def logl(p: np.ndarray) -> float | np.floating:
             numobs = self.counts
             numexp = model(self.hbin, *p) * self.bin_width * np.sum(numobs)
             chi2 = np.sum((numobs - numexp)**2 / numexp.clip(1, None))
-            return _normalize_float(-0.5 * chi2)
+            return -0.5 * chi2
 
         fitter = EmceeCorner(bounds=bounds, logl=logl)
         fitter.fit(**_kw)

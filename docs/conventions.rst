@@ -11,6 +11,9 @@ normalization policy does not change their dtypes. Numerical operations such
 as brightness-temperature conversion may promote their input dtype.
 Generic container and pass-through helpers do not recursively convert inputs.
 Integer constants remain integers. ``Mrot3d`` returns a NumPy array.
+Internal calculations need no scalar normalization. Plotly HTML export uses
+a separate payload with extended-precision values converted to float64;
+``plot3d(return_data_layout=True)`` preserves their in-memory precision.
 
 Data and coordinates
 --------------------
