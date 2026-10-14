@@ -35,7 +35,6 @@ T = TypeVar('T')
 Stretch = Literal['linear', 'log', 'asinh', 'power']
 AxisScale = Literal['linear', 'log', 'symlog', 'asinh', 'logit']
 
-
 FloatOrList = ValidatedFloat | list[ValidatedFloat]
 # Optional both as a whole setting and for individual per-stretch entries.
 OptionalFloatOrList = ValidatedFloat | list[ValidatedFloat | None] | None
