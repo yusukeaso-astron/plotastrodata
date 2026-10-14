@@ -17,7 +17,7 @@ from types import ModuleType
 if TYPE_CHECKING:
     from plotly.graph_objs import Layout
 
-from plotastrodata._type_utils import (_normalize_float,
+from plotastrodata._type_utils import (_normalize_float, _internal_field,
                                        RealScalar, RealSequence,
                                        PositionPair, Positions,
                                        ValidatedFloat, ValidatedBeams)
@@ -652,7 +652,7 @@ class PlotAxes2D():
     yticksminor: list | int | None = None
     grid: dict | bool | None = None
     aspect: dict | ValidatedFloat | Literal['equal', 'auto'] | None = None
-    ax: Axes | None = field(init=False, default=None, repr=False, compare=False)
+    ax: Axes | None = _internal_field()
 
     @field_validator('xlim', 'ylim')
     @classmethod

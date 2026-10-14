@@ -1,5 +1,6 @@
 """Internal helpers for preserving numeric output precision."""
 
+from dataclasses import field
 import numpy as np
 from typing import Annotated, Any, Callable, Literal, overload
 from pydantic import WrapValidator
@@ -92,3 +93,8 @@ def _normalize_float(value: _FloatNormalizationInput, *,
     if force_float or isinstance(value, np.floating):
         return float(value)
     return value
+
+
+def _internal_field() -> Any:
+    """Create a fresh field for internal state populated after initialization."""
+    return field(init=False, default=None, repr=False, compare=False)

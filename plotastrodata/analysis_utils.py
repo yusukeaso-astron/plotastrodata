@@ -14,7 +14,7 @@ from typing import (Any, Callable, Literal,
                     TypeVar, ParamSpec, TypedDict)
 
 from plotastrodata import const_utils as cu
-from plotastrodata._type_utils import (_normalize_float,
+from plotastrodata._type_utils import (_normalize_float, _internal_field,
                                        RealScalar, Position,
                                        ValidatedFloat, BeamInput)
 from plotastrodata.coord_utils import coord2xy, rel2abs, xy2coord, _getframe
@@ -200,21 +200,14 @@ class AstroData():
     pv: _PerDataset[bool] = False
     bunit: _PerDataset[str | None] = ''
     dist: float | np.longdouble = 1.0
-    dx: int | float | np.longdouble | None = field(
-        init=False, default=None, repr=False, compare=False)
-    dy: int | float | np.longdouble | None = field(
-        init=False, default=None, repr=False, compare=False)
-    dv: int | float | np.longdouble | None = field(
-        init=False, default=None, repr=False, compare=False)
+    dx: int | float | np.longdouble | None = _internal_field()
+    dy: int | float | np.longdouble | None = _internal_field()
+    dv: int | float | np.longdouble | None = _internal_field()
     n: int = field(init=False, repr=False, compare=False)
-    fitsimage_org: _PerDataset[_FitsPath | None] = field(
-        init=False, default=None, repr=False, compare=False)
-    sigma_org: _PerDataset[_NoiseSpec] = field(
-        init=False, default=None, repr=False, compare=False)
-    beam_org: _PerDataset[BeamInput | None] = field(
-        init=False, default=None, repr=False, compare=False)
-    fitsheader: _PerDataset[Header | dict[str, Any] | None] = field(
-        init=False, default=None, repr=False, compare=False)
+    fitsimage_org: _PerDataset[_FitsPath | None] = _internal_field()
+    sigma_org: _PerDataset[_NoiseSpec] = _internal_field()
+    beam_org: _PerDataset[BeamInput | None] = _internal_field()
+    fitsheader: _PerDataset[Header | dict[str, Any] | None] = _internal_field()
 
     def __post_init__(self) -> None:
         fits_values = (self.fitsimage if isinstance(self.fitsimage, list)
