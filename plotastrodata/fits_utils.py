@@ -7,7 +7,7 @@ from typing import Any, Callable
 
 from plotastrodata import const_utils as cu
 from plotastrodata._validation_utils import (_is_positive_real_scalar,
-                                              _require_positive_real_scalar)
+                                             _require_positive_real_scalar)
 from plotastrodata._type_utils import _normalize_float
 from plotastrodata.coord_utils import coord2xy, xy2coord
 from plotastrodata.matrix_utils import dot2d

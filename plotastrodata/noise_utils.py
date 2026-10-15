@@ -6,7 +6,7 @@ from scipy.special import erf
 from typing import Any, Callable
 
 from plotastrodata._validation_utils import (_require_integer,
-                                              _is_uniform_spacing)
+                                             _is_uniform_spacing)
 from plotastrodata._type_utils import _normalize_float
 from plotastrodata.fitting_utils import EmceeCorner
 from plotastrodata.other_utils import close_figure
