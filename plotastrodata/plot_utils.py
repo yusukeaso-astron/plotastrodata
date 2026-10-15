@@ -856,6 +856,88 @@ def _normalize_rgb_channel(data: np.ndarray, st: Stretcher,
     return normalized
 
 
+_AxisTicks = tuple[np.ndarray, np.ndarray, list[str]]
+
+
+def _radec_ticks(center: str, frame_name: str, dec_center: RealScalar,
+                  rmax: RealScalar, nticksminor: int
+                  ) -> tuple[_AxisTicks, _AxisTicks]:
+    """Build original-frame R.A./Dec. tick positions and labels.
+
+    Round the tick grids around the unchanged center before any display swap.
+    """
+    def sky_at(xy: list | np.ndarray) -> str | list | np.ndarray:
+        # Keep coordinate parsing helpers free of the frame prefix while
+        # performing offsets in the supplied frame, not implicit ICRS.
+        return _getframe(xy2coord(xy, center, frameorg=frame_name))[0]
+
+    # Round tick locations, never the coordinate reference itself.
+    on_min_scale = rmax >= 60.0
+
+    def get_tickvalues(ticks: np.ndarray, mode: str, no_sec: bool
+                       ) -> np.ndarray:
+        xy = [np.zeros_like(ticks), ticks / 3600.]
+        if mode == 'ra':
+            xy.reverse()
+        tickvalues = sky_at(xy)
+        getter = get_min if no_sec else get_sec
+        tickvalues = [getter(t, mode) for t in tickvalues]  # str
+        tickvalues = np.array(tickvalues, dtype=float)
+        # 7-digit precision for practical use.
+        tickvalues = np.round(tickvalues, 7)
+        return tickvalues
+
+    units = {'ra': {'h': r'$^\mathrm{h}$',
+                    'm': r'$^\mathrm{m}$',
+                    's': r'.$\hspace{-0.4}^\mathrm{s}$'},
+             'dec': {'d': r'$^{\circ}$',
+                     'm': r'$^{\prime}$',
+                     's': r'.$\hspace{-0.4}^{\prime\prime}$'}}
+    # Zero declination needs a nonzero direction for its tick grid.
+    sign_dec = -1 if dec_center < 0 else 1
+    cos_dec = np.cos(np.radians(dec_center))
+    intgrid = np.array([-3, -2, -1, 0, 1, 2, 3])
+
+    def makegrid(mode: str) -> tuple[np.ndarray, np.ndarray, list[str]]:
+        second = float(get_sec(center, mode))
+        no_sec = on_min_scale and (mode == 'dec')
+        # gridwidth is a float like 2 x 10^order (arcsec).
+        gridwidth, order = _get_gridwidth(mode, rmax, cos_dec)
+        if no_sec:
+            # Minute-only labels require whole-minute spacing; a 50-arcsec
+            # step, for example, would truncate distinct ticks to one label.
+            gridwidth = max(60., np.ceil(gridwidth / 60.) * 60.)
+        decimals = str(max(-order, 0))
+        # Offset a rounded grid from the unchanged center's seconds.
+        rounded = round(second / gridwidth) * gridwidth
+        factor = 15 * cos_dec if mode == 'ra' else sign_dec
+        ticks = (intgrid * gridwidth - second + rounded) * factor
+        ticksminor = np.linspace(ticks[0], ticks[-1], 6*nticksminor + 1)
+        tickvalues = get_tickvalues(ticks, mode, no_sec)
+        whole, frac = np.divmod(tickvalues, 1)
+        u = units[mode]['m' if no_sec else 's']
+        ticklabels = [f'{int(i):02d}{u}' + f'{j:.{decimals}f}'[2:]
+                      for i, j in zip(whole % 60, frac)]
+        return ticks, ticksminor, ticklabels
+
+    xticks, xticksminor, xticklabels = makegrid('ra')
+    yticks, yticksminor, yticklabels = makegrid('dec')
+    i_ref = np.where(np.abs(xticks) < rmax)[0][-1]
+    idx_top = -1 if sign_dec > 0 else 0
+    j_ref = np.where(np.abs(yticks) < rmax)[0][idx_top]
+    ra_hm = get_hmdm(sky_at([xticks[i_ref] / 3600., 0]), 'ra')
+    dec_dm = get_hmdm(sky_at([0, yticks[j_ref] / 3600.]), 'dec')
+    if on_min_scale:
+        dec_dm = dec_dm.split('d')[0] + 'd'
+    ra_hm = ra_hm.translate(str.maketrans(units['ra']))
+    dec_dm = dec_dm.translate(str.maketrans(units['dec']))
+    textpad = ' ' * 12  # To shift the tick label to left.
+    xticklabels[i_ref] = ra_hm + xticklabels[i_ref] + textpad
+    yticklabels[j_ref] = dec_dm + '\n' + yticklabels[j_ref]
+    return ((xticks, xticksminor, xticklabels),
+            (yticks, yticksminor, yticklabels))
+
+
 @dataclass(frozen=True)
 class _PanelLayout:
     """Channel selection and panel dimensions, before any figures are created."""
@@ -1955,76 +2037,10 @@ class PlotAstroData(AstroFrame):
         frame_name = frame.name.upper()
         xlabel = f'R.A. ({frame_name})' if xlabel is None else xlabel
         ylabel = f'Dec. ({frame_name})' if ylabel is None else ylabel
-
-        def sky_at(xy: list | np.ndarray) -> str | list | np.ndarray:
-            # Keep coordinate parsing helpers free of the frame prefix while
-            # performing offsets in the supplied frame, not implicit ICRS.
-            return _getframe(xy2coord(xy, center, frameorg=frame_name))[0]
-
-        # Round tick locations, never the coordinate reference itself.
-        on_min_scale = self.rmax >= 60.0
-
-        def get_tickvalues(ticks: np.ndarray, mode: str, no_sec: bool
-                           ) -> np.ndarray:
-            xy = [np.zeros_like(ticks), ticks / 3600.]
-            if mode == 'ra':
-                xy.reverse()
-            tickvalues = sky_at(xy)
-            getter = get_min if no_sec else get_sec
-            tickvalues = [getter(t, mode) for t in tickvalues]  # str
-            tickvalues = np.array(tickvalues, dtype=float)
-            # 7-digit precision for practical use.
-            tickvalues = np.round(tickvalues, 7)
-            return tickvalues
-
-        units = {'ra': {'h': r'$^\mathrm{h}$',
-                        'm': r'$^\mathrm{m}$',
-                        's': r'.$\hspace{-0.4}^\mathrm{s}$'},
-                 'dec': {'d': r'$^{\circ}$',
-                         'm': r'$^{\prime}$',
-                         's': r'.$\hspace{-0.4}^{\prime\prime}$'}}
-        dec_center = frame.dec.degree
-        # Zero declination needs a nonzero direction for its tick grid.
-        sign_dec = -1 if dec_center < 0 else 1
-        cos_dec = np.cos(np.radians(dec_center))
-        intgrid = np.array([-3, -2, -1, 0, 1, 2, 3])
-
-        def makegrid(mode: str) -> tuple[np.ndarray, np.ndarray, list[str]]:
-            second = float(get_sec(center, mode))
-            no_sec = on_min_scale and (mode == 'dec')
-            # gridwidth is a float like 2 x 10^order (arcsec).
-            gridwidth, order = _get_gridwidth(mode, self.rmax, cos_dec)
-            if no_sec:
-                # Minute-only labels require whole-minute spacing; a 50-arcsec
-                # step, for example, would truncate distinct ticks to one label.
-                gridwidth = max(60., np.ceil(gridwidth / 60.) * 60.)
-            decimals = str(max(-order, 0))
-            # Offset a rounded grid from the unchanged center's seconds.
-            rounded = round(second / gridwidth) * gridwidth
-            factor = 15 * cos_dec if mode == 'ra' else sign_dec
-            ticks = (intgrid * gridwidth - second + rounded) * factor
-            ticksminor = np.linspace(ticks[0], ticks[-1], 6*nticksminor + 1)
-            tickvalues = get_tickvalues(ticks, mode, no_sec)
-            whole, frac = np.divmod(tickvalues, 1)
-            u = units[mode]['m' if no_sec else 's']
-            ticklabels = [f'{int(i):02d}{u}' + f'{j:.{decimals}f}'[2:]
-                          for i, j in zip(whole % 60, frac)]
-            return ticks, ticksminor, ticklabels
-
-        xticks, xticksminor, xticklabels = makegrid('ra')
-        yticks, yticksminor, yticklabels = makegrid('dec')
-        i_ref = np.where(np.abs(xticks) < self.rmax)[0][-1]
-        idx_top = -1 if sign_dec > 0 else 0
-        j_ref = np.where(np.abs(yticks) < self.rmax)[0][idx_top]
-        ra_hm = get_hmdm(sky_at([xticks[i_ref] / 3600., 0]), 'ra')
-        dec_dm = get_hmdm(sky_at([0, yticks[j_ref] / 3600.]), 'dec')
-        if on_min_scale:
-            dec_dm = dec_dm.split('d')[0] + 'd'
-        ra_hm = ra_hm.translate(str.maketrans(units['ra']))
-        dec_dm = dec_dm.translate(str.maketrans(units['dec']))
-        textpad = ' ' * 12  # To shift the tick label to left.
-        xticklabels[i_ref] = ra_hm + xticklabels[i_ref] + textpad
-        yticklabels[j_ref] = dec_dm + '\n' + yticklabels[j_ref]
+        xtl, ytl = _radec_ticks(center, frame_name, frame.dec.degree,
+                                self.rmax, nticksminor)
+        xticks, xticksminor, xticklabels = xtl
+        yticks, yticksminor, yticklabels = ytl
         if self.swapxy:
             xticks, yticks = yticks, xticks
             xticksminor, yticksminor = yticksminor, xticksminor
@@ -2564,6 +2580,87 @@ def _plot_on_wall(d: AstroData, x: np.ndarray, y: np.ndarray, v: np.ndarray,
         datalist.append(mesh2d)
 
 
+@dataclass(frozen=True)
+class _SurfaceCube:
+    """Private finite plotting volume with ascending coordinates and spacings."""
+    volume: np.ndarray
+    x: np.ndarray
+    y: np.ndarray
+    v: np.ndarray
+    dx: RealScalar
+    dy: RealScalar
+    dv: RealScalar
+
+
+def _prepare_surface_cube(d: AstroData) -> _SurfaceCube:
+    """Validate and orient a private volume without changing processed data."""
+    if not isinstance(d.data, np.ndarray) or d.data.ndim != 3 or d.data.dtype.kind not in 'iuf':
+        raise ValueError('plot3d() requires one real 3D spectral cube'
+                         + ' with at least two samples per axis.')
+    for grid, size, name in zip((d.v, d.y, d.x), d.data.shape, ('v', 'y', 'x')):
+        _surface_grid(grid, size, name)
+    _positive_noise(d.sigma, 'sigma')
+    volume = np.array(d.data, copy=True)
+    x, y, v = d.x, d.y, d.v
+    dx, dy, dv = d.dx, d.dy, d.dv
+    volume[~np.isfinite(volume)] = 0
+    if dx < 0:
+        x, dx, volume = x[::-1], -dx, volume[:, :, ::-1]
+    if dy < 0:
+        y, dy, volume = y[::-1], -dy, volume[:, ::-1, :]
+    if dv < 0:
+        v, dv, volume = v[::-1], -dv, volume[::-1, :, :]
+    return _SurfaceCube(volume, x, y, v, dx, dy, dv)
+
+
+def _surface_traces(measure: ModuleType, cube: _SurfaceCube,
+                     levels: np.ndarray, sigma: RealScalar,
+                     cmap: str, alpha: RealScalar) -> list[dict[str, Any]]:
+    """Build paired isosurface meshes and triangle-edge traces in data units."""
+    volume = cube.volume
+    x, y, v = cube.x, cube.y, cube.v
+    dx, dy, dv = cube.dx, cube.dy, cube.dv
+    s, ds = [x, y, v], [dx, dy, dv]
+    data = []
+    for lev in levels:
+        surface = _surface_mesh(measure, volume, lev * sigma)
+        if surface is None:
+            continue
+        vertices, simplices = surface
+        Xg, Yg, Zg = [t[0] + i * dt for t, i, dt
+                      in zip(s, vertices.T[::-1], ds)]
+        i, j, k = simplices.T
+        mesh = dict(type='mesh3d', x=Xg, y=Yg, z=Zg, i=i, j=j, k=k,
+                    intensity=Zg * 0 + lev,
+                    colorscale=cmap, reversescale=False,
+                    cmin=np.min(levels), cmax=np.max(levels),
+                    opacity=alpha, name='', showscale=False)
+        data.append(mesh)
+        Xe, Ye, Ze = [], [], []
+        for t in vertices[simplices]:
+            Xe += [x[0] + dx * t[k % 3][2] for k in range(4)] + [None]
+            Ye += [y[0] + dy * t[k % 3][1] for k in range(4)] + [None]
+            Ze += [v[0] + dv * t[k % 3][0] for k in range(4)] + [None]
+        lines = dict(type='scatter3d', x=Xe, y=Ye, z=Ze,
+                     mode='lines', opacity=0.04, visible=True,
+                     name='', line=dict(color='rgb(0,0,0)', width=1))
+        data.append(lines)
+
+    return data
+
+
+def _export_plot3d(go: ModuleType, data: list[dict[str, Any]],
+                    layout: dict[str, Any], outname: str | PathLike[str],
+                    show: bool) -> None:
+    """Write HTML using a separate payload that narrows extended precision."""
+    fig = go.Figure(data=_plotly_values(data, exporting=True),
+                    layout=_plotly_values(layout, exporting=True))
+    path = Path(outname)
+    if path.suffix.lower() != '.html':
+        path = path.with_name(path.name + '.html')
+    fig.write_html(file=str(path), auto_open=show, auto_play=False)
+
+
 def plot3d(levels: RealSequence = (3, 6, 12),
            cmap: str = 'jet', alpha: RealScalar = 0.08,
            xlabel: str = 'R.A. (arcsec)',
@@ -2665,23 +2762,8 @@ def plot3d(levels: RealSequence = (3, 6, 12),
         raise ImportError('plot3d() requires plotly and scikit-image.') from exc
     d = kwargs2instance(AstroData, kwargs)
     f.read(d, xskip, yskip)
-    if not isinstance(d.data, np.ndarray) or d.data.ndim != 3 or d.data.dtype.kind not in 'iuf':
-        raise ValueError('plot3d() requires one real 3D spectral cube'
-                         + ' with at least two samples per axis.')
-    for grid, size, name in zip((d.v, d.y, d.x), d.data.shape, ('v', 'y', 'x')):
-        _surface_grid(grid, size, name)
-    _positive_noise(d.sigma, 'sigma')
-    volume = np.array(d.data, copy=True)
-    x, y, v, sigma = d.x, d.y, d.v, d.sigma
-    dx, dy, dv = d.dx, d.dy, d.dv
-    volume[~np.isfinite(volume)] = 0
-    if dx < 0:
-        x, dx, volume = x[::-1], -dx, volume[:, :, ::-1]
-    if dy < 0:
-        y, dy, volume = y[::-1], -dy, volume[:, ::-1, :]
-    if dv < 0:
-        v, dv, volume = v[::-1], -dv, volume[::-1, :, :]
-    s, ds = [x, y, v], [dx, dy, dv]
+    cube = _prepare_surface_cube(d)
+    x, y, v = cube.x, cube.y, cube.v
     deg = np.radians(1)
     xeye = -np.sin(eye_i * deg) * np.sin(eye_p * deg)
     yeye = -np.sin(eye_i * deg) * np.cos(eye_p * deg)
@@ -2695,30 +2777,7 @@ def plot3d(levels: RealSequence = (3, 6, 12),
                  xaxis=xaxis, yaxis=yaxis, zaxis=zaxis)
     layout = dict(margin=margin, scene=scene, showlegend=False)
 
-    data = []
-    for lev in levels:
-        surface = _surface_mesh(measure, volume, lev * sigma)
-        if surface is None:
-            continue
-        vertices, simplices = surface
-        Xg, Yg, Zg = [t[0] + i * dt for t, i, dt
-                      in zip(s, vertices.T[::-1], ds)]
-        i, j, k = simplices.T
-        mesh = dict(type='mesh3d', x=Xg, y=Yg, z=Zg, i=i, j=j, k=k,
-                    intensity=Zg * 0 + lev,
-                    colorscale=cmap, reversescale=False,
-                    cmin=np.min(levels), cmax=np.max(levels),
-                    opacity=alpha, name='', showscale=False)
-        data.append(mesh)
-        Xe, Ye, Ze = [], [], []
-        for t in vertices[simplices]:
-            Xe += [x[0] + dx * t[k % 3][2] for k in range(4)] + [None]
-            Ye += [y[0] + dy * t[k % 3][1] for k in range(4)] + [None]
-            Ze += [v[0] + dv * t[k % 3][0] for k in range(4)] + [None]
-        lines = dict(type='scatter3d', x=Xe, y=Ye, z=Ze,
-                     mode='lines', opacity=0.04, visible=True,
-                     name='', line=dict(color='rgb(0,0,0)', width=1))
-        data.append(lines)
+    data = _surface_traces(measure, cube, levels, d.sigma, cmap, alpha)
 
     klist = [xplus, xminus, yplus, yminus, vplus, vminus]
     slist = [1, -1, 1, -1, 1, -1]
@@ -2730,9 +2789,4 @@ def plot3d(levels: RealSequence = (3, 6, 12),
         return {'data': _plotly_values(data),
                 'layout': go.Layout(**_plotly_values(layout))}
     else:
-        fig = go.Figure(data=_plotly_values(data, exporting=True),
-                        layout=_plotly_values(layout, exporting=True))
-        path = Path(outname)
-        if path.suffix.lower() != '.html':
-            path = path.with_name(path.name + '.html')
-        fig.write_html(file=str(path), auto_open=show, auto_play=False)
+        _export_plot3d(go, data, layout, outname, show)
