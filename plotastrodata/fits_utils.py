@@ -13,6 +13,37 @@ from plotastrodata.noise_utils import estimate_rms
 from plotastrodata.other_utils import isdeg, RGIxy, trim
 
 
+def _jy2k_metadata(header: fits.Header | dict[str, Any] | None,
+                   bmaj: float | np.floating | None,
+                   bmin: float | np.floating | None,
+                   restfreq: float | np.floating | None
+                   ) -> tuple[float | np.floating | None,
+                              float | np.floating | None,
+                              float | np.floating | None]:
+    """Resolve beam sizes in arcsec and frequency in Hz without narrowing.
+
+    Header beam/pixel metadata overrides supplied sizes. RESTFRQ overrides
+    RESTFREQ, and an explicit restfreq overrides either header frequency.
+    """
+    freq = None
+    if header is not None:
+        if 'BMAJ' in header and 'BMIN' in header:
+            bmaj, bmin = header['BMAJ'] * 3600, header['BMIN'] * 3600
+        elif 'CDELT1' in header and 'CUNIT1' in header:
+            print('Use CDELT1^2 for Tb conversion.')
+            todiameter = np.sqrt(4 * np.log(2) / np.pi) * 3600
+            bmaj = bmin = np.abs(header['CDELT1']) * todiameter
+            if header['CUNIT1'] == 'arcsec':
+                bmaj, bmin = bmaj / 3600, bmin / 3600
+        if 'RESTFRQ' in header:
+            freq = header['RESTFRQ']
+        elif 'RESTFREQ' in header:
+            freq = header['RESTFREQ']
+    if restfreq is not None:
+        freq = restfreq
+    return bmaj, bmin, freq
+
+
 def Jy2K(header: fits.Header | dict[str, Any] | None = None,
          bmaj: float | np.floating | None = None,
          bmin: float | np.floating | None = None,
@@ -34,33 +65,17 @@ def Jy2K(header: fits.Header | dict[str, Any] | None = None,
         float or np.longdouble: Conversion factor in K/Jy. Ordinary
         scalars are Python floats; extended-precision results are preserved.
     """
-    freq = None
-    if header is not None:
-        if 'BMAJ' in header and 'BMIN' in header:
-            bmaj, bmin = header['BMAJ'] * 3600, header['BMIN'] * 3600
-        elif 'CDELT1' in header and 'CUNIT1' in header:
-            print('Use CDELT1^2 for Tb conversion.')
-            todiameter = np.sqrt(4 * np.log(2) / np.pi) * 3600
-            bmaj = bmin = np.abs(header['CDELT1']) * todiameter
-            if header['CUNIT1'] == 'arcsec':
-                bmaj, bmin = bmaj / 3600, bmin / 3600
-        if 'RESTFREQ' in header:
-            freq = header['RESTFREQ']
-        if 'RESTFRQ' in header:
-            freq = header['RESTFRQ']
-    if restfreq is not None:
-        freq = restfreq
+    bmaj, bmin, freq = _jy2k_metadata(header, bmaj, bmin, restfreq)
     if freq is None:
-        raise ValueError(
-            'Brightness-temperature conversion requires restfreq or a '
-            'RESTFREQ/RESTFRQ header value.')
+        raise ValueError('Brightness-temperature conversion requires restfreq'
+                         + ' or a RESTFREQ/RESTFRQ header value.')
     if not np.isfinite(freq) or freq <= 0:
         raise ValueError('restfreq must be finite and positive.')
     if (bmaj is None or bmin is None or not np.isfinite(bmaj)
             or not np.isfinite(bmin) or bmaj <= 0 or bmin <= 0):
-        raise ValueError(
-            'Brightness-temperature conversion requires finite, positive '
-            'bmaj and bmin values or equivalent FITS header metadata.')
+        raise ValueError('Brightness-temperature conversion requires finite,'
+                         + ' positive bmaj and bmin values'
+                         + ' or equivalent FITS header metadata.')
     omega = bmaj * bmin * units.arcsec**2 * np.pi / 4. / np.log(2.)
     equiv = units.brightness_temperature(freq * units.Hz, beam_area=omega)
     T = (1 * units.Jy / units.beam).to(units.K, equivalencies=equiv)

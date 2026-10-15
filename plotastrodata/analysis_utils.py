@@ -243,17 +243,11 @@ class AstroData():
 
         n = 0
         if has_fits:
-            if not isinstance(self.fitsimage, list):
-                n = 1
-            else:
-                n = len(self.fitsimage)
+            n = len(fits_values)
             self.data = None
         if has_data:
             if _is_data_list(self.data):
                 n = len(self.data)
-            elif (isinstance(self.data, list)
-                  and not any(a is not None for a in self.data)):
-                n = 0
             else:
                 self.data = np.asarray(self.data)
                 n = 1
@@ -1027,6 +1021,33 @@ def _validate_shared_grid(expected_grid: _Grid, actual_grid: _Grid,
                              + ' coordinate grids.')
 
 
+def _prepare_positions(poslist: Position | list[Position]
+                       | tuple[Position, ...]
+                       ) -> list[Position] | tuple[Position, ...] | np.ndarray:
+    """Prepare a position collection without coercing mixed inputs or scalars."""
+    def is_pair(value: Any) -> bool:
+        return (isinstance(value, (list, tuple, np.ndarray))
+                and not (isinstance(value, np.ndarray) and value.ndim == 0)
+                and len(value) == 2
+                and all(isinstance(v, (numbers.Real, np.integer, np.floating))
+                        for v in value))
+
+    if isinstance(poslist, str):
+        poslist = [poslist]
+    elif (isinstance(poslist, (list, tuple, np.ndarray))
+          and not (isinstance(poslist, np.ndarray) and poslist.ndim == 0)):
+        # Test elements without converting a mixed collection to an array.
+        if is_pair(poslist):
+            poslist = [poslist]
+    else:
+        raise ValueError('Each position must be a string or a numeric pair.')
+    for position in poslist:
+        if not isinstance(position, str) and not is_pair(position):
+            raise ValueError('Each numeric position must contain'
+                             + ' two real scalars.')
+    return poslist
+
+
 @pydantic_dataclass(config=ConfigDict(arbitrary_types_allowed=True))
 class AstroFrame():
     """Parameter set to limit and reshape the data in the AstroData
@@ -1147,32 +1168,7 @@ class AstroFrame():
             ValueError: If a numeric position is not a pair of real scalars,
                 or sky coordinates are supplied without a center.
         """
-        def is_pair(value: Any) -> bool:
-            return (isinstance(value, (list, tuple, np.ndarray))
-                    and not (isinstance(value, np.ndarray) and value.ndim == 0)
-                    and len(value) == 2
-                    and all(isinstance(v, (numbers.Real,
-                                           np.integer,
-                                           np.floating))
-                            for v in value))
-
-        if isinstance(poslist, str):
-            poslist = [poslist]
-        elif isinstance(poslist, np.ndarray) and poslist.ndim == 0:
-            raise ValueError('Each position must be a string or a numeric pair.')
-        elif isinstance(poslist, (list, tuple, np.ndarray)):
-            # Test elements without converting a mixed collection to an array.
-            if (len(poslist) == 2
-                    and all(isinstance(v, (numbers.Real,
-                                           np.integer,
-                                           np.floating)) for v in poslist)):
-                poslist = [poslist]
-        else:
-            raise ValueError('Each position must be a string or a numeric pair.')
-        for position in poslist:
-            if not isinstance(position, str) and not is_pair(position):
-                raise ValueError('Each numeric position must contain'
-                                 + ' two real scalars.')
+        poslist = _prepare_positions(poslist)
         if self.center is None and any(isinstance(p, str) for p in poslist):
             clsname = type(self).__name__
             raise ValueError(f'{clsname}.pos2xy() requires "center"'
