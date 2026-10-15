@@ -27,6 +27,25 @@ from plotastrodata.other_utils import (nearest_index, RGIxy, RGIxyv,
                                        to4dim, trim)
 
 
+def _profile_ellipses(ellipse: Any, nprof: int) -> np.ndarray:
+    """Prepare one ellipse per profile without changing supplied array dtypes."""
+    if ellipse is None:
+        ellipses = np.zeros((nprof, 3))
+    else:
+        ellipses = np.asarray(ellipse)
+        if ellipses.shape == (3,):
+            ellipses = np.broadcast_to(ellipses, (nprof, 3))
+        elif ellipses.shape != (nprof, 3):
+            raise ValueError('ellipse must be one [major, minor, pa] triple'
+                             + ' or exactly one triple per position.')
+        if (ellipses.dtype.kind not in 'iuf'
+                or not np.all(np.isfinite(ellipses))
+                or np.any(ellipses[:, :2] < 0)):
+            raise ValueError('ellipse values must be finite real numbers'
+                             + ' with nonnegative major and minor sizes.')
+    return ellipses
+
+
 def quadrantmean(data: np.ndarray, x: np.ndarray, y: np.ndarray,
                  quadrants: Literal['13', '24'] = '13'
                  ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -719,20 +738,7 @@ class AstroData():
         nprof = len(xlist)
         dtype = data.dtype if data.dtype.kind in 'fc' else np.dtype(float)
         prof = np.empty((nprof, len(self.v)), dtype=dtype)
-        if ellipse is None:
-            ellipses = np.zeros((nprof, 3))
-        else:
-            ellipses = np.asarray(ellipse)
-            if ellipses.shape == (3,):
-                ellipses = np.broadcast_to(ellipses, (nprof, 3))
-            elif ellipses.shape != (nprof, 3):
-                raise ValueError('ellipse must be one [major, minor, pa] triple '
-                                 'or exactly one triple per position.')
-            if (ellipses.dtype.kind not in 'iuf'
-                    or not np.all(np.isfinite(ellipses))
-                    or np.any(ellipses[:, :2] < 0)):
-                raise ValueError('ellipse values must be finite real numbers '
-                                 + 'with nonnegative major and minor sizes.')
+        ellipses = _profile_ellipses(ellipse, nprof)
         calc = np.sum if flux else np.mean
         for i, (xc, yc, e) in enumerate(zip(xlist, ylist, ellipses)):
             major, minor, pa = e

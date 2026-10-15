@@ -83,6 +83,34 @@ def _image_edges(grid: np.ndarray, name: str
     return grid[0] - steps[0] / 2, grid[-1] + steps[0] / 2
 
 
+def _validate_colorbar(cbformat: str, cbticks: RealSequence | None,
+                       cbticklabels: list[str] | tuple[str, ...]
+                       | np.ndarray | None, cblocation: str
+                       ) -> np.ndarray | None:
+    """Validate enabled colorbar options and prepare explicit tick positions."""
+    if cblocation not in ('left', 'right', 'top', 'bottom'):
+        raise ValueError('cblocation must be left, right,'
+                         + ' top, or bottom.')
+    try:
+        formatter = (mpl.ticker.StrMethodFormatter(cbformat)
+                     if '{' in cbformat
+                     else mpl.ticker.FormatStrFormatter(cbformat))
+        formatter(1.)
+    except (ValueError, TypeError, KeyError, IndexError) as exc:
+        raise ValueError('cbformat must be a numeric printf-style'
+                         ' or {x:...} format.') from exc
+    if cbticks is not None:
+        cbticks = np.asarray(cbticks)
+        if cbticks.ndim != 1 or not np.all(np.isfinite(cbticks)):
+            raise ValueError('cbticks must be a finite 1D sequence.')
+    if (cbticklabels is not None
+        and (cbticks is None or np.ndim(cbticklabels) != 1
+             or len(cbticklabels) != len(cbticks))):
+        raise ValueError('cbticklabels requires one label'
+                         + ' per explicit cbtick.')
+    return cbticks
+
+
 def set_rcparams(fontsize: float = 18, nancolor: str | tuple[float, ...] = 'w',
                  dpi: float = 256) -> None:
     """Nice rcParams for figures.
@@ -804,6 +832,30 @@ def kwargs2instance(cls: type[T], kw: dict[str, Any]) -> T:
     return cls(**tmp)
 
 
+def _normalize_rgb_channel(data: np.ndarray, st: Stretcher,
+                           i: int) -> np.ndarray:
+    """Stretch one RGB channel, preserving invalid pixels and array precision."""
+    lo, hi = st._parameter('vmin', i), st._parameter('vmax', i)
+    if lo is not None and hi is not None and lo > hi:
+        raise ValueError('vmin must not exceed vmax.')
+    clipped = data if lo is None and hi is None else data.clip(lo, hi)
+    with np.errstate(invalid='ignore', divide='ignore', over='ignore'):
+        stretched = st.do(clipped, i)
+    valid = np.isfinite(data) & np.isfinite(stretched)
+    normalized = np.full(stretched.shape, np.nan,
+                         dtype=np.result_type(stretched.dtype,
+                                              np.float32))
+    if np.any(valid):
+        low = np.min(stretched[valid]) if lo is None else st.do(lo, i)
+        high = np.max(stretched[valid]) if hi is None else st.do(hi, i)
+        if not np.isfinite(low) or not np.isfinite(high):
+            raise ValueError('RGB stretch bounds must be finite'
+                             + ' after transformation.')
+        normalized[valid] = ((stretched[valid] - low) / (high - low)
+                             if high > low else 0)
+    return normalized
+
+
 class PlotAstroData(AstroFrame):
     """Make a figure from 2D/3D FITS files or 2D/3D arrays.
 
@@ -1439,26 +1491,8 @@ class PlotAstroData(AstroFrame):
                 ticks. This is independent of set_rcparams().
         """
         if show_cbar:
-            if cblocation not in ('left', 'right', 'top', 'bottom'):
-                raise ValueError('cblocation must be left, right,'
-                                 + ' top, or bottom.')
-            try:
-                formatter = (mpl.ticker.StrMethodFormatter(cbformat)
-                             if '{' in cbformat
-                             else mpl.ticker.FormatStrFormatter(cbformat))
-                formatter(1.)
-            except (ValueError, TypeError, KeyError, IndexError) as exc:
-                raise ValueError('cbformat must be a numeric printf-style'
-                                 ' or {x:...} format.') from exc
-            if cbticks is not None:
-                cbticks = np.asarray(cbticks)
-                if cbticks.ndim != 1 or not np.all(np.isfinite(cbticks)):
-                    raise ValueError('cbticks must be a finite 1D sequence.')
-            if (cbticklabels is not None
-                and (cbticks is None or np.ndim(cbticklabels) != 1
-                     or len(cbticklabels) != len(cbticks))):
-                raise ValueError('cbticklabels requires one label'
-                                 + ' per explicit cbtick.')
+            cbticks = _validate_colorbar(cbformat, cbticks, cbticklabels,
+                                         cblocation)
         self._kw = {'cmap': 'cubehelix', 'alpha': 1,
                     'edgecolors': 'none', 'zorder': 1,
                     'vmin': None, 'vmax': None}
@@ -1734,24 +1768,7 @@ class PlotAstroData(AstroFrame):
             raise ValueError('RGB stretch settings must contain three values.')
         channels = []
         for i, data in enumerate(c):
-            lo, hi = st._parameter('vmin', i), st._parameter('vmax', i)
-            if lo is not None and hi is not None and lo > hi:
-                raise ValueError('vmin must not exceed vmax.')
-            clipped = data if lo is None and hi is None else data.clip(lo, hi)
-            with np.errstate(invalid='ignore', divide='ignore', over='ignore'):
-                stretched = st.do(clipped, i)
-            valid = np.isfinite(data) & np.isfinite(stretched)
-            normalized = np.full(stretched.shape, np.nan,
-                                 dtype=np.result_type(stretched.dtype,
-                                                      np.float32))
-            if np.any(valid):
-                low = np.min(stretched[valid]) if lo is None else st.do(lo, i)
-                high = np.max(stretched[valid]) if hi is None else st.do(hi, i)
-                if not np.isfinite(low) or not np.isfinite(high):
-                    raise ValueError('RGB stretch bounds must be finite'
-                                     + ' after transformation.')
-                normalized[valid] = ((stretched[valid] - low) / (high - low)
-                                     if high > low else 0)
+            normalized = _normalize_rgb_channel(data, st, i)
             channels.append(self.vskipfill(normalized, v))
         rgb = np.stack(channels, axis=-1)  # (channel, y, x, RGB)
         extent = [*_image_edges(x, 'x'), *_image_edges(y, 'y')]
