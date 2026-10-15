@@ -192,11 +192,11 @@ class EmceeCorner():
             global_bounds = bounds_array
         if (not np.all(np.isfinite(global_bounds))
                 or np.any(global_bounds[:, 0] >= global_bounds[:, 1])):
-            raise ValueError(
-                'Each parameter bound must be finite with lower < upper.')
+            raise ValueError('Each parameter bound must be finite'
+                             + ' with lower < upper.')
         if (len(percent) != 2 or not 0 <= percent[0] < percent[1] <= 100):
-            raise ValueError(
-                'percent must contain two increasing values between 0 and 100.')
+            raise ValueError('percent must contain two increasing values'
+                             + ' between 0 and 100.')
         global_progressbar = progressbar
         if logl is None and (model is not None
                              and xdata is not None
@@ -204,8 +204,8 @@ class EmceeCorner():
             logl = partial(_gaussian_log_likelihood, model=model,
                            xdata=xdata, ydata=ydata, sigma=sigma)
         if logl is None:
-            raise ValueError(
-                'Provide logl, or provide model, xdata, and ydata together.')
+            raise ValueError('Provide logl, or provide model, xdata,'
+                             + ' and ydata together.')
         self.bounds = global_bounds
         self.dim = len(self.bounds)
         self.logl = logl
