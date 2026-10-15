@@ -211,10 +211,14 @@ def logcbticks(vmin: float = 1e-3, vmax: float = 1e3
 
 def get_figsize(xmin: float, xmax: float, ymin: float, ymax: float,
                 figsize: RealSequence | None = None,
-                ncols: int = 1, nrows: int = 1, nchan: int = 1
+                ncols: int | np.integer = 1, nrows: int | np.integer = 1,
+                nchan: int | np.integer = 1
                 ) -> tuple[float | np.longdouble,
                            float | np.longdouble] | RealSequence:
     """Get a nice figsize (tuple) with the given x and y ranges.
+
+    ncols, nrows, and nchan must be positive Python/NumPy integers, even
+    when figsize is supplied. Booleans, floats, and arrays are rejected.
 
     Args:
         xmin (float): The figsize is based on the aspect ratio of (ymax
@@ -227,11 +231,11 @@ def get_figsize(xmin: float, xmax: float, ymin: float, ymax: float,
             - ymin) / (xmax - xmin).
         figsize (tuple | None, optional): If this is not None, this will
             be the output as is. Defaults to None.
-        ncols (int, optional): The number of columns for the channel
+        ncols (int or np.integer, optional): The number of columns for the channel
             map. Defaults to 1.
-        nrows (int, optional): The number of rows for the channel map.
+        nrows (int or np.integer, optional): The number of rows for the channel map.
             Defaults to 1.
-        nchan (int, optional): The number of total channels for the
+        nchan (int or np.integer, optional): The number of total channels for the
             channel map. Defaults to 1.
 
     Returns:
@@ -648,10 +652,12 @@ class PlotAxes2D():
             default locator. Defaults to None.
         xticklabels (list, optional): Defaults to None.
         yticklabels (list, optional): Defaults to None.
-        xticksminor (list or int, optional): If int, int times more than
-            xticks. Defaults to None.
-        yticksminor (list or int, optional): Defaults to None. If int,
-            int times more than xticks. Defaults to None.
+        xticksminor (list, int, or np.integer, optional): Explicit minor-tick
+            positions, or a positive integer number of subdivisions per major
+            interval. Counts reject booleans, floats, and arrays. Generation
+            requires at least two major ticks. Defaults to None.
+        yticksminor (list, int, or np.integer, optional): Same rule for y-axis
+            minor ticks. Defaults to None.
         grid (dict or bool, optional): A bool toggles the grid;
             a dict supplies options. Defaults to None.
         aspect (dict, float, or str, optional): Also accepts 'equal' and
@@ -688,7 +694,7 @@ class PlotAxes2D():
     @field_validator('xticksminor', 'yticksminor', mode='before')
     @classmethod
     def _validate_minor(cls, value: Any) -> Any:
-        if np.isscalar(value):
+        if np.isscalar(value) or (isinstance(value, np.ndarray) and value.ndim == 0):
             _require_integer(value, 'minor tick subdivisions')
             return int(value)
         return value
@@ -1034,16 +1040,18 @@ class PlotAstroData(AstroFrame):
     Args:
         v (np.ndarray, optional): Used to set up channels if fitsimage
             not given. Defaults to None.
-        vskip (int, optional): How many channels are skipped. Defaults
-            to 1.
-        veldigit (int, optional): How many digits after the decimal
-            point. Defaults to 2.
+        vskip (int or np.integer, optional): How many channels are skipped.
+            Defaults to 1.
+        veldigit (int or np.integer, optional): How many digits after
+            the decimal point. Defaults to 2.
         restfreq (float, optional): Used for velocity and brightness T.
             Defaults to None.
-        channelnumber (int, optional): Specify a channel number to make
-            2D maps. Defaults to None.
-        nrows (int, optional): Used for channel maps. Defaults to 4.
-        ncols (int, optional): Used for channel maps. Defaults to 6.
+        channelnumber (int or np.integer, optional): Specify a channel number
+            to make 2D maps. Defaults to None.
+        nrows (int or np.integer, optional): Used for channel maps.
+            Defaults to 4.
+        ncols (int or np.integer, optional): Used for channel maps.
+            Defaults to 6.
         fontsize (int, optional): rcParams['font.size']. None means 18
             (2D) or 12 (3D). Defaults to None.
         nancolor (str, optional): Color for masked regions. Defaults to
@@ -1058,7 +1066,9 @@ class PlotAstroData(AstroFrame):
     Unspecified velocity limits use the available grid for channel setup;
     explicit limits may extend it. channelnumber indexes the resulting grid
     after vskip, accepts NumPy integers and negative indices, and is stored
-    as a nonnegative Python integer. Invalid layout or selection inputs
+    as a nonnegative Python integer. nrows, ncols, and vskip must be positive
+    Python/NumPy integers; veldigit must be a nonnegative integer. These counts
+    reject booleans, floats, and arrays. Invalid layout or selection inputs
     raise ValueError before figures are created.
     """
     fig: Figure | None
@@ -2259,11 +2269,12 @@ def plotprofile(coords: str | list[str] | tuple[str, ...]
         ellipse (list, tuple, or ndarray, optional): One [major, minor, pa]
             triple or one triple per position, for averaging.
             Defaults to None.
-        ninterp (int, optional): Number of points for interpolation.
-            Defaults to 1.
+        ninterp (int or np.integer, optional): Positive interpolation factor.
+            Booleans, floats, and arrays are rejected. Defaults to 1.
         flux (bool, optional): y axis is flux density. Defaults to
             False.
-        width (int, optional): Rebinning step along v. Defaults to 1.
+        width (int or np.integer, optional): Positive rebinning step along v.
+            Booleans, floats, and arrays are rejected. Defaults to 1.
         gaussfit (bool, optional): Fit the profiles. Defaults to False.
         gauss_kwargs (dict, optional): Gaussian overlay style for Axes.plot, not fitting options.
             None uses the default style.
@@ -2272,7 +2283,8 @@ def plotprofile(coords: str | list[str] | tuple[str, ...]
         text (list or tuple, optional): One Axes.text keyword dictionary
             per profile (including x, y, s). Defaults to None.
         nrows (int or np.integer, optional): Subplot rows. 0 computes the
-            required number from ncols and the profile count. Defaults to 0.
+            required number from ncols and the profile count. Negative values,
+            booleans, floats, and arrays are rejected. Defaults to 0.
         ncols (int or np.integer, optional): Positive subplot column count. Defaults to 1.
         fig (Figure, optional): External figure; supply together with ax.
             Only one profile/slice may use the pair. Defaults to None.

@@ -96,7 +96,8 @@ def filled2d(data: np.ndarray, x: np.ndarray, y: np.ndarray,
         x (np.ndarray): 1D array.
         y (np.ndarray): 1D array.
         n (int or np.integer, optional): How many times more the new grid is.
-            Must be a positive integer; booleans are rejected. Defaults to 1.
+            Must be a positive integer; booleans, floats, and arrays are
+            rejected. Defaults to 1.
 
     Returns:
         tuple: The interpolated (data, x, y).
@@ -332,8 +333,9 @@ class AstroData():
 
         Args:
             width (list, tuple, or np.ndarray, optional): Number of channels,
-                y-pixels, and x-pixels for binning. Booleans are rejected.
-                Defaults to [1, 1, 1].
+                y-pixels, and x-pixels for binning. Entries must be positive
+                Python/NumPy integer scalars; booleans, floats, and
+                array-valued entries are rejected. Defaults to [1, 1, 1].
         """
         data4d, size, w = self._prepare_binning(width)
         for axis, factor in zip(('v', 'y', 'x'), w):
@@ -719,8 +721,8 @@ class AstroData():
             ellipse (list, tuple, or np.ndarray, optional): One
                 [major, minor, pa] triple shared by all positions, or one
                 triple per position. None selects nearest pixels.
-            ninterp (int or np.integer, optional): Number of points for interpolation.
-                Defaults to 1.
+            ninterp (int or np.integer, optional): Positive interpolation factor.
+                Booleans, floats, and arrays are rejected. Defaults to 1.
             flux (bool, optional): Jy/beam to Jy. Defaults to False.
             gaussfit (bool, optional): Fit the profiles. Defaults to
                 False.
@@ -1387,7 +1389,7 @@ class AstroFrame():
         Args:
             d (AstroData): Dataclass for the add_* input.
             xskip, yskip (int or np.integer): Positive spatial pixel skips.
-                Booleans are rejected. Defaults to 1.
+                Booleans, floats, and arrays are rejected. Defaults to 1.
         """
         _require_integer(xskip, 'xskip')
         _require_integer(yskip, 'yskip')

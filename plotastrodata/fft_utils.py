@@ -164,6 +164,7 @@ def ifftcentering(F: np.ndarray, u: np.ndarray | None = None,
             Defaults to False.
         rfft (bool, optional): True means using rFFT. Defaults to False.
         nx (int or np.integer, optional): Original x-axis length for rfft=True.
+            Must be at least two; booleans, floats, and arrays are rejected.
             Must satisfy nx // 2 + 1 == the number of x-frequency samples in F.
             With u supplied,
             nx removes the even/odd ambiguity without requiring dx. Without
@@ -228,6 +229,7 @@ def ifftcentering2(F: np.ndarray,
             Defaults to False.
         rfft (bool, optional): True means using rFFT. Defaults to False.
         nx (int or np.integer, optional): Original x-axis length for rfft=True.
+            Must be at least two; booleans, floats, and arrays are rejected.
             Must satisfy nx // 2 + 1 == the number of x-frequency samples in F.
             With u supplied,
             nx removes the even/odd ambiguity without requiring dx. Without

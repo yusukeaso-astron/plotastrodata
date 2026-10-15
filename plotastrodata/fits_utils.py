@@ -51,6 +51,10 @@ def Jy2K(header: fits.Header | dict[str, Any] | None = None,
          ) -> float | np.longdouble:
     """Calculate a conversion factor in the unit of K/Jy.
 
+    Complete header beam sizes override bmaj/bmin; otherwise pixel-size
+    metadata can supply a fallback beam area. An explicit restfreq overrides
+    header frequencies; RESTFRQ takes precedence over RESTFREQ in the header.
+
     Args:
         header (optional): astropy.io.fits.open('a.fits')[0].header.
             Defaults to None.

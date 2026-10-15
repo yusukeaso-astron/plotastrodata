@@ -15,6 +15,38 @@ Internal calculations need no scalar normalization. Plotly HTML export uses
 a separate payload with extended-precision values converted to float64;
 ``plot3d(return_data_layout=True)`` preserves their in-memory precision.
 
+Integer counts and input validation
+-----------------------------------
+
+Counts checked as integers accept Python ``int`` and NumPy integer scalars.
+They reject Python/NumPy booleans, floating values (including ``2.0``), NaN,
+infinity, and arrays (including ``np.array(2)``). Invalid values raise
+``ValueError``; validation does not round, clamp, or convert them.
+
+* Positive counts include interpolation factors, bin widths, spatial skips,
+  channel-map rows/columns, velocity skips, minor-tick subdivision counts,
+  histogram ``normalize(bins=...)``, and MCMC steps, temperatures, trials,
+  and core counts.
+* Zero is allowed for ``veldigit``, MCMC ``nburnin``, and
+  ``plotprofile(nrows=0)`` (automatic layout).
+* ``nwalkersperdim`` and the inverse-real-FFT ``nx`` must be at least two.
+  ``nburnin`` must also be smaller than ``nsteps``; ``nx`` must match the
+  half-spectrum length. Walker counts below two raise ``ValueError`` rather
+  than being replaced by two.
+
+These rules concern integer count arguments, not every numerical setting.
+Signed channel indices retain normal negative-index selection.
+Explicit histogram edges override unused ``normalize`` bin counts.
+Binning can still reduce oversized valid widths to the available axis sizes;
+this is separate from input-type validation.
+
+Zero-dimensional arrays are treated according to the operation. Position
+collections and integer counts reject them; overlay-value broadcasting can
+accept them as individual values. Numerical array outputs retain array form
+as described above. Minor ticks accept explicit position lists or positive
+integer subdivision counts; subdivision generation needs at least two major
+ticks. The count is validated when ``PlotAxes2D`` is constructed.
+
 Data and coordinates
 --------------------
 
@@ -85,6 +117,12 @@ The ``edges`` argument of ``noise_utils.normalize`` is keyword-only.
 ``gaussfit1d`` and ``gaussfit2d`` default to ``sigma=None``: they print a notice
 and estimate noise from residuals of an initial fit. Returned scalar sigma is
 a float, preserving extended precision; array-valued sigma retains its dtype.
+
+An explicit ``restfreq`` takes precedence over header frequencies. Header
+lookup prefers ``RESTFRQ`` to ``RESTFREQ``. For ``Jy2K``, complete header beam
+sizes override explicit ``bmaj``/``bmin``; otherwise available pixel-size
+metadata supplies a fallback beam area. This beam precedence is independent
+of the frequency precedence.
 
 ``FitsData.get_data`` returns cached data. Its arguments are used only if data
 have not yet been generated. Call ``gen_data`` to change conversion options::

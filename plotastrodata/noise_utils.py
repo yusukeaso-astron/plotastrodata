@@ -31,7 +31,7 @@ def _uniform_bin_width(edges: np.ndarray) -> float | np.longdouble:
 
 
 def normalize(range: tuple[float, float] = (-3.5, 3.5),
-              bins: int = 100, *,
+              bins: int | np.integer = 100, *,
               edges: np.ndarray | list[float] | None = None) -> Callable:
     """Decorator factory to normalize a function over the given range.
 

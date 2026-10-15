@@ -304,26 +304,29 @@ class EmceeCorner():
         using the corner package.
 
         All run counts must be Python or NumPy integers; booleans and
-        floating values are rejected. nburnin may be zero.
+        floating values (even integral ones) and arrays, including 0D, are
+        rejected. nsteps, ntemps, ntry, and ncores must be positive;
+        nwalkersperdim must be at least two. nburnin must satisfy
+        0 <= nburnin < nsteps. Invalid counts raise ValueError.
 
         Args:
-            nwalkersperdim (int, optional): Number of walkers per
+            nwalkersperdim (int or np.integer, optional): Number of walkers per
                 dimension. Must be at least 2; smaller values raise
                 ValueError. Defaults to 2.
-            ntemps (int, optional): Number of temperatures. Defaults to
-                1.
-            nsteps (int, optional): Number of steps, including the steps
-                for burn-in. Defaults to 1000.
-            nburnin (int, optional): Number of burn-in steps. Defaults
-                to 500.
-            ntry (int, optional): Number of trials for the Gelman-Rubin
-                check. Defaults to 1.
+            ntemps (int or np.integer, optional): Number of temperatures.
+                Defaults to 1.
+            nsteps (int or np.integer, optional): Number of steps, including
+                the steps for burn-in. Defaults to 1000.
+            nburnin (int or np.integer, optional): Number of burn-in steps.
+                Defaults to 500.
+            ntry (int or np.integer, optional): Number of trials for the
+                Gelman-Rubin check. Defaults to 1.
             pos0 (np.nparray, optional): Initial parameter set in the
                 shape of (ntemps, nwalkers, dim). Defaults to None.
             savechain (str, optional): File name of the chain in format
                 of .npy. Existing files with the same name are
                 overwritten by ``numpy.save``. Defaults to None.
-            ncores (int, optional): Number of cores for
+            ncores (int or np.integer, optional): Number of cores for
                 multiprocessing.Pool. ncores=1 does not use
                 multiprocessing. For ncores > 1, user-supplied logl and
                 model functions must be pickleable, such as functions
