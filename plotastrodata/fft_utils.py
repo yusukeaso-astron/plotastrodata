@@ -3,6 +3,7 @@ import numpy as np
 from typing import Callable
 from os import PathLike
 
+from plotastrodata._validation_utils import _require_integer
 from plotastrodata._type_utils import _normalize_float
 
 from plotastrodata.fits_utils import fits2data
@@ -126,9 +127,7 @@ def _ifft_xsize(nfreq: int, u: np.ndarray | None, dx: float,
     if nx is not None:
         if not rfft:
             raise ValueError('nx is only supported when rfft=True.')
-        if (isinstance(nx, (bool, np.bool_))
-                or not isinstance(nx, (int, np.integer)) or nx < 2):
-            raise ValueError('nx must be an integer of at least two.')
+        _require_integer(nx, 'nx', minimum=2)
         if int(nx) // 2 + 1 != nfreq:
             raise ValueError(f'nx={nx} must satisfy nx // 2 + 1 == {nfreq}, '
                              + 'the number of x-frequency samples in F.')

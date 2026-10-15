@@ -5,6 +5,7 @@ import warnings
 from scipy.special import erf
 from typing import Any, Callable
 
+from plotastrodata._validation_utils import _require_integer
 from plotastrodata._type_utils import _normalize_float
 from plotastrodata.fitting_utils import EmceeCorner
 from plotastrodata.other_utils import close_figure
@@ -34,10 +35,11 @@ def normalize(range: tuple[float, float] = (-3.5, 3.5),
               edges: np.ndarray | list[float] | None = None) -> Callable:
     """Decorator factory to normalize a function over the given range.
 
-    Explicit edges override range and bins. Midpoint densities are
-    normalized using a single shared bin width. Edges must be equally
-    spaced within relative tolerance 1e-5 (zero absolute tolerance) to
-    accommodate rounding of float32 histogram edges.
+    bins must be a positive Python/NumPy integer; booleans are rejected.
+    Explicit edges override range and bins (so bins is not validated then).
+    Midpoint densities are normalized using a single shared bin width.
+    Edges must be equally spaced within relative tolerance 1e-5 (zero
+    absolute tolerance) to accommodate rounding of float32 histogram edges.
     If all midpoint values underflow to zero, mass is placed in the bin
     containing args[1] (the model mean); a mean outside the edges produces zeros.
 
@@ -45,8 +47,7 @@ def normalize(range: tuple[float, float] = (-3.5, 3.5),
     and arrays, including zero-dimensional arrays, are preserved.
     """
     if edges is None:
-        if not isinstance(bins, numbers.Integral) or bins < 1:
-            raise ValueError('bins must be a positive integer.')
+        _require_integer(bins, 'bins')
         edges = np.linspace(*range, bins + 1)
     else:
         edges = np.array(edges, copy=True)

@@ -14,6 +14,7 @@ from typing import (Any, Callable, Literal,
                     TypeVar, ParamSpec, TypedDict)
 
 from plotastrodata import const_utils as cu
+from plotastrodata._validation_utils import _require_integer
 from plotastrodata._type_utils import (_normalize_float, _internal_field,
                                        RealScalar, Position,
                                        ValidatedFloat, BeamInput)
@@ -95,13 +96,12 @@ def filled2d(data: np.ndarray, x: np.ndarray, y: np.ndarray,
         x (np.ndarray): 1D array.
         y (np.ndarray): 1D array.
         n (int or np.integer, optional): How many times more the new grid is.
-            Defaults to 1.
+            Must be a positive integer; booleans are rejected. Defaults to 1.
 
     Returns:
         tuple: The interpolated (data, x, y).
     """
-    if not isinstance(n, (int, np.integer)) or n < 1:
-        raise ValueError('n must be a positive integer.')
+    _require_integer(n, 'n')
     xnew = np.linspace(x[0], x[-1], n * (len(x) - 1) + 1)
     ynew = np.linspace(y[0], y[-1], n * (len(y) - 1) + 1)
     d = RGIxy(y, x, data, np.meshgrid(ynew, xnew, indexing='ij'),
@@ -306,9 +306,10 @@ class AstroData():
 
         Preparation reports clamped widths without changing public attributes.
         """
-        if not 1 <= len(width) <= 3 or any(not isinstance(a, (int, np.integer))
-                                           or a < 1 for a in width):
+        if not 1 <= len(width) <= 3:
             raise ValueError('width must contain one to three positive integers.')
+        for i, factor in enumerate(width):
+            _require_integer(factor, f'width[{i}]')
         w = np.array([1] * (3 - len(width)) + list(width), dtype=int)
         if self.pv:
             w[1] = max(w[0], w[1])
@@ -331,7 +332,8 @@ class AstroData():
 
         Args:
             width (list, tuple, or np.ndarray, optional): Number of channels,
-                y-pixels, and x-pixels for binning. Defaults to [1, 1, 1].
+                y-pixels, and x-pixels for binning. Booleans are rejected.
+                Defaults to [1, 1, 1].
         """
         data4d, size, w = self._prepare_binning(width)
         for axis, factor in zip(('v', 'y', 'x'), w):
@@ -1384,11 +1386,11 @@ class AstroFrame():
 
         Args:
             d (AstroData): Dataclass for the add_* input.
-            xskip, yskip (int or np.integer): Spatial pixel skip. Defaults to 1.
+            xskip, yskip (int or np.integer): Positive spatial pixel skips.
+                Booleans are rejected. Defaults to 1.
         """
-        if (not isinstance(xskip, (int, np.integer)) or xskip < 1
-                or not isinstance(yskip, (int, np.integer)) or yskip < 1):
-            raise ValueError('xskip and yskip must be positive integers.')
+        _require_integer(xskip, 'xskip')
+        _require_integer(yskip, 'yskip')
         d.dist = self.dist
         self.xskip = int(xskip)
         self.yskip = int(yskip)

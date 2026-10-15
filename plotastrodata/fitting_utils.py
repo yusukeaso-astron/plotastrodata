@@ -12,6 +12,7 @@ from tqdm import tqdm
 from typing import Any, Callable
 from matplotlib.figure import Figure
 
+from plotastrodata._validation_utils import _require_integer
 from plotastrodata._type_utils import _normalize_float
 from plotastrodata.matrix_utils import Mrot, dot2d
 from plotastrodata.other_utils import close_figure
@@ -22,17 +23,18 @@ bar = None
 global_progressbar = True
 
 
-def _validate_mcmc_run(nwalkersperdim: int, ntemps: int, nsteps: int,
-                       nburnin: int, ntry: int, ncores: int, ) -> None:
+def _validate_mcmc_run(nwalkersperdim: int | np.integer,
+                       ntemps: int | np.integer, nsteps: int | np.integer,
+                       nburnin: int | np.integer, ntry: int | np.integer,
+                       ncores: int | np.integer) -> None:
     """Check run lengths and resource counts before sampling setup."""
-    if nsteps < 1:
-        raise ValueError('nsteps must be positive.')
-    if nburnin < 0 or nburnin >= nsteps:
+    _require_integer(nsteps, 'nsteps')
+    _require_integer(nburnin, 'nburnin', minimum=0)
+    if nburnin >= nsteps:
         raise ValueError('nburnin must satisfy 0 <= nburnin < nsteps.')
-    if ntemps < 1 or ntry < 1 or ncores < 1:
-        raise ValueError('ntemps, ntry, and ncores must be positive.')
-    if nwalkersperdim < 2:
-        raise ValueError('nwalkersperdim must be at least 2.')
+    for name, value in (('ntemps', ntemps), ('ntry', ntry), ('ncores', ncores)):
+        _require_integer(value, name)
+    _require_integer(nwalkersperdim, 'nwalkersperdim', minimum=2)
 
 
 class _PTSampler(ptemcee.Sampler):
@@ -290,16 +292,19 @@ class EmceeCorner():
         phigh = np.percentile(s, self.percent[1], axis=0)
         return plow, pmid, phigh
 
-    def fit(self, nwalkersperdim: int = 2,
-            ntemps: int = 1, nsteps: int = 1000,
-            nburnin: int = 500, ntry: int = 1,
+    def fit(self, nwalkersperdim: int | np.integer = 2,
+            ntemps: int | np.integer = 1, nsteps: int | np.integer = 1000,
+            nburnin: int | np.integer = 500, ntry: int | np.integer = 1,
             pos0: np.ndarray | None = None,
-            savechain: str | None = None, ncores: int = 1,
+            savechain: str | None = None, ncores: int | np.integer = 1,
             grcheck: bool = False, pt: bool = False) -> None:
         """Perform a Markov Chain Monte Carlo (MCMC) fitting process
         using the ptemcee library, which is a parallel tempering version
         of the emcee package, and make a corner plot of the samples
         using the corner package.
+
+        All run counts must be Python or NumPy integers; booleans and
+        floating values are rejected. nburnin may be zero.
 
         Args:
             nwalkersperdim (int, optional): Number of walkers per

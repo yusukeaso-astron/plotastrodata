@@ -17,6 +17,7 @@ from types import ModuleType
 if TYPE_CHECKING:
     from plotly.graph_objs import Layout
 
+from plotastrodata._validation_utils import _require_integer
 from plotastrodata._type_utils import (_normalize_float, _internal_field,
                                        RealScalar, RealSequence,
                                        PositionPair, Positions,
@@ -143,13 +144,6 @@ def set_rcparams(fontsize: float = 18, nancolor: str | tuple[float, ...] = 'w',
     plt.rcParams['ytick.minor.width'] = 1.5
 
 
-def _positive_int(value: int | np.integer, name: str) -> None:
-    """Reject noninteger or nonpositive grid and sampling counts."""
-    if (isinstance(value, (bool, np.bool_))
-            or not isinstance(value, (int, np.integer)) or value <= 0):
-        raise ValueError(f'{name} must be a positive integer.')
-
-
 def _log_limits(vmin: float, vmax: float) -> None:
     """Validate a finite, positive, increasing logarithmic range."""
     if not (np.isfinite(vmin) and np.isfinite(vmax)
@@ -245,7 +239,7 @@ def get_figsize(xmin: float, xmax: float, ymin: float, ymax: float,
         Computed sizes contain Python floats or extended-precision NumPy floats.
     """
     for name, value in (('nrows', nrows), ('ncols', ncols), ('nchan', nchan)):
-        _positive_int(value, name)
+        _require_integer(value, name)
     if figsize is not None:
         return figsize
     if (not all(np.isfinite(a) for a in (xmin, xmax, ymin, ymax))
@@ -286,7 +280,7 @@ def _get_gridwidth(mode: Literal['ra', 'dec'], rmax: float, cos_dec: float
 def _get_v(p: Any, v: RealSequence | None = None,
            restfreq: float | None = None,
            vskip: int = 1) -> np.ndarray:
-    _positive_int(vskip, 'vskip')
+    _require_integer(vskip, 'vskip')
     if p.fitsimage is not None and v is None:
         p.read(d := AstroData(fitsimage=p.fitsimage,
                               restfreq=restfreq, sigma=None))
@@ -309,8 +303,8 @@ def _get_v(p: Any, v: RealSequence | None = None,
 
 def _get_nij2ch(nrows: int | np.integer = 1, ncols: int | np.integer = 1
                 ) -> Callable[[IndexOrArray, IndexOrArray, IndexOrArray], int | np.ndarray]:
-    _positive_int(nrows, 'nrows')
-    _positive_int(ncols, 'ncols')
+    _require_integer(nrows, 'nrows')
+    _require_integer(ncols, 'ncols')
 
     def nij2ch(n: IndexOrArray, i: IndexOrArray, j: IndexOrArray) -> int | np.ndarray:
         result = n*nrows*ncols + i*ncols + j
@@ -324,8 +318,8 @@ def _get_ch2nij(nrows: int | np.integer = 1, ncols: int | np.integer = 1
                 ) -> Callable[[IndexOrArray], tuple[int | np.ndarray,
                                                     int | np.ndarray,
                                                     int | np.ndarray]]:
-    _positive_int(nrows, 'nrows')
-    _positive_int(ncols, 'ncols')
+    _require_integer(nrows, 'nrows')
+    _require_integer(ncols, 'ncols')
 
     def ch2nij(ch: IndexOrArray) -> tuple[int | np.ndarray,
                                           int | np.ndarray,
@@ -347,8 +341,8 @@ def _get_vskipfill(nv: int, v_org: np.ndarray, vskip: int,
     nv and vskip must be positive integers. Selection accepts Python and
     NumPy integers, including negative indices, with normal bounds checking.
     """
-    _positive_int(nv, 'nv')
-    _positive_int(vskip, 'vskip')
+    _require_integer(nv, 'nv')
+    _require_integer(vskip, 'vskip')
     if channelnumber is not None and (
             isinstance(channelnumber, (bool, np.bool_))
             or not isinstance(channelnumber, (int, np.integer))):
@@ -695,7 +689,7 @@ class PlotAxes2D():
     @classmethod
     def _validate_minor(cls, value: Any) -> Any:
         if np.isscalar(value):
-            _positive_int(value, 'minor tick subdivisions')
+            _require_integer(value, 'minor tick subdivisions')
             return int(value)
         return value
 
@@ -738,7 +732,6 @@ class PlotAxes2D():
 
     def _make_ticks(self, ticks: RealSequence, ticksminor: int
                     ) -> np.ndarray:
-        _positive_int(ticksminor, 'minor tick subdivisions')
         if len(ticks) < 2:
             raise ValueError('Minor subdivisions require at least'
                              + ' two major ticks.')
@@ -1094,13 +1087,11 @@ class PlotAstroData(AstroFrame):
                  figsize: RealSequence | None = None,
                  fig: Figure | None = None, ax: Axes | None = None,
                  **kwargs: Any) -> None:
-        _positive_int(nrows, 'nrows')
-        _positive_int(ncols, 'ncols')
-        _positive_int(vskip, 'vskip')
+        _require_integer(nrows, 'nrows')
+        _require_integer(ncols, 'ncols')
+        _require_integer(vskip, 'vskip')
         nrows, ncols, vskip = int(nrows), int(ncols), int(vskip)
-        if (isinstance(veldigit, (bool, np.bool_))
-                or not isinstance(veldigit, (int, np.integer)) or veldigit < 0):
-            raise ValueError('veldigit must be a nonnegative integer.')
+        _require_integer(veldigit, 'veldigit', minimum=0)
         if channelnumber is not None and (
                 isinstance(channelnumber, (bool, np.bool_))
                 or not isinstance(channelnumber, (int, np.integer))):
@@ -2020,7 +2011,7 @@ class PlotAstroData(AstroFrame):
             ValueError: If dist != 1, the plot is a PV diagram, the center is
                 missing, or nticksminor is not a positive integer.
         """
-        _positive_int(nticksminor, 'nticksminor')
+        _require_integer(nticksminor, 'nticksminor')
         nticksminor = int(nticksminor)
         if self.pv:
             raise ValueError('set_axis_radec() does not support'
@@ -2141,8 +2132,8 @@ def _prep_plotprofile(width: int | np.integer,
         coords = [coords]
     xlist = [] if xlist is None else xlist
     ylist = [] if ylist is None else ylist
-    _positive_int(width, 'width')
-    _positive_int(ninterp, 'ninterp')
+    _require_integer(width, 'width')
+    _require_integer(ninterp, 'ninterp')
     Tb = _kw.get('Tb', False)
     f = kwargs2instance(AstroFrame, _kw)
     d = kwargs2instance(AstroData, _kw)
@@ -2193,11 +2184,8 @@ def _set_figax_plotprofile(fig: Figure | None, ax: Axes | None,
                            nrows: int | np.integer, ncols: int | np.integer,
                            nprof: int) -> tuple[Figure, np.ndarray]:
     _validate_figax(fig, ax)
-    _positive_int(ncols, 'ncols')
-    if (isinstance(nrows, (bool, np.bool_))
-            or not isinstance(nrows, (int, np.integer)) or nrows < 0):
-        raise ValueError('nrows must be a nonnegative integer'
-                         + ' (0 means automatic).')
+    _require_integer(ncols, 'ncols')
+    _require_integer(nrows, 'nrows', minimum=0)
     nrows = (nprof + int(ncols) - 1) // int(ncols) if nrows == 0 else int(nrows)
     if nprof < 1 or nrows * ncols < nprof:
         raise ValueError('The subplot layout must have space'
