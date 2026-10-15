@@ -1014,7 +1014,7 @@ def _validate_shared_grid(expected_grid: _Grid, actual_grid: _Grid,
                           dataset: int) -> None:
     """Require matching processed grids, including missing axes (rtol=1e-7, atol=0)."""
     for name, expected, actual in zip(('x', 'y', 'v'),
-                                     expected_grid, actual_grid):
+                                      expected_grid, actual_grid):
         same = expected is None and actual is None
         if expected is not None and actual is not None:
             same = (expected.shape == actual.shape
