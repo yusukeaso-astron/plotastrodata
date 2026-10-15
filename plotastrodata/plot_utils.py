@@ -18,9 +18,10 @@ if TYPE_CHECKING:
     from plotly.graph_objs import Layout
 
 from plotastrodata._validation_utils import (_require_integer,
-                                              _is_finite_real_scalar,
-                                              _is_positive_real_scalar,
-                                              _require_positive_real_scalar)
+                                             _is_finite_real_scalar,
+                                             _is_positive_real_scalar,
+                                             _require_positive_real_scalar,
+                                             _is_zero_dimensional_array)
 from plotastrodata._type_utils import (_normalize_float, _internal_field,
                                        RealScalar, RealSequence,
                                        PositionPair, Positions,
@@ -54,6 +55,8 @@ def _overlay_values(value: Any, count: int, name: str
     """Broadcast scalars; require one sequence entry per position.
 
     Values are passed through without scalar normalization or dtype changes.
+    A 0D array broadcasts its contained value, preserving the scalar dtype;
+    sequence entries are not recursively unwrapped or converted.
     Empty positions produce no overlays, including when parameters are omitted.
     """
     if count == 0:
@@ -62,7 +65,7 @@ def _overlay_values(value: Any, count: int, name: str
         raise ValueError(f'{name} is required when positions are supplied.')
     if np.isscalar(value):
         return [value] * count
-    if isinstance(value, np.ndarray) and value.ndim == 0:
+    if _is_zero_dimensional_array(value):
         return [value[()]] * count
     if np.ndim(value) != 1 or len(value) != count:
         raise ValueError(f'{name} must be a scalar or contain {count} values.')
@@ -694,7 +697,7 @@ class PlotAxes2D():
     @field_validator('xticksminor', 'yticksminor', mode='before')
     @classmethod
     def _validate_minor(cls, value: Any) -> Any:
-        if np.isscalar(value) or (isinstance(value, np.ndarray) and value.ndim == 0):
+        if np.isscalar(value) or _is_zero_dimensional_array(value):
             _require_integer(value, 'minor tick subdivisions')
             return int(value)
         return value

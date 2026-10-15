@@ -4,6 +4,15 @@ from typing import Any
 import numpy as np
 
 
+def _is_zero_dimensional_array(value: Any) -> bool:
+    """Identify a NumPy 0D array without conversion or scalar extraction.
+
+    This shape predicate does not decide whether a caller accepts the value.
+    NumPy scalar objects are not arrays and return False.
+    """
+    return isinstance(value, np.ndarray) and value.ndim == 0
+
+
 def _is_finite_real_scalar(value: Any) -> bool:
     """Accept finite Python/NumPy real numeric scalars without coercion.
 

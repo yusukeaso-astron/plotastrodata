@@ -15,9 +15,10 @@ from typing import (Any, Callable, Literal,
 
 from plotastrodata import const_utils as cu
 from plotastrodata._validation_utils import (_require_integer,
-                                              _is_finite_real_scalar,
-                                              _is_positive_real_scalar,
-                                              _require_positive_real_scalar)
+                                             _is_finite_real_scalar,
+                                             _is_positive_real_scalar,
+                                             _require_positive_real_scalar,
+                                             _is_zero_dimensional_array)
 from plotastrodata._type_utils import (_normalize_float, _internal_field,
                                        RealScalar, Position,
                                        ValidatedFloat, BeamInput)
@@ -1032,7 +1033,7 @@ def _prepare_positions(poslist: Position | list[Position]
     """Prepare a position collection without coercing mixed inputs or scalars."""
     def is_pair(value: Any) -> bool:
         return (isinstance(value, (list, tuple, np.ndarray))
-                and not (isinstance(value, np.ndarray) and value.ndim == 0)
+                and not _is_zero_dimensional_array(value)
                 and len(value) == 2
                 and all(isinstance(v, (numbers.Real, np.integer, np.floating))
                         for v in value))
@@ -1040,7 +1041,7 @@ def _prepare_positions(poslist: Position | list[Position]
     if isinstance(poslist, str):
         poslist = [poslist]
     elif (isinstance(poslist, (list, tuple, np.ndarray))
-          and not (isinstance(poslist, np.ndarray) and poslist.ndim == 0)):
+          and not _is_zero_dimensional_array(poslist)):
         # Test elements without converting a mixed collection to an array.
         if is_pair(poslist):
             poslist = [poslist]
@@ -1159,11 +1160,13 @@ class AstroFrame():
         Args:
             poslist: One sky-coordinate string or numeric pair, or a list,
                 tuple, or array of positions. Mixed strings and pairs are
-                supported. Sky-coordinate strings require a center; their
-                angular offsets are multiplied by dist and exchanged when
-                swapxy=True. xflip and yflip affect only the display, without
-                changing these sky offsets. Numeric pairs are fractions of
-                the displayed axis limits and are not exchanged by swapxy.
+                supported. Zero-dimensional arrays are rejected, including
+                zero-dimensional string arrays. Sky-coordinate strings require
+                a center; their angular offsets are multiplied by dist and
+                exchanged when swapxy=True. xflip and yflip affect only
+                the display, without changing these sky offsets.
+                Numeric pairs are fractions of the displayed axis limits
+                and are not exchanged by swapxy.
 
         Returns:
             np.ndarray: Coordinates with shape (2, N), including (2, 1)
