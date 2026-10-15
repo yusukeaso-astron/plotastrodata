@@ -14,7 +14,10 @@ from typing import (Any, Callable, Literal,
                     TypeVar, ParamSpec, TypedDict)
 
 from plotastrodata import const_utils as cu
-from plotastrodata._validation_utils import _require_integer
+from plotastrodata._validation_utils import (_require_integer,
+                                              _is_finite_real_scalar,
+                                              _is_positive_real_scalar,
+                                              _require_positive_real_scalar)
 from plotastrodata._type_utils import (_normalize_float, _internal_field,
                                        RealScalar, Position,
                                        ValidatedFloat, BeamInput)
@@ -507,8 +510,9 @@ class AstroData():
               chan: int | np.integer | None = None) -> _Fit2DResult:
         """Fit a given 2D model function to self.data.
 
-        Requires finite, positive scalar sigma. Missing beam sizes disable
-        beam correction. Likelihood scalars preserve extended precision.
+        Requires finite, positive real scalar sigma; booleans and arrays are
+        rejected. Missing beam sizes disable beam correction.
+        Likelihood scalars preserve extended precision.
 
         Default keyword values:
             kwargs_plotcorner: ``show=False`` and ``savefig=None``.
@@ -535,8 +539,7 @@ class AstroData():
             (residual).
         """
         d = self._fit_image(chan)
-        if (not isinstance(self.sigma, (numbers.Real, np.floating, np.integer))
-                or not np.isfinite(self.sigma) or self.sigma <= 0):
+        if not _is_positive_real_scalar(self.sigma):
             raise ValueError('fit2d requires finite, positive scalar sigma.')
         x, y = np.meshgrid(self.x, self.y)
         if d.shape != x.shape:
@@ -578,7 +581,9 @@ class AstroData():
                    ) -> _GaussFit2DResult:
         """Fit a 2D Gaussian function to self.data using
         fitting_utils.gaussfit2d(). With sigma=None, noise is estimated
-        from an initial fit. Missing beam sizes disable beam correction.
+        from an initial fit. Supplied sigma must be a finite positive real
+        scalar; booleans and arrays are rejected. Missing beam sizes disable
+        beam correction.
 
         Args:
             chan (int): The channel number where the 2D Gaussian is
@@ -595,11 +600,7 @@ class AstroData():
         z = self._fit_image(chan)
         if z.shape != (len(self.y), len(self.x)):
             raise ValueError('Selected image shape must match the x/y grids.')
-        if self.sigma is not None and (
-                not isinstance(self.sigma, (numbers.Real,
-                                            np.floating,
-                                            np.integer))
-                or not np.isfinite(self.sigma) or self.sigma <= 0):
+        if self.sigma is not None and not _is_positive_real_scalar(self.sigma):
             raise ValueError('gaussfit2d requires finite, positive scalar'
                              + ' sigma or None.')
         # Automatic estimation is handled by the underlying fitter; there is
@@ -782,22 +783,23 @@ class AstroData():
                 self.beam = list(self.beam)
             self.beam[2] = _normalize_float(self.beam[2] + pa)
 
-    def slice(self, length: float | np.floating = 0,
+    def slice(self, length: float | np.floating,
               pa: float | np.floating = 0,
               dx: float | np.floating | None = None, **kwargs: Any
               ) -> tuple[np.ndarray, np.ndarray]:
         """Get 1D slice with given a length and a position-angle.
 
         Args:
-            length (float, optional): Slice line length. Defaults to 0.
+            length (float or np.floating): Required finite positive slice
+                length. Booleans and arrays are rejected.
             pa (float, optional): Position angle in the unit of degree.
                 Defaults to 0.
-            dx (float, optional): Grid increment. Defaults to None.
+            dx (float or np.floating, optional): Finite positive grid increment.
+                Booleans and arrays are rejected. None uses abs(self.dx).
 
         Returns:
             tuple: (positions, data). Data have shape (npositions,) for
-            images or (nchannels, npositions) for cubes, including when
-            length=0 gives one position.
+            images or (nchannels, npositions) for cubes.
         """
         if self.data.ndim not in (2, 3):
             raise ValueError('slice() requires a 2D image or 3D cube.')
@@ -805,10 +807,8 @@ class AstroData():
             dx = np.abs(self.dx)
         if dx is None:
             raise ValueError('slice() requires dx or an x grid with pixel size.')
-        if not np.isfinite(dx) or dx <= 0:
-            raise ValueError('dx must be finite and positive.')
-        if not np.isfinite(length) or length < 0:
-            raise ValueError('length must be finite and nonnegative.')
+        _require_positive_real_scalar(dx, 'dx')
+        _require_positive_real_scalar(length, 'length')
 
         n = int(np.ceil(length / 2 / dx))
         r = np.linspace(-n, n, 2 * n + 1) * dx
@@ -859,13 +859,15 @@ class AstroData():
             raise ValueError('Writing a velocity axis requires coordinates'
                              + ' and spacing.')
         cv, dv = self.v[ck], self.dv
+        if (self.restfreq is not None
+            and (not _is_finite_real_scalar(self.restfreq)
+                 or self.restfreq < 0)):
+            raise ValueError('restfreq must be finite and positive,'
+                             + ' or None/0.')
         if self.restfreq is None or self.restfreq == 0:
             warnings.warn('No valid restfreq. The velocity axis is saved as is.',
                           UserWarning)
         else:
-            if not np.isfinite(self.restfreq) or self.restfreq < 0:
-                raise ValueError('restfreq must be finite and positive,'
-                                 + ' or None/0.')
             cv = (1 - cv / cu.c_kms) * self.restfreq
             dv = -dv / cu.c_kms * self.restfreq
         return (_normalize_float(cv, force_float=True),
@@ -971,8 +973,7 @@ class AstroData():
                 or self.data.ndim not in (2, 3)):
             raise ValueError('writetofits requires a single 2D image'
                              + ' or 3D cube.')
-        if not np.isfinite(self.dist) or self.dist <= 0:
-            raise ValueError('dist must be finite and positive.')
+        _require_positive_real_scalar(self.dist, 'dist')
         h = self._build_fits_header()
         h.update(header or {})
         data2fits(d=self.data, h=h, fitsimage=str(fitsimage))

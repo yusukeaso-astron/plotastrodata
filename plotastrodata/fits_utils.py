@@ -6,6 +6,8 @@ from astropy.io import fits
 from typing import Any, Callable
 
 from plotastrodata import const_utils as cu
+from plotastrodata._validation_utils import (_is_positive_real_scalar,
+                                              _require_positive_real_scalar)
 from plotastrodata._type_utils import _normalize_float
 from plotastrodata.coord_utils import coord2xy, xy2coord
 from plotastrodata.matrix_utils import dot2d
@@ -54,6 +56,8 @@ def Jy2K(header: fits.Header | dict[str, Any] | None = None,
     Complete header beam sizes override bmaj/bmin; otherwise pixel-size
     metadata can supply a fallback beam area. An explicit restfreq overrides
     header frequencies; RESTFRQ takes precedence over RESTFREQ in the header.
+    Resolved beam sizes and frequency must be finite positive real scalars;
+    booleans, complex values, and arrays (including 0D) are rejected.
 
     Args:
         header (optional): astropy.io.fits.open('a.fits')[0].header.
@@ -73,10 +77,8 @@ def Jy2K(header: fits.Header | dict[str, Any] | None = None,
     if freq is None:
         raise ValueError('Brightness-temperature conversion requires restfreq'
                          + ' or a RESTFREQ/RESTFRQ header value.')
-    if not np.isfinite(freq) or freq <= 0:
-        raise ValueError('restfreq must be finite and positive.')
-    if (bmaj is None or bmin is None or not np.isfinite(bmaj)
-            or not np.isfinite(bmin) or bmaj <= 0 or bmin <= 0):
+    _require_positive_real_scalar(freq, 'restfreq')
+    if not _is_positive_real_scalar(bmaj) or not _is_positive_real_scalar(bmin):
         raise ValueError('Brightness-temperature conversion requires finite,'
                          + ' positive bmaj and bmin values'
                          + ' or equivalent FITS header metadata.')

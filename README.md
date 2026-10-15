@@ -79,6 +79,11 @@ floats (including `2.0`), and zero-dimensional arrays. Most counts must be posit
 `nwalkersperdim` and inverse-real-FFT `nx` must be at least two. Invalid counts
 raise `ValueError`.
 
+Scalar-only numeric checks also reject booleans, complex values, and arrays;
+validation preserves extended floating precision. Range and optional-value
+rules depend on the argument. `AstroData.slice` requires an explicit positive
+`length`; zero is rejected.
+
 See [Conventions and usage notes](docs/conventions.rst) for data formats, coordinate and angle conventions, runtime types, and supported usage.
 
 ## Author

@@ -47,6 +47,25 @@ as described above. Minor ticks accept explicit position lists or positive
 integer subdivision counts; subdivision generation needs at least two major
 ticks. The count is validated when ``PlotAxes2D`` is constructed.
 
+Finite real scalar inputs
+-------------------------
+
+Scalar-only checks for slice length/spacing, scalebar length, resolved
+``Jy2K`` beam/frequency values, fitting sigma, and 3D opacity accept finite
+Python ``int``/``float`` and NumPy integer/floating scalars. Booleans, complex
+values, strings, and arrays (including zero-dimensional arrays) fail these
+checks with ``ValueError``. Validation does not convert or narrow values,
+including ``np.longdouble``. Existing Pydantic coercion of annotated
+configuration fields remains separate from these checks.
+
+Range and optional-value rules depend on the argument: ``AstroData.slice``
+requires an explicit positive ``length``; zero and negative lengths are
+rejected. Spacing and supplied noise must also be positive. Opacity includes
+zero and one, and Gaussian fitting still accepts ``sigma=None`` for estimation.
+FITS spectral output still accepts ``restfreq=None`` or zero to retain
+velocity coordinates; ``Jy2K`` requires a positive resolved frequency.
+These scalar rules do not replace array-valued checks or numerical masks.
+
 Data and coordinates
 --------------------
 

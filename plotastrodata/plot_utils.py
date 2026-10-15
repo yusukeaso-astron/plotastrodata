@@ -17,7 +17,10 @@ from types import ModuleType
 if TYPE_CHECKING:
     from plotly.graph_objs import Layout
 
-from plotastrodata._validation_utils import _require_integer
+from plotastrodata._validation_utils import (_require_integer,
+                                              _is_finite_real_scalar,
+                                              _is_positive_real_scalar,
+                                              _require_positive_real_scalar)
 from plotastrodata._type_utils import (_normalize_float, _internal_field,
                                        RealScalar, RealSequence,
                                        PositionPair, Positions,
@@ -67,9 +70,7 @@ def _overlay_values(value: Any, count: int, name: str
 
 
 def _positive_noise(value: Any, name: str) -> None:
-    if (not isinstance(value, (float, int, np.floating, np.integer))
-            or isinstance(value, (bool, np.bool_))
-            or not np.isfinite(value) or value <= 0):
+    if not _is_positive_real_scalar(value):
         raise ValueError(f'{name} must be a finite positive scalar noise level.')
 
 
@@ -146,7 +147,7 @@ def set_rcparams(fontsize: float = 18, nancolor: str | tuple[float, ...] = 'w',
 
 def _log_limits(vmin: float, vmax: float) -> None:
     """Validate a finite, positive, increasing logarithmic range."""
-    if not (np.isfinite(vmin) and np.isfinite(vmax)
+    if not (_is_finite_real_scalar(vmin) and _is_finite_real_scalar(vmax)
             and 0 < vmin < vmax):
         raise ValueError('Logarithmic limits must be finite and satisfy'
                          + ' 0 < vmin < vmax.')
@@ -246,7 +247,7 @@ def get_figsize(xmin: float, xmax: float, ymin: float, ymax: float,
         _require_integer(value, name)
     if figsize is not None:
         return figsize
-    if (not all(np.isfinite(a) for a in (xmin, xmax, ymin, ymax))
+    if (not all(_is_finite_real_scalar(a) for a in (xmin, xmax, ymin, ymax))
             or xmin == xmax or ymin == ymax):
         raise ValueError('Automatic figure sizing requires finite limits'
                          + ' and nonzero x and y spans.')
@@ -264,9 +265,8 @@ def _get_gridwidth(mode: Literal['ra', 'dec'], rmax: float, cos_dec: float
                    ) -> tuple[float | np.floating, int]:
     if mode not in ('ra', 'dec'):
         raise ValueError("mode must be 'ra' or 'dec'.")
-    if not np.isfinite(rmax) or rmax <= 0:
-        raise ValueError('rmax must be finite and positive.')
-    if mode == 'ra' and (not np.isfinite(cos_dec) or cos_dec <= 0):
+    _require_positive_real_scalar(rmax, 'rmax')
+    if mode == 'ra' and not _is_positive_real_scalar(cos_dec):
         raise ValueError('cos_dec must be finite and positive for R.A.')
     # Length in the units of s for R.A. and " for Dec., respectively.
     length = 2 * rmax / (15 * cos_dec if mode == 'ra' else 1)
@@ -416,9 +416,9 @@ class Stretcher():
             st, scale, sigma = (self._parameter(name, i) for name in
                                 ('stretch', 'stretchscale', 'sigma'))
             scale = sigma if scale is None else scale
-            if st == 'asinh' and (scale is None
-                                  or not np.isfinite(scale) or scale <= 0):
-                raise ValueError('asinh requires a finite positive stretchscale or sigma.')
+            if st == 'asinh' and not _is_positive_real_scalar(scale):
+                raise ValueError('asinh requires a finite positive'
+                                 + ' stretchscale or sigma.')
             minimum = self._parameter('vmin', i)
             if minimum is None and st in ('log', 'power'):
                 minimum = sigma
@@ -1477,6 +1477,7 @@ class PlotAstroData(AstroFrame):
         Args:
             length (float): Required finite positive length in horizontal
                 data-axis units (arcsec, or au when distance scaling is used).
+                Booleans, complex values, and arrays are rejected.
             label (str, optional): Text like '100 au'. Defaults to ''.
             color (str, optional): Same for bar and label. Defaults to 'gray'.
             barpos (list, tuple, or ndarray, optional): Relative position.
@@ -1493,8 +1494,7 @@ class PlotAstroData(AstroFrame):
         if self.pv:
             raise ValueError('add_scalebar() does not support position-velocity'
                              + ' (PV) diagrams; use it for spatial maps only.')
-        if not np.isfinite(length) or length <= 0:
-            raise ValueError('length must be finite and positive.')
+        _require_positive_real_scalar(length, 'length')
         if np.shape(barpos) != (2,) or not all(np.isfinite(v) for v in barpos):
             raise ValueError('barpos must contain two finite'
                              + ' relative coordinates.')
@@ -1825,10 +1825,7 @@ class PlotAstroData(AstroFrame):
         U = self.vskipfill(U, v)
         V = self.vskipfill(V, v)
         scale = _kw.get('scale', 1.)
-        if (not isinstance(scale, (int, float, np.integer, np.floating))
-                or isinstance(scale, (bool, np.bool_))
-                or not np.isfinite(scale) or scale <= 0):
-            raise ValueError('Segment scale must be a finite positive scalar.')
+        _require_positive_real_scalar(scale, 'Segment scale')
         _kw['scale'] = scale / np.abs(x[1] - x[0])
         for axnow, unow, vnow in zip(self.ax, U, V):
             axnow.quiver(x, y, unow, vnow, **_kw)
@@ -2373,7 +2370,7 @@ def plotslice(length: RealScalar, dx: RealScalar | None = None,
         the slice geometry if they are omitted.
 
     Args:
-        length (float): Slice length.
+        length (float): Required finite positive slice length.
         dx (float, optional): Grid increment. Defaults to None.
         pa (float, optional): Degrees from original data +y toward +x.
             swapxy exchanges direction components; display flips do not change
@@ -2457,7 +2454,7 @@ def _surface_levels(levels: RealSequence) -> np.ndarray:
 
 
 def _surface_opacity(alpha: RealScalar) -> None:
-    if not np.isscalar(alpha) or not np.isfinite(alpha) or not 0 <= alpha <= 1:
+    if not _is_finite_real_scalar(alpha) or not 0 <= alpha <= 1:
         raise ValueError('Isosurface alpha must be finite and between 0 and 1.')
 
 
@@ -2709,7 +2706,8 @@ def plot3d(levels: RealSequence = (3, 6, 12),
         levels (list, tuple, or ndarray, optional): Finite distinct contour
             levels in units of sigma. Defaults to [3,6,12].
         cmap (str, optional): Color map name. Defaults to 'jet'.
-        alpha (float, optional): opacity in plotly. Defaults to 0.08.
+        alpha (float, optional): Finite real scalar opacity in [0, 1].
+            Booleans, complex values, and arrays are rejected. Defaults to 0.08.
         xlabel (str, optional): Defaults to 'R.A. (arcsec)'.
         ylabel (str, optional): Defaults to 'Dec. (arcsec)'.
         vlabel (str, optional): Defaults to 'Velocity (km/s)'.
