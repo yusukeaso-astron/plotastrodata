@@ -40,12 +40,44 @@ Explicit histogram edges override unused ``normalize`` bin counts.
 Binning can still reduce oversized valid widths to the available axis sizes;
 this is separate from input-type validation.
 
-Zero-dimensional arrays are treated according to the operation. Position
-collections and integer counts reject them; overlay-value broadcasting can
-accept them as individual values. Numerical array outputs retain array form
-as described above. Minor ticks accept explicit position lists or positive
-integer subdivision counts; subdivision generation needs at least two major
-ticks. The count is validated when ``PlotAxes2D`` is constructed.
+Minor ticks accept explicit position lists or positive integer subdivision
+counts; subdivision generation needs at least two major ticks. The count is
+validated when ``PlotAxes2D`` is constructed.
+
+Zero-dimensional arrays
+-----------------------
+
+Input acceptance and output normalization are separate rules. A NumPy scalar
+such as ``np.float64(2)`` differs from a zero-dimensional array such as
+``np.array(2.0)``. There is no universal conversion between them.
+
+.. list-table:: Context-specific behavior
+   :header-rows: 1
+   :widths: 35 65
+
+   * - Operation
+     - Treatment of zero-dimensional arrays
+   * - Integer counts and finite-real-scalar checks
+     - Reject arrays, even when their contained value is valid.
+   * - ``AstroFrame.pos2xy`` position collections
+     - Reject numeric and string 0D arrays; pass a scalar string or numeric pair.
+   * - Coordinate parsing with ``coord2xy``
+     - Accept a 0D string array as one coordinate and return offsets of shape
+       ``(2,)``. ``xy2coord`` returns a string for a single coordinate pair.
+   * - Overlay-value broadcasting
+     - Extract and repeat the contained NumPy value, retaining its scalar
+       dtype. Sequence entries are not recursively unwrapped.
+   * - ``Stretcher.do/undo`` and numerical noise densities
+     - Retain 0D array output with the computed dtype, including at analytic
+       zero limits. Arithmetic can promote the dtype before normalization.
+   * - Image data and noise estimation
+     - ``AstroData`` rejects scalar/0D datasets. Trimming and noise estimation
+       reject data that squeeze to a scalar when an image or noise estimate is
+       required. Supplying numeric sigma or ``None`` bypasses estimation.
+
+Generic pass-through helpers do not unwrap arrays or recursively normalize
+containers. Specialized numerical and coordinate-shape branches remain local
+so their rules do not change when validation helpers are shared.
 
 Finite real scalar inputs
 -------------------------
@@ -135,6 +167,11 @@ underlying counts in either case. Explicit uneven edges and weights are
 rejected. Widths are compared with their mean using ``rtol=1e-5, atol=0``
 to accommodate float32 rounding. This reference differs from the first-interval
 reference used for RGB and 3D coordinates.
+Histogram validation distinguishes malformed edge arrays (not 1D, too few
+values, or nonfinite values), invalid intervals (nonfinite or nonpositive
+widths), and finite positive but unequal widths. These failures have distinct
+``ValueError`` messages. Finite edges can still produce nonfinite differences
+through subtraction overflow, so interval validation is necessary too.
 The ``edges`` argument of ``noise_utils.normalize`` is keyword-only.
 
 ``gaussfit1d`` and ``gaussfit2d`` default to ``sigma=None``: they print a notice

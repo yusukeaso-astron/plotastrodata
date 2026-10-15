@@ -53,3 +53,13 @@ Plotting must not apply a second swap to an already transformed beam.
 add_beam always takes angles in the processed data frame, including explicitly
 supplied beams. Other user-supplied overlay angles retain the original-data
 convention above.
+
+# Manual documentation policy
+
+The local `main.tex` is the editable source for the PDF manual. Keep it
+consistent with relevant documentation updates even though it is Git-ignored.
+The maintainer regularly regenerates the PDF from this source.
+
+Do not mention `main.tex`, its Git-ignore status, or the local PDF regeneration
+workflow in public documentation, including the README, Read the Docs sources,
+and API docstrings. Public documentation should refer to the PDF manual itself.

@@ -205,6 +205,8 @@ class AstroData():
         lists of arrays (with optional None placeholders) or FITS paths and
         per-dataset metadata lists internally. Initialization determines n;
         AstroFrame.read performs metadata expansion and loading later.
+        Scalar and zero-dimensional datasets are rejected at initialization;
+        shape/grid requirements are checked during subsequent processing.
         After a read with swapxy=True, data, x/y, and beam angles describe
         the exchanged axes. Analysis and FITS writing use the current axis
         order with their usual conventions; no swap history is retained.

@@ -44,12 +44,12 @@ def _getframe(coord: str | list | tuple | np.ndarray, *, as_frame: bool = False
 
     Returns:
         tuple: (hmsdms, frame, framename). hmsdms is a string for scalar
-        input, an array for array input, or a nested list for list/tuple
-        input, preserving the input shape. By default, frame is
-        FK5(equinox='J2000'), FK4(equinox='B1950'), 'icrs', or None when no
-        prefix is given. With as_frame=True, it is a populated coordinate
-        frame (ICRS by default). framename is the first original prefix or
-        None. Empty collections have no prefix.
+        input (including a 0D string array), an array for non-0D array
+        input, or a nested list for list/tuple input, preserving collection
+        shape. By default, frame is FK5(equinox='J2000'), FK4(equinox='B1950'),
+        'icrs', or None when no prefix is given. With as_frame=True, it is
+        a populated coordinate frame (ICRS by default). framename is the first
+        original prefix or None. Empty collections have no prefix.
     """
     values = np.asarray(coord, dtype=object)
     parsed = []
@@ -86,7 +86,8 @@ def coord2xy(coords: str | list | tuple | np.ndarray,
     Args:
         coords (str, list, tuple, or np.ndarray): Strings such as
             '01h23m45.6s 01d23m45.6s', in any rectangular shape. Collections
-            use the first coordinate's frame prefix.
+            use the first coordinate's frame prefix. A zero-dimensional string
+            array is treated as one coordinate, yielding offsets of shape (2,).
         coordorg (str, optional): something like '01h23m45.6s
             01d23m45.6s'. The origin of the relative (deg, deg).
             Defaults to '00h00m00s 00d00m00s'.

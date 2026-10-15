@@ -46,6 +46,9 @@ def trim(data: np.ndarray | None = None, x: np.ndarray | None = None,
          ) -> tuple[np.ndarray | None, list[np.ndarray | None]]:
     """Trim 2D or 3D data by given coordinates and their limits.
 
+    Singleton axes are squeezed before selecting spatial/spectral axes.
+    Data that squeeze to a scalar are rejected; data=None trims grids only.
+
     Args:
         data (np.ndarray, optional): 2D or 3D array. Defaults to None.
         x (np.ndarray, optional): 1D array. Defaults to None.

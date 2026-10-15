@@ -1,4 +1,10 @@
-"""Internal helpers for preserving numeric output precision."""
+"""Annotated numeric types and output-boundary precision helpers.
+
+Pydantic field coercion and preservation of computed output types are separate
+from the noncoercing input checks in _validation_utils. A 0D array is not
+implicitly a scalar: _normalize_float unwraps one only when the caller
+explicitly requests scalar output.
+"""
 
 from dataclasses import field
 import numpy as np

@@ -13,7 +13,11 @@ from plotastrodata.other_utils import close_figure
 
 
 def _uniform_bin_width(edges: np.ndarray) -> float | np.longdouble:
-    """Validate increasing edges using their mean width (rtol=1e-5, atol=0)."""
+    """Validate increasing edges using their mean width (rtol=1e-5, atol=0).
+
+    Report malformed edges, invalid intervals, and unequal widths separately.
+    Finite edges alone do not guarantee finite subtraction results.
+    """
     if (edges.ndim != 1 or len(edges) < 2
             or not np.all(np.isfinite(edges))):
         raise ValueError('Histogram edges must be a 1D array'
@@ -125,7 +129,8 @@ def gauss_pbcor(x: float | np.floating | np.ndarray,
         float or np.longdouble or np.ndarray: Probability density.
         Ordinary scalar results are Python floats; extended-precision
         scalars retain their types. Array inputs, including zero-dimensional
-        arrays, produce arrays with the computed dtype.
+        arrays, produce arrays with the computed dtype. The analytic x=0
+        limit follows the same scalar/array output rule.
     """
     x1 = (x - m) / np.sqrt(2) / s
     x0 = (x * 2**(-R**2) - m) / np.sqrt(2) / s
@@ -332,7 +337,9 @@ def estimate_rms(data: np.ndarray,
     """Estimate a noise level of a data array.
     Real numeric sigma values are returned as Python floats, preserving
     extended-precision NumPy floating scalars. Other numeric types and None
-    pass through unchanged.
+    pass through unchanged. When estimation is requested, data that squeeze
+    to a scalar (including singleton images) are rejected. Numeric sigma or
+    None bypasses estimation and this data-size restriction.
 
     Args:
         data (np.ndarray): Data array whose noise is estimated.

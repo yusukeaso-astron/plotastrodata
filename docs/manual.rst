@@ -3,7 +3,8 @@ User Manual (PDF)
 
 For current runtime types, coordinate conventions, and usage restrictions,
 see :doc:`conventions` and the :doc:`plotastrodata` API reference.
-The downloadable PDF is a separate manual and may not reflect these updates.
+The conventions page covers integer counts, finite real scalars,
+zero-dimensional arrays, required slice lengths, and uniform-grid rules.
 
 The PDF manual is available here:
 

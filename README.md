@@ -73,18 +73,7 @@ More examples and the complete API reference are available in the [online docume
 
 ## Conventions and Limitations
 
-Validated integer count arguments accept Python and NumPy integers and reject booleans,
-floats (including `2.0`), and zero-dimensional arrays. Most counts must be positive;
-`veldigit`, MCMC `nburnin`, and automatic `plotprofile(nrows=0)` allow zero.
-`nwalkersperdim` and inverse-real-FFT `nx` must be at least two. Invalid counts
-raise `ValueError`.
-
-Scalar-only numeric checks also reject booleans, complex values, and arrays;
-validation preserves extended floating precision. Range and optional-value
-rules depend on the argument. `AstroData.slice` requires an explicit positive
-`length`; zero is rejected.
-
-See [Conventions and usage notes](docs/conventions.rst) for data formats, coordinate and angle conventions, runtime types, and supported usage.
+See [Conventions and usage notes](docs/conventions.rst) for data formats, coordinate and angle conventions, runtime types, input validation, and usage limitations.
 
 ## Author
  
