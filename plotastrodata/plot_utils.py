@@ -1,6 +1,6 @@
 from os import PathLike
 from pathlib import Path
-from dataclasses import fields, field
+from dataclasses import dataclass, fields, field
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
@@ -856,6 +856,77 @@ def _normalize_rgb_channel(data: np.ndarray, st: Stretcher,
     return normalized
 
 
+@dataclass(frozen=True)
+class _PanelLayout:
+    """Channel selection and panel dimensions, before any figures are created."""
+    v: np.ndarray
+    nv: int
+    nrows: int
+    ncols: int
+    npages: int
+    nchan: int
+    channelnumber: int | None
+    animation: bool
+
+
+def _plan_panels(v: np.ndarray, pv: bool, channelnumber: int | np.integer | None,
+                 nrows: int, ncols: int) -> _PanelLayout:
+    """Select an animation channel or pad the velocity grid for complete pages."""
+    nv = len(v)
+    animation = isinstance(channelnumber, (int, np.integer))
+    if channelnumber is not None:
+        channelnumber = int(channelnumber)
+        if not -nv <= channelnumber < nv:
+            raise ValueError('channelnumber must be'
+                             + f'between {-nv} and {nv - 1}.')
+        channelnumber %= nv
+    if pv or len(v) == 1 or animation:
+        nrows = ncols = npages = nchan = 1
+    else:
+        npages = int(np.ceil(nv / nrows / ncols))
+        nchan = npages * nrows * ncols
+        v = reform_grid(v, k1=nchan - nv)
+    return _PanelLayout(v, nv, nrows, ncols, npages, nchan,
+                        channelnumber, animation)
+
+
+def _create_panels(plan: _PanelLayout, fig: Figure | None, ax: Axes | None,
+                   figsize: RealSequence, rmax: RealScalar, veldigit: int
+                   ) -> tuple[list[Figure], np.ndarray]:
+    """Create shared axes and velocity labels, or reuse a supplied single panel."""
+    internalfig = fig is None
+    internalax = ax is None
+    nrows, ncols = plan.nrows, plan.ncols
+    nij2ch = _get_nij2ch(nrows=nrows, ncols=ncols)
+    ch2nij = _get_ch2nij(nrows=nrows, ncols=ncols)
+    axes = (np.empty(plan.nchan, dtype=object) if internalax
+            else np.array([ax], dtype=object))
+    need_vlabel = plan.nchan > 1 or plan.animation
+    figs = []
+    for ch in range(plan.nchan):
+        n, i, j = ch2nij(ch)
+        if n == len(figs):
+            if internalfig:
+                fig = plt.figure(figsize=figsize)
+            figs.append(fig)
+            if need_vlabel:
+                fig.subplots_adjust(hspace=0, wspace=0,
+                                    right=0.87, top=0.87)
+        else:
+            fig = figs[n]
+        if internalax:
+            sharex = axes[nij2ch(n, i - 1, j)] if i > 0 else None
+            sharey = axes[nij2ch(n, i, j - 1)] if j > 0 else None
+            axes[ch] = fig.add_subplot(nrows, ncols, i*ncols + j + 1,
+                                     sharex=sharex, sharey=sharey)
+        if need_vlabel and ch < plan.nv:
+            vlabel = plan.v[ch if plan.channelnumber is None else plan.channelnumber]
+            axes[ch].text(0.9 * rmax, 0.7 * rmax,
+                          rf'${vlabel:.{veldigit}f}$', color='black',
+                          backgroundcolor='white', zorder=20)
+    return figs, axes
+
+
 class PlotAstroData(AstroFrame):
     """Make a figure from 2D/3D FITS files or 2D/3D arrays.
 
@@ -962,70 +1033,32 @@ class PlotAstroData(AstroFrame):
         self._explicit_vmin = 'vmin' in kwargs
         self._explicit_vmax = 'vmax' in kwargs
         internalfig = fig is None
-        internalax = ax is None
-        animation = isinstance(channelnumber, (int, np.integer))
         v = _get_v(p=self, v=v, restfreq=restfreq, vskip=vskip)
-        nv = len(v)  # number of channels with a label
-        if channelnumber is not None:
-            channelnumber = int(channelnumber)
-            if not -nv <= channelnumber < nv:
-                raise ValueError('channelnumber must be'
-                                 + f'between {-nv} and {nv - 1}.')
-            channelnumber %= nv
-        if self.pv or len(v) == 1 or animation:
-            nrows = ncols = npages = nchan = 1
-        else:
-            npages = int(np.ceil(nv / nrows / ncols))
-            nchan = npages * nrows * ncols
-            v = reform_grid(v, k1=nchan - nv)
-        if not internalax and nchan != 1:
+        plan = _plan_panels(v, self.pv, channelnumber, nrows, ncols)
+        if ax is not None and plan.nchan != 1:
             raise ValueError('External fig and ax support a single panel only;'
-                             ' select channelnumber for a cube.')
-        nij2ch = _get_nij2ch(nrows=nrows, ncols=ncols)
-        ch2nij = _get_ch2nij(nrows=nrows, ncols=ncols)
+                             + ' select channelnumber for a cube.')
         if fontsize is None:
-            fontsize = 18 if nchan == 1 else 12
+            fontsize = 18 if plan.nchan == 1 else 12
         set_rcparams(fontsize=fontsize, nancolor=nancolor, dpi=dpi)
-        ax = (np.empty(nchan, dtype=object) if internalax
-              else np.array([ax], dtype=object))
         figsize = get_figsize(xmin=self.xmin, xmax=self.xmax,
                               ymin=self.ymin, ymax=self.ymax,
-                              figsize=figsize,
-                              ncols=ncols, nrows=nrows, nchan=nchan)
-        need_vlabel = nchan > 1 or animation
-        figs = []
-        for ch in range(nchan):
-            n, i, j = ch2nij(ch)
-            if n == len(figs):
-                if internalfig:
-                    fig = plt.figure(figsize=figsize)
-                figs.append(fig)
-                if need_vlabel:
-                    fig.subplots_adjust(hspace=0, wspace=0,
-                                        right=0.87, top=0.87)
-            else:
-                fig = figs[n]
-            if internalax:
-                sharex = ax[nij2ch(n, i - 1, j)] if i > 0 else None
-                sharey = ax[nij2ch(n, i, j - 1)] if j > 0 else None
-                ax[ch] = fig.add_subplot(nrows, ncols, i*ncols + j + 1,
-                                         sharex=sharex, sharey=sharey)
-            if need_vlabel and ch < nv:
-                vlabel = v[ch if channelnumber is None else channelnumber]
-                ax[ch].text(0.9 * self.rmax, 0.7 * self.rmax,
-                            rf'${vlabel:.{veldigit}f}$', color='black',
-                            backgroundcolor='white', zorder=20)
+                              figsize=figsize, ncols=plan.ncols,
+                              nrows=plan.nrows, nchan=plan.nchan)
+        figs, axes = _create_panels(plan, fig, ax, figsize, self.rmax, veldigit)
         self.fig = None if internalfig else fig
         self.figs = figs
-        self.ax = ax
-        self.rowcol = nrows * ncols
-        self.npages = npages
-        self.allchan = np.arange(nv)
-        self.bottomleft = nij2ch(np.arange(npages), nrows - 1, 0)
-        self.channelnumber = channelnumber
-        self.animation = animation
-        self.v = v
-        self.vskipfill = _get_vskipfill(nv, v, vskip, channelnumber)
+        self.ax = axes
+        self.rowcol = plan.nrows * plan.ncols
+        self.npages = plan.npages
+        self.allchan = np.arange(plan.nv)
+        nij2ch = _get_nij2ch(nrows=plan.nrows, ncols=plan.ncols)
+        self.bottomleft = nij2ch(np.arange(plan.npages), plan.nrows - 1, 0)
+        self.channelnumber = plan.channelnumber
+        self.animation = plan.animation
+        self.v = plan.v
+        self.vskipfill = _get_vskipfill(plan.nv, plan.v, vskip,
+                                        plan.channelnumber)
 
     def _map_init(self, kw: dict[str, Any]
                   ) -> tuple[np.ndarray | list[np.ndarray | None],
@@ -1564,6 +1597,43 @@ class PlotAstroData(AstroFrame):
         for axnow, cnow in zip(self.ax, c):
             axnow.contour(x, y, cnow, np.sort(levels) * sigma, **_kw)
 
+    def _prepare_polarization(self, data: list[np.ndarray | None],
+                              sigma: list[float | np.longdouble | None],
+                              cutoff: float, angonly: bool
+                              ) -> tuple[np.ndarray, np.ndarray] | None:
+        """Derive original-frame angles and normalized amplitudes for segments.
+
+        Stokes inputs update public sigma to a Python float, preserving
+        extended precision. Invalid or zero-only fields produce no segments.
+        """
+        amp, ang, stU, stQ = data
+        sigmaU, sigmaQ = sigma[2:]
+        if stU is not None and stQ is not None:
+            _positive_noise(sigmaU, 'Stokes U sigma')
+            _positive_noise(sigmaQ, 'Stokes Q sigma')
+            if stU.shape != stQ.shape:
+                raise ValueError('Stokes U and Q must have matching shapes.')
+            self.sigma = sigma = _normalize_float((sigmaU + sigmaQ) / 2.)
+            ang = np.degrees(np.arctan2(stU, stQ) / 2.)
+            amp = np.hypot(stU, stQ)
+            amp[amp < cutoff * sigma] = np.nan
+        if amp is None:
+            amp = np.ones_like(ang)
+        if amp.shape != ang.shape:
+            raise ValueError('Amplitude and angle datasets must'
+                             + ' have matching shapes.')
+        valid = np.isfinite(amp) & np.isfinite(ang)
+        if np.any(amp[valid] < 0):
+            raise ValueError('Segment amplitudes must be nonnegative.')
+        if not np.any(valid) or not np.any(amp[valid] > 0):
+            print('No valid segments to draw.')
+            return None  # No finite nonzero segments to draw.
+        amp = np.where(valid, amp, np.nan)
+        if angonly:
+            amp = np.sign(amp)**2
+        amp = amp / np.nanmax(amp)
+        return amp, ang
+
     def add_segment(self,
                     ampfits: str | PathLike[str] | None = None,
                     angfits: str | PathLike[str] | None = None,
@@ -1660,31 +1730,10 @@ class PlotAstroData(AstroFrame):
             raise ValueError(
                 'add_segment() requires at least two x and y pixels.')
 
-        amp, ang, stU, stQ = c
-        sigmaU, sigmaQ = sigma[2:]
-        if stU is not None and stQ is not None:
-            _positive_noise(sigmaU, 'Stokes U sigma')
-            _positive_noise(sigmaQ, 'Stokes Q sigma')
-            if stU.shape != stQ.shape:
-                raise ValueError('Stokes U and Q must have matching shapes.')
-            self.sigma = sigma = _normalize_float((sigmaU + sigmaQ) / 2.)
-            ang = np.degrees(np.arctan2(stU, stQ) / 2.)
-            amp = np.hypot(stU, stQ)
-            amp[amp < cutoff * sigma] = np.nan
-        if amp is None:
-            amp = np.ones_like(ang)
-        if amp.shape != ang.shape:
-            raise ValueError('Amplitude and angle datasets must'
-                             + ' have matching shapes.')
-        valid = np.isfinite(amp) & np.isfinite(ang)
-        if np.any(amp[valid] < 0):
-            raise ValueError('Segment amplitudes must be nonnegative.')
-        if not np.any(valid) or not np.any(amp[valid] > 0):
-            return  # No finite nonzero segments to draw.
-        amp = np.where(valid, amp, np.nan)
-        if angonly:
-            amp = np.sign(amp)**2
-        amp = amp / np.nanmax(amp)
+        prepared = self._prepare_polarization(c, sigma, cutoff, angonly)
+        if prepared is None:
+            return
+        amp, ang = prepared
         angle = ang + rotation
         if self.swapxy:
             angle = 90 - angle
