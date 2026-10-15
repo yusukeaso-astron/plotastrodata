@@ -22,6 +22,19 @@ bar = None
 global_progressbar = True
 
 
+def _validate_mcmc_run(nwalkersperdim: int, ntemps: int, nsteps: int,
+                       nburnin: int, ntry: int, ncores: int, ) -> None:
+    """Check run lengths and resource counts before sampling setup."""
+    if nsteps < 1:
+        raise ValueError('nsteps must be positive.')
+    if nburnin < 0 or nburnin >= nsteps:
+        raise ValueError('nburnin must satisfy 0 <= nburnin < nsteps.')
+    if ntemps < 1 or ntry < 1 or ncores < 1:
+        raise ValueError('ntemps, ntry, and ncores must be positive.')
+    if nwalkersperdim < 2:
+        raise ValueError('nwalkersperdim must be at least 2.')
+
+
 class _PTSampler(ptemcee.Sampler):
     """Support ptemcee 1.0's sampler on NumPy without the np.float alias.
 
@@ -290,7 +303,8 @@ class EmceeCorner():
 
         Args:
             nwalkersperdim (int, optional): Number of walkers per
-                dimension. Defaults to 2.
+                dimension. Must be at least 2; smaller values raise
+                ValueError. Defaults to 2.
             ntemps (int, optional): Number of temperatures. Defaults to
                 1.
             nsteps (int, optional): Number of steps, including the steps
@@ -315,16 +329,9 @@ class EmceeCorner():
                 emcee is used. Defaults to False.
         """
         global bar
-        if nsteps < 1:
-            raise ValueError('nsteps must be positive.')
-        if nburnin < 0 or nburnin >= nsteps:
-            raise ValueError('nburnin must satisfy 0 <= nburnin < nsteps.')
-        if ntemps < 1 or ntry < 1 or ncores < 1:
-            raise ValueError('ntemps, ntry, and ncores must be positive.')
-        if nwalkersperdim < 2:
-            print('nwalkersperdim < 2 is not allowed.'
-                  + f' Use 2 instead of {nwalkersperdim:d}.')
-        nwalkers = max(nwalkersperdim, 2) * self.dim  # must be even and >= 2 * dim
+        _validate_mcmc_run(nwalkersperdim, ntemps, nsteps, nburnin,
+                           ntry, ncores)
+        nwalkers = nwalkersperdim * self.dim  # must be even and >= 2 * dim
         if ntemps > 1:
             pt = True
         if global_progressbar:
