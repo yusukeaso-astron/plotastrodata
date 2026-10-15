@@ -305,17 +305,12 @@ class AstroData():
         setattr(self, dt, int(spacing) if isinstance(spacing, np.integer)
                 else _normalize_float(spacing))
 
-    def binning(self, width: list[int | np.integer]
-                | tuple[int | np.integer, ...] | np.ndarray = [1, 1, 1]
-                ) -> None:
-        """Binning up neighboring pixels in the v, y, and x domain.
+    def _prepare_binning(self, width: list[int | np.integer]
+                         | tuple[int | np.integer, ...] | np.ndarray
+                         ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """Validate and clamp bin widths, returning data, shape, and factors.
 
-        Uses the current axis order, including after AstroFrame swaps x/y.
-        PV mode continues to treat the vertical axis as velocity.
-
-        Args:
-            width (list, tuple, or np.ndarray, optional): Number of channels,
-                y-pixels, and x-pixels for binning. Defaults to [1, 1, 1].
+        Preparation reports clamped widths without changing public attributes.
         """
         if not 1 <= len(width) <= 3 or any(not isinstance(a, (int, np.integer))
                                            or a < 1 for a in width):
@@ -330,6 +325,21 @@ class AstroData():
             w = np.minimum(w, size[1:])
             ws = ', '.join([f'{s:d}' for s in w])
             print(f'width was changed to [{ws}].')
+        return data4d, size, w
+
+    def binning(self, width: list[int | np.integer]
+                | tuple[int | np.integer, ...] | np.ndarray = [1, 1, 1]
+                ) -> None:
+        """Binning up neighboring pixels in the v, y, and x domain.
+
+        Uses the current axis order, including after AstroFrame swaps x/y.
+        PV mode continues to treat the vertical axis as velocity.
+
+        Args:
+            width (list, tuple, or np.ndarray, optional): Number of channels,
+                y-pixels, and x-pixels for binning. Defaults to [1, 1, 1].
+        """
+        data4d, size, w = self._prepare_binning(width)
         for axis, factor in zip(('v', 'y', 'x'), w):
             if factor > 1 and getattr(self, axis) is None:
                 raise ValueError(f'Binning in the {axis}-axis requires'
@@ -863,37 +873,11 @@ class AstroData():
         return (_normalize_float(cv, force_float=True),
                 _normalize_float(dv, force_float=True))
 
-    @_need_multipixels
-    def writetofits(self, fitsimage: str | PathLike[str] = 'out.fits',
-                    header: Header | dict[str, Any] | None = None) -> None:
-        """Write a single image or cube, overwriting an existing file.
+    def _spatial_fits_header(self, h: dict[str, Any]) -> None:
+        """Add spatial WCS cards in degrees for the current axis order.
 
-        Spatial axes use degrees, undoing any distance scaling applied by
-        AstroFrame.read. Known sky centers use celestial coordinates;
-        otherwise spatial axes are linear angular offsets. PV spatial axes
-        are also angular offsets. Spectral axes use Hz
-        when restfreq is known, otherwise radio velocity in km/s.
-
-        Axis roles follow the current data order. A prior swapxy is not
-        undone; PV output still treats x as position and y/v as velocity.
-
-        header optionally overrides generated cards. Numeric FITS cards are
-        serialized as Python floats, which can narrow extended precision.
-        Missing required grid spacing raises ValueError.
+        Header values are export scalars; in-memory grids retain precision.
         """
-        if (not isinstance(self.data, np.ndarray)
-                or self.data.ndim not in (2, 3)):
-            raise ValueError('writetofits requires a single 2D image'
-                             + ' or 3D cube.')
-        if not np.isfinite(self.dist) or self.dist <= 0:
-            raise ValueError('dist must be finite and positive.')
-        # Retain non-coordinate metadata; rebuild WCS for processed data.
-        h = dict(self.fitsheader.items()) if self.fitsheader is not None else {}
-        for key in list(h):
-            if (re.match(r'^(NAXIS|CTYPE|CUNIT|CRPIX|CRVAL|CDELT|CROTA)\d*$', key)
-                    or re.match(r'^(PC|CD|PV|PS)\d+_\d+$', key)
-                    or key in ('WCSAXES', 'LONPOLE', 'LATPOLE')):
-                del h[key]
         ci = nearest_index(self.x)
         celestial = self.center is not None and not self.pv
         if celestial:
@@ -919,17 +903,37 @@ class AstroData():
                 h.update(CTYPE2='LINEAR', CUNIT2='deg')
                 self._put_header(h, 'y', cj + 1, self.y[cj] / self.dist / 3600,
                                  self.dy / self.dist / 3600)
+
+    def _spectral_fits_header(self, h: dict[str, Any]) -> None:
+        """Add frequency or velocity cards to the cube/PV spectral axis."""
+        if self.v is None:
+            raise ValueError('A cube or PV image requires'
+                             + ' velocity coordinates.')
+        ck = nearest_index(self.v)
+        cv, dv = self._get_cvdv_in_freq(ck)
+        axis = 2 if self.pv else 3
+        frequency = self.restfreq is not None and self.restfreq != 0
+        h[f'CTYPE{axis}'] = 'FREQ' if frequency else 'VRAD'
+        h[f'CUNIT{axis}'] = 'Hz' if frequency else 'km/s'
+        self._put_header(h, 'v', ck + 1, cv, dv)
+
+    def _build_fits_header(self) -> dict[str, Any]:
+        """Rebuild processed WCS and metadata in a separate export payload.
+
+        Numeric FITS cards may narrow extended precision to Python floats.
+        PV output uses original sky-beam metadata when available.
+        """
+        # Retain non-coordinate metadata; rebuild WCS for processed data.
+        h = dict(self.fitsheader.items()) if self.fitsheader is not None else {}
+        for key in list(h):
+            onenumkeys = r'^(NAXIS|CTYPE|CUNIT|CRPIX|CRVAL|CDELT|CROTA)\d*$'
+            twonumkeys = r'^(PC|CD|PV|PS)\d+_\d+$'
+            if (re.match(onenumkeys, key) or re.match(twonumkeys, key)
+                    or key in ('WCSAXES', 'LONPOLE', 'LATPOLE')):
+                del h[key]
+        self._spatial_fits_header(h)
         if self.pv or self.data.ndim == 3:
-            if self.v is None:
-                raise ValueError('A cube or PV image requires'
-                                 + ' velocity coordinates.')
-            ck = nearest_index(self.v)
-            cv, dv = self._get_cvdv_in_freq(ck)
-            axis = 2 if self.pv else 3
-            frequency = self.restfreq is not None and self.restfreq != 0
-            h[f'CTYPE{axis}'] = 'FREQ' if frequency else 'VRAD'
-            h[f'CUNIT{axis}'] = 'Hz' if frequency else 'km/s'
-            self._put_header(h, 'v', ck + 1, cv, dv)
+            self._spectral_fits_header(h)
         beam = self.beam_org if self.pv else self.beam
         if beam is not None and None not in beam:
             h['BMAJ'] = float(beam[0] / self.dist / 3600)
@@ -945,6 +949,33 @@ class AstroData():
             h['BUNIT'] = self.bunit
         if self.restfreq is not None and self.restfreq > 0:
             h['RESTFRQ'] = float(self.restfreq)
+        return h
+
+    @_need_multipixels
+    def writetofits(self, fitsimage: str | PathLike[str] = 'out.fits',
+                    header: Header | dict[str, Any] | None = None) -> None:
+        """Write a single image or cube, overwriting an existing file.
+
+        Spatial axes use degrees, undoing any distance scaling applied by
+        AstroFrame.read. Known sky centers use celestial coordinates;
+        otherwise spatial axes are linear angular offsets. PV spatial axes
+        are also angular offsets. Spectral axes use Hz
+        when restfreq is known, otherwise radio velocity in km/s.
+
+        Axis roles follow the current data order. A prior swapxy is not
+        undone; PV output still treats x as position and y/v as velocity.
+
+        header optionally overrides generated cards. Numeric FITS cards are
+        serialized as Python floats, which can narrow extended precision.
+        Missing required grid spacing raises ValueError.
+        """
+        if (not isinstance(self.data, np.ndarray)
+                or self.data.ndim not in (2, 3)):
+            raise ValueError('writetofits requires a single 2D image'
+                             + ' or 3D cube.')
+        if not np.isfinite(self.dist) or self.dist <= 0:
+            raise ValueError('dist must be finite and positive.')
+        h = self._build_fits_header()
         h.update(header or {})
         data2fits(d=self.data, h=h, fitsimage=str(fitsimage))
 
@@ -977,6 +1008,23 @@ ASTRODATA_ARGS = ['fitsimage', 'data', 'Tb', 'sigma', 'center', 'restfreq',
 
 
 _Grid = list[np.ndarray | None]
+
+
+def _validate_shared_grid(expected_grid: _Grid, actual_grid: _Grid,
+                          dataset: int) -> None:
+    """Require matching processed grids, including missing axes (rtol=1e-7, atol=0)."""
+    for name, expected, actual in zip(('x', 'y', 'v'),
+                                     expected_grid, actual_grid):
+        same = expected is None and actual is None
+        if expected is not None and actual is not None:
+            same = (expected.shape == actual.shape
+                    and np.allclose(expected, actual,
+                                    rtol=1e-7, atol=0))
+        if not same:
+            raise ValueError(f'Dataset {dataset} has a different'
+                             + f' processed {name} grid; datasets'
+                             + ' in one AstroData must share'
+                             + ' coordinate grids.')
 
 
 @pydantic_dataclass(config=ConfigDict(arbitrary_types_allowed=True))
@@ -1367,19 +1415,7 @@ class AstroFrame():
             if shared_grid is None:
                 shared_grid = [None if a is None else a.copy() for a in current]
             else:
-                for name, expected, actual in zip(('x', 'y', 'v'),
-                                                  shared_grid,
-                                                  current):
-                    same = expected is None and actual is None
-                    if expected is not None and actual is not None:
-                        same = (expected.shape == actual.shape
-                                and np.allclose(expected, actual,
-                                                rtol=1e-7, atol=0))
-                    if not same:
-                        raise ValueError(f'Dataset {i} has a different'
-                                         + f' processed {name} grid; datasets'
-                                         + ' in one AstroData must share'
-                                         + ' coordinate grids.')
+                _validate_shared_grid(shared_grid, current, i)
         for name in ASTRODATA_ARGS + ['beam']:
             setattr(d, name, _scalar_if_single(getattr(d, name), d.n))
         if self.swapxy:

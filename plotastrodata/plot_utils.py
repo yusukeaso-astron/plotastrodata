@@ -918,7 +918,7 @@ def _create_panels(plan: _PanelLayout, fig: Figure | None, ax: Axes | None,
             sharex = axes[nij2ch(n, i - 1, j)] if i > 0 else None
             sharey = axes[nij2ch(n, i, j - 1)] if j > 0 else None
             axes[ch] = fig.add_subplot(nrows, ncols, i*ncols + j + 1,
-                                     sharex=sharex, sharey=sharey)
+                                       sharex=sharex, sharey=sharey)
         if need_vlabel and ch < plan.nv:
             vlabel = plan.v[ch if plan.channelnumber is None else plan.channelnumber]
             axes[ch].text(0.9 * rmax, 0.7 * rmax,
