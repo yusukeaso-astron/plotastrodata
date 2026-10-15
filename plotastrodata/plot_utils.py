@@ -860,8 +860,8 @@ _AxisTicks = tuple[np.ndarray, np.ndarray, list[str]]
 
 
 def _radec_ticks(center: str, frame_name: str, dec_center: RealScalar,
-                  rmax: RealScalar, nticksminor: int
-                  ) -> tuple[_AxisTicks, _AxisTicks]:
+                 rmax: RealScalar, nticksminor: int
+                 ) -> tuple[_AxisTicks, _AxisTicks]:
     """Build original-frame R.A./Dec. tick positions and labels.
 
     Round the tick grids around the unchanged center before any display swap.
@@ -2614,8 +2614,8 @@ def _prepare_surface_cube(d: AstroData) -> _SurfaceCube:
 
 
 def _surface_traces(measure: ModuleType, cube: _SurfaceCube,
-                     levels: np.ndarray, sigma: RealScalar,
-                     cmap: str, alpha: RealScalar) -> list[dict[str, Any]]:
+                    levels: np.ndarray, sigma: RealScalar,
+                    cmap: str, alpha: RealScalar) -> list[dict[str, Any]]:
     """Build paired isosurface meshes and triangle-edge traces in data units."""
     volume = cube.volume
     x, y, v = cube.x, cube.y, cube.v
@@ -2650,8 +2650,8 @@ def _surface_traces(measure: ModuleType, cube: _SurfaceCube,
 
 
 def _export_plot3d(go: ModuleType, data: list[dict[str, Any]],
-                    layout: dict[str, Any], outname: str | PathLike[str],
-                    show: bool) -> None:
+                   layout: dict[str, Any], outname: str | PathLike[str],
+                   show: bool) -> None:
     """Write HTML using a separate payload that narrows extended precision."""
     fig = go.Figure(data=_plotly_values(data, exporting=True),
                     layout=_plotly_values(layout, exporting=True))
