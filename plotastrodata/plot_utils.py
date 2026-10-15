@@ -21,7 +21,8 @@ from plotastrodata._validation_utils import (_require_integer,
                                              _is_finite_real_scalar,
                                              _is_positive_real_scalar,
                                              _require_positive_real_scalar,
-                                             _is_zero_dimensional_array)
+                                             _is_zero_dimensional_array,
+                                             _is_uniform_spacing)
 from plotastrodata._type_utils import (_normalize_float, _internal_field,
                                        RealScalar, RealSequence,
                                        PositionPair, Positions,
@@ -79,10 +80,13 @@ def _positive_noise(value: Any, name: str) -> None:
 
 def _image_edges(grid: np.ndarray, name: str
                  ) -> tuple[float | np.floating, float | np.floating]:
-    """Get pixel edges without converting intermediate scalars."""
+    """Get pixel edges using the first interval as the spacing reference.
+
+    Intermediate scalars and input arrays retain their precision.
+    """
     steps = np.diff(grid)
     if (not np.all(np.isfinite(grid)) or steps[0] == 0
-            or not np.allclose(steps, steps[0], rtol=1e-5, atol=0)):
+            or not _is_uniform_spacing(steps, steps[0])):
         raise ValueError(f'RGB {name} coordinates must be finite'
                          + ' and uniformly spaced.')
     return grid[0] - steps[0] / 2, grid[-1] + steps[0] / 2
@@ -2462,12 +2466,13 @@ def _surface_opacity(alpha: RealScalar) -> None:
 
 
 def _surface_grid(grid: np.ndarray | None, size: int, name: str) -> None:
+    """Require a matching 1D grid with uniform spacing relative to its first interval."""
     if grid is None or np.ndim(grid) != 1 or len(grid) != size or size < 2:
         raise ValueError('plot3d requires at least two matching'
                          + f' {name} coordinates.')
     steps = np.diff(grid)
     if (not np.all(np.isfinite(grid)) or steps[0] == 0
-            or not np.allclose(steps, steps[0], rtol=1e-5, atol=0)):
+            or not _is_uniform_spacing(steps, steps[0])):
         raise ValueError('plot3d requires a finite, uniformly spaced'
                          + f' {name} grid.')
 

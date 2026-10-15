@@ -105,7 +105,9 @@ Sky-coordinate positions require a center, are scaled by ``dist``, and are
 exchanged under ``swapxy``. Relative numeric positions refer to the displayed
 axes: 0 is left/bottom and 1 is right/top. They are never exchanged, including
 ``beampos``. RGB display uses lower origin and pixel-edge extents to align
-with color and contour maps.
+with color and contour maps. RGB and 3D coordinate grids compare their
+intervals with the first interval, using ``rtol=1e-5, atol=0``; descending
+coordinates are allowed.
 
 ``add_scalebar`` requires a finite positive ``length`` in horizontal data-axis
 units. PV diagrams do not support scalebars, regions, lines, arrows, or segment
@@ -130,7 +132,9 @@ Noise, fitting, and FITS regeneration
 Histogram fitting supports unweighted histograms with equally spaced bins.
 Both ``density=True`` and ``density=False`` are supported; fitting uses the
 underlying counts in either case. Explicit uneven edges and weights are
-rejected. Equal widths use ``rtol=1e-5, atol=0`` to accommodate float32 rounding.
+rejected. Widths are compared with their mean using ``rtol=1e-5, atol=0``
+to accommodate float32 rounding. This reference differs from the first-interval
+reference used for RGB and 3D coordinates.
 The ``edges`` argument of ``noise_utils.normalize`` is keyword-only.
 
 ``gaussfit1d`` and ``gaussfit2d`` default to ``sigma=None``: they print a notice

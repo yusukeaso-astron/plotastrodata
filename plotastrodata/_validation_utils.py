@@ -13,6 +13,18 @@ def _is_zero_dimensional_array(value: Any) -> bool:
     return isinstance(value, np.ndarray) and value.ndim == 0
 
 
+def _is_uniform_spacing(steps: np.ndarray,
+                        reference: int | float | np.integer | np.floating
+                        ) -> bool:
+    """Compare intervals with a caller-selected reference (rtol=1e-5, atol=0).
+
+    Callers validate shape, finiteness, and allowed direction separately.
+    They choose the first interval or mean as appropriate for the operation.
+    No input arrays or intermediate scalar precision are changed.
+    """
+    return bool(np.allclose(steps, reference, rtol=1e-5, atol=0))
+
+
 def _is_finite_real_scalar(value: Any) -> bool:
     """Accept finite Python/NumPy real numeric scalars without coercion.
 

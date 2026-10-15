@@ -5,24 +5,25 @@ import warnings
 from scipy.special import erf
 from typing import Any, Callable
 
-from plotastrodata._validation_utils import _require_integer
+from plotastrodata._validation_utils import (_require_integer,
+                                              _is_uniform_spacing)
 from plotastrodata._type_utils import _normalize_float
 from plotastrodata.fitting_utils import EmceeCorner
 from plotastrodata.other_utils import close_figure
 
 
 def _uniform_bin_width(edges: np.ndarray) -> float | np.longdouble:
-    """Validate equal-width edges with relative tolerance 1e-5."""
+    """Validate increasing edges using their mean width (rtol=1e-5, atol=0)."""
     if (edges.ndim != 1 or len(edges) < 2
             or not np.all(np.isfinite(edges))):
-        raise ValueError('Histogram edges must be finite'
-                         + ' and strictly increasing.')
+        raise ValueError('Histogram edges must be a 1D array'
+                         + ' with at least two finite values.')
     widths = np.diff(edges)
     if not np.all(np.isfinite(widths)) or np.any(widths <= 0):
-        raise ValueError('Histogram edges must be finite'
-                         + ' and strictly increasing.')
+        raise ValueError('Histogram bin widths must be finite and positive;'
+                         + ' edges must be strictly increasing.')
     width = np.mean(widths)
-    if not np.allclose(widths, width, rtol=1e-5, atol=0):
+    if not _is_uniform_spacing(widths, width):
         raise ValueError('Only equal-width bins are supported;'
                          + ' use an integer bin count, bins="auto",'
                          + ' or equally spaced edges'
