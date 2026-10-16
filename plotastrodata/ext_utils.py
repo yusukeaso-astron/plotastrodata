@@ -89,35 +89,41 @@ def JnuT(T: float | np.floating | np.ndarray = 30,
     return _normalize_float(result, force_float=True, array_output=array_output)
 
 
-def costaper(data: list | np.ndarray, npix: int | np.integer = 0
+def costaper(shape: tuple[int | np.integer, ...],
+             npix: int | np.integer = 0
              ) -> np.ndarray:
-    """Return a separable cosine window matching a 1D or 2D template.
+    """Return a separable cosine window with a 1D or 2D shape.
 
-    Only the shape of ``data`` is used; its values are neither read nor
-    modified. Multiply the returned window by the data to apply the taper.
+    Multiply the returned window by an array to apply the taper, for
+    example, ``data * costaper(data.shape, npix=2)``.
 
     Args:
-        data (list or np.ndarray): Rectangular 1D or 2D template.
+        shape (tuple of int or np.integer): One or two nonnegative axis
+            lengths, for example, ``(nx,)`` or ``(ny, nx)``. Boolean axis
+            lengths are not accepted.
         npix (int or np.integer, optional): Number of tapered pixels at each
             edge along every axis. Must be nonnegative and no greater than half
             the length of any axis. Zero returns an all-ones window.
             Boolean values are not accepted. Defaults to 0 (no taper).
 
     Returns:
-        np.ndarray: Float64 weights with the same shape as ``data``.
+        np.ndarray: Float64 weights with the requested ``shape``.
         Along each axis, the weight at distance ``d < npix`` from the
         nearest edge is ``(1 - cos(pi * d / npix)) / 2``; all other
         weights are one. Thus the outermost pixels are zero for a positive
         width. In 2D, the window is the outer product of the axis windows.
 
     Raises:
-        ValueError: If ``data`` is not rectangular and 1D or 2D, or
-            ``npix`` is not a nonnegative Python or NumPy integer (excluding
+        ValueError: If ``shape`` is not a tuple of one or two nonnegative
+            integer axis lengths (excluding booleans), or ``npix`` is not
+            a nonnegative Python or NumPy integer (excluding
             booleans), or the two edge tapers would overlap.
     """
-    shape = np.shape(data)
-    if len(shape) not in (1, 2):
-        raise ValueError('data must be 1D or 2D.')
+    if not isinstance(shape, tuple) or len(shape) not in (1, 2):
+        raise ValueError('shape must be a tuple of one or two axis lengths.')
+    for axis, length in enumerate(shape):
+        _require_integer(length, f'shape[{axis}]', minimum=0)
+    shape = tuple(int(length) for length in shape)
     _require_integer(npix, 'npix', minimum=0)
     npix = int(npix)
     if npix > min(shape) // 2:
