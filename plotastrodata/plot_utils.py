@@ -1560,7 +1560,7 @@ class PlotAstroData(AstroFrame):
                          else mpl.ticker.FormatStrFormatter(cbformat))
             cbticklabels = [formatter(t) for t in st.undo(cbticks)]
         else:
-            cbticklabels = np.array(cbticklabels)[cond]
+            cbticklabels = np.asarray(cbticklabels)[cond]
         cb.set_ticklabels(cbticklabels)
 
     def add_color(self,
