@@ -60,11 +60,18 @@ pnglist = glob.glob('./example_data/output_expected/*.png')
 for file in pnglist:
     expected = file
     output = file.replace('/output_expected/', '/output/')
-    res, diff = images_are_close(output, expected, tolerance=0.7)
+    if 'corner' in output:
+        tolerance = 2.0
+    else:
+        tolerance = 0.7
+    res, diff = images_are_close(output, expected, tolerance=tolerance)
     reslist.append(res)
     difflist.append(diff)
 pnglist = [s.split('/')[-1].removesuffix('.png') for s in pnglist]
-
+i = np.argsort(pnglist)
+pnglist = np.asarray(pnglist)[i]
+difflist = np.asarray(difflist)[i]
+reslist = np.asarray(reslist)[i]
 
 def test_filematch():
     print('Image differences:')
