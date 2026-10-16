@@ -5,6 +5,7 @@ from typing import Any
 
 from plotastrodata import const_utils as cu
 from plotastrodata._type_utils import _normalize_float
+from plotastrodata._validation_utils import _require_integer
 
 
 def terminal(cmd: str, check: bool = True,
@@ -86,3 +87,50 @@ def JnuT(T: float | np.floating | np.ndarray = 30,
     result = cu.h * nu / cu.k_B / (np.exp(cu.h * nu / cu.k_B / T) - 1)
     array_output = isinstance(T, np.ndarray) or isinstance(nu, np.ndarray)
     return _normalize_float(result, force_float=True, array_output=array_output)
+
+
+def costaper(data: list | np.ndarray, npix: int | np.integer = 0
+             ) -> np.ndarray:
+    """Return a separable cosine window matching a 1D or 2D template.
+
+    Only the shape of ``data`` is used; its values are neither read nor
+    modified. Multiply the returned window by the data to apply the taper.
+
+    Args:
+        data (list or np.ndarray): Rectangular 1D or 2D template.
+        npix (int or np.integer, optional): Number of tapered pixels at each
+            edge along every axis. Must be nonnegative and no greater than half
+            the length of any axis. Zero returns an all-ones window.
+            Boolean values are not accepted. Defaults to 0 (no taper).
+
+    Returns:
+        np.ndarray: Float64 weights with the same shape as ``data``.
+        Along each axis, the weight at distance ``d < npix`` from the
+        nearest edge is ``(1 - cos(pi * d / npix)) / 2``; all other
+        weights are one. Thus the outermost pixels are zero for a positive
+        width. In 2D, the window is the outer product of the axis windows.
+
+    Raises:
+        ValueError: If ``data`` is not rectangular and 1D or 2D, or
+            ``npix`` is not a nonnegative Python or NumPy integer (excluding
+            booleans), or the two edge tapers would overlap.
+    """
+    shape = np.shape(data)
+    if len(shape) not in (1, 2):
+        raise ValueError('data must be 1D or 2D.')
+    _require_integer(npix, 'npix', minimum=0)
+    npix = int(npix)
+    if npix > min(shape) // 2:
+        raise ValueError('npix must be at most half each axis length.')
+
+    def taper1d(nx: int) -> np.ndarray:
+        weights = np.ones(nx)
+        if npix > 0:
+            ramp = (1 - np.cos(np.pi * np.arange(npix) / npix)) / 2
+            weights[:npix] = ramp
+            weights[-npix:] = ramp[::-1]
+        return weights
+
+    if len(shape) == 1:
+        return taper1d(shape[0])
+    return taper1d(shape[0])[:, None] * taper1d(shape[1])[None, :]
