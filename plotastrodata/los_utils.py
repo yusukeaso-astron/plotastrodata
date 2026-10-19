@@ -1,7 +1,7 @@
 import numpy as np
 
-from plotastrodata.matrix_utils import Mrot3d
 from plotastrodata._type_utils import _normalize_float
+from plotastrodata.matrix_utils import Mrot3d
 
 
 def obs2sys(xobs: float | np.floating | list[float] | np.ndarray,

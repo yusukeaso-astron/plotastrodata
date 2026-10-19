@@ -1,22 +1,22 @@
+import pickle
+import warnings
+from functools import partial
+from multiprocessing import Pool
+from typing import Any, Callable
+
 import corner
 import emcee
 import matplotlib.pyplot as plt
 import numpy as np
-import pickle
 import ptemcee
-import warnings
 from dynesty import DynamicNestedSampler as DNS
-from functools import partial
-from multiprocessing import Pool
-from tqdm import tqdm
-from typing import Any, Callable
 from matplotlib.figure import Figure
+from tqdm import tqdm
 
-from plotastrodata._validation_utils import _require_integer
 from plotastrodata._type_utils import _normalize_float
+from plotastrodata._validation_utils import _require_integer
 from plotastrodata.matrix_utils import Mrot, dot2d
 from plotastrodata.other_utils import close_figure
-
 
 global_bounds = None
 bar = None

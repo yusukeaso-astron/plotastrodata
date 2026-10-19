@@ -1,35 +1,44 @@
-import numpy as np
-import warnings
-import re
-from dataclasses import dataclass, field
-from os import PathLike
-from functools import wraps
 import numbers
+import re
+import warnings
+from dataclasses import dataclass, field
+from functools import wraps
+from os import PathLike
+from typing import Any, Callable, Literal, ParamSpec, TypedDict, TypeVar
+
+import numpy as np
 from astropy.io.fits import Header
-from scipy.interpolate import RegularGridInterpolator as RGI
-from scipy.signal import convolve
 from pydantic import ConfigDict
 from pydantic.dataclasses import dataclass as pydantic_dataclass
-from typing import (Any, Callable, Literal,
-                    TypeVar, ParamSpec, TypedDict)
+from scipy.interpolate import RegularGridInterpolator as RGI
+from scipy.signal import convolve
 
 from plotastrodata import const_utils as cu
-from plotastrodata._validation_utils import (_require_integer,
-                                             _is_finite_real_scalar,
-                                             _is_positive_real_scalar,
-                                             _require_positive_real_scalar,
-                                             _is_zero_dimensional_array)
-from plotastrodata._type_utils import (_normalize_float, _internal_field,
-                                       RealScalar, Position,
-                                       ValidatedFloat, BeamInput)
-from plotastrodata.coord_utils import coord2xy, rel2abs, xy2coord, _getframe
-from plotastrodata.fits_utils import data2fits, FitsData, Jy2K
-from plotastrodata.fitting_utils import (EmceeCorner, gaussfit1d,
-                                         gaussfit2d, gaussian2d)
-from plotastrodata.matrix_utils import dot2d, Mfac, Mrot
+from plotastrodata._type_utils import (
+    BeamInput,
+    Position,
+    RealScalar,
+    ValidatedFloat,
+    _internal_field,
+    _normalize_float,
+)
+from plotastrodata._validation_utils import (
+    _is_finite_real_scalar,
+    _is_positive_real_scalar,
+    _is_zero_dimensional_array,
+    _require_integer,
+    _require_positive_real_scalar,
+)
+from plotastrodata.coord_utils import _getframe, coord2xy, rel2abs, xy2coord
+from plotastrodata.fits_utils import FitsData, Jy2K, data2fits
+from plotastrodata.fitting_utils import (
+    EmceeCorner, gaussfit1d, gaussfit2d, gaussian2d
+)
+from plotastrodata.matrix_utils import Mfac, Mrot, dot2d
 from plotastrodata.noise_utils import estimate_rms
-from plotastrodata.other_utils import (nearest_index, RGIxy, RGIxyv,
-                                       to4dim, trim)
+from plotastrodata.other_utils import (
+    RGIxy, RGIxyv, nearest_index, to4dim, trim
+)
 
 
 def _profile_ellipses(ellipse: Any, nprof: int) -> np.ndarray:

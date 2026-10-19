@@ -7,10 +7,10 @@ explicitly requests scalar output.
 """
 
 from dataclasses import field
-import numpy as np
 from typing import Annotated, Any, Callable, Literal, overload
-from pydantic import WrapValidator
 
+import numpy as np
+from pydantic import WrapValidator
 
 # Shared input types; validated settings are separate from uncoerced inputs.
 RealScalar = float | np.floating | np.integer

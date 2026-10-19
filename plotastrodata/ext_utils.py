@@ -1,7 +1,8 @@
-import numpy as np
 import shlex
 import subprocess
 from typing import Any
+
+import numpy as np
 
 from plotastrodata import const_utils as cu
 from plotastrodata._type_utils import _normalize_float

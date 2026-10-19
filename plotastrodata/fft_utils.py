@@ -1,11 +1,11 @@
+from os import PathLike
+from typing import Callable
+
 import matplotlib.pyplot as plt
 import numpy as np
-from typing import Callable
-from os import PathLike
 
-from plotastrodata._validation_utils import _require_integer
 from plotastrodata._type_utils import _normalize_float
-
+from plotastrodata._validation_utils import _require_integer
 from plotastrodata.fits_utils import fits2data
 from plotastrodata.other_utils import close_figure
 

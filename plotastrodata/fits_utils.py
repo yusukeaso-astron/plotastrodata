@@ -1,18 +1,21 @@
-import numpy as np
 import numbers
 from os import PathLike
-from astropy import units, wcs
-from astropy.io import fits
 from typing import Any, Callable
 
+import numpy as np
+from astropy import units, wcs
+from astropy.io import fits
+
 from plotastrodata import const_utils as cu
-from plotastrodata._validation_utils import (_is_positive_real_scalar,
-                                             _require_positive_real_scalar)
 from plotastrodata._type_utils import _normalize_float
+from plotastrodata._validation_utils import (
+    _is_positive_real_scalar,
+    _require_positive_real_scalar,
+)
 from plotastrodata.coord_utils import coord2xy, xy2coord
 from plotastrodata.matrix_utils import dot2d
 from plotastrodata.noise_utils import estimate_rms
-from plotastrodata.other_utils import isdeg, RGIxy, trim
+from plotastrodata.other_utils import RGIxy, isdeg, trim
 
 
 def _jy2k_metadata(header: fits.Header | dict[str, Any] | None,

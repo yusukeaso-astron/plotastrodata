@@ -1,10 +1,11 @@
+import warnings
 from os import PathLike
+from typing import Any
+
 import matplotlib.pyplot as plt
 import numpy as np
-import warnings
-from scipy.interpolate import RegularGridInterpolator as RGI
 from matplotlib.figure import Figure
-from typing import Any
+from scipy.interpolate import RegularGridInterpolator as RGI
 
 
 def isdeg(s: Any) -> bool:

@@ -1,9 +1,7 @@
 import numpy as np
+from astropy import constants, units
 
 from plotastrodata._type_utils import _normalize_float
-
-from astropy import constants
-from astropy import units
 
 # astropy.units in the SI unit system
 Angstrom = units.Angstrom.to('m')

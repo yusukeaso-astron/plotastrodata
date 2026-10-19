@@ -1,13 +1,16 @@
-import matplotlib.pyplot as plt
 import numbers
-import numpy as np
 import warnings
-from scipy.special import erf
 from typing import Any, Callable
 
-from plotastrodata._validation_utils import (_require_integer,
-                                             _is_uniform_spacing)
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy.special import erf
+
 from plotastrodata._type_utils import _normalize_float
+from plotastrodata._validation_utils import (
+    _is_uniform_spacing,
+    _require_integer
+)
 from plotastrodata.fitting_utils import EmceeCorner
 from plotastrodata.other_utils import close_figure
 

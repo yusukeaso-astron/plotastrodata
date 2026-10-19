@@ -1,39 +1,47 @@
+from dataclasses import dataclass, field, fields
 from os import PathLike
 from pathlib import Path
-from dataclasses import dataclass, fields, field
+from types import ModuleType
+from typing import TYPE_CHECKING, Any, Callable, Literal, TypedDict, TypeVar
+
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
-from matplotlib.figure import Figure
 from matplotlib.collections import QuadMesh
+from matplotlib.figure import Figure
 from matplotlib.patches import Ellipse, Rectangle
 from pydantic import ConfigDict, Field, field_validator
 from pydantic.dataclasses import dataclass as pydantic_dataclass
-from typing import (Any, Callable, Literal,
-                    TypeVar, TypedDict, TYPE_CHECKING)
-from types import ModuleType
 
 if TYPE_CHECKING:
     from plotly.graph_objs import Layout
 
-from plotastrodata._validation_utils import (_require_integer,
-                                             _is_finite_real_scalar,
-                                             _is_positive_real_scalar,
-                                             _require_positive_real_scalar,
-                                             _is_zero_dimensional_array,
-                                             _is_uniform_spacing)
-from plotastrodata._type_utils import (_normalize_float, _internal_field,
-                                       RealScalar, RealSequence,
-                                       PositionPair, Positions,
-                                       ValidatedFloat, ValidatedBeams)
+from plotastrodata._type_utils import (
+    PositionPair,
+    Positions,
+    RealScalar,
+    RealSequence,
+    ValidatedBeams,
+    ValidatedFloat,
+    _internal_field,
+    _normalize_float,
+)
+from plotastrodata._validation_utils import (
+    _is_finite_real_scalar,
+    _is_positive_real_scalar,
+    _is_uniform_spacing,
+    _is_zero_dimensional_array,
+    _require_integer,
+    _require_positive_real_scalar,
+)
 from plotastrodata.analysis_utils import AstroData, AstroFrame
-from plotastrodata.coord_utils import (coord2xy, xy2coord,
-                                       get_hmdm, get_min, get_sec, _getframe)
+from plotastrodata.coord_utils import (
+    _getframe, coord2xy, get_hmdm, get_min, get_sec, xy2coord
+)
 from plotastrodata.fitting_utils import gaussian1d
 from plotastrodata.noise_utils import estimate_rms
-from plotastrodata.other_utils import close_figure, reform_grid, reform_data
-
+from plotastrodata.other_utils import close_figure, reform_data, reform_grid
 
 plt.ioff()  # force to turn off interactive mode
 
