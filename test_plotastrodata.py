@@ -73,6 +73,7 @@ pnglist = np.asarray(pnglist)[i]
 difflist = np.asarray(difflist)[i]
 reslist = np.asarray(reslist)[i]
 
+
 def test_filematch():
     print('Image differences:')
     for n, d, r in zip(pnglist, difflist, reslist):
