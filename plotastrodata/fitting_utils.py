@@ -707,11 +707,14 @@ def gaussian2d(xy: np.ndarray | list[float | np.ndarray]
 
 def gaussfit1d(xdata: np.ndarray, ydata: np.ndarray,
                sigma: float | np.floating | np.ndarray | None = None,
-               show: bool = False, **kwargs: Any) -> dict:
+               show: bool = False, progressbar: bool = False,
+               **kwargs: Any) -> dict:
     """Gaussian fitting to a pair of 1D arrays.
 
     NaN and infinite values in xdata or ydata are rejected. Both arrays
-    must contain at least two values and have nonzero ranges.
+    must contain at least two values and have nonzero ranges. Two fitting
+    passes are always performed: broad initial bounds, then bounds refined
+    around the first result. Noise is estimated only when sigma is None.
 
     Args:
         xdata (np.ndarray): ydata is compared with Gauss(xdata).
@@ -721,6 +724,7 @@ def gaussfit1d(xdata: np.ndarray, ydata: np.ndarray,
             residuals of an initial fit.
         show (bool, optional): True means to show the best-fit
             parameters and uncertainties. Defaults to False.
+        progressbar (bool): Display the MCMC progress bar. Defaults to False.
 
     Returns:
         dict: popt and perr are arrays. Scalar sigma, including a supplied
@@ -748,10 +752,15 @@ def gaussfit1d(xdata: np.ndarray, ydata: np.ndarray,
     bounds = [[ymin - yw * 10, ymax + yw * 10], [xmin, xmax], [dx, xw]]
     sigtmp = (max(np.abs(ymin), np.abs(ymax)) * 0.01
               if sigma is None else sigma)
-    for i in range(2 if sigma is None else 1):
+    for i in range(2):
         fitter = EmceeCorner(bounds=bounds, model=gaussian1d,
-                             sigma=sigtmp, xdata=xdata, ydata=ydata)
+                             sigma=sigtmp, xdata=xdata, ydata=ydata,
+                             progressbar=progressbar)
         fitter.fit(**kwargs)
+        a, center, width = fitter.popt
+        bounds = [sorted([a / 2, a * 2]),
+                  [center - width, center + width],
+                  [width / 2, width * 2]]
         if i == 0 and sigma is None:
             sigtmp = np.std(ydata - gaussian1d(xdata, *fitter.popt))
     popt = fitter.popt
@@ -769,7 +778,8 @@ def gaussfit1d(xdata: np.ndarray, ydata: np.ndarray,
 
 def gaussfit2d(xdata: np.ndarray, ydata: np.ndarray, zdata: np.ndarray,
                sigma: float | np.floating | np.ndarray | None = None,
-               show: bool = False, **kwargs: Any) -> dict:
+               show: bool = False, progressbar: bool = False,
+               **kwargs: Any) -> dict:
     """Fit a two-dimensional Gaussian to zdata on the xdata/ydata grid.
 
     Nonfinite image pixels are rejected. At least two pixels with
@@ -784,6 +794,7 @@ def gaussfit2d(xdata: np.ndarray, ydata: np.ndarray, zdata: np.ndarray,
             residuals of an initial fit.
         show (bool, optional): True means to show the best-fit
             parameters and uncertainties. Defaults to False.
+        progressbar (bool): Display the MCMC progress bar. Defaults to False.
 
     Returns:
         dict: popt and perr are arrays. Scalar sigma, including a supplied
@@ -825,7 +836,8 @@ def gaussfit2d(xdata: np.ndarray, ydata: np.ndarray, zdata: np.ndarray,
               [dx, xw], [dx, xw], [-90, 90]]
     for i in range(2):
         fitter = EmceeCorner(bounds=bounds, model=model,
-                             sigma=sigtmp, xdata=xy, ydata=zdata)
+                             sigma=sigtmp, xdata=xy, ydata=zdata,
+                             progressbar=progressbar)
         fitter.fit(**kwargs)
         a, cx, cy, wmaj, wmin, pa = fitter.popt
         wmax = max(wmaj, wmin)

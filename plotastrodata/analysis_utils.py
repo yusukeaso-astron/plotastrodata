@@ -589,8 +589,8 @@ class AstroData():
                 'model': modelopt, 'residual': residual}
 
     @_need_multipixels
-    def gaussfit2d(self, chan: int | np.integer | None = None
-                   ) -> _GaussFit2DResult:
+    def gaussfit2d(self, chan: int | np.integer | None = None,
+                   *, progressbar: bool = False) -> _GaussFit2DResult:
         """Fit a 2D Gaussian function to self.data using
         fitting_utils.gaussfit2d(). With sigma=None, noise is estimated
         from an initial fit. Supplied sigma must be a finite positive real
@@ -601,6 +601,7 @@ class AstroData():
             chan (int): The channel number where the 2D Gaussian is
                 fitted. Required for cubes; must be None for images.
                 NumPy integer indices are also accepted.
+            progressbar (bool): Display the MCMC progress bar. Defaults to False.
 
         Returns:
             dict: The best parameter set (popt), the error set (perr),
@@ -622,7 +623,8 @@ class AstroData():
             sigma = self.sigma * np.sqrt(self._fit_pixelperbeam())
             sigma = _normalize_float(sigma)
         res = gaussfit2d(xdata=self.x, ydata=self.y, zdata=z,
-                         sigma=sigma, show=False, nwalkersperdim=4)
+                         sigma=sigma, show=False, progressbar=progressbar,
+                         nwalkersperdim=4)
         popt, perr = res['popt'], res['perr']
         model = gaussian2d(np.meshgrid(self.x, self.y), *popt)
         residual = z - model
