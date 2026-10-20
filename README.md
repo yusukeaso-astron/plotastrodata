@@ -16,6 +16,8 @@ The PDF manual is available [here](https://github.com/yusukeaso-astron/plotastro
 
 ## Installation
 
+### Released version
+
 Install from conda-forge:
 
 ```bash
@@ -28,19 +30,22 @@ or from PyPI:
 pip install plotastrodata
 ```
 
-To install the latest source from GitHub:
+### Development version from GitHub
+
+Clone the repository to install the latest development version, which may
+include changes not yet available in the published releases:
 
 ```bash
 git clone https://github.com/yusukeaso-astron/plotastrodata
-cd plotastrodata
-python -m pip install .
+(cd plotastrodata)
+(python -m pip install .)
 ```
 
-To update a source installation, run the following commands in the cloned repository:
+To update the development version, run the following commands in the cloned repository:
 
 ```bash
 git pull
-python -m pip install --upgrade .
+(python -m pip install --upgrade .)
 ```
 
 ## Demo and Usage
