@@ -342,31 +342,35 @@ class EmceeCorner():
         nwalkers = nwalkersperdim * self.dim  # must be even and >= 2 * dim
         if ntemps > 1:
             pt = True
-        if global_progressbar:
-            total = ntry * ntemps * nwalkers * (nsteps + 1) // ncores
-            bar = tqdm(total=total)
-            bar.set_description('Within the ranges')
-        samples = None
-        sampler = None
-        for i in range(1, ntry + 1):
-            if pos0 is None:
-                pos0 = self._get_pos0(ntemps=ntemps, nwalkers=nwalkers, pt=pt)
-            sampler = self._run_sampler(pos0=pos0, pt=pt, ncores=ncores,
-                                        ntemps=ntemps, nsteps=nsteps,
-                                        nwalkers=nwalkers)
-            samples = self._get_samples(sampler=sampler,
-                                        nburnin=nburnin, pt=pt)
-            i = _check_GR(samples=samples, nwalkers=nwalkers,
-                          ndata=self.ndata, dim=self.dim,
-                          i=i, ntry=ntry, grcheck=grcheck)
-        if savechain is not None:
-            np.save(savechain.removesuffix('.npy') + '.npy', samples)
-        self.lnp, self.popt = self._get_lnp_popt(sampler=sampler, pt=pt,
-                                                 nburnin=nburnin)
-        self.plow, self.pmid, self.phigh = self._get_percentiles(samples)
-        self.samples = samples
-        if global_progressbar:
-            print()
+        active_bar = None
+        try:
+            if global_progressbar:
+                total = ntry * ntemps * nwalkers * (nsteps + 1) // ncores
+                active_bar = bar = tqdm(total=total)
+                active_bar.set_description('Within the ranges')
+            samples = None
+            sampler = None
+            for i in range(1, ntry + 1):
+                if pos0 is None:
+                    pos0 = self._get_pos0(ntemps=ntemps, nwalkers=nwalkers, pt=pt)
+                sampler = self._run_sampler(pos0=pos0, pt=pt, ncores=ncores,
+                                            ntemps=ntemps, nsteps=nsteps,
+                                            nwalkers=nwalkers)
+                samples = self._get_samples(sampler=sampler,
+                                            nburnin=nburnin, pt=pt)
+                i = _check_GR(samples=samples, nwalkers=nwalkers,
+                              ndata=self.ndata, dim=self.dim,
+                              i=i, ntry=ntry, grcheck=grcheck)
+            if savechain is not None:
+                np.save(savechain.removesuffix('.npy') + '.npy', samples)
+            self.lnp, self.popt = self._get_lnp_popt(sampler=sampler, pt=pt,
+                                                     nburnin=nburnin)
+            self.plow, self.pmid, self.phigh = self._get_percentiles(samples)
+            self.samples = samples
+        finally:
+            if active_bar is not None:
+                active_bar.close()
+                bar = None
 
     def plotcorner(self, labels: list[str] | None = None,
                    cornerrange: list[float | tuple[float, float] | list[float]]
