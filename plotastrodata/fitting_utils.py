@@ -710,6 +710,9 @@ def gaussfit1d(xdata: np.ndarray, ydata: np.ndarray,
                show: bool = False, **kwargs: Any) -> dict:
     """Gaussian fitting to a pair of 1D arrays.
 
+    NaN and infinite values in xdata or ydata are rejected. Both arrays
+    must contain at least two values and have nonzero ranges.
+
     Args:
         xdata (np.ndarray): ydata is compared with Gauss(xdata).
         ydata (np.ndarray): ydata is compared with Gauss(xdata).
@@ -724,6 +727,16 @@ def gaussfit1d(xdata: np.ndarray, ydata: np.ndarray,
         integer, is a Python float, except that extended precision is preserved.
         Array-valued sigma retains its dtype.
     """
+    if not np.all(np.isfinite(xdata)) or not np.all(np.isfinite(ydata)):
+        raise ValueError('gaussfit1d requires finite samples; crop or remove'
+                         + ' NaN and infinite values before fitting.')
+    if np.size(xdata) < 2 or np.size(ydata) < 2:
+        raise ValueError('gaussfit1d requires at least two samples.')
+    if np.min(ydata) == np.max(ydata):
+        raise ValueError('gaussfit1d requires at least two samples'
+                         + ' with different values.')
+    if np.min(xdata) == np.max(xdata):
+        raise ValueError('gaussfit1d requires at least two different coordinates.')
     if sigma is None:
         print('gaussfit1d: sigma is None;'
               + ' estimating noise from an initial fit.')
@@ -759,6 +772,9 @@ def gaussfit2d(xdata: np.ndarray, ydata: np.ndarray, zdata: np.ndarray,
                show: bool = False, **kwargs: Any) -> dict:
     """Fit a two-dimensional Gaussian to zdata on the xdata/ydata grid.
 
+    Nonfinite image pixels are rejected. At least two pixels with
+    different values are required.
+
     Args:
         xdata (np.ndarray): zdata is compared with Gauss(xdata, ydata).
         ydata (np.ndarray): zdata is compared with Gauss(xdata, ydata).
@@ -779,6 +795,12 @@ def gaussfit2d(xdata: np.ndarray, ydata: np.ndarray, zdata: np.ndarray,
               + ' estimating noise from an initial fit.')
     xmin, xmax = np.min(xdata), np.max(xdata)
     ymin, ymax = np.min(ydata), np.max(ydata)
+    if not np.all(np.isfinite(zdata)):
+        raise ValueError('gaussfit2d requires finite pixels; crop or remove'
+                         + ' NaN and infinite values before fitting.')
+    if np.size(zdata) < 2 or np.min(zdata) == np.max(zdata):
+        raise ValueError('gaussfit2d requires at least two pixels'
+                         + ' with different values.')
     zmin, zmax = np.min(zdata), np.max(zdata)
     xw = xmax - xmin
     yw = ymax - ymin
