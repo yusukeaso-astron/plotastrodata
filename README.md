@@ -53,7 +53,7 @@ python example.py
 
 More examples and the complete API reference are available in the [online documentation](https://plotastrodata.readthedocs.io/en/latest/).
  
-## Generate a simple 2D plotting script
+## Generate plotting scripts
 
 ```python
 from plotastrodata.script_utils import generate_image_script
@@ -70,6 +70,12 @@ with contours, a beam, and RA/Dec axes. It saves separate noise and image PNGs.
 Noise estimation uses the full image. Fitting and plotting use a centered
 field whose width is one quarter of the estimated valid image width.
 The estimated rmax is written inline for editing.
+For a spectral cube, use `generate_cube_script("cube.fits", output="cube.py")`
+from the same module. It generates an edge-channel noise visualization, a flux-integrated line
+profile over the spatial quarter-size, and 3D channel maps at the intrinsic
+channel spacing. The flux profile assumes Jy/beam data with beam metadata.
+Both generators return an absolute pathlib.Path and write the script
+without executing it.
 See the [script-generation guide](docs/script_generation.rst).
 
 ## Requirement

@@ -1,5 +1,5 @@
-Simple 2D script generation
-===========================
+Script generation
+=================
 
 ``plotastrodata.script_utils.generate_image_script`` writes a short, editable
 script following the "2D image" section of ``example.py``. It calls existing
@@ -98,3 +98,95 @@ Both PNGs are saved beside the script: ``<script stem>_noise.png`` and
 methods independently of the generator's overwrite option.
 The script writes ``stretch="log"`` and ``show=False`` directly;
 edit the plotting calls for another intensity scale or interactive display.
+
+
+Cube scripts
+------------
+
+``plotastrodata.script_utils.generate_cube_script`` writes a noise
+visualization, an integrated line profile, and 3D channel maps using the
+corresponding sections of ``example.py``:
+
+.. code-block:: python
+
+   from plotastrodata.script_utils import generate_cube_script
+
+   script = generate_cube_script("cube.fits", output="cube.py")
+
+Review cube.py, then run it. Generation checks the primary FITS header and
+reads cube pixels to determine the finite spatial footprint.
+The input must have RA/Dec spatial axes with at least two pixels each, at
+least two spectral channels on axis 3 (frequency in Hz or velocity in m/s
+or km/s), and only singleton higher axes. Running the flux-profile section
+assumes Jy/beam intensities and requires complete beam metadata and spatial
+pixel sizes. Generation does not perform noise estimation or plotting.
+
+The script reads the full cube with AstroFrame.read and estimates noise using
+``Noise(data=d.data, sigma="edge,hist-pbcor")``. This selects the first and last
+channels and fits the PB-corrected histogram model. Edit that selection if
+the edge channels contain emission. The script saves ``<script stem>_noise.png``,
+prints mean and standard deviation with .3e formatting, and reuses the fitted
+standard deviation for the channel-map colors and contours.
+
+Between the noise and channel maps, the script crops a separate AstroData
+instance that shares the loaded data to the spatial quarter-size using
+AstroFrame.read, then calls
+plotprofile with ``flux=True``. A circle with diameter four times the crop's
+rmax encloses the entire square, integrating flux from all cropped pixels.
+This assumes Jy/beam intensities and requires beam metadata and pixel sizes.
+The profile uses the intrinsic channel spacing in one panel and is saved
+as ``<script stem>_profile.png``. Its crop can be edited independently of
+the channel-map field. The full cube remains available for the channel maps.
+
+The profile and channel-map sections use the existing plotting functions:
+
+.. code-block:: python
+
+   from plotastrodata.plot_utils import PlotAstroData, plotprofile
+
+   # Line profile
+   d_profile = AstroData(**d.todict())
+   f_profile = AstroFrame(rmax=3.0)  # One quarter of the valid half-width in arcsec.
+   f_profile.read(d_profile)
+   plotprofile(
+       **d_profile.todict(), xlist=[0], ylist=[0],
+       ellipse=[4 * f_profile.rmax, 4 * f_profile.rmax, 0],
+       flux=True, savefig="cube_profile.png", show=False,
+   )
+
+   # 3D channel maps
+   p = PlotAstroData(v=d.v, rmax=3.0, center=d.center)
+   p.add_color(**d.todict(), stretch="log", cblabel=d.bunit)
+   p.add_contour(**d.todict(), colors="r")
+   p.set_axis()
+   p.savefig("cube.png", show=False)
+
+The inline rmax uses the same finite-footprint rule as the image generator.
+A spatial pixel is invalid if any spectral channel there is nonfinite.
+The initial half-width is half the larger image dimension. If invalid pixels
+exist, this is reduced to exclude them from a centered square, with one
+spatial pixel of margin. The valid half-width is divided by four and rounded
+to eight significant digits (3.0 above is illustrative), for the profile
+crop and channel maps. Thus the full field width is one quarter of the
+estimated valid width. Both regions use the FITS reference center; this
+is a footprint estimate, not a source-size measurement. Noise estimation
+still uses the full cube.
+All channels are shown at their intrinsic spacing, without skipping or
+binning. The library supplies the default panel layout, velocity labels,
+fonts, beam, and contour levels. No title or annotation overlays are added.
+Multiple channel-map pages are saved as ``cube_0.png``, ``cube_1.png``, and so
+on; a single page is saved as ``cube.png``. All figures are beside the script.
+
+The generator returns an absolute pathlib.Path and writes absolute input
+and figure paths in the script. It accepts only the input
+path, optional output path, and keyword-only overwrite flag. An existing
+script requires ``overwrite=True`` to replace it; figure overwriting follows
+the existing plotting methods independently. Change plotting and noise
+choices directly in the generated script.
+
+An unsuitable cube header, output suffix, or centered finite region raises
+ValueError during generation. Non-boolean overwrite values raise TypeError;
+only a Python bool is accepted. Generation writes the script but does not
+execute it. The returned Path is the sole public result: numeric estimates
+are serialized as Python float literals, and the input arrays and FITS file
+are not modified.
