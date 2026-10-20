@@ -148,11 +148,12 @@ The profile and channel-map sections use the existing plotting functions:
    d_profile = AstroData(**d.todict())
    f_profile = AstroFrame(rmax=3.0)  # One quarter of the valid half-width in arcsec.
    f_profile.read(d_profile)
-   plotprofile(
-       **d_profile.todict(), xlist=[0], ylist=[0],
-       ellipse=[4 * f_profile.rmax, 4 * f_profile.rmax, 0],
-       flux=True, savefig="cube_profile.png", show=False,
-   )
+   plotprofile(**d_profile.todict(), xlist=[0], ylist=[0],
+               ellipse=[4 * f_profile.rmax, 4 * f_profile.rmax, 0],  # Circle enclosing the cropped square.
+               flux=True,
+               savefig="cube_profile.png",
+               show=False,
+               )
 
    # 3D channel maps
    p = PlotAstroData(v=d.v, rmax=3.0, center=d.center)
