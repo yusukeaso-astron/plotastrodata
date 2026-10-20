@@ -100,6 +100,13 @@ plotastrodata.plot\_utils module
    :show-inheritance:
    :undoc-members:
 
+plotastrodata.script\_utils module
+----------------------------------
+
+.. automodule:: plotastrodata.script_utils
+   :members:
+   :show-inheritance:
+
 Module contents
 ---------------
 

@@ -37,6 +37,7 @@ Contents
    :maxdepth: 2
 
    conventions
+   script_generation
    plotastrodata
    example
    manual

@@ -53,6 +53,25 @@ python example.py
 
 More examples and the complete API reference are available in the [online documentation](https://plotastrodata.readthedocs.io/en/latest/).
  
+## Generate a simple 2D plotting script
+
+```python
+from plotastrodata.script_utils import generate_image_script
+
+script = generate_image_script(
+    "image.fits", output="image.py",
+)
+```
+
+Review the inline values, then run `python image.py`. The script uses existing
+library APIs to visualize a hist-pbcor noise fit, fit a 2D Gaussian and report
+its sky center and east/north uncertainties, and plot a logarithmic image
+with contours, a beam, and RA/Dec axes. It saves separate noise and image PNGs.
+Noise estimation uses the full image. Fitting and plotting use a centered
+field whose width is one quarter of the estimated valid image width.
+The estimated rmax is written inline for editing.
+See the [script-generation guide](docs/script_generation.rst).
+
 ## Requirement
 
 * Python >= 3.11
