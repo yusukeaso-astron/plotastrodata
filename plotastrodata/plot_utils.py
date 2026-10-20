@@ -897,8 +897,8 @@ def _radec_ticks(center: str, frame_name: str, dec_center: RealScalar,
         getter = get_min if no_sec else get_sec
         tickvalues = [getter(t, mode) for t in tickvalues]  # str
         tickvalues = np.array(tickvalues, dtype=float)
-        # 7-digit precision for practical use.
-        tickvalues = np.round(tickvalues, 7)
+        # 8-digit precision for practical use.
+        tickvalues = np.round(tickvalues, 8)
         return tickvalues
 
     units = {'ra': {'h': r'$^\mathrm{h}$',
