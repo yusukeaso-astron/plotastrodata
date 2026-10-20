@@ -506,10 +506,8 @@ class AstroData():
         if not np.isfinite(area) or area <= 0:
             raise ValueError('Fitting requires finite, nonzero pixel sizes.')
         factor = np.pi * sizes[0] * sizes[1] / (4 * np.log(2) * area)
-        warnings.warn('In the fitting, sigma is multiplied by'
-                      + ' sqrt(pixel-per-beam) to account for'
-                      + ' beam noise correlation.',
-                      UserWarning)
+        print('In the fitting, sigma is multiplied by sqrt(pixel-per-beam)'
+              + ' to account for beam noise correlation.')
         return factor
 
     @_need_multipixels
@@ -879,7 +877,8 @@ class AstroData():
             raise ValueError('restfreq must be finite and positive,'
                              + ' or None/0.')
         if self.restfreq is None or self.restfreq == 0:
-            warnings.warn('No valid restfreq. The velocity axis is saved as is.',
+            warnings.warn('No valid restfreq.'
+                          + ' The velocity axis is saved as is.',
                           UserWarning)
         else:
             cv = (1 - cv / cu.c_kms) * self.restfreq
