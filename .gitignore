@@ -170,6 +170,3 @@ docs/_build/
 build/
 .vscode/settings.json
 main.tex
-
-# Local generated scripts and figures
-example_data/script_recipes/
