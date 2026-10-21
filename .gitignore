@@ -1,172 +1,113 @@
-# Byte-compiled / optimized / DLL files
+# Python bytecode and compiled extensions
 __pycache__/
 *.py[cod]
 *$py.class
-
-# C extensions
 *.so
 
-# Distribution / packaging
+# Packaging and build products
 .Python
-develop-eggs/
-dist/
-downloads/
-eggs/
+/build/
+/dist/
 .eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-pip-wheel-metadata/
-share/python-wheels/
 *.egg-info/
-.installed.cfg
 *.egg
-MANIFEST
-
-# PyInstaller
-#  Usually these files are written by a python script from a template
-#  before PyInstaller builds the exe, so as to inject date/other infos into it.
-*.manifest
-*.spec
-
-# Installer logs
+.installed.cfg
+/MANIFEST
 pip-log.txt
 pip-delete-this-directory.txt
 
-# Unit test / coverage reports
-htmlcov/
+# Test, lint, and type-checker caches and reports
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.pyre/
+.hypothesis/
 .tox/
 .nox/
+.cache/
+.dmypy.json
+dmypy.json
 .coverage
 .coverage.*
-.cache
+htmlcov/
 nosetests.xml
 coverage.xml
 *.cover
 *.py,cover
-.hypothesis/
-.pytest_cache/
-
-# Translations
-*.mo
-*.pot
-
-# Django stuff:
 *.log
-local_settings.py
-db.sqlite3
-db.sqlite3-journal
 
-# Flask stuff:
-instance/
-.webassets-cache
-
-# Scrapy stuff:
-.scrapy
-
-# PyBuilder
-target/
-
-# Jupyter Notebook
-.ipynb_checkpoints
-
-# IPython
-profile_default/
-ipython_config.py
-
-# pyenv
-.python-version
-
-# pipenv
-#   According to pypa/pipenv#598, it is recommended to include Pipfile.lock in version control.
-#   However, in case of collaboration, if having platform-specific dependencies or dependencies
-#   having no cross-platform support, pipenv may install dependencies that don't work, or not
-#   install all needed dependencies.
-#Pipfile.lock
-
-# PEP 582; used by e.g. github.com/David-OConnor/pyflow
-__pypackages__/
-
-# Celery stuff
-celerybeat-schedule
-celerybeat.pid
-
-# SageMath parsed files
-*.sage.py
-
-# Environments
+# Local environments (keep example configuration files available)
 .env
-.venv
-env/
+.env.*
+!.env.example
+!.env.sample
+.venv/
 venv/
+env/
 ENV/
 env.bak/
 venv.bak/
+.python-version
+__pypackages__/
 
-# Spyder project settings
-.spyderproject
-.spyproject
+# Notebook caches
+.ipynb_checkpoints/
+.jupyter_cache/
+profile_default/
+ipython_config.py
 
-# Rope project settings
-.ropeproject
+# Documentation builds and generated notebook media
+/docs/_build/
+/docs/_static/plotly/test3D.html
+/docs/_static/video/test_animation.mp4
+/docs/_static/video/test_animation.gif
 
-# mkdocs documentation
-/site
+# Local manual source and LaTeX build products
+/main.tex
+/main.aux
+/main.bbl
+/main.blg
+/main.fdb_latexmk
+/main.fls
+/main.lof
+/main.log
+/main.lot
+/main.out
+/main.pdf
+/main.synctex.gz
+/main.toc
 
-# mypy
-.mypy_cache/
-.dmypy.json
-dmypy.json
+# Example execution products in the repository root or notebook directory
+/example_temp.py
+/test*.png
+/test3D.html
+/test_animation.mp4
+/test_animation.gif
+/chain.npy
+/docs/test*.png
+/docs/chain.npy
+/streamer.png
+/noise.png
+/chain.png
+/corner.png
+/grid.png
+/numpyfft.png
+/fftcentering.png
+/boxcar.png
+/docs/streamer.png
+/docs/noise.png
+/docs/chain.png
+/docs/corner.png
+/docs/grid.png
+/docs/numpyfft.png
+/docs/fftcentering.png
+/docs/boxcar.png
 
-# Pyre type checker
-.pyre/
+# Generated test output; keep the directory placeholder
+/example_data/output/*
+!/example_data/output/dummy.txt
+
+# Operating-system and editor files
 .DS_Store
-testprofile.png
-testslice.png
-test2D.png
-test2Drgb.png
-testPV.png
-testloglogPV.png
-test3D_1.png
-test3D_0.png
-test3D.html
-test_animation.mp4
-test_animation.gif
-streamer.png
-noise.png
-chain.npy
-chain.png
-corner.png
-grid.png
-numpyfft.png
-fftcentering.png
-boxcar.png
-
-example_data/output/testprofile.png
-example_data/output/testslice.png
-example_data/output/test2D.png
-example_data/output/test2Drgb.png
-example_data/output/testPV.png
-example_data/output/testloglogPV.png
-example_data/output/test3D_1.png
-example_data/output/test3D_0.png
-example_data/output/test3D.html
-example_data/output/test_animation.mp4
-example_data/output/test_animation.gif
-example_data/output/streamer.png
-example_data/output/noise.png
-example_data/output/chain.npy
-example_data/output/chain.png
-example_data/output/corner.png
-example_data/output/grid.png
-example_data/output/numpyfft.png
-example_data/output/fftcentering.png
-example_data/output/boxcar.png
-
-docs/_build/
-build/
-.vscode/settings.json
-main.tex
+Thumbs.db
+/.vscode/settings.json
