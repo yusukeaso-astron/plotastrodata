@@ -45,14 +45,14 @@ The script uses the existing noise and image plotting methods:
 
    # 2D Gaussian fitting
    d_fit = AstroData(fitsimage="image.fits", sigma=d.sigma)
-   f_fit = AstroFrame(rmax=3.0)  # One quarter of the valid half-width in arcsec; adjust the fit region here.
+   f_fit = AstroFrame(rmax=3.0)  # Estimated from PB-weighted emission in arcsec; adjust the fit region here.
    f_fit.read(d_fit)
    fit = d_fit.gaussfit2d(progressbar=True)
    print("Gaussian center:", fit["center"])
    print("Center uncertainties (east, north; arcsec):", fit["perr"][1:3])
 
    # 2D image
-   p = PlotAstroData(rmax=3.0, center=fit["center"])  # One quarter of the valid half-width in arcsec; adjust as needed.
+   p = PlotAstroData(rmax=3.0, center=fit["center"])  # Estimated from PB-weighted emission in arcsec; adjust as needed.
    p.add_color(**d.todict(), stretch="log", cblabel=d.bunit)
    p.add_contour(**d.todict(), colors="r")
    p.set_axis_radec(nticksminor=5)
@@ -62,18 +62,11 @@ The default beam and sigma contour levels come from the existing plotting
 methods. No text, markers, lines, arrows, or regions are added. Fonts keep the
 library defaults. No brightness-temperature conversion is applied.
 
-The generator starts with half the larger image dimension, using projected
-WCS pixel scales in arcsec. If nonfinite pixels exist, it reduces this
-half-width to a square centered on the FITS reference position that excludes
-them, leaving a one-pixel margin for trimming. It then divides the half-width
-by four. The resulting full field spans one quarter of that valid square's
-width. This is a footprint estimate, not a measurement of source emission.
-
-The estimated rmax is written as a Python float rounded to eight significant
-digits in both the fitting frame and PlotAstroData (3.0 above is illustrative).
-Edit these numbers directly to change the fitting or plotting region.
-Generation reads the image pixels to estimate the crop, but does not run
-noise estimation, Gaussian fitting, or plotting.
+The generator estimates rmax and writes it into the fitting and plotting
+frames as an inline number rounded to three significant digits (3.0 above
+is illustrative). Edit these values directly to change the regions.
+Generation reads the input data and fits noise to estimate ranges; it does
+not execute the generated script or make its figures.
 
 The generated script reads the full image with AstroFrame for noise
 estimation. Noise uses ``sigma="hist-pbcor"``, and its fitted standard deviation
@@ -114,12 +107,13 @@ corresponding sections of ``example.py``:
    script = generate_cube_script("cube.fits", output="cube.py")
 
 Review cube.py, then run it. Generation checks the primary FITS header and
-reads cube pixels to determine the finite spatial footprint.
+reads cube pixels to estimate the plotting ranges.
 The input must have RA/Dec spatial axes with at least two pixels each, at
 least two spectral channels on axis 3 (frequency in Hz or velocity in m/s
 or km/s), and only singleton higher axes. Running the flux-profile section
 assumes Jy/beam intensities and requires complete beam metadata and spatial
-pixel sizes. Generation does not perform noise estimation or plotting.
+pixel sizes. Generation fits noise and selects emission ranges, but does
+not execute the script or make its figures.
 
 The script reads the full cube with AstroFrame.read and estimates noise using
 ``Noise(data=d.data, sigma="edge,hist-pbcor")``. This selects the first and last
@@ -129,8 +123,8 @@ prints mean and standard deviation with .3e formatting, and reuses the fitted
 standard deviation for the channel-map colors and contours.
 
 Between the noise and channel maps, the script crops a separate AstroData
-instance that shares the loaded data to the spatial quarter-size using
-AstroFrame.read, then calls
+instance that shares the loaded data to the estimated spatial and velocity
+ranges using AstroFrame.read, then calls
 plotprofile with ``flux=True``. A circle with diameter four times the crop's
 rmax encloses the entire square, integrating flux from all cropped pixels.
 This assumes Jy/beam intensities and requires beam metadata and pixel sizes.
@@ -146,7 +140,10 @@ The profile and channel-map sections use the existing plotting functions:
 
    # Line profile
    d_profile = AstroData(**d.todict())
-   f_profile = AstroFrame(rmax=3.0)  # One quarter of the valid half-width in arcsec.
+   f_profile = AstroFrame(
+       rmax=3.0,  # Estimated spatial half-width (arcsec); adjust as needed.
+       vmin=1.0, vmax=8.0,  # Estimated velocity range (km/s); adjust as needed.
+   )
    f_profile.read(d_profile)
    plotprofile(**d_profile.todict(), xlist=[0], ylist=[0],
                ellipse=[4 * f_profile.rmax, 4 * f_profile.rmax, 0],  # Circle enclosing the cropped square.
@@ -156,27 +153,28 @@ The profile and channel-map sections use the existing plotting functions:
                )
 
    # 3D channel maps
-   p = PlotAstroData(v=d.v, rmax=3.0, center=d.center)
+   p = PlotAstroData(
+       v=d.v, center=d.center,
+       rmax=3.0,  # Estimated spatial half-width (arcsec); adjust as needed.
+       vmin=1.0, vmax=8.0,  # Estimated velocity range (km/s); adjust as needed.
+   )
    p.add_color(**d.todict(), stretch="log", cblabel=d.bunit)
    p.add_contour(**d.todict(), colors="r")
    p.set_axis()
    p.savefig("cube.png", show=False)
 
-The inline rmax uses the same finite-footprint rule as the image generator.
-A spatial pixel is invalid if any spectral channel there is nonfinite.
-The initial half-width is half the larger image dimension. If invalid pixels
-exist, this is reduced to exclude them from a centered square, with one
-spatial pixel of margin. The valid half-width is divided by four and rounded
-to eight significant digits (3.0 above is illustrative), for the profile
-crop and channel maps. Thus the full field width is one quarter of the
-estimated valid width. Both regions use the FITS reference center; this
-is a footprint estimate, not a source-size measurement. Noise estimation
-still uses the full cube.
-All channels are shown at their intrinsic spacing, without skipping or
-binning. The library supplies the default panel layout, velocity labels,
-fonts, beam, and contour levels. No title or annotation overlays are added.
-Multiple channel-map pages are saved as ``cube_0.png``, ``cube_1.png``, and so
-on; a single page is saved as ``cube.png``. All figures are beside the script.
+The generator estimates rmax, vmin, and vmax and writes them directly
+into both frames, rounded to three significant digits with inline comments.
+The example values above are illustrative. Edit them to change the profile
+or channel-map region. Changing the script's noise fit does not recompute
+the fixed range estimates.
+
+Both plots use the estimated velocity interval at native channel spacing,
+without skipping or binning. The library supplies the default panel layout,
+velocity labels, fonts, beam, and contour levels. No grid, title, or
+annotation overlays are added. Figures plot the original PB-corrected data
+about the FITS reference center. Multiple channel-map pages are saved as
+cube_0.png, cube_1.png, and so on; one page is saved as cube.png.
 
 The generator returns an absolute pathlib.Path and writes absolute input
 and figure paths in the script. It accepts only the input
