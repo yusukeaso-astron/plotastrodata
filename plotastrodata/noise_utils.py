@@ -126,7 +126,9 @@ def gauss_pbcor(x: float | np.floating | np.ndarray,
             The variable of the probability density.
         s (float): Standard deviation of the Gaussian noise.
         m (float): Mean of the Gaussian noise.
-        R (float): The maximum radius scaled by the FWHM of the primary beam.
+        R (float): Dimensionless outer radius r_out / r_p, where r_p is
+            the primary-beam half-width at half maximum (HWHM). The
+            primary-beam response at radius r is 2**(-(r / r_p)**2).
 
     Returns:
         float or np.longdouble or np.ndarray: Probability density.
