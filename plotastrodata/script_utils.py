@@ -68,6 +68,107 @@ def _multiply_pb(data: np.ndarray, x: np.ndarray, y: np.ndarray,
     return data * pattern
 
 
+def _validate_range_inputs(data: np.ndarray, x: np.ndarray, y: np.ndarray,
+                           sigma: RealScalar, v: np.ndarray | None
+                           ) -> tuple[np.ndarray,
+                                      np.ndarray,
+                                      np.ndarray | None]:
+    """Validate range-estimator inputs and return the coordinate arrays.
+
+    Preserve array dtypes and leave all inputs unchanged. Reject unsuitable
+    dimensions, noise values, coordinates, and image/cube velocity arguments.
+    """
+    if not isinstance(data, np.ndarray):
+        raise TypeError('data must be a NumPy array.')
+    if (data.ndim not in (2, 3) or data.dtype.kind not in 'iuf'
+            or any(length < 2 for length in data.shape)):
+        raise ValueError('data must be a real 2D or 3D array with at least'
+                         + ' two samples on every axis.')
+    _require_positive_real_scalar(sigma, 'sigma')
+    x, y = np.asarray(x), np.asarray(y)
+    axes = [(x, data.shape[-1], 'x'), (y, data.shape[-2], 'y')]
+    if data.ndim == 3:
+        if v is None:
+            raise ValueError('v is required for a cube.')
+        v = np.asarray(v)
+        axes.append((v, data.shape[0], 'v'))
+    elif v is not None:
+        raise ValueError('v must be omitted for a 2D image.')
+    for coordinate, length, name in axes:
+        if (coordinate.ndim != 1 or len(coordinate) != length
+                or coordinate.dtype.kind not in 'iuf'
+                or not np.all(np.isfinite(coordinate))):
+            raise ValueError(f'{name} must be a finite real 1D coordinate array'
+                             + ' matching its data axis.')
+        steps = np.diff(coordinate)
+        if steps[0] == 0 or not _is_uniform_spacing(steps, steps[0]):
+            raise ValueError(f'{name} must have nonzero uniform spacing.')
+    return x, y, v
+
+
+def _range_beam_settings(beam: RealSequence | None, dx: RealScalar, dy: RealScalar
+                         ) -> tuple[RealScalar, RealScalar]:
+    """Return minimum spatial footprint in pixels and spatial padding.
+
+    Use a Gaussian beam area and the larger FWHM when beam lengths are
+    provided, otherwise one pixel. Internal numeric precision is retained.
+    """
+    minimum_pixels = 1
+    padding = max(dx, dy)
+    if beam is not None:
+        sizes = np.asarray(beam)
+        if sizes.ndim != 1 or sizes.size not in (2, 3):
+            raise ValueError('beam must contain [major, minor]'
+                             + ' or [major, minor, pa].')
+        for size in sizes[:2]:
+            _require_positive_real_scalar(size, 'beam FWHM')
+        minimum_pixels = np.ceil(np.pi * sizes[0] * sizes[1]
+                                 / (4 * np.log(2) * dx * dy))
+        padding = max(sizes[:2])
+
+    return minimum_pixels, padding
+
+
+def _find_emission_bounds(data: np.ndarray, sigma: RealScalar,
+                          minimum_pixels: RealScalar
+                          ) -> tuple[slice, ...] | None:
+    """Return union bounding slices for qualified emission, or None.
+
+    Keep all face-connected 3-sigma components with a 5-sigma seed and the
+    minimum projected spatial footprint. Cubes also require two adjacent
+    channels. Input arrays are not modified.
+    """
+    structure = ndimage.generate_binary_structure(data.ndim, 1)
+    mask = np.isfinite(data) & (data >= 3 * sigma)
+    labels, _ = ndimage.label(mask, structure=structure)
+    del mask
+    lower = list(data.shape)
+    upper = [0] * data.ndim
+    found = False
+    for component_id, region in enumerate(ndimage.find_objects(labels), start=1):
+        if region is None:
+            continue
+        component = labels[region] == component_id
+        if not np.any((data[region] >= 5 * sigma) & component):
+            continue
+        if data.ndim == 3:
+            if region[0].stop - region[0].start < 2:
+                continue
+            spatial = np.any(component, axis=0)
+        else:
+            spatial = component
+        if np.count_nonzero(spatial) < minimum_pixels:
+            continue
+        found = True
+        for axis, extent in enumerate(region):
+            lower[axis] = min(lower[axis], extent.start)
+            upper[axis] = max(upper[axis], extent.stop)
+
+    if not found:
+        return None
+    return tuple(slice(lo, hi) for lo, hi in zip(lower, upper))
+
+
 def _estimate_ranges(data: np.ndarray, x: np.ndarray, y: np.ndarray,
                      sigma: RealScalar, *, v: np.ndarray | None = None,
                      beam: RealSequence | None = None
@@ -124,86 +225,27 @@ def _estimate_ranges(data: np.ndarray, x: np.ndarray, y: np.ndarray,
         a fitted noise mean from data before calling if appropriate.
         This helper does not fit noise or apply a PB.
     """
-    if not isinstance(data, np.ndarray):
-        raise TypeError('data must be a NumPy array.')
-    if (data.ndim not in (2, 3) or data.dtype.kind not in 'iuf'
-            or any(length < 2 for length in data.shape)):
-        raise ValueError('data must be a real 2D or 3D array with at least'
-                         + ' two samples on every axis.')
-    _require_positive_real_scalar(sigma, 'sigma')
-    x, y = np.asarray(x), np.asarray(y)
-    axes = [(x, data.shape[-1], 'x'), (y, data.shape[-2], 'y')]
-    if data.ndim == 3:
-        if v is None:
-            raise ValueError('v is required for a cube.')
-        v = np.asarray(v)
-        axes.append((v, data.shape[0], 'v'))
-    elif v is not None:
-        raise ValueError('v must be omitted for a 2D image.')
-    for coordinate, length, name in axes:
-        if (coordinate.ndim != 1 or len(coordinate) != length
-                or coordinate.dtype.kind not in 'iuf'
-                or not np.all(np.isfinite(coordinate))):
-            raise ValueError(f'{name} must be a finite real 1D coordinate array'
-                             + ' matching its data axis.')
-        steps = np.diff(coordinate)
-        if steps[0] == 0 or not _is_uniform_spacing(steps, steps[0]):
-            raise ValueError(f'{name} must have nonzero uniform spacing.')
+    x, y, v = _validate_range_inputs(data, x, y, sigma, v)
     dx, dy = abs(x[1] - x[0]), abs(y[1] - y[0])
-    minimum_pixels = 1
-    padding = max(dx, dy)
-    if beam is not None:
-        sizes = np.asarray(beam)
-        if sizes.ndim != 1 or sizes.size not in (2, 3):
-            raise ValueError('beam must contain [major, minor]'
-                             + ' or [major, minor, pa].')
-        for size in sizes[:2]:
-            _require_positive_real_scalar(size, 'beam FWHM')
-        minimum_pixels = np.ceil(np.pi * sizes[0] * sizes[1]
-                                 / (4 * np.log(2) * dx * dy))
-        padding = max(sizes[:2])
+    minimum_pixels, padding = _range_beam_settings(beam, dx, dy)
 
     footprint = AstroData(data=data, x=x, y=y, sigma=None)
     footprint.dx, footprint.dy = dx, dy
     full_radius = max((abs(x[0]) + abs(x[-1]) + dx) / 2,
                       (abs(y[0]) + abs(y[-1]) + dy) / 2)
     available_radius = _get_valid_radius(footprint, full_radius)
-    structure = ndimage.generate_binary_structure(data.ndim, 1)
-    mask = np.isfinite(data) & (data >= 3 * sigma)
-    labels, _ = ndimage.label(mask, structure=structure)
-    del mask
-    lower = list(data.shape)
-    upper = [0] * data.ndim
-    found = False
-    for component_id, region in enumerate(ndimage.find_objects(labels), start=1):
-        if region is None:
-            continue
-        component = labels[region] == component_id
-        if not np.any((data[region] >= 5 * sigma) & component):
-            continue
-        if data.ndim == 3:
-            if region[0].stop - region[0].start < 2:
-                continue
-            spatial = np.any(component, axis=0)
-        else:
-            spatial = component
-        if np.count_nonzero(spatial) < minimum_pixels:
-            continue
-        found = True
-        for axis, extent in enumerate(region):
-            lower[axis] = min(lower[axis], extent.start)
-            upper[axis] = max(upper[axis], extent.stop)
-
+    bounds = _find_emission_bounds(data, sigma, minimum_pixels)
     rmax = available_radius
-    if found:
-        rx = (abs(x[lower[-1]]) + abs(x[upper[-1] - 1])) / 2
-        ry = (abs(y[lower[-2]]) + abs(y[upper[-2] - 1])) / 2
+    if bounds is not None:
+        rx = (abs(x[bounds[-1].start]) + abs(x[bounds[-1].stop - 1])) / 2
+        ry = (abs(y[bounds[-2].start]) + abs(y[bounds[-2].stop - 1])) / 2
         rmax = min(max(rx, ry) + padding, available_radius)
     rmax = _normalize_float(rmax, force_float=True)
     if v is None:
         return rmax, None, None
-    first = max(lower[0] - 2, 0) if found else 0
-    last = min(upper[0] + 1, len(v) - 1) if found else len(v) - 1
+    first = max(bounds[0].start - 2, 0) if bounds is not None else 0
+    last = (min(bounds[0].stop + 1, len(v) - 1)
+            if bounds is not None else len(v) - 1)
     return (rmax,
             _normalize_float(min(v[first], v[last]), force_float=True),
             _normalize_float(max(v[first], v[last]), force_float=True))
