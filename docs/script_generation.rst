@@ -53,7 +53,7 @@ The script uses the existing noise and image plotting methods:
 
    # 2D image
    p = PlotAstroData(rmax=3.0, center=fit["center"])  # Estimated from PB-weighted emission in arcsec; adjust as needed.
-   p.add_color(**d.todict(), stretch="log", cblabel=d.bunit)
+   p.add_color(**d.todict(), stretch="log")
    p.add_contour(**d.todict(), colors="r")
    p.set_axis_radec(nticksminor=5)
    p.savefig("image.png", show=False)
@@ -81,6 +81,7 @@ coordinates and fitted position uncertainties along east and north
 pixels are rejected by the fitter. Fitting large images can take substantial time;
 edit the fitting frame's rmax to choose a smaller region if needed.
 
+Noise and range estimation assume PB-corrected intensities.
 Input must be a primary-HDU RA/Dec image with at least two pixels on each
 spatial axis; higher axes must be singleton. Input and output paths in the
 script are absolute. The generator returns the absolute script path as a
@@ -108,6 +109,7 @@ corresponding sections of ``example.py``:
 
 Review cube.py, then run it. Generation checks the primary FITS header and
 reads cube pixels to estimate the plotting ranges.
+Noise and range estimation assume PB-corrected intensities.
 The input must have RA/Dec spatial axes with at least two pixels each, at
 least two spectral channels on axis 3 (frequency in Hz or velocity in m/s
 or km/s), and only singleton higher axes. Running the flux-profile section
@@ -158,7 +160,7 @@ The profile and channel-map sections use the existing plotting functions:
        rmax=3.0,  # Estimated spatial half-width (arcsec); adjust as needed.
        vmin=1.0, vmax=8.0,  # Estimated velocity range (km/s); adjust as needed.
    )
-   p.add_color(**d.todict(), stretch="log", cblabel=d.bunit)
+   p.add_color(**d.todict(), stretch="log")
    p.add_contour(**d.todict(), colors="r")
    p.set_axis()
    p.savefig("cube.png", show=False)
@@ -189,3 +191,28 @@ only a Python bool is accepted. Generation writes the script but does not
 execute it. The returned Path is the sole public result: numeric estimates
 are serialized as Python float literals, and the input arrays and FITS file
 are not modified.
+
+Estimating ranges directly
+--------------------------
+
+After reading an ``AstroData`` instance with ``AstroFrame``, use
+``rmax, vmin, vmax = d.estimate_ranges(pbcor=True)`` for PB-corrected data.
+For uniform-noise data, omit ``pbcor=True``. Only a Python bool is accepted.
+The stored ``d.sigma`` must be
+a finite positive scalar or ``None`` to estimate noise. With a supplied
+sigma and ``pbcor=False``, assume a zero baseline. For PB-corrected data,
+a supplied sigma describes noise before PB correction; fitting is still
+needed for PB preparation. Inputs and stored attributes are unchanged;
+2D images return ``None`` velocity limits. ``rmax`` is a symmetric spatial
+half-width; cube velocity limits are returned in ascending order. Numeric
+results are Python floats, except ``np.longdouble`` results retain extended
+precision.
+
+The array-based function is ``noise_utils.estimate_ranges(data, x, y,
+sigma=None, v=v, beam=beam, pbcor=False)``. Omit ``v`` for images;
+``beam`` is optional; if either FWHM length is ``None``, pixel-based
+defaults are used. Coordinates must have uniform spacing. Spatial
+limits use the units of ``x`` and ``y``; velocity limits use those of ``v``.
+The generators use ``AstroData.estimate_ranges(pbcor=True)`` with the
+stored ``sigma=None`` and continue to write editable numeric limits into
+their scripts.

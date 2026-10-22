@@ -13,7 +13,7 @@ import numpy as np
 from pydantic import WrapValidator
 
 # Shared input types; validated settings are separate from uncoerced inputs.
-RealScalar = float | np.floating | np.integer
+RealScalar = int | float | np.floating | np.integer
 RealSequence = list[RealScalar] | tuple[RealScalar, ...] | np.ndarray
 PositionPair = tuple[RealScalar, RealScalar] | list[RealScalar] | np.ndarray
 Position = str | PositionPair

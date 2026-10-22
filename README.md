@@ -78,9 +78,19 @@ For a spectral cube, use `generate_cube_script("cube.fits", output="cube.py")`
 from the same module. It generates an edge-channel noise visualization, a flux-integrated line
 profile and 3D channel maps over estimated spatial and velocity ranges,
 with intrinsic channel spacing. The flux profile assumes Jy/beam data with beam metadata.
+Noise and range estimation in both generators assume PB-corrected intensities.
 Both generators return an absolute pathlib.Path and write the script
 without executing it.
 See the [script-generation guide](docs/script_generation.rst).
+
+Ranges can also be obtained from loaded data with
+`rmax, vmin, vmax = d.estimate_ranges(pbcor=True)` for PB-corrected data.
+For uniform-noise data, use `d.estimate_ranges()`. Noise is fitted when
+`d.sigma=None`; a supplied positive scalar assumes a zero baseline unless
+`pbcor=True`. For PB-corrected data, supplied sigma describes noise before
+PB correction. The array-based function is `noise_utils.estimate_ranges`,
+with the same `pbcor` option and optional `sigma`. Here, `rmax` is a symmetric
+spatial half-width; 2D images return `None` for both velocity limits.
 
 ## Requirement
 

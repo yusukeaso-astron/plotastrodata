@@ -6,13 +6,19 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.special import erf
 
-from plotastrodata._type_utils import _normalize_float
+from plotastrodata._type_utils import BeamInput, RealScalar, _normalize_float
 from plotastrodata._validation_utils import (
     _is_uniform_spacing,
+    _require_positive_real_scalar,
     _require_integer
 )
 from plotastrodata.fitting_utils import EmceeCorner
-from plotastrodata.other_utils import close_figure
+from plotastrodata.other_utils import (
+    _estimate_ranges,
+    _get_minarea_margin,
+    _validate_range_inputs,
+    close_figure
+)
 
 
 def _uniform_bin_width(edges: np.ndarray) -> float | np.longdouble:
@@ -381,3 +387,141 @@ def estimate_rms(data: np.ndarray,
     if np.abs(ave) > 0.2 * noise:
         warnings.warn('|mean| > 0.2sigma.', UserWarning)
     return _normalize_float(noise)
+
+
+def _multiply_pb(data: np.ndarray, x: np.ndarray, y: np.ndarray,
+                 R: RealScalar, r_out: RealScalar) -> np.ndarray:
+    """Multiply an image or cube by an approximate Gaussian primary beam.
+
+    Args:
+        data: Numeric array with shape (ny, nx) or (nchan, ny, nx).
+        x: Finite real 1D x offsets from the assumed PB center, length nx.
+        y: Finite real 1D y offsets from the assumed PB center, length ny.
+        R: Positive dimensionless outer radius r_out / r_p from gauss_pbcor
+            (Noise.popt[2]), where r_p is the primary-beam HWHM.
+        r_out: Positive outer radius of the footprint used for the noise fit,
+            in the same spatial units as x and y. It is supplied explicitly,
+            not inferred from the array shape or the plotting crop.
+
+    Returns:
+        np.ndarray: New array of the same shape, multiplied by
+        B(x, y) = 2**(-R**2 * ((x/r_out)**2 + (y/r_out)**2)).
+        One spatial pattern is broadcast across all channels. Inputs are
+        not modified and nonfinite data pixels are not filled or removed.
+        NumPy determines the arithmetic dtype; integer data can become
+        floating point, and extended precision is retained without casting.
+
+    Raises:
+        TypeError: data is not a NumPy array.
+        ValueError: Shapes, coordinate values, or PB parameters are unsuitable.
+
+    Notes:
+        Applying this to PB-corrected data approximately restores the
+        pre-correction intensities. The assumed circular beam and center
+        are intended for range estimation, not calibrated PB reconstruction.
+    """
+    if not isinstance(data, np.ndarray):
+        raise TypeError('data must be a NumPy array.')
+    if (data.ndim not in (2, 3) or 0 in data.shape
+            or not np.issubdtype(data.dtype, np.number)):
+        raise ValueError('data must be a nonempty numeric 2D or 3D array.')
+    x, y = np.asarray(x), np.asarray(y)
+    for coordinate, length, name in ((x, data.shape[-1], 'x'),
+                                     (y, data.shape[-2], 'y')):
+        if (coordinate.ndim != 1 or len(coordinate) != length
+                or coordinate.dtype.kind not in 'iuf'
+                or not np.all(np.isfinite(coordinate))):
+            raise ValueError(f'{name} must be a finite real 1D coordinate array'
+                             + ' matching the spatial data axis.')
+    _require_positive_real_scalar(R, 'R')
+    _require_positive_real_scalar(r_out, 'r_out')
+    radius_squared = (x[None, :] / r_out)**2 + (y[:, None] / r_out)**2
+    pattern = np.exp2(-R**2 * radius_squared)
+    return data * pattern
+
+
+def estimate_ranges(data: np.ndarray, x: np.ndarray, y: np.ndarray,
+                    sigma: RealScalar | None = None, *,
+                    v: np.ndarray | None = None,
+                    beam: BeamInput
+                    | tuple[RealScalar | None, RealScalar | None]
+                    | None = None,
+                    pbcor: bool = False
+                    ) -> tuple[float | np.longdouble,
+                               float | np.longdouble | None,
+                               float | np.longdouble | None]:
+    """Estimate spatial and velocity limits of an image or cube.
+
+    Fit noise to the full image or the first and last cube channels when
+    sigma=None or pbcor=True. Use hist for uniform-noise data and hist-pbcor
+    for PB-corrected data. Subtract the fitted mean when fitting is needed.
+    PB preparation uses an approximate beam centered at zero. All preparation
+    uses temporary arrays; input arrays and their dtypes are unchanged.
+
+    Args:
+        data (np.ndarray): Real image (ny, nx) or cube (nchan, ny, nx).
+            Each axis requires at least two samples. Without PB preparation,
+            noise should be approximately uniform.
+        x (np.ndarray): Finite, uniformly spaced 1D x offsets from the
+            intended center, matching the spatial data axis. May descend.
+        y (np.ndarray): Finite, uniformly spaced 1D y offsets from the
+            intended center, matching the spatial data axis. May descend.
+        sigma (int or float or np.integer or np.floating or None, optional):
+            Finite positive scalar noise level in the data units, or None to use
+            the fitted standard deviation. For PB-corrected data, this is
+            the noise before PB correction; a fit is still needed to obtain
+            the PB parameter and mean. With pbcor=False and a supplied sigma,
+            assume a zero baseline. Booleans are rejected. Defaults to None.
+        v (np.ndarray, optional): Finite, uniformly spaced channel
+            coordinates. Required for cubes and omitted for images.
+            At least two channels are needed; may descend. Defaults to None.
+        beam (list or tuple or np.ndarray, optional): [major, minor] FWHM
+            lengths or [major, minor, pa]. Lengths use the same units as
+            x and y; pa is unused. If beam or either FWHM length is None,
+            use pixel-based defaults. Defaults to None.
+        pbcor (bool, optional): Python bool; apply approximate PB weighting to
+            PB-corrected data before detecting emission. The assumed PB
+            center is x=y=0. Defaults to False.
+
+    Returns:
+        tuple: (rmax, vmin, vmax). rmax is a symmetric spatial half-width
+        in the units of x and y. Velocity limits use the units of v and are
+        returned in ascending order. An image returns None for both velocity
+        limits. Computed scalars are Python floats, except np.longdouble
+        results retain extended precision.
+
+    Raises:
+        TypeError: pbcor is not a Python bool, or data is not a NumPy array.
+        ValueError: Data, axes, noise, beam, or the centered finite region
+            are unsuitable. Errors from noise fitting also propagate.
+    """
+    if not isinstance(pbcor, bool):
+        raise TypeError('pbcor must be a boolean.')
+    x, y, v = _validate_range_inputs(data, x, y, v)
+    if sigma is not None:
+        _require_positive_real_scalar(sigma, 'sigma')
+    dx, dy = abs(x[1] - x[0]), abs(y[1] - y[0])
+    min_area_pixels, spatial_margin = _get_minarea_margin(beam, dx, dy)
+    if not pbcor and sigma is not None:
+        return _estimate_ranges(data, x, y, sigma, v=v,
+                                min_area_pixels=min_area_pixels,
+                                spatial_margin=spatial_margin)
+    noise_data = data if data.ndim == 2 else data[[0, -1]]
+    noise = Noise(data=noise_data, sigma='hist-pbcor' if pbcor else 'hist')
+    noise.gen_histogram()
+    noise.fit_histogram()
+    if pbcor:
+        pixels = np.count_nonzero(np.isfinite(noise_data),
+                                  axis=None if data.ndim == 2 else (1, 2))
+        if data.ndim == 3:
+            pixels = np.mean(pixels)
+        r_out = np.sqrt(pixels * dx * dy / np.pi)
+        prepared = _multiply_pb(data, x, y, R=noise.popt[2], r_out=r_out)
+        prepared -= noise.mean
+    else:
+        prepared = data - noise.mean
+    if sigma is None:
+        sigma = noise.std
+    return _estimate_ranges(prepared, x, y, sigma, v=v,
+                            min_area_pixels=min_area_pixels,
+                            spatial_margin=spatial_margin)

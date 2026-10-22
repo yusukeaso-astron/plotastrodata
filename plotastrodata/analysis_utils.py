@@ -35,7 +35,7 @@ from plotastrodata.fitting_utils import (
     EmceeCorner, gaussfit1d, gaussfit2d, gaussian2d
 )
 from plotastrodata.matrix_utils import Mfac, Mrot, dot2d
-from plotastrodata.noise_utils import estimate_rms
+from plotastrodata.noise_utils import estimate_ranges, estimate_rms
 from plotastrodata.other_utils import (
     RGIxy, RGIxyv, nearest_index, to4dim, trim
 )
@@ -585,6 +585,44 @@ class AstroData():
         residual = d - modelopt
         return {'popt': popt, 'plow': plow, 'pmid': pmid, 'phigh': phigh,
                 'model': modelopt, 'residual': residual}
+
+    def estimate_ranges(self, *, pbcor: bool = False
+                        ) -> tuple[float | np.longdouble,
+                                   float | np.longdouble | None,
+                                   float | np.longdouble | None]:
+        """Estimate spatial and velocity limits for the current image or cube.
+
+        Read the data with AstroFrame first. Use the stored sigma when it
+        is a finite positive scalar, or fit noise when sigma=None. Without
+        PB preparation, data should have uniform noise; a supplied sigma
+        assumes a zero baseline. For PB-corrected data, a supplied sigma
+        describes noise before PB correction. Missing beam lengths use
+        pixel-based defaults. All inputs and stored attributes are unchanged.
+
+        Args:
+            pbcor (bool, optional): Python bool; fit hist-pbcor noise and
+                apply approximate PB weighting internally for PB-corrected
+                data. Defaults to False.
+
+        Returns:
+            tuple: (rmax, vmin, vmax). rmax is a symmetric spatial half-width
+            in the units of x/y. Velocity limits use the units of v and are
+            returned in ascending order. A 2D image returns None for both
+            velocity limits.
+            Computed scalars are Python floats, except np.longdouble
+            results retain extended precision.
+
+        Raises:
+            TypeError: pbcor is not a Python bool, or data is not a NumPy
+                array.
+            ValueError: Data, axes, noise, beam, or the centered finite
+                region are unsuitable. Errors from noise fitting also
+                propagate when sigma=None or pbcor=True.
+        """
+        v = self.v if (isinstance(self.data, np.ndarray)
+                       and self.data.ndim == 3) else None
+        return estimate_ranges(self.data, self.x, self.y, self.sigma,
+                               v=v, beam=self.beam, pbcor=pbcor)
 
     @_need_multipixels
     def gaussfit2d(self, chan: int | np.integer | None = None,

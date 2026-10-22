@@ -5,7 +5,14 @@ from typing import Any
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.figure import Figure
+from scipy import ndimage
 from scipy.interpolate import RegularGridInterpolator as RGI
+
+from plotastrodata._type_utils import BeamInput, RealScalar, _normalize_float
+from plotastrodata._validation_utils import (
+    _is_uniform_spacing,
+    _require_positive_real_scalar,
+)
 
 
 def isdeg(s: Any) -> bool:
@@ -347,3 +354,203 @@ def close_figure(fig: Figure,
     if show:
         plt.show()
     plt.close(fig)
+
+
+def _validate_range_inputs(data: np.ndarray, x: np.ndarray, y: np.ndarray,
+                           v: np.ndarray | None
+                           ) -> tuple[np.ndarray,
+                                      np.ndarray,
+                                      np.ndarray | None]:
+    """Validate data and coordinates and return the coordinate arrays.
+
+    Preserve array dtypes and leave all inputs unchanged. Reject unsuitable
+    dimensions, coordinates, and image/cube velocity arguments.
+    """
+    if not isinstance(data, np.ndarray):
+        raise TypeError('data must be a NumPy array.')
+    if (data.ndim not in (2, 3) or data.dtype.kind not in 'iuf'
+            or any(length < 2 for length in data.shape)):
+        raise ValueError('data must be a real 2D or 3D array with at least'
+                         + ' two samples on every axis.')
+    x, y = np.asarray(x), np.asarray(y)
+    axes = [(x, data.shape[-1], 'x'), (y, data.shape[-2], 'y')]
+    if data.ndim == 3:
+        if v is None:
+            raise ValueError('v is required for a cube.')
+        v = np.asarray(v)
+        axes.append((v, data.shape[0], 'v'))
+    elif v is not None:
+        raise ValueError('v must be omitted for a 2D image.')
+    for coordinate, length, name in axes:
+        if (coordinate.ndim != 1 or len(coordinate) != length
+                or coordinate.dtype.kind not in 'iuf'
+                or not np.all(np.isfinite(coordinate))):
+            raise ValueError(f'{name} must be a finite real 1D coordinate array'
+                             + ' matching its data axis.')
+        steps = np.diff(coordinate)
+        if steps[0] == 0 or not _is_uniform_spacing(steps, steps[0]):
+            raise ValueError(f'{name} must have nonzero uniform spacing.')
+    return x, y, v
+
+
+def _get_minarea_margin(
+        beam: BeamInput | tuple[RealScalar | None, RealScalar | None] | None,
+        dx: RealScalar, dy: RealScalar) -> tuple[RealScalar, RealScalar]:
+    """Return minimum spatial footprint in pixels and spatial margin.
+
+    Use a Gaussian beam area and the larger FWHM when beam lengths are
+    provided, otherwise one pixel. Either missing length selects pixel-based
+    defaults. Reject malformed shapes and invalid supplied lengths when both
+    lengths are present; PA is unused. Internal numeric precision is retained.
+    """
+    min_area_pixels = 1
+    spatial_margin = max(dx, dy)
+    if beam is not None:
+        sizes = np.asarray(beam)
+        if sizes.ndim != 1 or sizes.size not in (2, 3):
+            raise ValueError('beam must contain [major, minor]'
+                             + ' or [major, minor, pa].')
+        if any(size is None for size in sizes[:2]):
+            return min_area_pixels, spatial_margin
+        for size in beam[:2]:
+            _require_positive_real_scalar(size, 'beam FWHM')
+        min_area_pixels = np.ceil(np.pi * sizes[0] * sizes[1]
+                                  / (4 * np.log(2) * dx * dy))
+        spatial_margin = max(sizes[:2])
+
+    return min_area_pixels, spatial_margin
+
+
+def _find_emission_bounds(data: np.ndarray, sigma: RealScalar,
+                          min_area_pixels: RealScalar
+                          ) -> tuple[slice, ...] | None:
+    """Return union bounding slices for qualified emission, or None.
+
+    Keep all face-connected 3-sigma components with a 5-sigma seed and the
+    minimum projected spatial footprint. Cubes also require two adjacent
+    channels. Input arrays are not modified.
+    """
+    structure = ndimage.generate_binary_structure(data.ndim, 1)
+    mask = np.isfinite(data) & (data >= 3 * sigma)
+    labels, _ = ndimage.label(mask, structure=structure)
+    del mask
+    lower = list(data.shape)
+    upper = [0] * data.ndim
+    found = False
+    for component_id, region in enumerate(ndimage.find_objects(labels), start=1):
+        if region is None:
+            continue
+        component = labels[region] == component_id
+        if not np.any((data[region] >= 5 * sigma) & component):
+            continue
+        if data.ndim == 3:
+            if region[0].stop - region[0].start < 2:
+                continue
+            spatial = np.any(component, axis=0)
+        else:
+            spatial = component
+        if np.count_nonzero(spatial) < min_area_pixels:
+            continue
+        found = True
+        for axis, extent in enumerate(region):
+            lower[axis] = min(lower[axis], extent.start)
+            upper[axis] = max(upper[axis], extent.stop)
+
+    if not found:
+        return None
+    return tuple(slice(lo, hi) for lo, hi in zip(lower, upper))
+
+
+def _estimate_ranges(data: np.ndarray, x: np.ndarray, y: np.ndarray,
+                     sigma: RealScalar, *, v: np.ndarray | None = None,
+                     min_area_pixels: RealScalar, spatial_margin: RealScalar,
+                     ) -> tuple[float | np.longdouble,
+                                float | np.longdouble | None,
+                                float | np.longdouble | None]:
+    """Estimate spatial and velocity limits from positive emission.
+
+    Inputs and their array dtypes are unchanged. Thresholds assume a zero
+    noise baseline; subtract a fitted noise mean beforehand if appropriate.
+    The caller must validate data and coordinates with _validate_range_inputs
+    and calculate min_area_pixels and spatial_margin with _get_minarea_margin.
+    This function validates sigma, but does not fit noise or apply a PB.
+
+    Args:
+        data (np.ndarray): Real image (ny, nx) or cube (nchan, ny, nx)
+            with approximately uniform noise. Nonfinite values are excluded
+            from detection. Each axis requires at least two samples.
+        x (np.ndarray): Finite, uniformly spaced 1D x offsets from the
+            intended center, matching the spatial data axis. May descend.
+        y (np.ndarray): Finite, uniformly spaced 1D y offsets from the
+            intended center, matching the spatial data axis. May descend.
+        sigma (int or float or np.integer or np.floating): Finite positive
+            scalar noise level in the data units. Booleans are rejected.
+        v (np.ndarray, optional): Finite, uniformly spaced channel
+            coordinates. Required for cubes and omitted for images.
+            At least two channels are needed; may descend. Defaults to None.
+        min_area_pixels (int or float or np.integer or np.floating): Minimum
+            projected spatial footprint in pixels, calculated by the caller.
+        spatial_margin (int or float or np.integer or np.floating): Spatial
+            margin in the units of x and y, calculated by the caller.
+
+    Returns:
+        tuple: (rmax, vmin, vmax). Spatial limits use the units of x and y;
+        velocity limits use those of v and are returned in ascending order.
+        An image returns None for both velocity limits. Computed scalars
+        are Python floats, except np.longdouble results retain extended
+        precision.
+
+    Raises:
+        ValueError: sigma is unsuitable, or no sufficiently large centered
+            finite region remains.
+    """
+    _require_positive_real_scalar(sigma, 'sigma')
+    dx, dy = abs(x[1] - x[0]), abs(y[1] - y[0])
+
+    full_radius = max((abs(x[0]) + abs(x[-1]) + dx) / 2,
+                      (abs(y[0]) + abs(y[-1]) + dy) / 2)
+    available_radius = _get_valid_radius(data, x, y, full_radius)
+    bounds = _find_emission_bounds(data, sigma, min_area_pixels)
+    rmax = available_radius
+    if bounds is not None:
+        rx = (abs(x[bounds[-1].start]) + abs(x[bounds[-1].stop - 1])) / 2
+        ry = (abs(y[bounds[-2].start]) + abs(y[bounds[-2].stop - 1])) / 2
+        rmax = min(max(rx, ry) + spatial_margin, available_radius)
+    rmax = _normalize_float(rmax, force_float=True)
+    if v is None:
+        return rmax, None, None
+    first = max(bounds[0].start - 2, 0) if bounds is not None else 0
+    last = (min(bounds[0].stop + 1, len(v) - 1)
+            if bounds is not None else len(v) - 1)
+    return (rmax,
+            _normalize_float(min(v[first], v[last]), force_float=True),
+            _normalize_float(max(v[first], v[last]), force_float=True))
+
+
+def _get_valid_radius(data: np.ndarray, x: np.ndarray, y: np.ndarray,
+                      rmax: RealScalar
+                      ) -> float | np.longdouble:
+    """Reduce a half-width to exclude nonfinite pixels, with a pixel margin.
+
+    data contains one 2D image or 3D cube with spatial coordinates.
+    rmax uses the same spatial units. For cubes, a spatial pixel is invalid
+    if any channel is nonfinite. Return the half-width as a Python float,
+    preserving np.longdouble results as an
+    extended-precision exception; emission-size selection is left to the caller.
+    Raise ValueError if no sufficiently large centered finite region remains.
+    """
+    if data.ndim == 2:
+        valid = np.isfinite(data)
+    else:
+        valid = np.ones(data.shape[-2:], dtype=bool)
+        for channel in data:
+            valid &= np.isfinite(channel)
+    invalid_y, invalid_x = np.nonzero(~valid)
+    if invalid_x.size:
+        nearest_invalid = np.min(np.maximum(np.abs(x[invalid_x]),
+                                            np.abs(y[invalid_y])))
+        margin = max(abs(x[1] - x[0]), abs(y[1] - y[0]))
+        rmax = min(rmax, nearest_invalid - margin)
+        if not np.isfinite(rmax) or rmax <= margin:
+            raise ValueError('No centered finite spatial region large enough.')
+    return _normalize_float(rmax, force_float=True)
