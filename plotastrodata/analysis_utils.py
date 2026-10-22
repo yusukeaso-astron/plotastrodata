@@ -707,24 +707,24 @@ class AstroData():
         if dataformask is None:
             dataformask = self.data
         if len(includepix) not in [0, 2] or len(excludepix) not in [0, 2]:
-            raise ValueError(
-                'includepix and excludepix must be empty or [min, max].')
+            raise ValueError('includepix and excludepix must be empty'
+                             + ' or [min, max].')
         if np.ndim(self.data) > np.ndim(dataformask):
             print('The mask is broadcasted.')
             try:
                 mask = np.broadcast_to(dataformask, np.shape(self.data))
             except ValueError as exc:
-                raise ValueError(
-                    'dataformask must be broadcastable to the data shape; '
-                    f'got {np.shape(dataformask)} and {np.shape(self.data)}.'
-                ) from exc
+                raise ValueError('dataformask must be broadcastable'
+                                 ' to the data shape;'
+                                 + f' got {np.shape(dataformask)}'
+                                 + f' and {np.shape(self.data)}.') from exc
         else:
             mask = dataformask
         if np.shape(self.data) != np.shape(mask):
-            raise ValueError(
-                'dataformask must have the same shape as data after '
-                f'broadcasting; got {np.shape(dataformask)} and '
-                f'{np.shape(self.data)}.')
+            raise ValueError('dataformask must have the same shape as data'
+                             + ' after broadcasting;'
+                             + f' got {np.shape(dataformask)}'
+                             + f' and {np.shape(self.data)}.')
 
         if ((len(includepix) == 2 or len(excludepix) == 2)
                 and self.data.dtype.kind in 'biu'):
