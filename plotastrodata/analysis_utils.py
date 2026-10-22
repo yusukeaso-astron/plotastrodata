@@ -738,16 +738,15 @@ class AstroData():
                ) -> None:
         self.mom0 = np.nansum(self.data, axis=0) * self.dv
         self.sigma_mom0 = np.sqrt(len(self.v)) * self.sigma * self.dv
-        v = self.v[:, None, None]
         w = np.where(self.data < threshold_cube * self.sigma, 0, self.data)
         sum = np.nansum(w, axis=0)
+        w = np.where(sum == 0, 0, w / sum)
         mask = self.mom0 < (threshold_mom0 * self.sigma_mom0)
 
-        def wmean(v):
-            m = np.where(sum == 0, 0, np.nansum(w * v, axis=0) / sum)
-            m[mask] = np.nan
-            return m
+        def wmean(x):
+            return np.where(mask, np.nan, np.nansum(w * x, axis=0))
 
+        v = self.v[:, None, None]
         self.mom1 = wmean(v)
         self.mom2 = np.sqrt(wmean((v - self.mom1)**2))
 
