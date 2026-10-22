@@ -734,6 +734,23 @@ class AstroData():
         if len(excludepix) == 2:
             self.data[(excludepix[0] < mask) * (mask < excludepix[1])] = np.nan
 
+    def moment(self, threshold_cube: float = 3, threshold_mom0: float = 3,
+               ) -> None:
+        self.mom0 = np.nansum(self.data, axis=0) * self.dv
+        self.sigma_mom0 = np.sqrt(len(self.v)) * self.sigma * self.dv
+        v = self.v[:, None, None]
+        w = np.where(self.data < threshold_cube * self.sigma, 0, self.data)
+        sum = np.nansum(w, axis=0)
+        mask = self.mom0 < (threshold_mom0 * self.sigma_mom0)
+
+        def wmean(v):
+            m = np.where(sum == 0, 0, np.nansum(w * v, axis=0) / sum)
+            m[mask] = np.nan
+            return m
+
+        self.mom1 = wmean(v)
+        self.mom2 = np.sqrt(wmean((v - self.mom1)**2))
+
     def _gfit_profile(self, prof: np.ndarray, gaussfit: bool
                       ) -> dict[str, list[np.ndarray]]:
         if not gaussfit:
