@@ -734,11 +734,15 @@ class AstroData():
         if len(excludepix) == 2:
             self.data[(excludepix[0] < mask) * (mask < excludepix[1])] = np.nan
 
-    def moment(self, threshold_cube: float = 3, threshold_mom0: float = 3,
+    def moment(self, vmask: np.bool_ | None = None,
+               threshold_cube: float = 3, threshold_mom0: float = 3
                ) -> None:
-        self.mom0 = np.nansum(self.data, axis=0) * self.dv
-        self.sigma_mom0 = np.sqrt(len(self.v)) * self.sigma * self.dv
-        w = np.where(self.data < threshold_cube * self.sigma, 0, self.data)
+        if vmask is None:
+            vmask = np.ones_like(self.v).astype(bool)
+        data = self.data * vmask[:, None, None]
+        self.mom0 = np.nansum(data, axis=0) * self.dv
+        self.sigma_mom0 = np.sqrt(len(self.v[vmask])) * self.sigma * self.dv
+        w = np.where(data < threshold_cube * self.sigma, 0, data)
         sum = np.nansum(w, axis=0)
         w = np.where(sum == 0, 0, w / sum)
         mask = self.mom0 < (threshold_mom0 * self.sigma_mom0)
