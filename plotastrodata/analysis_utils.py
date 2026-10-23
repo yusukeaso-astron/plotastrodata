@@ -25,6 +25,7 @@ from plotastrodata._type_utils import (
 from plotastrodata._validation_utils import (
     _is_finite_real_scalar,
     _is_positive_real_scalar,
+    _is_uniform_spacing,
     _is_zero_dimensional_array,
     _require_integer,
     _require_positive_real_scalar,
@@ -734,25 +735,113 @@ class AstroData():
         if len(excludepix) == 2:
             self.data[(excludepix[0] < mask) * (mask < excludepix[1])] = np.nan
 
-    def moment(self, vmask: np.bool_ | None = None,
-               threshold_cube: float = 3, threshold_mom0: float = 3
-               ) -> None:
-        if vmask is None:
-            vmask = np.ones_like(self.v).astype(bool)
-        data = self.data * vmask[:, None, None]
-        self.mom0 = np.nansum(data, axis=0) * self.dv
-        self.sigma_mom0 = np.sqrt(len(self.v[vmask])) * self.sigma * self.dv
-        w = np.where(data < threshold_cube * self.sigma, 0, data)
-        sum = np.nansum(w, axis=0)
-        w = np.where(sum == 0, 0, w / sum)
-        mask = self.mom0 < (threshold_mom0 * self.sigma_mom0)
+    def moment(self, vmask: np.ndarray | None = None,
+               threshold_cube: RealScalar = 3,
+               threshold_mom0: RealScalar = 3) -> None:
+        """Store integrated intensity, mean velocity, and velocity dispersion.
 
-        def wmean(x):
+        Uses the current data axis order (v, y, x), including after a
+        swapped read. Requires a nonempty real 3D cube, a finite 1D velocity
+        grid matching its first axis, finite positive scalar sigma, and
+        finite nonzero scalar dv. Multiple channels must be uniformly
+        spaced with spacing magnitude abs(dv) (relative tolerance 1e-5).
+        NaNs in the cube are ignored; infinities are rejected.
+
+        Args:
+            vmask (np.ndarray or None, optional): 1D Boolean array with one
+                entry per channel. True selects a channel. None selects all
+                channels; at least one must be selected.
+            threshold_cube (RealScalar, optional): Finite nonnegative noise
+                multiple used to select intensities for moments 1 and 2.
+                Values equal to the threshold survive. Defaults to 3.
+            threshold_mom0 (RealScalar, optional): Finite nonnegative
+                multiple of sigma_mom0 below which moments 1 and 2 are
+                masked. Values equal to the threshold survive. Defaults to 3.
+                Both thresholds accept Python/NumPy real scalars, excluding
+                booleans and arrays.
+
+        Returns:
+            None: Stores mom0, mom1, and mom2 as (y, x) NumPy arrays.
+            mom0 sums selected intensities times abs(dv), without cube
+            thresholding. mom1 is the intensity-weighted velocity; mom2 is
+            the weighted standard deviation, not FWHM. Both are NaN where
+            mom0 fails its threshold or no positive weight survives.
+            All-NaN spectra have mom0=0. sigma_mom0 is
+            sqrt(number of selected channels) * sigma * abs(dv), assuming
+            independent channel noise, even where data are NaN. It is a
+            Python float, except np.longdouble retains extended precision.
+            mom0 and sigma_mom0 use intensity times velocity units; mom1
+            and mom2 use the units of v. Input arrays are not modified.
+
+        Raises:
+            TypeError: data, v, or a supplied vmask is not a NumPy array.
+            ValueError: Shapes, numeric values, channel selection, noise,
+                spacing, or thresholds do not satisfy the requirements.
+        """
+        if not isinstance(self.data, np.ndarray):
+            raise TypeError('moment requires data to be a NumPy array.')
+        if (self.data.ndim != 3 or 0 in self.data.shape
+                or self.data.dtype.kind not in 'iuf'
+                or np.any(np.isinf(self.data))):
+            raise ValueError('moment requires a nonempty real 3D cube'
+                             + ' without infinities.')
+        if not isinstance(self.v, np.ndarray):
+            raise TypeError('moment requires v to be a NumPy array.')
+        if (self.v.ndim != 1 or self.v.size != self.data.shape[0]
+                or self.v.dtype.kind not in 'iuf'
+                or not np.all(np.isfinite(self.v))):
+            raise ValueError('v must be a finite real 1D grid matching'
+                             + ' the number of channels.')
+        if not _is_positive_real_scalar(self.sigma):
+            raise ValueError('moment requires finite positive scalar sigma.')
+        if not _is_finite_real_scalar(self.dv) or self.dv == 0:
+            raise ValueError('moment requires finite nonzero scalar dv.')
+        if self.v.size > 1:
+            steps = np.diff(self.v.astype(np.result_type(self.v.dtype, float)))
+            if (not (np.all(steps > 0) or np.all(steps < 0))
+                    or not _is_uniform_spacing(steps, steps[0])
+                    or not _is_uniform_spacing(np.abs(steps), abs(self.dv))):
+                raise ValueError('v must be monotonic and uniformly spaced'
+                                 + ' with spacing magnitude abs(dv).')
+        for name, value in (('threshold_cube', threshold_cube),
+                            ('threshold_mom0', threshold_mom0)):
+            if not _is_finite_real_scalar(value) or value < 0:
+                raise ValueError(f'{name} must be a finite nonnegative'
+                                 + ' real scalar.')
+        if vmask is None:
+            vmask = np.ones(self.v.size, dtype=bool)
+        elif not isinstance(vmask, np.ndarray):
+            raise TypeError('vmask must be a NumPy Boolean array or None.')
+        if (vmask.dtype.kind != 'b' or vmask.shape != self.v.shape
+                or not np.any(vmask)):
+            raise ValueError('vmask must be a 1D Boolean array matching v'
+                             + ' and selecting at least one channel.')
+
+        data = np.where(vmask[:, None, None], self.data, 0)
+        dv = abs(self.dv)
+        mom0 = np.nansum(data, axis=0) * dv
+        sigma_mom0 = np.sqrt(np.count_nonzero(vmask)) * self.sigma * dv
+        if (isinstance(self.sigma, np.longdouble)
+            or isinstance(dv, np.longdouble)):
+            sigma_mom0 = np.longdouble(sigma_mom0)
+        sigma_mom0 = _normalize_float(sigma_mom0)
+        w = np.where(data >= threshold_cube * self.sigma, data, 0)
+        total = np.sum(w, axis=0)
+        w = np.divide(w, total,
+                      out=np.zeros_like(w, dtype=np.result_type(w, float)),
+                      where=total > 0)
+        mask = (mom0 < threshold_mom0 * sigma_mom0) | (total <= 0)
+
+        def wmean(x: np.ndarray) -> np.ndarray:
             return np.where(mask, np.nan, np.nansum(w * x, axis=0))
 
         v = self.v[:, None, None]
-        self.mom1 = wmean(v)
-        self.mom2 = np.sqrt(wmean((v - self.mom1)**2))
+        mom1 = wmean(v)
+        mom2 = np.sqrt(wmean((v - mom1)**2))
+        self.mom0: np.ndarray = mom0
+        self.mom1: np.ndarray = mom1
+        self.mom2: np.ndarray = mom2
+        self.sigma_mom0: float | np.longdouble = sigma_mom0
 
     def _gfit_profile(self, prof: np.ndarray, gaussfit: bool
                       ) -> dict[str, list[np.ndarray]]:
