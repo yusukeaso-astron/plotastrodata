@@ -77,7 +77,10 @@ with three significant digits for editing.
 For a spectral cube, use `generate_cube_script("cube.fits", output="cube.py")`
 from the same module. It generates an edge-channel noise visualization, a flux-integrated line
 profile and 3D channel maps over estimated spatial and velocity ranges,
-with intrinsic channel spacing. The flux profile assumes Jy/beam data with beam metadata.
+with intrinsic channel spacing. Two further single-panel figures show moments
+1 and 2 in linear colors with moment-0 contours and colorbar ticks to one
+decimal place; moment 1 uses a blue-red colormap. The moments use the shared crop and are saved as
+`<script stem>_mom1.png` and `<script stem>_mom2.png`. The flux profile assumes Jy/beam data with beam metadata.
 Noise and range estimation in both generators assume PB-corrected intensities.
 Both generators return an absolute pathlib.Path and write the script
 without executing it.

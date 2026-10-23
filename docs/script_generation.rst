@@ -98,8 +98,8 @@ Cube scripts
 ------------
 
 ``plotastrodata.script_utils.generate_cube_script`` writes a noise
-visualization, an integrated line profile, and 3D channel maps using the
-corresponding sections of ``example.py``:
+visualization, an integrated line profile, 3D channel maps, and two
+moment-map figures. The profile and channel maps follow the corresponding sections of ``example.py``:
 
 .. code-block:: python
 
@@ -141,14 +141,14 @@ The profile and channel-map sections use the existing plotting functions:
    from plotastrodata.plot_utils import PlotAstroData, plotprofile
 
    # Line profile
-   d_profile = AstroData(**d.todict())
-   f_profile = AstroFrame(
+   d_crop = AstroData(**d.todict())
+   f_crop = AstroFrame(
        rmax=3.0,  # Estimated spatial half-width (arcsec); adjust as needed.
        vmin=1.0, vmax=8.0,  # Estimated velocity range (km/s); adjust as needed.
    )
-   f_profile.read(d_profile)
-   plotprofile(**d_profile.todict(), xlist=[0], ylist=[0],
-               ellipse=[4 * f_profile.rmax, 4 * f_profile.rmax, 0],  # Circle enclosing the cropped square.
+   f_crop.read(d_crop)
+   plotprofile(**d_crop.todict(), xlist=[0], ylist=[0],
+               ellipse=[4 * f_crop.rmax, 4 * f_crop.rmax, 0],  # Circle enclosing the cropped square.
                flux=True,
                savefig="cube_profile.png",
                show=False,
@@ -177,6 +177,32 @@ velocity labels, fonts, beam, and contour levels. No grid, title, or
 annotation overlays are added. Figures plot the original PB-corrected data
 about the FITS reference center. Multiple channel-map pages are saved as
 cube_0.png, cube_1.png, and so on; one page is saved as cube.png.
+
+After the channel maps, ``d_crop.moment(threshold_cube=3, threshold_mom0=3)``
+calculates moments over the crop frame's spatial and velocity ranges.
+Edit the frame to change those ranges and the two noise multiples to change
+the moment masks. The existing ``AstroData.moment`` method supplies ``mom0``,
+``mom1``, ``mom2``, and ``sigma_mom0``; no separate moment calculation is
+implemented in the generated script. After calculation, ``d_crop.v`` is
+set to ``None`` for 2D plotting. Each figure first sets
+``d_crop.data = d_crop.mom0`` and ``d_crop.sigma = d_crop.sigma_mom0`` for
+its contours, then sets ``data`` to ``mom1`` or ``mom2`` and ``sigma=None``
+for its colors. Both calls use ``**d_crop.todict()``. Finally,
+``d_crop.data`` references the 2D ``mom2`` array, and ``sigma`` and ``v``
+are ``None``. The moment arrays remain available on the object, and the
+original cube ``d`` is unchanged. ``moment`` returns ``None``; its stored
+``sigma_mom0`` is a Python float, except ``np.longdouble`` retains extended
+precision. Array results keep their computed NumPy dtypes.
+
+Two separate single-panel figures show moment 1 and moment 2 in linear
+colors, each overlaid with moment-0 contours at
+``[3, 6, 12, 24, 48, 96] * sigma_mom0``. Moment 1 uses ``cmap="RdBu_r"``;
+moment 2 keeps the default colormap. Both have RA/Dec axes and the default
+fonts and beam, with ``cbformat="%.1f"``. They are saved beside the script as
+``<script stem>_mom1.png`` and ``<script stem>_mom2.png``, with ``show=False``.
+``sigma_mom0`` is the method's estimate of
+``sigma * abs(dv) * sqrt(number of selected channels)``; no error figure is
+added.
 
 The generator returns an absolute pathlib.Path and writes absolute input
 and figure paths in the script. It accepts only the input

@@ -158,7 +158,7 @@ p.savefig({str(output.with_suffix('.png'))!r}, show=False)
 def generate_cube_script(fitsimage: str | Path,
                          output: str | Path | None = None,
                          *, overwrite: bool = False) -> Path:
-    """Write noise, integrated line-profile, and 3D channel-map plotting code.
+    """Write noise, line-profile, channel-map, and moment-map plotting code.
 
     Use the existing AstroData, AstroFrame, Noise, plotprofile, and
     PlotAstroData APIs, following the line-profile and 3D channel-map
@@ -217,11 +217,26 @@ def generate_cube_script(fitsimage: str | Path,
         PB-corrected data about the FITS reference center. The generated
         noise visualization still uses the full spatial footprint.
 
-        The script sets stretch='log' and show=False, with default fonts,
+        Channel maps use stretch='log' and show=False, with default fonts,
         beams, contours, and channel layout. Edit these choices directly.
         Channel-map pages are saved beside the script as <script stem>.png;
         multiple pages receive _0, _1, ... suffixes before .png, following
         PlotAstroData.savefig. Existing figures may be overwritten.
+
+        After channel maps, the cropped cube calls AstroData.moment
+        with 3-sigma cube and integrated-intensity thresholds. Two separate
+        figures show moments 1 and 2 with linear colors and moment-0 contours
+        at [3, 6, 12, 24, 48, 96] times sigma_mom0. Moment 1 uses a blue-red
+        colormap; both colorbars use cbformat='%.1f'. They are saved as
+        <script stem>_mom1.png and
+        <script stem>_mom2.png beside the script. Moment ranges follow the
+        crop frame; changing that frame changes the moment calculation.
+        After calculation, d_crop is reused as a 2D image: data and sigma
+        are replaced for each contour/color call through d_crop.todict().
+        The moment arrays remain NumPy arrays, and sigma_mom0 is a Python
+        float except that np.longdouble retains extended precision. The
+        final data is the mom2 array, sigma is None, and v is None. The
+        original cube d is unchanged.
     """
     if not isinstance(overwrite, bool):
         raise TypeError('overwrite must be a boolean.')
@@ -256,13 +271,13 @@ n.plot_histogram(savefig={str(output.with_name(output.stem + '_noise.png'))!r}, 
 d.sigma = n.std  # A float number in the data unit is acceptable.
 
 # Line profile
-d_profile = AstroData(**d.todict())
-f_profile = AstroFrame(rmax={rmax!r},  # Estimated spatial half-width (arcsec); adjust as needed.
+d_crop = AstroData(**d.todict())
+f_crop = AstroFrame(rmax={rmax!r},  # Estimated spatial half-width (arcsec); adjust as needed.
                        vmin={vmin!r}, vmax={vmax!r},  # Estimated velocity range (km/s); adjust as needed.
                        )
-f_profile.read(d_profile)
-plotprofile(**d_profile.todict(), xlist=[0], ylist=[0],
-            ellipse=[4 * f_profile.rmax, 4 * f_profile.rmax, 0],  # Circle enclosing the cropped square.
+f_crop.read(d_crop)
+plotprofile(**d_crop.todict(), xlist=[0], ylist=[0],
+            ellipse=[4 * f_crop.rmax, 4 * f_crop.rmax, 0],  # Circle enclosing the cropped square.
             flux=True,
             savefig={str(output.with_name(output.stem + '_profile.png'))!r},
             show=False,
@@ -277,6 +292,34 @@ p.add_color(**d.todict(), stretch='log')
 p.add_contour(**d.todict(), colors='r')
 p.set_axis()
 p.savefig({str(output.with_suffix('.png'))!r}, show=False)
+
+# Moment maps over the crop frame's spatial and velocity ranges
+d_crop.moment(threshold_cube=3, threshold_mom0=3)  # Noise multiples; adjust as needed.
+d_crop.v = None  # The moment maps are 2D images.
+
+# Moment 1 with moment-0 contours
+p = PlotAstroData(rmax=f_crop.rmax, center=d_crop.center)
+d_crop.data = d_crop.mom0
+d_crop.sigma = d_crop.sigma_mom0  # sigma * abs(dv) * sqrt(number of channels).
+p.add_contour(**d_crop.todict(), levels=[3, 6, 12, 24, 48, 96], colors='k')
+d_crop.data = d_crop.mom1
+d_crop.sigma = None
+p.add_color(**d_crop.todict(), stretch='linear', cmap='RdBu_r', cbformat='%.1f',
+            cblabel=r'Moment 1 (km s$^{{-1}}$)')
+p.set_axis_radec(nticksminor=5)
+p.savefig({str(output.with_name(output.stem + '_mom1.png'))!r}, show=False)
+
+# Moment 2 with moment-0 contours
+p = PlotAstroData(rmax=f_crop.rmax, center=d_crop.center)
+d_crop.data = d_crop.mom0
+d_crop.sigma = d_crop.sigma_mom0  # sigma * abs(dv) * sqrt(number of channels).
+p.add_contour(**d_crop.todict(), levels=[3, 6, 12, 24, 48, 96], colors='k')
+d_crop.data = d_crop.mom2
+d_crop.sigma = None
+p.add_color(**d_crop.todict(), stretch='linear', cbformat='%.1f',
+            cblabel=r'Moment 2 (km s$^{{-1}}$)')
+p.set_axis_radec(nticksminor=5)
+p.savefig({str(output.with_name(output.stem + '_mom2.png'))!r}, show=False)
 """
     _write_script(source, output, overwrite=overwrite)
     return output
