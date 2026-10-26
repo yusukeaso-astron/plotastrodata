@@ -50,33 +50,54 @@ def _inputs(file_list: Sequence[PathInput], output_file: PathInput,
         raise ValueError(f'output_file must end in {suffix}')
     if any(output.resolve() == f.resolve() for f in files):
         raise ValueError('output_file must differ from every input file')
-    rows = (len(files) + columns - 1) // columns
-    scales: list[RealScalar] = [1.0] * len(files)
-    if scale_factors is not None:
-        values = list(scale_factors)
-        if not values:
-            raise ValueError('scale_factors must not be empty')
-        if all(isinstance(v, RealScalar) for v in values):
-            if len(values) != len(files):
-                raise ValueError('flat scale_factors must have one value per input')
-            for value in values:
-                _require_positive_real_scalar(value, 'scale factor')
-            scales = values
-        else:
-            if len(values) > rows:
-                raise ValueError('too many scale-factor rows')
-            for r, row in enumerate(values):
-                if isinstance(row, (str, bytes)) or isinstance(row, RealScalar):
-                    raise ValueError('scale_factors must be flat numbers or a nested grid')
-                row = list(row)
-                if len(row) > columns:
-                    raise ValueError('too many scale-factor columns')
-                for c, value in enumerate(row):
-                    _require_positive_real_scalar(value, 'scale factor')
-                    index = r * columns + c
-                    if index < len(files):
-                        scales[index] = value
+    scales = _scale_factors(scale_factors, len(files), int(columns))
     return files, output, int(columns), int(padding), scales
+
+
+def _grid_scales(values: Sequence[Sequence[RealScalar]], item_count: int,
+                 columns: int) -> list[RealScalar]:
+    """Flatten a partial scale grid, validating even unused final-row cells.
+
+    Missing entries default to 1.0; supplied real scalar precision is retained.
+    """
+    rows = (item_count + columns - 1) // columns
+    if len(values) > rows:
+        raise ValueError('too many scale-factor rows')
+    scales: list[RealScalar] = [1.0] * item_count
+    for r, row in enumerate(values):
+        if isinstance(row, (str, bytes)) or isinstance(row, RealScalar):
+            raise ValueError('scale_factors must be flat numbers'
+                             + ' or a nested grid')
+        row = list(row)
+        if len(row) > columns:
+            raise ValueError('too many scale-factor columns')
+        for c, value in enumerate(row):
+            _require_positive_real_scalar(value, 'scale factor')
+            index = r * columns + c
+            if index < item_count:
+                scales[index] = value
+    return scales
+
+
+def _scale_factors(scale_factors: ScaleInput, item_count: int,
+                   columns: int) -> list[RealScalar]:
+    """Validate flat or nested factors and return one scale per input.
+
+    None gives unit scales. Flat sequences require exactly item_count values;
+    nested grids may omit entries. Preserve supplied scalar precision.
+    """
+    if scale_factors is None:
+        return [1.0] * item_count
+    values = list(scale_factors)
+    if not values:
+        raise ValueError('scale_factors must not be empty')
+    if all(isinstance(v, RealScalar) for v in values):
+        if len(values) != item_count:
+            raise ValueError('flat scale_factors must have one value per input')
+        for value in values:
+            _require_positive_real_scalar(value, 'scale factor')
+        return values
+    return _grid_scales(values, item_count, columns)
 
 
 def _layout(sizes: Sequence[tuple[RealScalar, RealScalar]], columns: int,
