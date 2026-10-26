@@ -9,6 +9,7 @@ pillow
 plotly
 ptemcee
 pydantic >= 2
+pypdf >= 6.21.2
 scikit-image
 scipy
 sphinx-rtd-theme

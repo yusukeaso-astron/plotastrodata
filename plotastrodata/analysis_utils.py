@@ -42,6 +42,69 @@ from plotastrodata.other_utils import (
 )
 
 
+def _validate_moment_cube(data: np.ndarray, v: np.ndarray,
+                          sigma: RealScalar, dv: RealScalar) -> None:
+    """Validate a moment cube and its velocity/noise metadata without coercion.
+
+    Preserve input arrays and numerical precision. NaNs in data are allowed,
+    but reject infinities, unsuitable shapes, noise, and velocity spacing.
+    """
+    if not isinstance(data, np.ndarray):
+        raise TypeError('moment requires data to be a NumPy array.')
+    if (data.ndim != 3 or 0 in data.shape
+            or data.dtype.kind not in 'iuf'
+            or np.any(np.isinf(data))):
+        raise ValueError('moment requires a nonempty real 3D cube'
+                         + ' without infinities.')
+    if not isinstance(v, np.ndarray):
+        raise TypeError('moment requires v to be a NumPy array.')
+    if (v.ndim != 1 or v.size != data.shape[0]
+            or v.dtype.kind not in 'iuf'
+            or not np.all(np.isfinite(v))):
+        raise ValueError('v must be a finite real 1D grid matching'
+                         + ' the number of channels.')
+    if not _is_positive_real_scalar(sigma):
+        raise ValueError('moment requires finite positive scalar sigma.')
+    if not _is_finite_real_scalar(dv) or dv == 0:
+        raise ValueError('moment requires finite nonzero scalar dv.')
+    if v.size > 1:
+        steps = np.diff(v.astype(np.result_type(v.dtype, float)))
+        if (not (np.all(steps > 0) or np.all(steps < 0))
+                or not _is_uniform_spacing(steps, steps[0])
+                or not _is_uniform_spacing(np.abs(steps), abs(dv))):
+            raise ValueError('v must be monotonic and uniformly spaced'
+                             + ' with spacing magnitude abs(dv).')
+
+
+def _validate_moment_inputs(data: np.ndarray, v: np.ndarray,
+                            sigma: RealScalar, dv: RealScalar,
+                            vmask: np.ndarray | None,
+                            threshold_cube: RealScalar,
+                            threshold_mom0: RealScalar) -> np.ndarray:
+    """Validate moment inputs and return a nonempty Boolean channel mask.
+
+    Check the cube before thresholds and selection, preserving validation
+    order and error messages. Return a supplied mask unchanged, or a new
+    all-True mask when omitted. Inputs and their dtypes are unchanged.
+    """
+    _validate_moment_cube(data, v, sigma, dv)
+    for name, value in (('threshold_cube', threshold_cube),
+                        ('threshold_mom0', threshold_mom0)):
+        if not _is_finite_real_scalar(value) or value < 0:
+            raise ValueError(f'{name} must be a finite nonnegative'
+                             + ' real scalar.')
+    if vmask is None:
+        vmask = np.ones(v.size, dtype=bool)
+    elif not isinstance(vmask, np.ndarray):
+        raise TypeError('vmask must be a NumPy Boolean array or None.')
+    if (vmask.dtype.kind != 'b' or vmask.shape != v.shape
+            or not np.any(vmask)):
+        raise ValueError('vmask must be a 1D Boolean array matching v'
+                         + ' and selecting at least one channel.')
+
+    return vmask
+
+
 def _profile_ellipses(ellipse: Any, nprof: int) -> np.ndarray:
     """Prepare one ellipse per profile without changing supplied array dtypes."""
     if ellipse is None:
@@ -778,51 +841,14 @@ class AstroData():
             ValueError: Shapes, numeric values, channel selection, noise,
                 spacing, or thresholds do not satisfy the requirements.
         """
-        if not isinstance(self.data, np.ndarray):
-            raise TypeError('moment requires data to be a NumPy array.')
-        if (self.data.ndim != 3 or 0 in self.data.shape
-                or self.data.dtype.kind not in 'iuf'
-                or np.any(np.isinf(self.data))):
-            raise ValueError('moment requires a nonempty real 3D cube'
-                             + ' without infinities.')
-        if not isinstance(self.v, np.ndarray):
-            raise TypeError('moment requires v to be a NumPy array.')
-        if (self.v.ndim != 1 or self.v.size != self.data.shape[0]
-                or self.v.dtype.kind not in 'iuf'
-                or not np.all(np.isfinite(self.v))):
-            raise ValueError('v must be a finite real 1D grid matching'
-                             + ' the number of channels.')
-        if not _is_positive_real_scalar(self.sigma):
-            raise ValueError('moment requires finite positive scalar sigma.')
-        if not _is_finite_real_scalar(self.dv) or self.dv == 0:
-            raise ValueError('moment requires finite nonzero scalar dv.')
-        if self.v.size > 1:
-            steps = np.diff(self.v.astype(np.result_type(self.v.dtype, float)))
-            if (not (np.all(steps > 0) or np.all(steps < 0))
-                    or not _is_uniform_spacing(steps, steps[0])
-                    or not _is_uniform_spacing(np.abs(steps), abs(self.dv))):
-                raise ValueError('v must be monotonic and uniformly spaced'
-                                 + ' with spacing magnitude abs(dv).')
-        for name, value in (('threshold_cube', threshold_cube),
-                            ('threshold_mom0', threshold_mom0)):
-            if not _is_finite_real_scalar(value) or value < 0:
-                raise ValueError(f'{name} must be a finite nonnegative'
-                                 + ' real scalar.')
-        if vmask is None:
-            vmask = np.ones(self.v.size, dtype=bool)
-        elif not isinstance(vmask, np.ndarray):
-            raise TypeError('vmask must be a NumPy Boolean array or None.')
-        if (vmask.dtype.kind != 'b' or vmask.shape != self.v.shape
-                or not np.any(vmask)):
-            raise ValueError('vmask must be a 1D Boolean array matching v'
-                             + ' and selecting at least one channel.')
-
+        vmask = _validate_moment_inputs(self.data, self.v, self.sigma, self.dv,
+                                        vmask, threshold_cube, threshold_mom0)
         data = np.where(vmask[:, None, None], self.data, 0)
         dv = abs(self.dv)
         mom0 = np.nansum(data, axis=0) * dv
         sigma_mom0 = np.sqrt(np.count_nonzero(vmask)) * self.sigma * dv
         if (isinstance(self.sigma, np.longdouble)
-            or isinstance(dv, np.longdouble)):
+                or isinstance(dv, np.longdouble)):
             sigma_mom0 = np.longdouble(sigma_mom0)
         sigma_mom0 = _normalize_float(sigma_mom0)
         w = np.where(data >= threshold_cube * self.sigma, data, 0)
