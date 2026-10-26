@@ -124,11 +124,11 @@ Pillow and pypdf are installed with plotastrodata.
 * ffmpeg (only for movie)
 * matplotlib
 * numpy >= 2.0
-* pillow (for RGB figures and PNG grids)
+* pillow (only for RGB figures and PNG grids)
 * plotly (only for html cube)
 * ptemcee (only for fitting)
 * pydantic >= 2
-* pypdf >= 6.21.2 (for PDF grids)
+* pypdf >= 6.21.2 (only for PDF grids)
 * scikit-image (only for html cube)
 * scipy
 * tqdm (only for fitting)
