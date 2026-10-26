@@ -95,6 +95,25 @@ PB correction. The array-based function is `noise_utils.estimate_ranges`,
 with the same `pbcor` option and optional `sigma`. Here, `rmax` is a symmetric
 spatial half-width; 2D images return `None` for both velocity limits.
 
+## Combining saved figures
+
+Use `concat_pngs` or `concat_pdfs` to place saved figures in a grid:
+
+```python
+from plotastrodata.pngpdf_utils import concat_pngs, concat_pdfs
+
+concat_pngs(["a.png", "b.png"], "grid.png", columns=2, padding=10)
+concat_pdfs(["a.pdf", "b.pdf"], "grid.pdf", columns=2, padding=10)
+```
+
+Both use direct scaling, whole-unit rounding, and centered placement. Padding
+is measured in pixels for PNG and points for PDF; PNG DPI metadata is ignored.
+Matching numeric source dimensions produce matching grid geometry. Optional
+`scale_factors` accepts one multiplier per input or a nested grid with missing
+entries defaulting to 1. PDF grids use only the first page of each unencrypted
+input and preserve vector content. PNG supports transparent backgrounds.
+Pillow and pypdf are installed with plotastrodata.
+
 ## Requirement
 
 * Python >= 3.11
@@ -105,10 +124,11 @@ spatial half-width; 2D images return `None` for both velocity limits.
 * ffmpeg (only for movie)
 * matplotlib
 * numpy >= 2.0
-* pillow (only for RGB figures)
+* pillow (for RGB figures and PNG grids)
 * plotly (only for html cube)
 * ptemcee (only for fitting)
 * pydantic >= 2
+* pypdf >= 6.21.2 (for PDF grids)
 * scikit-image (only for html cube)
 * scipy
 * tqdm (only for fitting)

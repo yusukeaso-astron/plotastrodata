@@ -2773,7 +2773,8 @@ def plot3d(levels: RealSequence = (3, 6, 12),
         import plotly.graph_objs as go
         from skimage import measure
     except ImportError as exc:
-        raise ImportError('plot3d() requires plotly and scikit-image.') from exc
+        raise ImportError('plot3d() requires plotly and'
+                          + ' scikit-image.') from exc
     d = kwargs2instance(AstroData, kwargs)
     f.read(d, xskip, yskip)
     cube = _prepare_surface_cube(d)

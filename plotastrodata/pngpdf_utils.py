@@ -1,7 +1,7 @@
 """Compose PNG images or first PDF pages using the same grid geometry.
 
 Sizes are rounded to whole layout units (pixels for PNG, points for PDF).
-PDF composition requires pypdf; it is imported only when used.
+PDF composition uses the required pypdf dependency, imported only when used.
 """
 from contextlib import ExitStack
 from os import PathLike
@@ -119,11 +119,11 @@ def _layout(sizes: Sequence[tuple[RealScalar, RealScalar]], columns: int,
 
 
 def concat_pngs(file_list: Sequence[PathInput], output_file: PathInput,
-                columns: int,  padding: int = 0, *,
+                columns: int, padding: RealScalar = 0, *,
                 scale_factors: ScaleInput = None,
                 background: tuple[int, int, int, int]
                 | tuple[int, int, int] | str = 'white',
-                resample: Image.Resampling = Image.Resampling.LANCZOS
+                resample: Image.Resampling | int = Image.Resampling.LANCZOS
                 ) -> None:
     """Concatenate PNG images into one grid PNG.
 
@@ -139,8 +139,8 @@ def concat_pngs(file_list: Sequence[PathInput], output_file: PathInput,
         output_file (PathInput): Output path ending in .png. Must differ
             from every input path.
         columns (int): Positive number of grid columns.
-        padding (int, optional): Nonnegative space between neighboring
-            cells, in pixels. Defaults to 0.
+        padding (RealScalar, optional): Finite nonnegative whole-number
+            space between neighboring cells, in pixels. Defaults to 0.
         scale_factors (ScaleInput, optional): Positive finite multipliers,
             given as a flat sequence with one value per image or a nested
             grid. Missing grid entries default to 1.0. Unused final-row
@@ -149,7 +149,7 @@ def concat_pngs(file_list: Sequence[PathInput], output_file: PathInput,
         background (tuple[int, int, int, int] | tuple[int, int, int] | str,
             optional): Canvas color. Use (255, 255, 255, 0) for transparent
             output. Defaults to 'white'.
-        resample (Image.Resampling, optional): Resizing filter. Defaults
+        resample (Image.Resampling | int, optional): Resizing filter. Defaults
             to Image.Resampling.LANCZOS.
 
     Returns:
@@ -174,7 +174,7 @@ def concat_pngs(file_list: Sequence[PathInput], output_file: PathInput,
 
 
 def concat_pdfs(file_list: Sequence[PathInput], output_file: PathInput,
-                columns: int, padding: int = 0, *,
+                columns: int, padding: RealScalar = 0, *,
                 scale_factors: ScaleInput = None) -> None:
     """Concatenate the first page of each PDF into one grid PDF page.
 
@@ -186,7 +186,6 @@ def concat_pdfs(file_list: Sequence[PathInput], output_file: PathInput,
     crop-box offsets are normalized before placement. The background is
     unpainted, and interactive annotations are omitted.
     All readers and streams are closed, including on failure.
-    Requires pypdf (``pip install pypdf``).
 
     Args:
         file_list (Sequence[PathInput]): Input paths to unencrypted PDFs
@@ -195,8 +194,8 @@ def concat_pdfs(file_list: Sequence[PathInput], output_file: PathInput,
         output_file (PathInput): Output path ending in .pdf. Must differ
             from every input path.
         columns (int): Positive number of grid columns.
-        padding (int, optional): Nonnegative space between neighboring
-            cells, in PDF points. Defaults to 0.
+        padding (RealScalar, optional): Finite nonnegative whole-number
+            space between neighboring cells, in PDF points. Defaults to 0.
         scale_factors (ScaleInput, optional): Positive finite multipliers,
             given as a flat sequence with one value per PDF or a nested
             grid. Missing grid entries default to 1.0. Unused final-row
@@ -211,8 +210,7 @@ def concat_pdfs(file_list: Sequence[PathInput], output_file: PathInput,
     try:
         from pypdf import PdfReader, PdfWriter, Transformation
     except ImportError as exc:
-        raise ImportError('PDF composition requires pypdf:'
-                          + ' pip install pypdf') from exc
+        raise ImportError('concat_pdfs() requires pypdf.') from exc
     with ExitStack() as stack:
         pages = []
         source_writer = PdfWriter()
