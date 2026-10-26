@@ -107,6 +107,12 @@ plotastrodata.script\_utils module
    :members:
    :show-inheritance:
 
+plotastrodata.pngpdf\_utils module
+---------------------------------
+
+.. automodule:: plotastrodata.pngpdf_utils
+   :members:
+
 Module contents
 ---------------
 
