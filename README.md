@@ -130,7 +130,7 @@ these libraries are needed only for those features.
 * ffmpeg (only for movie)
 * matplotlib
 * numpy >= 2.0
-* pillow (only for RGB figures and PNG grids)
+* pillow
 * plotly (only for html cube)
 * ptemcee (only for fitting)
 * pydantic >= 2
