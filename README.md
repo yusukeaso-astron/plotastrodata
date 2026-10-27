@@ -116,6 +116,12 @@ Pillow and pypdf are installed with plotastrodata.
 
 ## Requirement
 
+The fitting libraries below are installed by default, but imported only when
+the corresponding feature is used: emcee for ordinary MCMC, ptemcee for
+parallel tempering, corner for corner plots, dynesty for nested sampling,
+and tqdm for fitting progress bars. When using the source directory directly,
+these libraries are needed only for those features.
+
 * Python >= 3.11
 * astropy >= 7.2
 * corner (only for fitting)

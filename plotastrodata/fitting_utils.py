@@ -1,22 +1,38 @@
+"""Fitting utilities with sampling dependencies loaded on demand."""
+
+from __future__ import annotations
+
 import pickle
 import warnings
 from functools import partial
+from importlib import import_module
 from multiprocessing import Pool
-from typing import Any, Callable
+from types import ModuleType
+from typing import TYPE_CHECKING, Any, Callable
 
-import corner
-import emcee
 import matplotlib.pyplot as plt
 import numpy as np
-import ptemcee
-from dynesty import DynamicNestedSampler as DNS
 from matplotlib.figure import Figure
-from tqdm import tqdm
 
 from plotastrodata._type_utils import _normalize_float
 from plotastrodata._validation_utils import _require_integer
 from plotastrodata.matrix_utils import Mrot, dot2d
 from plotastrodata.other_utils import close_figure
+
+if TYPE_CHECKING:
+    import emcee
+    import ptemcee
+
+
+def _import_fitting_package(name: str) -> ModuleType:
+    """Import a selected dependency without masking broken installations."""
+    try:
+        return import_module(name)
+    except ModuleNotFoundError as exc:
+        if exc.name != name:
+            raise
+        raise ImportError(f'This fitting feature requires {name}.') from exc
+
 
 global_bounds = None
 bar = None
@@ -35,39 +51,6 @@ def _validate_mcmc_run(nwalkersperdim: int | np.integer,
     for name, value in (('ntemps', ntemps), ('ntry', ntry), ('ncores', ncores)):
         _require_integer(value, name)
     _require_integer(nwalkersperdim, 'nwalkersperdim', minimum=2)
-
-
-class _PTSampler(ptemcee.Sampler):
-    """Support ptemcee 1.0's sampler on NumPy without the np.float alias.
-
-    Only reset and likelihood evaluation need the obsolete alias. Keep
-    their behavior while using float for the sampler's float64 buffers.
-    """
-
-    def reset(self, random=None, betas=None, time=None) -> None:
-        """Clear stored samples, counters, and current sampling state."""
-        for name in ('_chain', '_logposterior', '_loglikelihood',
-                     '_beta_history', '_p0', '_logposterior0',
-                     '_loglikelihood0'):
-            setattr(self, name, None)
-        self._time = 0 if time is None else time
-        if betas is not None:
-            self._betas = betas
-        if random is not None:
-            self._random = random
-        self.nswap = np.zeros(self.ntemps, dtype=float)
-        self.nswap_accepted = np.zeros(self.ntemps, dtype=float)
-        self.nprop = np.zeros((self.ntemps, self.nwalkers), dtype=float)
-        self.nprop_accepted = np.zeros_like(self.nprop)
-
-    def _evaluate(self, ps: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-        """Evaluate likelihood and prior for every temperature and walker."""
-        map_function = map if self.pool is None else self.pool.map
-        results = list(map_function(self._likeprior,
-                                    ps.reshape((-1, self.dim))))
-        values = np.asarray(results, dtype=float)
-        shape = (self.ntemps, -1)
-        return values[:, 0].reshape(shape), values[:, 1].reshape(shape)
 
 
 def _gaussian_log_likelihood(x: np.ndarray, model: Callable,
@@ -229,6 +212,9 @@ class EmceeCorner():
                      ) -> ptemcee.Sampler | emcee.EnsembleSampler:
         """Create and run the sampler, then return it."""
         if pt:
+            _import_fitting_package("ptemcee")
+            from plotastrodata._ptemcee_compat import _PTSampler
+
             sampler_cls = _PTSampler
             sampler_kwargs = {'ntemps': ntemps,
                               'nwalkers': nwalkers, 'dim': self.dim,
@@ -238,11 +224,12 @@ class EmceeCorner():
                 try:
                     pickle.dumps(self.logl)
                 except (pickle.PicklingError, AttributeError, TypeError) as exc:
-                    raise TypeError(
-                        'logl and model must be pickleable when ncores > 1. '
-                        'Define them at module scope instead of inside another '
-                        'function.') from exc
+                    raise TypeError('logl and model must be pickleable'
+                                    + ' when ncores > 1. Define them'
+                                    + ' at module scope instead of inside'
+                                    + ' another function.') from exc
 
+            emcee = _import_fitting_package("emcee")
             sampler_cls = emcee.EnsembleSampler
             sampler_kwargs = {'nwalkers': nwalkers, 'ndim': self.dim,
                               'log_prob_fn': _bounded_log_probability,
@@ -298,10 +285,11 @@ class EmceeCorner():
             pos0: np.ndarray | None = None,
             savechain: str | None = None, ncores: int | np.integer = 1,
             grcheck: bool = False, pt: bool = False) -> None:
-        """Perform a Markov Chain Monte Carlo (MCMC) fitting process
-        using the ptemcee library, which is a parallel tempering version
-        of the emcee package, and make a corner plot of the samples
-        using the corner package.
+        """Perform MCMC fitting with emcee, or ptemcee for parallel tempering.
+
+        The selected sampler is imported only when used. tqdm is required
+        only when progressbar=True. Plot samples separately with plotcorner,
+        which loads corner on demand.
 
         All run counts must be Python or NumPy integers; booleans and
         floating values (even integral ones) and arrays, including 0D, are
@@ -345,6 +333,7 @@ class EmceeCorner():
         active_bar = None
         try:
             if global_progressbar:
+                tqdm = _import_fitting_package("tqdm").tqdm
                 total = ntry * ntemps * nwalkers * (nsteps + 1) // ncores
                 active_bar = bar = tqdm(total=total)
                 active_bar.set_description('Within the ranges')
@@ -377,7 +366,7 @@ class EmceeCorner():
                    | np.ndarray | None = None,
                    savefig: dict | str | None = None,
                    show: bool = False) -> None:
-        """Make the corner plot from self.samples.
+        """Make the corner plot from self.samples, loading corner on demand.
 
         Args:
             labels (list, optional): Labels for the corner plot.
@@ -390,6 +379,7 @@ class EmceeCorner():
             show (bool, optional): True means doing plt.show(). Defaults
                 to False.
         """
+        corner = _import_fitting_package("corner")
         if labels is None:
             labels = [f'Par {i:d}' for i in range(self.dim)]
         if cornerrange is None:
@@ -638,6 +628,8 @@ class EmceeCorner():
         nested sampling through dynesty. Evidence and error are Python
         floats unless extended-precision scalar results must be preserved.
         """
+        DNS = _import_fitting_package("dynesty").DynamicNestedSampler
+
         def prior_transform(u: np.ndarray) -> np.ndarray:
             b0 = self.bounds[:, 0]
             b1 = self.bounds[:, 1]
