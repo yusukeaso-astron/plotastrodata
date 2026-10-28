@@ -184,19 +184,25 @@ def concat_pngs(file_list: Sequence[PathInput], output_file: PathInput,
             source = stack.enter_context(Image.open(filename))
             if source.format != 'PNG':
                 raise ValueError(f'Input is not PNG: {filename}')
-            images.append(stack.enter_context(source.convert('RGBA')))
+            image = (source if source.mode == 'RGBA' else
+                     stack.enter_context(source.convert('RGBA')))
+            images.append(image)
         sizes = [im.size for im in images]
         size, cells = _layout(sizes, columns, padding, scales)
         canvas = stack.enter_context(Image.new('RGBA', size, background))
         for image, (x, y, w, h) in zip(images, cells):
-            with image.resize((w, h), resample=resample) as resized:
-                canvas.alpha_composite(resized, dest=(x, y))
+            if image.size == (w, h):
+                canvas.alpha_composite(image, dest=(x, y))
+            else:
+                with image.resize((w, h), resample=resample) as resized:
+                    canvas.alpha_composite(resized, dest=(x, y))
         canvas.save(output, format='PNG')
 
 
 def concat_pdfs(file_list: Sequence[PathInput], output_file: PathInput,
                 columns: int, padding: RealScalar = 0, *,
-                scale_factors: ScaleInput = None) -> None:
+                scale_factors: ScaleInput = None,
+                parsing_budget: int | None = None) -> None:
     """Concatenate the first page of each PDF into one grid PDF page.
 
     Uses the same direct scaling, whole-unit rounding, row/column sizing,
@@ -222,20 +228,32 @@ def concat_pdfs(file_list: Sequence[PathInput], output_file: PathInput,
             grid. Missing grid entries default to 1.0. Unused final-row
             entries are validated but have no effect. Defaults to None,
             which uses 1.0 for every PDF.
+        parsing_budget (int | None, optional): Positive maximum parsing
+            work per PDF content stream, counting operators, operands, and
+            nested elements. Increase this for dense vector plots that raise
+            pypdf.errors.LimitReachedError, for example to 10000000.
+            Larger budgets can require more memory and processing time.
+            Defaults to None, preserving the current pypdf configuration.
+            An explicit budget applies only during this call; the previous
+            configuration is restored on success or failure.
 
     Returns:
         None: The composed page is saved to output_file.
     """
     files, output, columns, padding, scales = _inputs(
         file_list, output_file, columns, padding, scale_factors, '.pdf')
+    if parsing_budget is not None:
+        _require_integer(parsing_budget, 'parsing_budget')
     try:
-        from pypdf import PdfReader, PdfWriter, Transformation
+        from pypdf import (PdfReader, PdfWriter, Transformation,
+                           apply_configuration)
     except ImportError as exc:
         raise ImportError('concat_pdfs() requires pypdf.') from exc
     with ExitStack() as stack:
+        if parsing_budget is not None:
+            stack.enter_context(apply_configuration(
+                stream_parsing_work_maximum_count=int(parsing_budget)))
         pages = []
-        source_writer = PdfWriter()
-        stack.callback(source_writer.close)
         for filename in files:
             stream = stack.enter_context(filename.open('rb'))
             reader = PdfReader(stream)
@@ -244,8 +262,13 @@ def concat_pdfs(file_list: Sequence[PathInput], output_file: PathInput,
                 raise ValueError(f'Encrypted PDF is unsupported: {filename}')
             if not reader.pages:
                 raise ValueError(f'PDF has no pages: {filename}')
-            page = source_writer.add_page(reader.pages[0])
-            page.transfer_rotation_to_content()
+            page = reader.pages[0]
+            page.pop('/Annots', None)
+            if page.rotation:
+                # Only rotation rewriting needs a separate writer-owned page.
+                source_writer = stack.enter_context(PdfWriter())
+                page = source_writer.add_page(page)
+                page.transfer_rotation_to_content()
             pages.append(page)
         sizes = [(float(p.cropbox.width), float(p.cropbox.height))
                  for p in pages]
@@ -261,7 +284,6 @@ def concat_pdfs(file_list: Sequence[PathInput], output_file: PathInput,
             dy = (h - float(box.height) * scale) / 2
             transform = (Transformation().translate(-float(box.left), -float(box.bottom))
                          .scale(scale).translate(x + dx, size[1] - y - h + dy))
-            page.pop('/Annots', None)
             canvas.merge_transformed_page(page, transform, expand=False)
         with output.open('wb') as stream:
             writer.write(stream)
