@@ -6,7 +6,7 @@ PDF composition uses the required pypdf dependency, imported only when used.
 from contextlib import ExitStack
 from os import PathLike
 from pathlib import Path
-from typing import Sequence
+from typing import TYPE_CHECKING, Sequence
 
 from PIL import Image
 
@@ -17,6 +17,11 @@ from plotastrodata._validation_utils import (
     _require_integer,
     _require_positive_real_scalar,
 )
+
+
+if TYPE_CHECKING:
+    from pypdf import PageObject, PdfWriter
+    from pypdf.generic import IndirectObject
 
 
 PathInput = str | PathLike[str]
@@ -199,10 +204,119 @@ def concat_pngs(file_list: Sequence[PathInput], output_file: PathInput,
         canvas.save(output, format='PNG')
 
 
+def _pdf_form(page: "PageObject", writer: "PdfWriter"
+              ) -> tuple["IndirectObject", tuple[float, float]]:
+    """Copy a page into a clipped Form XObject without parsing its operators.
+
+    Keep resources and the page transparency group local to the form. Its
+    matrix normalizes crop offsets and clockwise page rotation. Return the
+    writer-owned form reference and its visible width/height in layout units.
+    Stream decoding and resource cloning still use pypdf's normal limits.
+    """
+    from pypdf import Transformation
+    from pypdf.generic import (
+        ArrayObject, DecodedStreamObject, DictionaryObject, FloatObject,
+        NameObject, NullObject, NumberObject, RectangleObject,
+    )
+
+    box = page.cropbox
+    left, bottom, right, top = map(float, box)
+    if not all(_is_finite_real_scalar(v) for v in box):
+        raise ValueError('PDF crop box must contain finite coordinates')
+    if right <= left or top <= bottom:
+        raise ValueError('PDF crop box must have positive width and height')
+    # Exact right-angle coefficients avoid numerical drift from trigonometry.
+    matrices = {0: (1, 0, 0, 1, 0, 0), 90: (0, -1, 1, 0, 0, 0),
+                180: (-1, 0, 0, -1, 0, 0), 270: (0, 1, -1, 0, 0, 0)}
+    rotation = page.rotation % 360
+    if rotation not in matrices:
+        raise ValueError('PDF page rotation must be a multiple of 90 degrees')
+    transform = Transformation(matrices[rotation])
+    corners = [transform.apply_on(point) for point in
+               ((left, bottom), (left, top), (right, bottom), (right, top))]
+    xs, ys = zip(*corners)
+    transform = transform.translate(-min(xs), -min(ys))
+    size = (float(max(xs) - min(xs)), float(max(ys) - min(ys)))
+
+    contents = page.get('/Contents')
+    contents = contents.get_object() if contents is not None else None
+    streams = contents if isinstance(contents, ArrayObject) else [contents]
+    data = b'\n'.join(stream.get_object().get_data() for stream in streams
+                      if stream is not None
+                      and not isinstance(stream.get_object(), NullObject))
+    form = DecodedStreamObject()
+    form.set_data(data)
+    form.update({NameObject('/Type'): NameObject('/XObject'),
+                 NameObject('/Subtype'): NameObject('/Form'),
+                 NameObject('/FormType'): NumberObject(1),
+                 NameObject('/BBox'): RectangleObject(box),
+                 NameObject('/Matrix'): ArrayObject(
+                     [FloatObject(v) for v in transform.ctm]),
+                 NameObject('/Resources'): page.get(
+                     '/Resources', DictionaryObject()).clone(writer)})
+    if '/Group' in page:
+        form[NameObject('/Group')] = page['/Group'].clone(writer)
+    # pypdf has no public writer method to register a new arbitrary stream.
+    return writer._add_object(form.flate_encode()), size
+
+
+def _read_pdf_form(filename: Path, writer: "PdfWriter"
+                   ) -> tuple["IndirectObject", tuple[float, float]]:
+    """Read and clone the first page, closing its input before returning.
+
+    Add the source path to failures while preserving their exception type.
+    """
+    from pypdf import PdfReader
+
+    try:
+        with filename.open('rb') as stream:
+            reader = PdfReader(stream)
+            try:
+                if reader.is_encrypted:
+                    raise ValueError('Encrypted PDF is unsupported')
+                if not reader.pages:
+                    raise ValueError('PDF has no pages')
+                return _pdf_form(reader.pages[0], writer)
+            finally:
+                reader.close()
+    except Exception as exc:
+        exc.add_note(f'PDF input: {filename}')
+        raise
+
+
+def _place_pdf_forms(writer: "PdfWriter", forms: Sequence["IndirectObject"],
+                     sizes: Sequence[tuple[float, float]],
+                     canvas_size: tuple[int, int],
+                     cells: Sequence[tuple[int, int, int, int]]) -> None:
+    """Place forms with short drawing commands, retaining their aspect ratios."""
+    from pypdf.generic import (
+        DecodedStreamObject, DictionaryObject, FloatObject, NameObject,
+    )
+
+    canvas = writer.add_blank_page(width=canvas_size[0], height=canvas_size[1])
+    xobjects = DictionaryObject()
+    commands = []
+    for i, (form, (width, height), (x, y, w, h)) in enumerate(
+            zip(forms, sizes, cells)):
+        scale = min(w / width, h / height)
+        dx = x + (w - width * scale) / 2
+        dy = canvas_size[1] - y - h + (h - height * scale) / 2
+        name = NameObject(f'/Figure{i}')
+        xobjects[name] = form
+        # Use pypdf's PDF number formatting, including small nonzero values.
+        numbers = [FloatObject(v).myrepr() for v in (scale, dx, dy)]
+        commands.append(f'q {numbers[0]} 0 0 {numbers[0]} '
+                        f'{numbers[1]} {numbers[2]} cm {name} Do Q\n')
+    canvas[NameObject('/Resources')] = DictionaryObject(
+        {NameObject('/XObject'): xobjects})
+    contents = DecodedStreamObject()
+    contents.set_data(''.join(commands).encode('ascii'))
+    canvas[NameObject('/Contents')] = writer._add_object(contents)
+
+
 def concat_pdfs(file_list: Sequence[PathInput], output_file: PathInput,
                 columns: int, padding: RealScalar = 0, *,
-                scale_factors: ScaleInput = None,
-                parsing_budget: int | None = None) -> None:
+                scale_factors: ScaleInput = None) -> None:
     """Concatenate the first page of each PDF into one grid PDF page.
 
     Uses the same direct scaling, whole-unit rounding, row/column sizing,
@@ -210,9 +324,11 @@ def concat_pdfs(file_list: Sequence[PathInput], output_file: PathInput,
     Matching numeric source dimensions give matching grid geometry; PNG DPI
     metadata is ignored. PDF content preserves its aspect ratio within the
     rounded cells. Text and vectors remain PDF content. Page rotations and
-    crop-box offsets are normalized before placement. The background is
+    crop-box offsets are handled by form matrices. Page content is embedded
+    without parsing individual drawing operators. The background is
     unpainted, and interactive annotations are omitted.
-    All readers and streams are closed, including on failure.
+    All readers and streams are closed, including on failure. Input read
+    and embedding errors include the source path in an exception note.
 
     Args:
         file_list (Sequence[PathInput]): Input paths to unencrypted PDFs
@@ -228,62 +344,23 @@ def concat_pdfs(file_list: Sequence[PathInput], output_file: PathInput,
             grid. Missing grid entries default to 1.0. Unused final-row
             entries are validated but have no effect. Defaults to None,
             which uses 1.0 for every PDF.
-        parsing_budget (int | None, optional): Positive maximum parsing
-            work per PDF content stream, counting operators, operands, and
-            nested elements. Increase this for dense vector plots that raise
-            pypdf.errors.LimitReachedError, for example to 10000000.
-            Larger budgets can require more memory and processing time.
-            Defaults to None, preserving the current pypdf configuration.
-            An explicit budget applies only during this call; the previous
-            configuration is restored on success or failure.
 
     Returns:
         None: The composed page is saved to output_file.
     """
     files, output, columns, padding, scales = _inputs(
         file_list, output_file, columns, padding, scale_factors, '.pdf')
-    if parsing_budget is not None:
-        _require_integer(parsing_budget, 'parsing_budget')
     try:
-        from pypdf import (PdfReader, PdfWriter, Transformation,
-                           apply_configuration)
+        from pypdf import PdfWriter
     except ImportError as exc:
         raise ImportError('concat_pdfs() requires pypdf.') from exc
-    with ExitStack() as stack:
-        if parsing_budget is not None:
-            stack.enter_context(apply_configuration(
-                stream_parsing_work_maximum_count=int(parsing_budget)))
-        pages = []
+    with PdfWriter() as writer:
+        forms, sizes = [], []
         for filename in files:
-            stream = stack.enter_context(filename.open('rb'))
-            reader = PdfReader(stream)
-            stack.callback(reader.close)
-            if reader.is_encrypted:
-                raise ValueError(f'Encrypted PDF is unsupported: {filename}')
-            if not reader.pages:
-                raise ValueError(f'PDF has no pages: {filename}')
-            page = reader.pages[0]
-            page.pop('/Annots', None)
-            if page.rotation:
-                # Only rotation rewriting needs a separate writer-owned page.
-                source_writer = stack.enter_context(PdfWriter())
-                page = source_writer.add_page(page)
-                page.transfer_rotation_to_content()
-            pages.append(page)
-        sizes = [(float(p.cropbox.width), float(p.cropbox.height))
-                 for p in pages]
-        size, cells = _layout(sizes, columns, padding, scales)
-        writer = PdfWriter()
-        stack.callback(writer.close)
-        canvas = writer.add_blank_page(width=size[0], height=size[1])
-        for page, (x, y, w, h) in zip(pages, cells):
-            box = page.cropbox
-            # Fit uniformly into the rounded rectangle; retain vector aspect ratio.
-            scale = min(w / float(box.width), h / float(box.height))
-            dx = (w - float(box.width) * scale) / 2
-            dy = (h - float(box.height) * scale) / 2
-            transform = (Transformation().translate(-float(box.left), -float(box.bottom))
-                         .scale(scale).translate(x + dx, size[1] - y - h + dy))
-            canvas.merge_transformed_page(page, transform, expand=False)
+            form, size = _read_pdf_form(filename, writer)
+            forms.append(form)
+            sizes.append(size)
+        canvas_size, cells = _layout(sizes, columns, padding, scales)
+        _place_pdf_forms(writer, forms, sizes, canvas_size, cells)
         with output.open('wb') as stream:
             writer.write(stream)
