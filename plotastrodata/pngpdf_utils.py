@@ -21,7 +21,7 @@ from plotastrodata._validation_utils import (
 
 if TYPE_CHECKING:
     from pypdf import PageObject, PdfWriter
-    from pypdf.generic import IndirectObject
+    from pypdf.generic import IndirectObject, StreamObject
 
 
 PathInput = str | PathLike[str]
@@ -48,15 +48,18 @@ def _inputs(file_list: Sequence[PathInput], output_file: PathInput,
     _require_integer(columns, 'columns')
     if not _is_finite_real_scalar(padding) or padding < 0:
         raise ValueError('padding must be a finite nonnegative real scalar')
-    if padding != int(padding):
+    integer_padding = int(padding)
+    if padding != integer_padding:
         raise ValueError('padding must be a whole number of layout units')
     output = Path(output_file)
     if output.suffix.lower() != suffix:
         raise ValueError(f'output_file must end in {suffix}')
-    if any(output.resolve() == f.resolve() for f in files):
+    resolved_output = output.resolve()
+    if any(resolved_output == f.resolve() for f in files):
         raise ValueError('output_file must differ from every input file')
-    scales = _scale_factors(scale_factors, len(files), int(columns))
-    return files, output, int(columns), int(padding), scales
+    columns = int(columns)
+    scales = _scale_factors(scale_factors, len(files), columns)
+    return files, output, columns, integer_padding, scales
 
 
 def _grid_scales(values: Sequence[Sequence[RealScalar]], item_count: int,
@@ -120,11 +123,11 @@ def _layout(sizes: Sequence[tuple[RealScalar, RealScalar]], columns: int,
     widths, heights = [0] * columns, [0] * rows
     drawn = []
     for i, ((w, h), scale) in enumerate(zip(sizes, scales)):
+        dw, dh = w * scale, h * scale
         if not all(_is_positive_real_scalar(v)
-                   for v in (w, h, w * scale, h * scale)):
+                   for v in (w, h, dw, dh)):
             raise ValueError('input and scaled dimensions must be'
                              + ' positive and finite')
-        dw, dh = w * scale, h * scale
         cw, ch = max(1, round(dw)), max(1, round(dh))
         drawn.append((cw, ch))
         widths[i % columns] = max(widths[i % columns], cw)
@@ -204,6 +207,33 @@ def concat_pngs(file_list: Sequence[PathInput], output_file: PathInput,
         canvas.save(output, format='PNG')
 
 
+def _pdf_form_stream(page: "PageObject", writer: "PdfWriter") -> "StreamObject":
+    """Copy a single content stream with its original encoding untouched.
+
+    Separate copies allow pages sharing a stream to have different form
+    geometry and resources. Multiple streams must be joined in sequence to
+    preserve graphics state; that fallback still uses pypdf's decode limits.
+    """
+    from pypdf.generic import ArrayObject, DecodedStreamObject, NullObject
+
+    contents = page.get('/Contents')
+    contents = contents.get_object() if contents is not None else None
+    entries = contents if isinstance(contents, ArrayObject) else [contents]
+    streams = []
+    for entry in entries:
+        stream = entry.get_object() if entry is not None else None
+        if stream is not None and not isinstance(stream, NullObject):
+            streams.append(stream)
+    if len(streams) == 1:
+        return streams[0].clone(writer, force_duplicate=True)
+    form = DecodedStreamObject()
+    if not streams:
+        form.set_data(b'')
+        return form
+    form.set_data(b'\n'.join(stream.get_data() for stream in streams))
+    return form.flate_encode()
+
+
 def _pdf_form(page: "PageObject", writer: "PdfWriter"
               ) -> tuple["IndirectObject", tuple[float, float]]:
     """Copy a page into a clipped Form XObject without parsing its operators.
@@ -211,12 +241,12 @@ def _pdf_form(page: "PageObject", writer: "PdfWriter"
     Keep resources and the page transparency group local to the form. Its
     matrix normalizes crop offsets and clockwise page rotation. Return the
     writer-owned form reference and its visible width/height in layout units.
-    Stream decoding and resource cloning still use pypdf's normal limits.
+    Single content streams retain their encoding without decompression.
+    Multiple streams and resource cloning still use pypdf's normal limits.
     """
-    from pypdf import Transformation
     from pypdf.generic import (
-        ArrayObject, DecodedStreamObject, DictionaryObject, FloatObject,
-        NameObject, NullObject, NumberObject, RectangleObject,
+        ArrayObject, DictionaryObject, FloatObject,
+        NameObject, NumberObject, RectangleObject,
     )
 
     box = page.cropbox
@@ -226,38 +256,30 @@ def _pdf_form(page: "PageObject", writer: "PdfWriter"
     if right <= left or top <= bottom:
         raise ValueError('PDF crop box must have positive width and height')
     # Exact right-angle coefficients avoid numerical drift from trigonometry.
-    matrices = {0: (1, 0, 0, 1, 0, 0), 90: (0, -1, 1, 0, 0, 0),
-                180: (-1, 0, 0, -1, 0, 0), 270: (0, 1, -1, 0, 0, 0)}
+    matrices = {0: (1, 0, 0, 1, -left, -bottom),
+                90: (0, -1, 1, 0, -bottom, right),
+                180: (-1, 0, 0, -1, right, top),
+                270: (0, 1, -1, 0, top, -left)}
     rotation = page.rotation % 360
     if rotation not in matrices:
         raise ValueError('PDF page rotation must be a multiple of 90 degrees')
-    transform = Transformation(matrices[rotation])
-    corners = [transform.apply_on(point) for point in
-               ((left, bottom), (left, top), (right, bottom), (right, top))]
-    xs, ys = zip(*corners)
-    transform = transform.translate(-min(xs), -min(ys))
-    size = (float(max(xs) - min(xs)), float(max(ys) - min(ys)))
+    size = (right - left, top - bottom)
+    if rotation in (90, 270):
+        size = size[::-1]
 
-    contents = page.get('/Contents')
-    contents = contents.get_object() if contents is not None else None
-    streams = contents if isinstance(contents, ArrayObject) else [contents]
-    data = b'\n'.join(stream.get_object().get_data() for stream in streams
-                      if stream is not None
-                      and not isinstance(stream.get_object(), NullObject))
-    form = DecodedStreamObject()
-    form.set_data(data)
+    form = _pdf_form_stream(page, writer)
     form.update({NameObject('/Type'): NameObject('/XObject'),
                  NameObject('/Subtype'): NameObject('/Form'),
                  NameObject('/FormType'): NumberObject(1),
                  NameObject('/BBox'): RectangleObject(box),
                  NameObject('/Matrix'): ArrayObject(
-                     [FloatObject(v) for v in transform.ctm]),
+                     [FloatObject(v) for v in matrices[rotation]]),
                  NameObject('/Resources'): page.get(
                      '/Resources', DictionaryObject()).clone(writer)})
     if '/Group' in page:
         form[NameObject('/Group')] = page['/Group'].clone(writer)
     # pypdf has no public writer method to register a new arbitrary stream.
-    return writer._add_object(form.flate_encode()), size
+    return writer._add_object(form), size
 
 
 def _read_pdf_form(filename: Path, writer: "PdfWriter"
@@ -325,7 +347,9 @@ def concat_pdfs(file_list: Sequence[PathInput], output_file: PathInput,
     metadata is ignored. PDF content preserves its aspect ratio within the
     rounded cells. Text and vectors remain PDF content. Page rotations and
     crop-box offsets are handled by form matrices. Page content is embedded
-    without parsing individual drawing operators. The background is
+    without parsing individual drawing operators. Single content streams
+    retain their original encoding without decompression; multiple streams
+    are decoded and joined while preserving graphics state. The background is
     unpainted, and interactive annotations are omitted.
     All readers and streams are closed, including on failure. Input read
     and embedding errors include the source path in an exception note.
